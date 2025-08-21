@@ -151,7 +151,7 @@ def admin_sections():
     if not current_user.is_admin:
         return redirect(url_for('index'))
     
-    sections = Section.query.all()
+    sections = Section.query.order_by(Section.order).all()
     return render_template('admin/sections.html', sections=sections)
 
 @app.route('/admin/benefits')
@@ -284,7 +284,7 @@ def api_sections():
         return jsonify({'error': 'Unauthorized'}), 403
     
     if request.method == 'GET':
-        sections = Section.query.all()
+        sections = Section.query.order_by(Section.order).all()
         return jsonify([{
             'id': section.id,
             'name': section.name,
@@ -292,6 +292,7 @@ def api_sections():
             'subtitle': section.subtitle,
             'content': section.content,
             'background_image': section.background_image,
+            'order': section.order,
             'is_active': section.is_active
         } for section in sections])
     
@@ -310,6 +311,7 @@ def api_sections():
             subtitle=data.get('subtitle'),
             content=data.get('content'),
             background_image=data.get('background_image'),
+            order=data.get('order', 0),
             is_active=data.get('is_active', True)
         )
         db.session.add(new_section)
@@ -327,10 +329,12 @@ def api_sections():
         
         section = Section.query.get(data['id'])
         if section:
+            section.name = data.get('name')
             section.title = data.get('title')
             section.subtitle = data.get('subtitle')
             section.content = data.get('content')
             section.background_image = data.get('background_image')
+            section.order = data.get('order', 0)
             section.is_active = data.get('is_active', True)
             db.session.commit()
             return jsonify({'success': True})
@@ -358,6 +362,7 @@ def api_sections_bulk_update():
         for section_data in sections_data:
             section = Section.query.get(section_data['id'])
             if section:
+                section.name = section_data.get('name', '')
                 section.title = section_data.get('title', '')
                 section.subtitle = section_data.get('subtitle', '')
                 section.content = section_data.get('content', '')

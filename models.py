@@ -35,6 +35,7 @@ class Section(db.Model):
     subtitle = db.Column(db.Text)
     content = db.Column(db.Text)
     background_image = db.Column(db.String(200))
+    order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

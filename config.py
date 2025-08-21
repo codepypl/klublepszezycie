@@ -32,7 +32,7 @@ class ProductionConfig(Config):
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.getenv('TEST_DATABASE_URL', 
-        'postgresql://shadi@localhost:5432/betterlife')
+        'postgresql://postgresql://shadi@localhost:5432/betterlife')
 
 config = {
     'development': DevelopmentConfig,

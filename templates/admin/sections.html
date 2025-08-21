@@ -125,6 +125,7 @@
                                         <thead>
                                             <tr>
                                                 <th>Kolejność</th>
+                                                <th>Nazwa</th>
                                                 <th>Tytuł</th>
                                                 <th>Podtytuł</th>
                                                 <th>Treść</th>
@@ -137,6 +138,9 @@
                                             <tr>
                                                 <td>
                                                     <span class="admin-badge admin-badge-primary">{{ section.order }}</span>
+                                                </td>
+                                                <td>
+                                                    <code class="text-primary">{{ section.name }}</code>
                                                 </td>
                                                 <td>
                                                     <strong>{{ section.title }}</strong>
@@ -157,7 +161,7 @@
                                                 <td>
                                                     <div class="btn-group" role="group">
                                                         <button class="btn btn-sm admin-btn-outline" 
-                                                                onclick="editSection({{ section.id }}, '{{ section.title }}', '{{ section.subtitle or '' }}', '{{ section.content or '' }}', {{ section.order }}, {{ section.is_active|lower }})">
+                                                                onclick="editSection({{ section.id }}, '{{ section.name }}', '{{ section.title }}', '{{ section.subtitle or '' }}', '{{ section.content or '' }}', {{ section.order }}, {{ section.is_active|lower }})">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
                                                         <button class="btn btn-sm admin-btn-danger" 
@@ -204,6 +208,10 @@
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Nazwa (identyfikator)</label>
+                                    <input type="text" class="form-control" id="name" name="name" required placeholder="np. hero, about, benefits">
+                                </div>
                                 <div class="mb-3">
                                     <label for="title" class="form-label">Tytuł</label>
                                     <input type="text" class="form-control" id="title" name="title" required placeholder="np. O nas, Nasze usługi">
@@ -258,6 +266,10 @@
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_name" class="form-label">Nazwa (identyfikator)</label>
+                                    <input type="text" class="form-control" id="edit_name" name="name" required>
+                                </div>
                                 <div class="mb-3">
                                     <label for="edit_title" class="form-label">Tytuł</label>
                                     <input type="text" class="form-control" id="edit_title" name="title" required>
@@ -322,8 +334,9 @@
         }
 
         // Edit Section
-        function editSection(id, title, subtitle, content, order, isActive) {
+        function editSection(id, name, title, subtitle, content, order, isActive) {
             document.getElementById('edit_id').value = id;
+            document.getElementById('edit_name').value = name;
             document.getElementById('edit_title').value = title;
             document.getElementById('edit_subtitle').value = subtitle || '';
             document.getElementById('edit_content').value = content || '';
