@@ -29,13 +29,15 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    {% for item in menu_items %}
-                        {% if item.is_active %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ item.url }}">{{ item.title }}</a>
-                        </li>
-                        {% endif %}
-                    {% endfor %}
+                    {% if menu_items %}
+                        {% for item in menu_items %}
+                            {% if item.is_active %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ item.url }}">{{ item.title }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
                             <i class="fas fa-cog me-1"></i>Admin
@@ -117,6 +119,7 @@
                     <p class="lead text-muted">{{ benefits_section.subtitle }}</p>
                 </div>
             </div>
+            {% if benefits_items %}
             <div class="row g-4">
                 {% for item in benefits_items %}
                     {% if item.is_active %}
@@ -135,6 +138,7 @@
                     {% endif %}
                 {% endfor %}
             </div>
+            {% endif %}
             <div class="row mt-5">
                 <div class="col-12 text-center" data-aos="fade-up" data-aos-delay="500">
                     <div class="bonus-benefit">
@@ -209,15 +213,18 @@
     </section>
     {% endif %}
 
+    {% if testimonials_section %}
     <!-- Testimonials Section -->
     <section id="testimonials" class="py-5 bg-light">
         <div class="container">
             <div class="row">
                 <div class="col-12 text-center mb-5" data-aos="fade-up">
                     <h2 class="display-5 fw-bold text-primary mb-3">
-                        💬 Co mówią nasi członkowie 50+
+                        {{ testimonials_section.title }}
                     </h2>
-                    <p class="lead text-muted">Prawdziwe historie osób, które zmieniły swoje życie dzięki klubowi</p>
+                    {% if testimonials_section.subtitle %}
+                        <p class="lead text-muted">{{ testimonials_section.subtitle }}</p>
+                    {% endif %}
                 </div>
             </div>
             {% if testimonials %}
@@ -243,7 +250,7 @@
                                 <i class="fas fa-user-circle fa-2x text-primary"></i>
                             </div>
                             <div class="author-info">
-                                <h6 class="mb-0">{{ testimonial.author_name }}</h6>
+                                <h6 class="mb-6">{{ testimonial.author_name }}</h6>
                                 {% if testimonial.member_since %}
                                     <small class="text-muted">Członek od {{ testimonial.member_since }}</small>
                                 {% endif %}
@@ -252,7 +259,7 @@
                     </div>
                 </div>
                 {% endfor %}
-                        </div>
+            </div>
             {% else %}
             <div class="row">
                 <div class="col-12 text-center">
@@ -266,18 +273,22 @@
             {% endif %}
         </div>
     </section>
+    {% endif %}
 
+    {% if cta_section %}
     <!-- Final CTA Section -->
     <section id="register" class="py-5 bg-primary text-white">
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-lg-8 text-center" data-aos="fade-up">
                     <h2 class="display-5 fw-bold mb-4">
-                        🚀 Gotowy na pierwszy krok?
+                        {{ cta_section.title }}
                     </h2>
-                    <p class="lead mb-5">
-                        Zarezerwuj miejsce w nadchodzącej prezentacji "Lepsze Życie" — i dowiedz się, jak ten klub może pomóc Ci żyć z większym celem, jasnością i wsparciem.
-                    </p>
+                    {% if cta_section.subtitle %}
+                        <p class="lead mb-5">
+                            {{ cta_section.subtitle }}
+                        </p>
+                    {% endif %}
                     
                     <!-- Flash Messages -->
                     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -322,13 +333,15 @@
             </div>
         </div>
     </section>
+    {% endif %}
 
+    {% if faq_section %}
     <!-- FAQ Section -->
     <section class="py-5">
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-lg-8">
-                    <h3 class="text-center mb-5">Często zadawane pytania</h3>
+                    <h3 class="text-center mb-5">{{ faq_section.title if faq_section.title else 'Często zadawane pytania' }}</h3>
                     <div class="accordion" id="faqAccordion">
                         {% if faqs %}
                             {% for faq in faqs %}
@@ -389,6 +402,7 @@
             </div>
         </div>
     </section>
+    {% endif %}
 
     <!-- Footer -->
     <footer class="bg-primary text-white py-4">

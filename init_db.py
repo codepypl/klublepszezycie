@@ -96,6 +96,13 @@ def init_database():
                 'subtitle': 'Zarezerwuj miejsce w darmowej prezentacji "Lepsze Życie" — i dowiedz się, jak ten klub może pomóc Ci żyć z większym celem, społecznością i nowoczesnymi umiejętnościami.',
                 'order': 5,
                 'is_active': True
+            },
+            {
+                'name': 'faq',
+                'title': '❓ Często zadawane pytania',
+                'subtitle': 'Odpowiedzi na najczęściej zadawane pytania o klub "Lepsze Życie"',
+                'order': 6,
+                'is_active': True
             }
         ]
         

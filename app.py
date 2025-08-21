@@ -50,11 +50,14 @@ def index():
     menu_items = MenuItem.query.filter_by(is_active=True).order_by(MenuItem.order).all()
     hero_section = Section.query.filter_by(name='hero', is_active=True).first()
     benefits_section = Section.query.filter_by(name='benefits', is_active=True).first()
-    benefits_items = BenefitItem.query.filter_by(is_active=True).order_by(BenefitItem.order).all()
+    benefits_items = BenefitItem.query.filter_by(is_active=True).order_by(BenefitItem.order).all() if benefits_section else []
     about_section = Section.query.filter_by(name='about', is_active=True).first()
-    testimonials = Testimonial.query.filter_by(is_active=True).order_by(Testimonial.created_at.desc()).limit(3).all()
+    testimonials_section = Section.query.filter_by(name='testimonials', is_active=True).first()
+    testimonials = Testimonial.query.filter_by(is_active=True).order_by(Testimonial.created_at.desc()).limit(3).all() if testimonials_section else []
+    cta_section = Section.query.filter_by(name='cta', is_active=True).first()
+    faq_section = Section.query.filter_by(name='faq', is_active=True).first()
     social_links = SocialLink.query.filter_by(is_active=True).order_by(SocialLink.order).all()
-    faqs = FAQ.query.filter_by(is_active=True).order_by(FAQ.order).all()
+    faqs = FAQ.query.filter_by(is_active=True).order_by(FAQ.order).all() if faq_section else []
     
     # Get next presentation date from database or calculate default
     schedule = PresentationSchedule.query.filter_by(is_active=True).first()
@@ -73,8 +76,12 @@ def index():
                          next_presentation=next_presentation,
                          schedule=schedule,
                          testimonials=testimonials,
+                         testimonials_section=testimonials_section,
+                         cta_section=cta_section,
+                         faq_section=faq_section,
                          menu_items=menu_items,
                          hero_section=hero_section,
+                         benefits_section=benefits_section,
                          benefits_items=benefits_items,
                          about_section=about_section,
                          social_links=social_links,
