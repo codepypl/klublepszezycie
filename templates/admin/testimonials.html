@@ -411,12 +411,8 @@
         // Delete Testimonial
         function deleteTestimonial(id) {
             if (confirm('Czy na pewno chcesz usunąć tę opinię?')) {
-                const formData = new FormData();
-                formData.append('id', id);
-                
-                fetch('/admin/api/testimonials', {
-                    method: 'DELETE',
-                    body: formData
+                fetch(`/admin/api/testimonials?id=${id}`, {
+                    method: 'DELETE'
                 })
                 .then(response => response.json())
                 .then(data => {
