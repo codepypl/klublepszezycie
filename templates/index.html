@@ -65,7 +65,11 @@
                         </a>
                         <p class="text-light small">
                             <i class="fas fa-check-circle me-1"></i>
-                            Następna sesja: {{ next_presentation.strftime('%d.%m.%Y o %H:%M') }}
+                            {% if schedule and schedule.custom_text %}
+                                {{ schedule.custom_text }}
+                            {% else %}
+                                Następna sesja: {{ next_presentation.strftime('%d.%m.%Y o %H:%M') }}
+                            {% endif %}
                         </p>
                         <p class="text-white-50 small">
                             <i class="fas fa-shield-alt me-1"></i>
@@ -205,61 +209,55 @@
             <div class="row">
                 <div class="col-12 text-center mb-5" data-aos="fade-up">
                     <h2 class="display-5 fw-bold text-primary mb-3">
-                        {{ testimonials_title }}
+                        💬 Co mówią nasi członkowie 50+
                     </h2>
-                    <p class="lead text-muted">{{ testimonials_subtitle }}</p>
+                    <p class="lead text-muted">Prawdziwe historie osób, które zmieniły swoje życie dzięki klubowi</p>
                 </div>
             </div>
+            {% if testimonials %}
             <div class="row g-4">
-                <div class="col-lg-4" data-aos="fade-up" data-aos-delay="100">
+                {% for testimonial in testimonials %}
+                <div class="col-lg-4" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
                     <div class="testimonial-card">
                         <div class="testimonial-content">
-                            <p>"Dołączenie do klubu dało mi jasność, motywację i narzędzia, do których wcześniej nie miałam dostępu."</p>
+                            <p>"{{ testimonial.content }}"</p>
+                            {% if testimonial.rating %}
+                                <div class="testimonial-rating mb-3">
+                                    {% for i in range(testimonial.rating) %}
+                                        <i class="fas fa-star text-warning"></i>
+                                    {% endfor %}
+                                    {% for i in range(5 - testimonial.rating) %}
+                                        <i class="far fa-star text-muted"></i>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
                         <div class="testimonial-author">
                             <div class="author-avatar">
                                 <i class="fas fa-user-circle fa-2x text-primary"></i>
                             </div>
                             <div class="author-info">
-                                <h6 class="mb-0">Anna K.</h6>
-                                <small class="text-muted">Członek od 2024</small>
+                                <h6 class="mb-0">{{ testimonial.author_name }}</h6>
+                                {% if testimonial.member_since %}
+                                    <small class="text-muted">Członek od {{ testimonial.member_since }}</small>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-4" data-aos="fade-up" data-aos-delay="200">
-                    <div class="testimonial-card">
-                        <div class="testimonial-content">
-                            <p>"Społeczność jest potężna. Poprawiłem swoje zdrowie i finanse w zaledwie 3 miesiące."</p>
-                        </div>
-                        <div class="testimonial-author">
-                            <div class="author-avatar">
-                                <i class="fas fa-user-circle fa-2x text-primary"></i>
-                            </div>
-                            <div class="author-info">
-                                <h6 class="mb-0">Marek S.</h6>
-                                <small class="text-muted">Członek od 2023</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4" data-aos="fade-up" data-aos-delay="300">
-                    <div class="testimonial-card">
-                        <div class="testimonial-content">
-                            <p>"Narzędzia AI, których nauczyłem się w klubie, oszczędzają mi 2 godziny dziennie w pracy."</p>
-                        </div>
-                        <div class="testimonial-author">
-                            <div class="author-avatar">
-                                <i class="fas fa-user-circle fa-2x text-info"></i>
-                            </div>
-                            <div class="author-info">
-                                <h6 class="mb-0">Katarzyna M.</h6>
-                                <small class="text-muted">Członek od 2024</small>
-                            </div>
-                        </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="row">
+                <div class="col-12 text-center">
+                    <div class="py-5">
+                        <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Brak opinii do wyświetlenia</h5>
+                        <p class="text-muted">Opinie będą widoczne po dodaniu ich w panelu administracyjnym</p>
                     </div>
                 </div>
             </div>
+            {% endif %}
         </div>
     </section>
 

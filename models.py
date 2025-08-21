@@ -123,3 +123,15 @@ class SEOSettings(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+
+class PresentationSchedule(db.Model):
+    __tablename__ = 'presentation_schedule'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), default='Następna sesja')
+    next_presentation_date = db.Column(db.DateTime, nullable=False)
+    custom_text = db.Column(db.String(500))  # Opcjonalny niestandardowy tekst
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+

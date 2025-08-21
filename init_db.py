@@ -7,12 +7,13 @@ Creates tables and populates with sample data
 import os
 import sys
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
 # Add current directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from app import app, db
-from models import User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, FAQ
+from models import User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, FAQ, PresentationSchedule
 from werkzeug.security import generate_password_hash
 
 def init_database():
@@ -253,9 +254,36 @@ def init_database():
             else:
                 print(f"✓ FAQ '{faq_item['question'][:30]}...' already exists")
         
+        # Commit all changes
+        db.session.commit()
+        print("✓ All data created successfully!")
+        
+        print("Creating presentation schedule...")
+        # Create default presentation schedule
+        existing_schedule = PresentationSchedule.query.first()
+        if not existing_schedule:
+            # Calculate next Saturday at 10:00
+            today = datetime.now()
+            days_until_saturday = (5 - today.weekday()) % 7
+            if days_until_saturday == 0 and today.hour >= 10:
+                days_until_saturday = 7
+            next_saturday = today + timedelta(days=days_until_saturday)
+            next_presentation = next_saturday.replace(hour=10, minute=0, second=0, microsecond=0)
+            
+            default_schedule = PresentationSchedule(
+                title='Następna sesja',
+                next_presentation_date=next_presentation,
+                custom_text='',
+                is_active=True
+            )
+            db.session.add(default_schedule)
+            print(f"✓ Default presentation schedule created for {next_presentation.strftime('%d.%m.%Y o %H:%M')}")
+        else:
+            print("✓ Presentation schedule already exists")
+        
         # Final commit
         db.session.commit()
-        print("\n✅ Database initialization completed successfully!")
+        print("✓ Database initialization completed!")
         print("\n📋 Login credentials:")
         print("   Username: admin")
         print("   Password: admin123")

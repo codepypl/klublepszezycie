@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import models and config
-from models import db, User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, Registration, FAQ, SEOSettings
+from models import db, User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, Registration, FAQ, SEOSettings, PresentationSchedule
 from config import config
 
 # Initialize Flask app
@@ -56,16 +56,22 @@ def index():
     social_links = SocialLink.query.filter_by(is_active=True).order_by(SocialLink.order).all()
     faqs = FAQ.query.filter_by(is_active=True).order_by(FAQ.order).all()
     
-    # Calculate next presentation date
-    today = datetime.now()
-    days_until_saturday = (5 - today.weekday()) % 7
-    if days_until_saturday == 0 and today.hour >= 10:
-        days_until_saturday = 7
-    next_saturday = today + timedelta(days=days_until_saturday)
-    next_presentation = next_saturday.replace(hour=10, minute=0, second=0, microsecond=0)
+    # Get next presentation date from database or calculate default
+    schedule = PresentationSchedule.query.filter_by(is_active=True).first()
+    if schedule and schedule.next_presentation_date:
+        next_presentation = schedule.next_presentation_date
+    else:
+        # Fallback to automatic calculation
+        today = datetime.now()
+        days_until_saturday = (5 - today.weekday()) % 7
+        if days_until_saturday == 0 and today.hour >= 10:
+            days_until_saturday = 7
+        next_saturday = today + timedelta(days=days_until_saturday)
+        next_presentation = next_saturday.replace(hour=10, minute=0, second=0, microsecond=0)
     
     return render_template('index.html',
                          next_presentation=next_presentation,
+                         schedule=schedule,
                          testimonials=testimonials,
                          menu_items=menu_items,
                          hero_section=hero_section,
@@ -206,6 +212,15 @@ def admin_seo():
         return redirect(url_for('admin_login'))
     seo_settings = SEOSettings.query.all()
     return render_template('admin/seo.html', seo_settings=seo_settings)
+
+@app.route('/admin/presentation-schedule')
+@login_required
+def admin_presentation_schedule():
+    if not current_user.is_admin:
+        return redirect(url_for('admin_login'))
+    
+    schedule = PresentationSchedule.query.first()
+    return render_template('admin/presentation_schedule.html', schedule=schedule)
 
 # API routes for content management
 @app.route('/admin/api/menu', methods=['GET', 'POST', 'PUT', 'DELETE'])
@@ -735,6 +750,69 @@ def api_seo():
             db.session.commit()
             return jsonify({'success': True})
         return jsonify({'success': False, 'message': 'SEO settings not found'}), 404
+
+@app.route('/admin/api/presentation-schedule', methods=['GET', 'POST', 'PUT'])
+@login_required
+def api_presentation_schedule():
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    if request.method == 'GET':
+        schedule = PresentationSchedule.query.first()
+        if schedule:
+            return jsonify({
+                'id': schedule.id,
+                'title': schedule.title,
+                'next_presentation_date': schedule.next_presentation_date.isoformat() if schedule.next_presentation_date else None,
+                'custom_text': schedule.custom_text,
+                'is_active': schedule.is_active
+            })
+        return jsonify({'error': 'No schedule found'}), 404
+    
+    elif request.method == 'POST':
+        # Obsługujemy zarówno JSON jak i FormData
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form.to_dict()
+            # Konwertujemy checkbox na boolean
+            data['is_active'] = 'is_active' in request.form
+        
+        # Konwertujemy string daty na datetime
+        from datetime import datetime
+        presentation_date = datetime.fromisoformat(data['next_presentation_date'].replace('Z', '+00:00'))
+        
+        new_schedule = PresentationSchedule(
+            title=data.get('title', 'Następna sesja'),
+            next_presentation_date=presentation_date,
+            custom_text=data.get('custom_text', ''),
+            is_active=data.get('is_active', True)
+        )
+        db.session.add(new_schedule)
+        db.session.commit()
+        return jsonify({'success': True, 'id': new_schedule.id})
+    
+    elif request.method == 'PUT':
+        # Obsługujemy zarówno JSON jak i FormData
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form.to_dict()
+            # Konwertujemy checkbox na boolean
+            data['is_active'] = 'is_active' in request.form
+        
+        schedule = PresentationSchedule.query.get(data['id'])
+        if schedule:
+            schedule.title = data.get('title', 'Następna sesja')
+            # Konwertujemy string daty na datetime
+            from datetime import datetime
+            presentation_date = datetime.fromisoformat(data['next_presentation_date'].replace('Z', '+00:00'))
+            schedule.next_presentation_date = presentation_date
+            schedule.custom_text = data.get('custom_text', '')
+            schedule.is_active = data.get('is_active', True)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Schedule not found'}), 404
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
