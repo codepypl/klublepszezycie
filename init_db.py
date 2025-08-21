@@ -64,12 +64,14 @@ def init_database():
                 'title': '💡 Chcesz lepsze życie po 50-tce? Dołącz do klubu, który zmienia życie w 4 kluczowych obszarach!',
                 'subtitle': 'Odkryj, jak Klub "Lepsze Życie" pomaga osobom 50+ poprawić finanse, zdrowie, budować społeczność i opanować narzędzia AI — aby żyć mądrzej i pełniej.',
                 'background_image': 'static/images/hero/hero-bg.jpg',
+                'order': 1,
                 'is_active': True
             },
             {
                 'name': 'benefits',
                 'title': '🧭 Czego nauczysz się na prezentacji',
                 'subtitle': 'Praktyczna wiedza dostosowana do potrzeb osób 50+, która zmieni Twoje życie',
+                'order': 2,
                 'is_active': True
             },
             {
@@ -77,18 +79,21 @@ def init_database():
                 'title': '🌱 Klub zbudowany specjalnie dla osób 50+',
                 'content': '"Lepsze Życie" to więcej niż tylko klub. To społeczność osób 50+, które rozumieją, że życie po pięćdziesiątce może być najlepszym okresem w życiu.',
                 'background_image': 'static/images/about/community-senior.jpg',
+                'order': 3,
                 'is_active': True
             },
             {
                 'name': 'testimonials',
                 'title': '💬 Co mówią nasi członkowie 50+',
                 'subtitle': 'Prawdziwe historie osób, które zmieniły swoje życie dzięki klubowi',
+                'order': 4,
                 'is_active': True
             },
             {
                 'name': 'cta',
                 'title': '🚀 Gotowy na lepsze życie po 50-tce?',
                 'subtitle': 'Zarezerwuj miejsce w darmowej prezentacji "Lepsze Życie" — i dowiedz się, jak ten klub może pomóc Ci żyć z większym celem, społecznością i nowoczesnymi umiejętnościami.',
+                'order': 5,
                 'is_active': True
             }
         ]

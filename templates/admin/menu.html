@@ -138,7 +138,7 @@
                                                     <span class="admin-badge admin-badge-primary">{{ item.order }}</span>
                                                 </td>
                                                 <td>
-                                                    <strong>{{ item.name }}</strong>
+                                                    <strong>{{ item.title }}</strong>
                                                 </td>
                                                 <td>
                                                     <code>{{ item.url }}</code>
@@ -153,7 +153,7 @@
                                                 <td>
                                                     <div class="btn-group" role="group">
                                                         <button class="btn btn-sm admin-btn-outline" 
-                                                                onclick="editMenuItem({{ item.id }}, '{{ item.name }}', '{{ item.url }}', {{ item.order }}, {{ item.is_active|lower }})">
+                                                                onclick="editMenuItem({{ item.id }}, '{{ item.title }}', '{{ item.url }}', {{ item.order }}, {{ item.is_active|lower }})">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
                                                         <button class="btn btn-sm admin-btn-danger" 
@@ -199,8 +199,8 @@
                 <form id="addMenuItemForm">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="name" class="form-label">Nazwa</label>
-                            <input type="text" class="form-control" id="name" name="name" required placeholder="np. O nas, Kontakt">
+                            <label for="title" class="form-label">Nazwa</label>
+                            <input type="text" class="form-control" id="title" name="title" required placeholder="np. O nas, Kontakt">
                         </div>
                         <div class="mb-3">
                             <label for="url" class="form-label">URL</label>
@@ -243,8 +243,8 @@
                     <input type="hidden" id="edit_id" name="id">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="edit_name" class="form-label">Nazwa</label>
-                            <input type="text" class="form-control" id="edit_name" name="name" required>
+                            <label for="edit_title" class="form-label">Nazwa</label>
+                            <input type="text" class="form-control" id="edit_title" name="title" required>
                         </div>
                         <div class="mb-3">
                             <label for="edit_url" class="form-label">URL</label>
@@ -298,9 +298,9 @@
         }
 
         // Edit Menu Item
-        function editMenuItem(id, name, url, order, isActive) {
+        function editMenuItem(id, title, url, order, isActive) {
             document.getElementById('edit_id').value = id;
-            document.getElementById('edit_name').value = name;
+            document.getElementById('edit_title').value = title;
             document.getElementById('edit_url').value = url;
             document.getElementById('edit_order').value = order;
             document.getElementById('edit_is_active').checked = isActive;
