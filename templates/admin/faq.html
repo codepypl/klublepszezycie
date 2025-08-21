@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administratora - FAQ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="admin-panel">
+        <!-- Top Navigation Bar -->
+        <nav class="navbar navbar-expand-lg admin-top-nav">
+            <div class="container-fluid">
+                <button class="btn admin-btn-outline d-lg-none" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <span class="navbar-brand text-white mb-0 h1">
+                    <i class="fas fa-cog me-2"></i>
+                    Panel Administratora
+                </span>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link text-white" href="{{ url_for('index') }}">
+                        <i class="fas fa-home me-1"></i>
+                        Strona główna
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid">
+            <div class="row flex-nowrap">
+                <!-- Sidebar -->
+                <nav class="col-lg-2 admin-sidebar p-3" id="sidebar">
+                    <div class="d-flex flex-column">
+                        <h4 class="text-primary mb-4 text-center d-none d-lg-block">
+                            <i class="fas fa-cog me-2"></i>
+                            Admin Panel
+                        </h4>
+                        <hr class="text-muted">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                                    <i class="fas fa-tachometer-alt"></i>
+                                    Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_menu') }}">
+                                    <i class="fas fa-bars"></i>
+                                    Menu
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_sections') }}">
+                                    <i class="fas fa-layer-group"></i>
+                                    Sekcje
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_benefits') }}">
+                                    <i class="fas fa-star"></i>
+                                    Korzyści
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_testimonials') }}">
+                                    <i class="fas fa-comments"></i>
+                                    Opinie
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" href="{{ url_for('admin_faq') }}">
+                                    <i class="fas fa-question-circle"></i>
+                                    FAQ
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_registrations') }}">
+                                    <i class="fas fa-user-plus"></i>
+                                    Rejestracje
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_social') }}">
+                                    <i class="fas fa-share-alt"></i>
+                                    Social Media
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_seo') }}">
+                                    <i class="fas fa-search"></i>
+                                    SEO/SEM
+                                </a>
+                            </li>
+                        </ul>
+                        <hr class="text-muted mt-auto">
+                        <div class="text-center">
+                            <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout w-100">
+                                <i class="fas fa-sign-out-alt me-2"></i>
+                                Wyloguj
+                            </a>
+                        </div>
+                    </div>
+                </nav>
+
+                <!-- Main Content -->
+                <main class="col-lg-10 admin-content m-0">
+                    <div class="admin-header">
+                        <h1><i class="fas fa-question-circle me-2"></i>Zarządzanie FAQ</h1>
+                    </div>
+
+                    <!-- Add FAQ Button -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <p class="text-muted mb-0">Zarządzaj pytaniami i odpowiedziami wyświetlanymi na stronie głównej</p>
+                        <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addFaqModal">
+                            <i class="fas fa-plus me-2"></i>
+                            Dodaj Pytanie
+                        </button>
+                    </div>
+
+                    <!-- FAQ Table -->
+                    <div class="admin-card">
+                        <div class="admin-card-body">
+                            {% if faqs %}
+                                <div class="table-responsive">
+                                    <table class="table admin-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Kolejność</th>
+                                                <th>Pytanie</th>
+                                                <th>Odpowiedź</th>
+                                                <th>Status</th>
+                                                <th>Akcje</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for faq in faqs %}
+                                            <tr>
+                                                <td>
+                                                    <span class="admin-badge admin-badge-primary">{{ faq.order }}</span>
+                                                </td>
+                                                <td>
+                                                    <strong>{{ faq.question }}</strong>
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">{{ faq.answer[:100] }}{% if faq.answer|length > 100 %}...{% endif %}</small>
+                                                </td>
+                                                <td>
+                                                    {% if faq.is_active %}
+                                                        <span class="admin-badge admin-badge-success">Aktywne</span>
+                                                    {% else %}
+                                                        <span class="admin-badge admin-badge-danger">Nieaktywne</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group" role="group">
+                                                        <button class="btn btn-sm admin-btn-outline" 
+                                                                onclick="editFaq({{ faq.id }}, '{{ faq.question }}', '{{ faq.answer }}', {{ faq.order }}, {{ faq.is_active|lower }})">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm admin-btn-danger" 
+                                                                onclick="deleteFaq({{ faq.id }})">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">Brak pytań FAQ</h5>
+                                    <p class="text-muted">Dodaj pierwsze pytanie, aby rozpocząć</p>
+                                    <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addFaqModal">
+                                        <i class="fas fa-plus me-2"></i>
+                                        Dodaj Pytanie
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add FAQ Modal -->
+    <div class="modal fade admin-modal" id="addFaqModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus me-2"></i>
+                        Dodaj Nowe Pytanie FAQ
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addFaqForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="question" class="form-label">Pytanie</label>
+                            <input type="text" class="form-control" id="question" name="question" required placeholder="np. Jak dołączyć do klubu?">
+                        </div>
+                        <div class="mb-3">
+                            <label for="answer" class="form-label">Odpowiedź</label>
+                            <textarea class="form-control" id="answer" name="answer" rows="4" required placeholder="Odpowiedź na pytanie..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="order" class="form-label">Kolejność</label>
+                            <input type="number" class="form-control" id="order" name="order" value="1" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                <label class="form-check-label" for="is_active">
+                                    Aktywne
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">Zapisz Pytanie</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit FAQ Modal -->
+    <div class="modal fade admin-modal" id="editFaqModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit me-2"></i>
+                        Edytuj Pytanie FAQ
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editFaqForm">
+                    <input type="hidden" id="edit_id" name="id">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="edit_question" class="form-label">Pytanie</label>
+                            <input type="text" class="form-control" id="edit_question" name="question" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_answer" class="form-label">Odpowiedź</label>
+                            <textarea class="form-control" id="edit_answer" name="answer" rows="4" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_order" class="form-label">Kolejność</label>
+                            <input type="number" class="form-control" id="edit_order" name="order" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
+                                <label class="form-check-label" for="edit_is_active">
+                                    Aktywne
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">Zapisz Zmiany</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Add FAQ
+        function addFaq() {
+            const form = document.getElementById('addFaqForm');
+            const formData = new FormData(form);
+            
+            fetch('/admin/api/faq', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Błąd: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas dodawania pytania FAQ');
+            });
+        }
+
+        // Edit FAQ
+        function editFaq(id, question, answer, order, isActive) {
+            document.getElementById('edit_id').value = id;
+            document.getElementById('edit_question').value = question;
+            document.getElementById('edit_answer').value = answer;
+            document.getElementById('edit_order').value = order;
+            document.getElementById('edit_is_active').checked = isActive;
+            
+            new bootstrap.Modal(document.getElementById('editFaqModal')).show();
+        }
+
+        // Save FAQ
+        function saveFaq() {
+            const form = document.getElementById('editFaqForm');
+            const formData = new FormData(form);
+            
+            fetch('/admin/api/faq', {
+                method: 'PUT',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Błąd: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas zapisywania zmian');
+            });
+        }
+
+        // Delete FAQ
+        function deleteFaq(id) {
+            if (confirm('Czy na pewno chcesz usunąć to pytanie FAQ?')) {
+                const formData = new FormData();
+                formData.append('id', id);
+                
+                fetch('/admin/api/faq', {
+                    method: 'DELETE',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Błąd: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Wystąpił błąd podczas usuwania pytania FAQ');
+                });
+            }
+        }
+
+        // Form submissions
+        document.getElementById('addFaqForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            addFaq();
+        });
+
+        document.getElementById('editFaqForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveFaq();
+        });
+
+        // Sidebar toggle functionality
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            
+            if (window.innerWidth < 992 && 
+                !sidebar.contains(event.target) && 
+                !sidebarToggle.contains(event.target)) {
+                sidebar.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>

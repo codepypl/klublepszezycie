@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administratora - SEO/SEM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="admin-panel">
+        <!-- Top Navigation Bar -->
+        <nav class="navbar navbar-expand-lg admin-top-nav">
+            <div class="container-fluid">
+                <button class="btn admin-btn-outline d-lg-none" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <span class="navbar-brand text-white mb-0 h1">
+                    <i class="fas fa-cog me-2"></i>
+                    Panel Administratora
+                </span>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link text-white" href="{{ url_for('index') }}">
+                        <i class="fas fa-home me-1"></i>
+                        Strona główna
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid">
+            <div class="row flex-nowrap">
+                <!-- Sidebar -->
+                <nav class="col-lg-2 admin-sidebar p-3" id="sidebar">
+                    <div class="d-flex flex-column">
+                        <h4 class="text-primary mb-4 text-center d-none d-lg-block">
+                            <i class="fas fa-cog me-2"></i>
+                            Admin Panel
+                        </h4>
+                        <hr class="text-muted">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                                    <i class="fas fa-tachometer-alt"></i>
+                                    Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_menu') }}">
+                                    <i class="fas fa-bars"></i>
+                                    Menu
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_sections') }}">
+                                    <i class="fas fa-layer-group"></i>
+                                    Sekcje
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_benefits') }}">
+                                    <i class="fas fa-star"></i>
+                                    Korzyści
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_testimonials') }}">
+                                    <i class="fas fa-comments"></i>
+                                    Opinie
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_faq') }}">
+                                    <i class="fas fa-question-circle"></i>
+                                    FAQ
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_registrations') }}">
+                                    <i class="fas fa-user-plus"></i>
+                                    Rejestracje
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_social') }}">
+                                    <i class="fas fa-share-alt"></i>
+                                    Social Media
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" href="{{ url_for('admin_seo') }}">
+                                    <i class="fas fa-search"></i>
+                                    SEO/SEM
+                                </a>
+                            </li>
+
+                        </ul>
+                        <hr class="text-muted mt-auto">
+                        <div class="text-center">
+                            <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout w-100">
+                                <i class="fas fa-sign-out-alt me-2"></i>
+                                Wyloguj
+                            </a>
+                        </div>
+                    </div>
+                </nav>
+
+                <!-- Main Content -->
+                <main class="col-lg-10 admin-content m-0">
+                    <div class="admin-header">
+                        <h1><i class="fas fa-search me-2"></i>Zarządzanie SEO/SEM</h1>
+                    </div>
+
+                    <!-- Add SEO Settings Button -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <p class="text-muted mb-0">Zarządzaj ustawieniami SEO i meta tagami</p>
+                        <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addSeoModal">
+                            <i class="fas fa-plus me-2"></i>
+                            Dodaj Ustawienia SEO
+                        </button>
+                    </div>
+
+                    <!-- SEO Overview -->
+                    <div class="admin-card mb-4">
+                        <div class="admin-card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-line me-2"></i>
+                                Przegląd SEO
+                            </h5>
+                        </div>
+                        <div class="admin-card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <i class="fas fa-tags fa-2x text-primary mb-2"></i>
+                                        <h4>{{ seo_settings|length }}</h4>
+                                        <p class="text-muted mb-0">Meta Tagi</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <i class="fas fa-share-alt fa-2x text-info mb-2"></i>
+                                        <h4>{{ seo_settings|selectattr('og_title')|list|length }}</h4>
+                                        <p class="text-muted mb-0">Open Graph</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <i class="fab fa-twitter fa-2x text-info mb-2"></i>
+                                        <h4>{{ seo_settings|selectattr('twitter_card')|list|length }}</h4>
+                                        <p class="text-muted mb-0">Twitter Cards</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <i class="fas fa-code fa-2x text-success mb-2"></i>
+                                        <h4>{{ seo_settings|selectattr('structured_data')|list|length }}</h4>
+                                        <p class="text-muted mb-0">Structured Data</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SEO Settings Table -->
+                    <div class="admin-card">
+                        <div class="admin-card-body">
+                            {% if seo_settings %}
+                                <div class="table-responsive">
+                                    <table class="table admin-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Strona</th>
+                                                <th>Meta Title</th>
+                                                <th>Meta Description</th>
+                                                <th>Open Graph</th>
+                                                <th>Twitter Cards</th>
+                                                <th>Akcje</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for seo in seo_settings %}
+                                            <tr>
+                                                <td>
+                                                    <span class="admin-badge admin-badge-primary">{{ seo.page_name }}</span>
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">{{ seo.meta_title[:50] or 'Brak' }}{% if seo.meta_title and seo.meta_title|length > 50 %}...{% endif %}</small>
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">{{ seo.meta_description[:60] or 'Brak' }}{% if seo.meta_description and seo.meta_description|length > 60 %}...{% endif %}</small>
+                                                </td>
+                                                <td>
+                                                    {% if seo.og_title %}
+                                                        <span class="admin-badge admin-badge-success">Tak</span>
+                                                    {% else %}
+                                                        <span class="admin-badge admin-badge-secondary">Nie</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if seo.twitter_card %}
+                                                        <span class="admin-badge admin-badge-success">Tak</span>
+                                                    {% else %}
+                                                        <span class="admin-badge admin-badge-secondary">Nie</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group" role="group">
+                                                        <button class="btn btn-sm admin-btn-outline" 
+                                                                onclick="editSeo({{ seo.id }}, '{{ seo.page_name }}', '{{ seo.meta_title or '' }}', '{{ seo.meta_description or '' }}', '{{ seo.og_title or '' }}', '{{ seo.og_description or '' }}', '{{ seo.og_image or '' }}', '{{ seo.twitter_card or '' }}', '{{ seo.twitter_title or '' }}', '{{ seo.twitter_description or '' }}', '{{ seo.structured_data or '' }}')">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm admin-btn-danger" 
+                                                                onclick="deleteSeo({{ seo.id }})">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">Brak ustawień SEO</h5>
+                                    <p class="text-muted">Dodaj pierwsze ustawienia SEO, aby rozpocząć</p>
+                                    <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addSeoModal">
+                                        <i class="fas fa-plus me-2"></i>
+                                        Dodaj Ustawienia SEO
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add SEO Modal -->
+    <div class="modal fade admin-modal" id="addSeoModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus me-2"></i>
+                        Dodaj Nowe Ustawienia SEO
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addSeoForm">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-tags me-2"></i>
+                                    Podstawowe SEO
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="page_name" class="form-label">Nazwa Strony</label>
+                                    <select class="form-control" id="page_name" name="page_name" required>
+                                        <option value="">Wybierz stronę</option>
+                                        <option value="home">Strona Główna</option>
+                                        <option value="about">O Nas</option>
+                                        <option value="benefits">Korzyści</option>
+                                        <option value="testimonials">Opinie</option>
+                                        <option value="contact">Kontakt</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="meta_title" class="form-label">Meta Title</label>
+                                    <input type="text" class="form-control" id="meta_title" name="meta_title" maxlength="60" placeholder="Tytuł strony (max 60 znaków)">
+                                    <small class="text-muted">Pozostało: <span id="title_count">60</span> znaków</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="meta_description" class="form-label">Meta Description</label>
+                                    <textarea class="form-control" id="meta_description" name="meta_description" rows="3" maxlength="160" placeholder="Opis strony (max 160 znaków)"></textarea>
+                                    <small class="text-muted">Pozostało: <span id="desc_count">160</span> znaków</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-share-alt me-2"></i>
+                                    Open Graph
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="og_title" class="form-label">OG Title</label>
+                                    <input type="text" class="form-control" id="og_title" name="og_title" placeholder="Tytuł dla Facebook/LinkedIn">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="og_description" class="form-label">OG Description</label>
+                                    <textarea class="form-control" id="og_description" name="og_description" rows="3" placeholder="Opis dla Facebook/LinkedIn"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="og_image" class="form-label">OG Image URL</label>
+                                    <input type="url" class="form-control" id="og_image" name="og_image" placeholder="https://example.com/image.jpg">
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fab fa-twitter me-2"></i>
+                                    Twitter Cards
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="twitter_card" class="form-label">Twitter Card Type</label>
+                                    <select class="form-control" id="twitter_card" name="twitter_card">
+                                        <option value="">Wybierz typ</option>
+                                        <option value="summary">Summary</option>
+                                        <option value="summary_large_image">Summary Large Image</option>
+                                        <option value="app">App</option>
+                                        <option value="player">Player</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="twitter_title" class="form-label">Twitter Title</label>
+                                    <input type="text" class="form-control" id="twitter_title" name="twitter_title" placeholder="Tytuł dla Twitter">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="twitter_description" class="form-label">Twitter Description</label>
+                                    <textarea class="form-control" id="twitter_description" name="twitter_description" rows="3" placeholder="Opis dla Twitter"></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-code me-2"></i>
+                                    Structured Data
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="structured_data" class="form-label">JSON-LD Schema</label>
+                                    <textarea class="form-control" id="structured_data" name="structured_data" rows="8" placeholder='{"@context": "https://schema.org", "@type": "Organization", "name": "Klub Lepsze Życie"}'></textarea>
+                                    <small class="text-muted">Wklej kod JSON-LD lub zostaw puste</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">Zapisz Ustawienia SEO</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit SEO Modal -->
+    <div class="modal fade admin-modal" id="editSeoModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit me-2"></i>
+                        Edytuj Ustawienia SEO
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editSeoForm">
+                    <input type="hidden" id="edit_id" name="id">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-tags me-2"></i>
+                                    Podstawowe SEO
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="edit_page_name" class="form-label">Nazwa Strony</label>
+                                    <select class="form-control" id="edit_page_name" name="page_name" required>
+                                        <option value="home">Strona Główna</option>
+                                        <option value="about">O Nas</option>
+                                        <option value="benefits">Korzyści</option>
+                                        <option value="testimonials">Opinie</option>
+                                        <option value="contact">Kontakt</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_meta_title" class="form-label">Meta Title</label>
+                                    <input type="text" class="form-control" id="edit_meta_title" name="meta_title" maxlength="60">
+                                    <small class="text-muted">Pozostało: <span id="edit_title_count">60</span> znaków</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_meta_description" class="form-label">Meta Description</label>
+                                    <textarea class="form-control" id="edit_meta_description" name="meta_description" rows="3" maxlength="160"></textarea>
+                                    <small class="text-muted">Pozostało: <span id="edit_desc_count">160</span> znaków</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-share-alt me-2"></i>
+                                    Open Graph
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="edit_og_title" class="form-label">OG Title</label>
+                                    <input type="text" class="form-control" id="edit_og_title" name="og_title">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_og_description" class="form-label">OG Description</label>
+                                    <textarea class="form-control" id="edit_og_description" name="og_description" rows="3"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_og_image" class="form-label">OG Image URL</label>
+                                    <input type="url" class="form-control" id="edit_og_image" name="og_image">
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fab fa-twitter me-2"></i>
+                                    Twitter Cards
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="edit_twitter_card" class="form-label">Twitter Card Type</label>
+                                    <select class="form-control" id="edit_twitter_card" name="twitter_card">
+                                        <option value="">Wybierz typ</option>
+                                        <option value="summary">Summary</option>
+                                        <option value="summary_large_image">Summary Large Image</option>
+                                        <option value="app">App</option>
+                                        <option value="player">Player</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_twitter_title" class="form-label">Twitter Title</label>
+                                    <input type="text" class="form-control" id="edit_twitter_title" name="twitter_title">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_twitter_description" class="form-label">Twitter Description</label>
+                                    <textarea class="form-control" id="edit_twitter_description" name="twitter_description" rows="3"></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-code me-2"></i>
+                                    Structured Data
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="edit_structured_data" class="form-label">JSON-LD Schema</label>
+                                    <textarea class="form-control" id="edit_structured_data" name="structured_data" rows="8"></textarea>
+                                    <small class="text-muted">Wklej kod JSON-LD lub zostaw puste</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">Zapisz Zmiany</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Character counters
+        function updateCount(input, counter, maxLength) {
+            const remaining = maxLength - input.value.length;
+            counter.textContent = remaining;
+            if (remaining < 0) {
+                counter.classList.add('text-danger');
+            } else {
+                counter.classList.remove('text-danger');
+            }
+        }
+
+        // Add SEO
+        function addSeo() {
+            const form = document.getElementById('addSeoForm');
+            const formData = new FormData(form);
+            
+            fetch('/admin/api/seo', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Błąd: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas dodawania ustawień SEO');
+            });
+        }
+
+        // Edit SEO
+        function editSeo(id, pageName, metaTitle, metaDescription, ogTitle, ogDescription, ogImage, twitterCard, twitterTitle, twitterDescription, structuredData) {
+            document.getElementById('edit_id').value = id;
+            document.getElementById('edit_page_name').value = pageName;
+            document.getElementById('edit_meta_title').value = metaTitle;
+            document.getElementById('edit_meta_description').value = metaDescription;
+            document.getElementById('edit_og_title').value = ogTitle;
+            document.getElementById('edit_og_description').value = ogDescription;
+            document.getElementById('edit_og_image').value = ogImage;
+            document.getElementById('edit_twitter_card').value = twitterCard;
+            document.getElementById('edit_twitter_title').value = twitterTitle;
+            document.getElementById('edit_twitter_description').value = twitterDescription;
+            document.getElementById('edit_structured_data').value = structuredData;
+            
+            // Update character counts
+            updateCount(document.getElementById('edit_meta_title'), document.getElementById('edit_title_count'), 60);
+            updateCount(document.getElementById('edit_meta_description'), document.getElementById('edit_desc_count'), 160);
+            
+            new bootstrap.Modal(document.getElementById('editSeoModal')).show();
+        }
+
+        // Save SEO
+        function saveSeo() {
+            const form = document.getElementById('editSeoForm');
+            const formData = new FormData(form);
+            
+            fetch('/admin/api/seo', {
+                method: 'PUT',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Błąd: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas zapisywania zmian');
+            });
+        }
+
+        // Delete SEO
+        function deleteSeo(id) {
+            if (confirm('Czy na pewno chcesz usunąć te ustawienia SEO?')) {
+                const formData = new FormData();
+                formData.append('id', id);
+                
+                fetch('/admin/api/seo', {
+                    method: 'DELETE',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Błąd: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Wystąpił błąd podczas usuwania ustawień SEO');
+                });
+            }
+        }
+
+        // Form submissions
+        document.getElementById('addSeoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            addSeo();
+        });
+
+        document.getElementById('editSeoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveSeo();
+        });
+
+        // Character count listeners
+        document.getElementById('meta_title').addEventListener('input', function() {
+            updateCount(this, document.getElementById('title_count'), 60);
+        });
+
+        document.getElementById('meta_description').addEventListener('input', function() {
+            updateCount(this, document.getElementById('desc_count'), 160);
+        });
+
+        document.getElementById('edit_meta_title').addEventListener('input', function() {
+            updateCount(this, document.getElementById('edit_title_count'), 60);
+        });
+
+        document.getElementById('edit_meta_description').addEventListener('input', function() {
+            updateCount(this, document.getElementById('edit_desc_count'), 160);
+        });
+
+        // Sidebar toggle functionality
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            
+            if (window.innerWidth < 992 && 
+                !sidebar.contains(event.target) && 
+                !sidebarToggle.contains(event.target)) {
+                sidebar.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>

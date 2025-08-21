@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administratora - Korzyści</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="admin-panel">
+        <!-- Top Navigation Bar -->
+        <nav class="navbar navbar-expand-lg admin-top-nav">
+            <div class="container-fluid">
+                <button class="btn admin-btn-outline d-lg-none" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <span class="navbar-brand text-white mb-0 h1">
+                    <i class="fas fa-cog me-2"></i>
+                    Panel Administratora
+                </span>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link text-white" href="{{ url_for('index') }}">
+                        <i class="fas fa-home me-1"></i>
+                        Strona główna
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid">
+            <div class="row flex-nowrap">
+                <!-- Sidebar -->
+                <nav class="col-lg-2 admin-sidebar p-3" id="sidebar">
+                    <div class="d-flex flex-column">
+                        <h4 class="text-primary mb-4 text-center d-none d-lg-block">
+                            <i class="fas fa-cog me-2"></i>
+                            Admin Panel
+                        </h4>
+                        <hr class="text-muted">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                                    <i class="fas fa-tachometer-alt"></i>
+                                    Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_menu') }}">
+                                    <i class="fas fa-bars"></i>
+                                    Menu
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_sections') }}">
+                                    <i class="fas fa-layer-group"></i>
+                                    Sekcje
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" href="{{ url_for('admin_benefits') }}">
+                                    <i class="fas fa-star"></i>
+                                    Korzyści
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_testimonials') }}">
+                                    <i class="fas fa-comments"></i>
+                                    Opinie
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_faq') }}">
+                                    <i class="fas fa-question-circle"></i>
+                                    FAQ
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_registrations') }}">
+                                    <i class="fas fa-user-plus"></i>
+                                    Rejestracje
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_social') }}">
+                                    <i class="fas fa-share-alt"></i>
+                                    Social Media
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_seo') }}">
+                                    <i class="fas fa-search"></i>
+                                    SEO/SEM
+                                </a>
+                            </li>
+                        </ul>
+                        <hr class="text-muted mt-auto">
+                        <div class="text-center">
+                            <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout w-100">
+                                <i class="fas fa-sign-out-alt me-2"></i>
+                                Wyloguj
+                            </a>
+                        </div>
+                    </div>
+                </nav>
+
+                <!-- Main Content -->
+                <main class="col-lg-10 admin-content m-0">
+                    <div class="admin-header">
+                        <h1><i class="fas fa-star me-2"></i>Zarządzanie Korzyściami</h1>
+                    </div>
+
+                    <!-- Add Benefit Button -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <p class="text-muted mb-0">Zarządzaj korzyściami wyświetlanymi na stronie głównej</p>
+                        <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addBenefitModal">
+                            <i class="fas fa-plus me-2"></i>
+                            Dodaj Korzyść
+                        </button>
+                    </div>
+
+                    <!-- Benefits Table -->
+                    <div class="admin-card">
+                        <div class="admin-card-body">
+                            {% if benefits %}
+                                <div class="table-responsive">
+                                    <table class="table admin-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Kolejność</th>
+                                                <th>Ikona</th>
+                                                <th>Tytuł</th>
+                                                <th>Opis</th>
+                                                <th>Obraz</th>
+                                                <th>Status</th>
+                                                <th>Akcje</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for benefit in benefits %}
+                                            <tr>
+                                                <td>
+                                                    <span class="admin-badge admin-badge-primary">{{ benefit.order }}</span>
+                                                </td>
+                                                <td>
+                                                    <i class="fas fa-{{ benefit.icon }} fa-2x text-primary"></i>
+                                                </td>
+                                                <td>
+                                                    <strong>{{ benefit.title }}</strong>
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">{{ benefit.description[:100] }}{% if benefit.description|length > 100 %}...{% endif %}</small>
+                                                </td>
+                                                <td>
+                                                    {% if benefit.image %}
+                                                        <img src="{{ url_for('static', filename=benefit.image.replace('static/', '')) }}" 
+                                                              alt="{{ benefit.title }}" 
+                                                              class="img-thumbnail" 
+                                                              style="width: 60px; height: 60px; object-fit: cover;">
+                                                    {% else %}
+                                                        <span class="text-muted">Brak</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if benefit.is_active %}
+                                                        <span class="admin-badge admin-badge-success">Aktywna</span>
+                                                    {% else %}
+                                                        <span class="admin-badge admin-badge-danger">Nieaktywna</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group" role="group">
+                                                        <button class="btn btn-sm admin-btn-outline" 
+                                                                onclick="editBenefit({{ benefit.id }}, '{{ benefit.title }}', '{{ benefit.description }}', '{{ benefit.icon }}', '{{ benefit.image }}', {{ benefit.order }}, {{ benefit.is_active|lower }})">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm admin-btn-danger" 
+                                                                onclick="deleteBenefit({{ benefit.id }})">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-star fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">Brak korzyści</h5>
+                                    <p class="text-muted">Dodaj pierwszą korzyść, aby rozpocząć</p>
+                                    <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addBenefitModal">
+                                        <i class="fas fa-plus me-2"></i>
+                                        Dodaj Korzyść
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Benefit Modal -->
+    <div class="modal fade admin-modal" id="addBenefitModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus me-2"></i>
+                        Dodaj Nową Korzyść
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addBenefitForm">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">Tytuł</label>
+                                    <input type="text" class="form-control" id="title" name="title" required placeholder="np. Zdrowie, Energia, Spokój">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="icon" class="form-label">Ikona (FontAwesome)</label>
+                                    <input type="text" class="form-control" id="icon" name="icon" required placeholder="np. heart, star, leaf">
+                                    <small class="text-muted">Nazwa ikony z FontAwesome (bez fa-)</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="order" class="form-label">Kolejność</label>
+                                    <input type="number" class="form-control" id="order" name="order" value="1" min="1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Opis</label>
+                                    <textarea class="form-control" id="description" name="description" rows="4" required placeholder="Opisz korzyść..."></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="image" class="form-label">Obraz (opcjonalnie)</label>
+                                    <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                                    <small class="text-muted">Zalecany format: JPG, PNG (max 2MB)</small>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                        <label class="form-check-label" for="is_active">
+                                            Aktywna
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">Zapisz Korzyść</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Benefit Modal -->
+    <div class="modal fade admin-modal" id="editBenefitModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit me-2"></i>
+                        Edytuj Korzyść
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editBenefitForm">
+                    <input type="hidden" id="edit_id" name="id">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_title" class="form-label">Tytuł</label>
+                                    <input type="text" class="form-control" id="edit_title" name="title" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_icon" class="form-label">Ikona (FontAwesome)</label>
+                                    <input type="text" class="form-control" id="edit_icon" name="icon" required>
+                                    <small class="text-muted">Nazwa ikony z FontAwesome (bez fa-)</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_order" class="form-label">Kolejność</label>
+                                    <input type="number" class="form-control" id="edit_order" name="order" min="1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_description" class="form-label">Opis</label>
+                                    <textarea class="form-control" id="edit_description" name="description" rows="4" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_image" class="form-label">Obraz (opcjonalnie)</label>
+                                    <input type="file" class="form-control" id="edit_image" name="image" accept="image/*">
+                                    <small class="text-muted">Zalecany format: JPG, PNG (max 2MB)</small>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
+                                        <label class="form-check-label" for="edit_is_active">
+                                            Aktywna
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">Zapisz Zmiany</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Add Benefit
+        function addBenefit() {
+            const form = document.getElementById('addBenefitForm');
+            const formData = new FormData(form);
+            
+            fetch('/admin/api/benefits', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Błąd: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas dodawania korzyści');
+            });
+        }
+
+        // Edit Benefit
+        function editBenefit(id, title, description, icon, image, order, isActive) {
+            document.getElementById('edit_id').value = id;
+            document.getElementById('edit_title').value = title;
+            document.getElementById('edit_description').value = description;
+            document.getElementById('edit_icon').value = icon;
+            document.getElementById('edit_order').value = order;
+            document.getElementById('edit_is_active').checked = isActive;
+            
+            new bootstrap.Modal(document.getElementById('editBenefitModal')).show();
+        }
+
+        // Save Benefit
+        function saveBenefit() {
+            const form = document.getElementById('editBenefitForm');
+            const formData = new FormData(form);
+            
+            fetch('/admin/api/benefits', {
+                method: 'PUT',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Błąd: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas zapisywania zmian');
+            });
+        }
+
+        // Delete Benefit
+        function deleteBenefit(id) {
+            if (confirm('Czy na pewno chcesz usunąć tę korzyść?')) {
+                const formData = new FormData();
+                formData.append('id', id);
+                
+                fetch('/admin/api/benefits', {
+                    method: 'DELETE',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Błąd: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Wystąpił błąd podczas usuwania korzyści');
+                });
+            }
+        }
+
+        // Form submissions
+        document.getElementById('addBenefitForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            addBenefit();
+        });
+
+        document.getElementById('editBenefitForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveBenefit();
+        });
+
+        // Sidebar toggle functionality
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            
+            if (window.innerWidth < 992 && 
+                !sidebar.contains(event.target) && 
+                !sidebarToggle.contains(event.target)) {
+                sidebar.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>
