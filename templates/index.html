@@ -47,16 +47,17 @@
     </nav>
 
     <!-- Hero Section -->
+    {% if hero_section %}
     <section id="hero" class="hero-section d-flex align-items-center min-vh-100">
         <div class="hero-bg-image" style="background-image: url('{{ url_for('static', filename='images/hero/hero-bg.jpg') }}');"></div>
         <div class="container position-relative">
             <div class="row align-items-center">
                 <div class="col-lg-6" data-aos="fade-right" data-aos-duration="1000">
                     <h1 class="display-4 fw-bold text-white mb-4">
-                        {{ hero_section.title if hero_section else '💡 Chcesz lepsze życie po 50-tce?' }}
+                        {{ hero_section.title }}
                     </h1>
                     <p class="lead text-white mb-4">
-                        {{ hero_section.subtitle if hero_section else 'Dołącz do klubu, który zmienia życie w 4 kluczowych obszarach!' }}
+                        {{ hero_section.subtitle }}
                     </p>
                     <div class="hero-cta">
                         <a href="#register" class="btn btn-primary btn-lg me-3 mb-3">
@@ -68,7 +69,7 @@
                             {% if schedule and schedule.custom_text %}
                                 {{ schedule.custom_text }}
                             {% else %}
-                                Następna sesja: {{ next_presentation.strftime('%d.%m.%Y o %H:%M') }}
+                            Następna sesja: {{ next_presentation.strftime('%d.%m.%Y o %H:%M') }}
                             {% endif %}
                         </p>
                         <p class="text-white-50 small">
@@ -102,16 +103,18 @@
         </div>
         <div class="hero-bg-animation"></div>
     </section>
+    {% endif %}
 
     <!-- Benefits Section -->
+    {% if benefits_section %}
     <section id="benefits" class="py-5 bg-light">
         <div class="container">
             <div class="row">
                 <div class="col-12 text-center mb-5" data-aos="fade-up">
                     <h2 class="display-5 fw-bold text-primary mb-3">
-                        {{ benefits_section.title if benefits_section else '🧭 Czego nauczysz się na prezentacji' }}
+                        {{ benefits_section.title }}
                     </h2>
-                    <p class="lead text-muted">{{ benefits_section.subtitle if benefits_section else 'Praktyczna wiedza, która zmieni Twoje życie' }}</p>
+                    <p class="lead text-muted">{{ benefits_section.subtitle }}</p>
                 </div>
             </div>
             <div class="row g-4">
@@ -144,17 +147,19 @@
             </div>
         </div>
     </section>
+    {% endif %}
 
     <!-- About Club Section -->
+    {% if about_section %}
     <section id="about" class="py-5">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6" data-aos="fade-right">
                     <h2 class="display-5 fw-bold text-primary mb-4">
-                        {{ about_section.title if about_section else '🌱 Klub zbudowany dla prawdziwej transformacji życia' }}
+                        {{ about_section.title }}
                     </h2>
                     <p class="lead mb-4">
-                        {{ about_section.content if about_section else '"Lepsze Życie" oznacza więcej niż tylko lepsze życie. To ruch — społeczność ludzi zaangażowanych we wspólny rozwój w czterech kluczowych obszarach życia:' }}
+                        {{ about_section.content }}
                     </p>
                     <div class="pillars-grid">
                         <div class="pillar-item">
@@ -202,6 +207,7 @@
             </div>
         </div>
     </section>
+    {% endif %}
 
     <!-- Testimonials Section -->
     <section id="testimonials" class="py-5 bg-light">
@@ -229,7 +235,7 @@
                                     {% for i in range(5 - testimonial.rating) %}
                                         <i class="far fa-star text-muted"></i>
                                     {% endfor %}
-                                </div>
+                        </div>
                             {% endif %}
                         </div>
                         <div class="testimonial-author">
@@ -246,7 +252,7 @@
                     </div>
                 </div>
                 {% endfor %}
-            </div>
+                        </div>
             {% else %}
             <div class="row">
                 <div class="col-12 text-center">

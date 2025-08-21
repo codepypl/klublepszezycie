@@ -48,10 +48,10 @@ with app.app_context():
 def index():
     # Get data from database
     menu_items = MenuItem.query.filter_by(is_active=True).order_by(MenuItem.order).all()
-    hero_section = Section.query.filter_by(name='hero').first()
-    benefits_section = Section.query.filter_by(name='benefits').first()
+    hero_section = Section.query.filter_by(name='hero', is_active=True).first()
+    benefits_section = Section.query.filter_by(name='benefits', is_active=True).first()
     benefits_items = BenefitItem.query.filter_by(is_active=True).order_by(BenefitItem.order).all()
-    about_section = Section.query.filter_by(name='about').first()
+    about_section = Section.query.filter_by(name='about', is_active=True).first()
     testimonials = Testimonial.query.filter_by(is_active=True).order_by(Testimonial.created_at.desc()).limit(3).all()
     social_links = SocialLink.query.filter_by(is_active=True).order_by(SocialLink.order).all()
     faqs = FAQ.query.filter_by(is_active=True).order_by(FAQ.order).all()
