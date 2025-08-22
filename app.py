@@ -24,6 +24,18 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'admin_login'
 
+# Custom Jinja2 filters
+@app.template_filter('from_json')
+def from_json_filter(value):
+    """Convert JSON string to Python object"""
+    if value is None:
+        return []
+    try:
+        import json
+        return json.loads(value)
+    except (json.JSONDecodeError, TypeError):
+        return []
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -314,6 +326,9 @@ def api_sections():
             'subtitle': section.subtitle,
             'content': section.content,
             'background_image': section.background_image,
+            'pillars_data': section.pillars_data,
+            'final_text': section.final_text,
+            'floating_cards_data': section.floating_cards_data,
             'order': section.order,
             'is_active': section.is_active
         } for section in sections])
@@ -333,6 +348,9 @@ def api_sections():
             subtitle=data.get('subtitle'),
             content=data.get('content'),
             background_image=data.get('background_image'),
+            pillars_data=data.get('pillars_data'),
+            final_text=data.get('final_text'),
+            floating_cards_data=data.get('floating_cards_data'),
             order=data.get('order', 0),
             is_active=data.get('is_active', True)
         )
@@ -351,13 +369,27 @@ def api_sections():
         
         section = Section.query.get(data['id'])
         if section:
-            section.name = data.get('name')
-            section.title = data.get('title')
-            section.subtitle = data.get('subtitle')
-            section.content = data.get('content')
-            section.background_image = data.get('background_image')
-            section.order = data.get('order', 0)
-            section.is_active = data.get('is_active', True)
+            # Only update fields that are provided
+            if 'name' in data:
+                section.name = data['name']
+            if 'title' in data:
+                section.title = data['title']
+            if 'subtitle' in data:
+                section.subtitle = data['subtitle']
+            if 'content' in data:
+                section.content = data['content']
+            if 'background_image' in data:
+                section.background_image = data['background_image']
+            if 'pillars_data' in data:
+                section.pillars_data = data['pillars_data']
+            if 'final_text' in data:
+                section.final_text = data['final_text']
+            if 'floating_cards_data' in data:
+                section.floating_cards_data = data['floating_cards_data']
+            if 'order' in data:
+                section.order = data['order']
+            if 'is_active' in data:
+                section.is_active = data['is_active']
             db.session.commit()
             return jsonify({'success': True})
         return jsonify({'success': False, 'message': 'Section not found'}), 404
@@ -370,6 +402,32 @@ def api_sections():
             db.session.commit()
             return jsonify({'success': True})
         return jsonify({'success': False, 'message': 'Section not found'}), 404
+
+@app.route('/admin/api/sections/<int:section_id>', methods=['GET'])
+@login_required
+def api_section_by_id(section_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    section = Section.query.get(section_id)
+    if section:
+        return jsonify({
+            'success': True,
+            'section': {
+                'id': section.id,
+                'name': section.name,
+                'title': section.title,
+                'subtitle': section.subtitle,
+                'content': section.content,
+                'background_image': section.background_image,
+                'pillars_data': section.pillars_data,
+                'final_text': section.final_text,
+                'floating_cards_data': section.floating_cards_data,
+                'order': section.order,
+                'is_active': section.is_active
+            }
+        })
+    return jsonify({'success': False, 'error': 'Section not found'}), 404
 
 @app.route('/admin/api/sections/bulk-update', methods=['POST'])
 @login_required
@@ -388,6 +446,9 @@ def api_sections_bulk_update():
                 section.title = section_data.get('title', '')
                 section.subtitle = section_data.get('subtitle', '')
                 section.content = section_data.get('content', '')
+                section.pillars_data = section_data.get('pillars_data')
+                section.final_text = section_data.get('final_text')
+                section.floating_cards_data = section_data.get('floating_cards_data')
                 section.order = section_data.get('order', 0)
                 section.is_active = section_data.get('is_active', True)
         
@@ -426,7 +487,7 @@ def api_benefits():
         
         new_benefit = BenefitItem(
             title=data['title'],
-            description=data['description'],
+            description=data.get('description', ''),
             icon=data.get('icon', ''),
             image=data.get('image', ''),
             order=data.get('order', 0),
@@ -448,7 +509,7 @@ def api_benefits():
         benefit = BenefitItem.query.get(data['id'])
         if benefit:
             benefit.title = data['title']
-            benefit.description = data['description']
+            benefit.description = data.get('description', '')
             benefit.icon = data.get('icon', '')
             benefit.image = data.get('image', '')
             benefit.order = data.get('order', 0)

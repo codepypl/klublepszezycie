@@ -167,9 +167,19 @@
                                                 <td>
                                                     <div class="btn-group" role="group">
                                                         <button class="btn btn-sm admin-btn-outline" 
-                                                                onclick="editSection({{ section.id }}, '{{ section.name }}', '{{ section.title }}', '{{ section.subtitle or '' }}', '{{ section.content or '' }}', {{ section.order }}, {{ section.is_active|lower }})">
+                                                                onclick="editSection({{ section.id }}, '{{ section.name }}', '{{ section.title }}', '{{ section.subtitle or '' }}', '{{ section.content or '' }}', '{{ section.final_text or '' }}', {{ section.order }}, {{ section.is_active|lower }})">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
+                                                        {% if section.name == 'about' %}
+                                                                                <button class="btn btn-sm admin-btn-info" 
+                                onclick="editPillars({{ section.id }})">
+                            <i class="fas fa-th-large"></i>
+                        </button>
+                        <button class="btn btn-sm admin-btn-warning" 
+                                onclick="editFloatingCards({{ section.id }})">
+                            <i class="fas fa-layer-group"></i>
+                        </button>
+                                                        {% endif %}
                                                         <button class="btn btn-sm admin-btn-danger" 
                                                                 onclick="deleteSection({{ section.id }})">
                                                             <i class="fas fa-trash"></i>
@@ -237,6 +247,10 @@
                                     <textarea class="form-control" id="content" name="content" rows="6" placeholder="Opisz sekcję..."></textarea>
                                 </div>
                                 <div class="mb-3">
+                                    <label for="final_text" class="form-label">Tekst końcowy (opcjonalnie)</label>
+                                    <textarea class="form-control" id="final_text" name="final_text" rows="3" placeholder="Tekst na końcu sekcji..."></textarea>
+                                </div>
+                                <div class="mb-3">
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
                                         <label class="form-check-label" for="is_active">
@@ -295,6 +309,10 @@
                                     <textarea class="form-control" id="edit_content" name="content" rows="6"></textarea>
                                 </div>
                                 <div class="mb-3">
+                                    <label for="edit_final_text" class="form-label">Tekst końcowy (opcjonalnie)</label>
+                                    <textarea class="form-control" id="edit_final_text" name="final_text" rows="3"></textarea>
+                                </div>
+                                <div class="mb-3">
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
                                         <label class="form-check-label" for="edit_is_active">
@@ -340,12 +358,13 @@
         }
 
         // Edit Section
-        function editSection(id, name, title, subtitle, content, order, isActive) {
+        function editSection(id, name, title, subtitle, content, finalText, order, isActive) {
             document.getElementById('edit_id').value = id;
             document.getElementById('edit_name').value = name;
             document.getElementById('edit_title').value = title;
             document.getElementById('edit_subtitle').value = subtitle || '';
             document.getElementById('edit_content').value = content || '';
+            document.getElementById('edit_final_text').value = finalText || '';
             document.getElementById('edit_order').value = order;
             document.getElementById('edit_is_active').checked = isActive;
             
@@ -428,6 +447,316 @@
                 sidebar.classList.remove('show');
             }
         });
+
+        // Edit Pillars
+        function editPillars(sectionId) {
+            // Set section ID in form
+            document.getElementById('edit_pillars_section_id').value = sectionId;
+            
+            // Fetch current pillars data
+            fetch(`/admin/api/sections/${sectionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const section = data.section;
+                        if (section.pillars_data) {
+                            try {
+                                const pillars = JSON.parse(section.pillars_data);
+                                populatePillarsForm(pillars);
+                                new bootstrap.Modal(document.getElementById('editPillarsModal')).show();
+                            } catch (e) {
+                                console.error('Error parsing pillars data:', e);
+                                alert('Błąd podczas ładowania danych Pillars');
+                            }
+                        } else {
+                            alert('Brak danych Pillars dla tej sekcji');
+                        }
+                    } else {
+                        alert('Błąd: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Wystąpił błąd podczas ładowania danych');
+                });
+        }
+
+        // Populate pillars form
+        function populatePillarsForm(pillars) {
+            const container = document.getElementById('pillarsContainer');
+            container.innerHTML = '';
+            
+            pillars.forEach((pillar, index) => {
+                const pillarHtml = `
+                    <div class="pillar-item-edit mb-3 p-3 border rounded">
+                        <h6>Pilar ${index + 1}</h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label class="form-label">Ikona</label>
+                                <input type="text" class="form-control" name="pillar_icon_${index}" value="${pillar.icon}" placeholder="fas fa-coins">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Tytuł</label>
+                                <input type="text" class="form-control" name="pillar_title_${index}" value="${pillar.title}" placeholder="Finanse">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Kolor</label>
+                                <select class="form-control" name="pillar_color_${index}">
+                                    <option value="text-primary" ${pillar.color === 'text-primary' ? 'selected' : ''}>Primary</option>
+                                    <option value="text-secondary" ${pillar.color === 'text-secondary' ? 'selected' : ''}>Secondary</option>
+                                    <option value="text-success" ${pillar.color === 'text-success' ? 'selected' : ''}>Success</option>
+                                    <option value="text-danger" ${pillar.color === 'text-danger' ? 'selected' : ''}>Danger</option>
+                                    <option value="text-warning" ${pillar.color === 'text-warning' ? 'selected' : ''}>Warning</option>
+                                    <option value="text-info" ${pillar.color === 'text-info' ? 'selected' : ''}>Info</option>
+                                    <option value="text-light" ${pillar.color === 'text-light' ? 'selected' : ''}>Light</option>
+                                    <option value="text-dark" ${pillar.color === 'text-dark' ? 'selected' : ''}>Dark</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Opis</label>
+                                <textarea class="form-control" name="pillar_description_${index}" rows="2" placeholder="Opis pilara...">${pillar.description}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += pillarHtml;
+            });
+        }
+
+        // Save Pillars
+        function savePillars() {
+            const form = document.getElementById('editPillarsForm');
+            const formData = new FormData(form);
+            
+            // Collect pillars data
+            const pillars = [];
+            for (let i = 0; i < 4; i++) {
+                const icon = formData.get(`pillar_icon_${i}`);
+                const title = formData.get(`pillar_title_${i}`);
+                const color = formData.get(`pillar_color_${i}`);
+                const description = formData.get(`pillar_description_${i}`);
+                
+                if (icon && title && description) {
+                    pillars.push({
+                        icon: icon,
+                        title: title,
+                        color: color,
+                        description: description
+                    });
+                }
+            }
+            
+            // Get section ID from hidden input
+            const sectionId = document.getElementById('edit_pillars_section_id').value;
+            
+            // Update section with new pillars data
+            const updateData = new FormData();
+            updateData.append('id', sectionId);
+            updateData.append('pillars_data', JSON.stringify(pillars));
+            
+            fetch('/admin/api/sections', {
+                method: 'PUT',
+                body: updateData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Błąd: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas zapisywania Pillars');
+            });
+        }
+
+        // Edit Floating Cards
+        function editFloatingCards(sectionId) {
+            // Set section ID in form
+            document.getElementById('edit_floating_cards_section_id').value = sectionId;
+            
+            // Fetch current floating cards data
+            fetch(`/admin/api/sections/${sectionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const section = data.section;
+                        if (section.floating_cards_data) {
+                            try {
+                                const floatingCards = JSON.parse(section.floating_cards_data);
+                                populateFloatingCardsForm(floatingCards);
+                                new bootstrap.Modal(document.getElementById('editFloatingCardsModal')).show();
+                            } catch (e) {
+                                console.error('Error parsing floating cards data:', e);
+                                alert('Błąd podczas ładowania danych Floating Cards');
+                            }
+                        } else {
+                            alert('Brak danych Floating Cards dla tej sekcji');
+                        }
+                    } else {
+                        alert('Błąd: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Wystąpił błąd podczas ładowania danych');
+                });
+        }
+
+        // Populate floating cards form
+        function populateFloatingCardsForm(floatingCards) {
+            const container = document.getElementById('floatingCardsContainer');
+            container.innerHTML = '';
+            
+            floatingCards.forEach((card, index) => {
+                const cardHtml = `
+                    <div class="floating-card-item-edit mb-3 p-3 border rounded">
+                        <h6>Floating Card ${index + 1}</h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label class="form-label">Ikona</label>
+                                <input type="text" class="form-control" name="card_icon_${index}" value="${card.icon}" placeholder="fas fa-lightbulb">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Tytuł</label>
+                                <input type="text" class="form-control" name="card_title_${index}" value="${card.title}" placeholder="Inspiracja">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Kolor</label>
+                                <select class="form-control" name="card_color_${index}">
+                                    <option value="text-primary" ${card.color === 'text-primary' ? 'selected' : ''}>Primary</option>
+                                    <option value="text-secondary" ${card.color === 'text-secondary' ? 'selected' : ''}>Secondary</option>
+                                    <option value="text-success" ${card.color === 'text-success' ? 'selected' : ''}>Success</option>
+                                    <option value="text-danger" ${card.color === 'text-danger' ? 'selected' : ''}>Danger</option>
+                                    <option value="text-warning" ${card.color === 'text-warning' ? 'selected' : ''}>Warning</option>
+                                    <option value="text-info" ${card.color === 'text-info' ? 'selected' : ''}>Info</option>
+                                    <option value="text-light" ${card.color === 'text-light' ? 'selected' : ''}>Light</option>
+                                    <option value="text-dark" ${card.color === 'text-dark' ? 'selected' : ''}>Dark</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Opóźnienie (ms)</label>
+                                <input type="number" class="form-control" name="card_delay_${index}" value="${card.delay}" min="0" max="2000" step="100">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHtml;
+            });
+        }
+
+        // Save Floating Cards
+        function saveFloatingCards() {
+            const form = document.getElementById('editFloatingCardsForm');
+            const formData = new FormData(form);
+            
+            // Collect floating cards data
+            const floatingCards = [];
+            for (let i = 0; i < 3; i++) {
+                const icon = formData.get(`card_icon_${i}`);
+                const title = formData.get(`card_title_${i}`);
+                const color = formData.get(`card_color_${i}`);
+                const delay = parseInt(formData.get(`card_delay_${i}`)) || 0;
+                
+                if (icon && title) {
+                    floatingCards.push({
+                        icon: icon,
+                        title: title,
+                        color: color,
+                        delay: delay
+                    });
+                }
+            }
+            
+            // Get section ID from hidden input
+            const sectionId = document.getElementById('edit_floating_cards_section_id').value;
+            
+            // Update section with new floating cards data
+            const updateData = new FormData();
+            updateData.append('id', sectionId);
+            updateData.append('floating_cards_data', JSON.stringify(floatingCards));
+            
+            fetch('/admin/api/sections', {
+                method: 'PUT',
+                body: updateData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Błąd: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas zapisywania Floating Cards');
+            });
+        }
     </script>
+
+    <!-- Edit Pillars Modal -->
+    <div class="modal fade admin-modal" id="editPillarsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-th-large me-2"></i>
+                        Edytuj Pillars (Filarów)
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editPillarsForm">
+                    <input type="hidden" id="edit_pillars_section_id" name="section_id">
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Edytuj ikony, tytuły, kolory i opisy dla każdego z 4 filarów sekcji About.
+                        </div>
+                        <div id="pillarsContainer">
+                            <!-- Pillars will be populated here -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="button" class="btn admin-btn" onclick="savePillars()">Zapisz Pillars</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Floating Cards Modal -->
+    <div class="modal fade admin-modal" id="editFloatingCardsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-layer-group me-2"></i>
+                        Edytuj Floating Cards
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editFloatingCardsForm">
+                    <input type="hidden" id="edit_floating_cards_section_id" name="section_id">
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Edytuj ikony, tytuły, kolory i opóźnienia dla 3 floating cards w sekcji About.
+                        </div>
+                        <div id="floatingCardsContainer">
+                            <!-- Floating cards will be populated here -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="button" class="btn admin-btn" onclick="saveFloatingCards()">Zapisz Floating Cards</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

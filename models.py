@@ -35,6 +35,10 @@ class Section(db.Model):
     subtitle = db.Column(db.Text)
     content = db.Column(db.Text)
     background_image = db.Column(db.String(200))
+    # Additional fields for About section
+    pillars_data = db.Column(db.Text)  # JSON string for pillar items
+    final_text = db.Column(db.Text)    # Final text in About section
+    floating_cards_data = db.Column(db.Text)  # JSON string for floating cards
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

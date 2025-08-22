@@ -165,47 +165,36 @@
                     <p class="lead mb-4">
                         {{ about_section.content }}
                     </p>
+                    {% if about_section.pillars_data %}
                     <div class="pillars-grid">
+                        {% set pillars = about_section.pillars_data|from_json %}
+                        {% for pillar in pillars %}
                         <div class="pillar-item">
-                            <i class="fas fa-coins fa-2x text-warning"></i>
-                            <h5>Finanse</h5>
-                            <p>Ucz się, rozwijaj i twórz bezpieczeństwo</p>
+                            <i class="{{ pillar.icon }} fa-2x {{ pillar.color }}"></i>
+                            <h5>{{ pillar.title }}</h5>
+                            <p>{{ pillar.description }}</p>
                         </div>
-                        <div class="pillar-item">
-                            <i class="fas fa-robot fa-2x text-info"></i>
-                            <h5>Narzędzia AI</h5>
-                            <p>Wykorzystaj przyszłość do rozwiązywania codziennych problemów</p>
-                        </div>
-                        <div class="pillar-item">
-                            <i class="fas fa-hands-helping fa-2x text-primary"></i>
-                            <h5>Relacje</h5>
-                            <p>Buduj prawdziwe, wspierające połączenia</p>
-                        </div>
-                        <div class="pillar-item">
-                            <i class="fas fa-dumbbell fa-2x text-primary"></i>
-                            <h5>Zdrowie</h5>
-                            <p>Przejmij kontrolę nad swoim samopoczuciem, krok po kroku</p>
-                        </div>
+                        {% endfor %}
                     </div>
+                    {% endif %}
+                    {% if about_section.final_text %}
                     <p class="mt-4">
-                        <strong>Niezależnie od tego, czy zaczynasz od nowa, czy chcesz pójść dalej — nie jesteś sam. Ten klub został zbudowany dla ludzi takich jak Ty.</strong>
+                        <strong>{{ about_section.final_text }}</strong>
                     </p>
+                    {% endif %}
                 </div>
                 <div class="col-lg-6" data-aos="fade-left" data-aos-delay="200">
                     <div class="about-visual">
                         <img src="{{ url_for('static', filename='images/about/community.jpg') }}" alt="Społeczność" class="img-fluid rounded shadow" style="width: 100%; height: 400px; object-fit: cover;">
-                        <div class="floating-card" data-aos="zoom-in" data-aos-delay="300">
-                            <i class="fas fa-lightbulb fa-4x text-warning"></i>
-                            <h4>Inspiracja</h4>
-                        </div>
-                        <div class="floating-card" data-aos="zoom-in" data-aos-delay="500">
-                            <i class="fas fa-users fa-4x text-primary"></i>
-                            <h4>Wspólnota</h4>
-                        </div>
-                        <div class="floating-card" data-aos="zoom-in" data-aos-delay="700">
-                            <i class="fas fa-rocket fa-4x text-primary"></i>
-                            <h4>Wzrost</h4>
-                        </div>
+                        {% if about_section.floating_cards_data %}
+                            {% set floating_cards = about_section.floating_cards_data|from_json %}
+                            {% for card in floating_cards %}
+                            <div class="floating-card" data-aos="zoom-in" data-aos-delay="{{ card.delay }}">
+                                <i class="{{ card.icon }} fa-4x {{ card.color }}"></i>
+                                <h4>{{ card.title }}</h4>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -266,7 +255,6 @@
                     <div class="py-5">
                         <i class="fas fa-comments fa-3x text-muted mb-3"></i>
                         <h5 class="text-muted">Brak opinii do wyświetlenia</h5>
-                        <p class="text-muted">Opinie będą widoczne po dodaniu ich w panelu administracyjnym</p>
                     </div>
                 </div>
             </div>
@@ -306,7 +294,7 @@
                         <form method="POST" action="{{ url_for('register') }}" class="registration-form">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <input type="text" class="form-control form-control-lg" name="name" placeholder="Twoje imię i nazwisko" required>
+                                    <input type="text" class="form-control form-control-lg" name="name" placeholder="Twoje imię" required>
                                 </div>
                                 <div class="col-md-6">
                                     <input type="email" class="form-control form-control-lg" name="email" placeholder="Twój email" required>
