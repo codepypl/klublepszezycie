@@ -14,7 +14,7 @@ load_dotenv()
 from models import db, User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, Registration, FAQ, SEOSettings, EventSchedule, Page, EmailTemplate, EmailSubscription, EmailLog
 from config import config
 from email_service import email_service
-from calendar_service import calendar_service
+
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -946,10 +946,7 @@ def api_event_schedule():
             'location': event.location,
             'is_active': event.is_active,
             'is_published': event.is_published,
-            'calendar_integration': event.calendar_integration,
-            'google_calendar_id': event.google_calendar_id,
-            'outlook_event_id': event.outlook_event_id,
-            'ical_uid': event.ical_uid,
+
             'created_at': event.created_at.isoformat(),
             'updated_at': event.updated_at.isoformat()
         } for event in events])
@@ -972,7 +969,7 @@ def api_event_schedule():
             location=data.get('location', ''),
             is_active=data['is_active'],
             is_published=data['is_published'],
-            calendar_integration=data.get('calendar_integration', True)
+    
         )
         db.session.add(new_event)
         db.session.commit()
@@ -996,7 +993,7 @@ def api_event_schedule():
             event.location = data.get('location', '')
             event.is_active = data['is_active']
             event.is_published = data['is_published']
-            event.calendar_integration = data.get('calendar_integration', True)
+    
             db.session.commit()
             return jsonify({'success': True})
         return jsonify({'success': False, 'error': 'Event not found'}), 404
@@ -1031,10 +1028,7 @@ def api_event_by_id(event_id):
                 'location': event.location,
                 'is_active': event.is_active,
                 'is_published': event.is_published,
-                'calendar_integration': event.calendar_integration,
-                'google_calendar_id': event.google_calendar_id,
-                'outlook_event_id': event.outlook_event_id,
-                'ical_uid': event.ical_uid,
+                
                 'created_at': event.created_at.isoformat(),
                 'updated_at': event.updated_at.isoformat()
             }
@@ -1398,134 +1392,7 @@ def delete_account(token):
 with app.app_context():
     email_service.init_app(app)
 
-# Calendar integration endpoints
-@app.route('/api/events/<int:event_id>/calendar/<calendar_type>')
-def api_event_calendar(event_id, calendar_type):
-    """Get calendar file or link for specific event"""
-    event = EventSchedule.query.get(event_id)
-    if not event or not event.is_active or not event.is_published:
-        return jsonify({'error': 'Event not found or not available'}), 404
-    
-    event_data = {
-        'id': event.id,
-        'title': event.title,
-        'event_date': event.event_date,
-        'end_date': event.end_date,
-        'description': event.description,
-        'location': event.location,
-        'meeting_link': event.meeting_link
-    }
-    
-    if calendar_type == 'ical':
-        success, ical_content, error = calendar_service.generate_ical_file(event_data)
-        if success:
-            response = app.response_class(ical_content, mimetype='text/calendar')
-            response.headers['Content-Disposition'] = f'attachment; filename="{event.title.replace(" ", "_")}.ics"'
-            return response
-        else:
-            return jsonify({'error': error}), 500
-    
-    elif calendar_type == 'google':
-        calendar_links = calendar_service.create_calendar_links(event_data)
-        if 'google' in calendar_links:
-            return redirect(calendar_links['google'])
-        else:
-            return jsonify({'error': 'Google Calendar link not available'}), 500
-    
-    elif calendar_type == 'outlook':
-        calendar_links = calendar_service.create_calendar_links(event_data)
-        if 'outlook' in calendar_links:
-            return redirect(calendar_links['outlook'])
-        else:
-            return jsonify({'error': 'Outlook link not available'}), 500
-    
-    elif calendar_type == 'yahoo':
-        calendar_links = calendar_service.create_calendar_links(event_data)
-        if 'yahoo' in calendar_links:
-            return redirect(calendar_links['yahoo'])
-        else:
-            return jsonify({'error': 'Yahoo Calendar link not available'}), 500
-    
-    else:
-        return jsonify({'error': 'Unsupported calendar type'}), 400
 
-@app.route('/api/events/<int:event_id>/calendar-links')
-def api_event_calendar_links(event_id):
-    """Get all calendar links for specific event"""
-    event = EventSchedule.query.get(event_id)
-    if not event or not event.is_active or not event.is_published:
-        return jsonify({'error': 'Event not found or not available'}), 404
-    
-    event_data = {
-        'id': event.id,
-        'title': event.title,
-        'event_date': event.event_date,
-        'end_date': event.end_date,
-        'description': event.description,
-        'location': event.location,
-        'meeting_link': event.meeting_link
-    }
-    
-    calendar_links = calendar_service.create_calendar_links(event_data)
-    return jsonify({
-        'success': True,
-        'calendar_links': calendar_links,
-        'event': {
-            'id': event.id,
-            'title': event.title,
-            'event_date': event.event_date.isoformat(),
-            'end_date': event.end_date.isoformat() if event.end_date else None,
-            'description': event.description,
-            'location': event.location,
-            'meeting_link': event.meeting_link
-        }
-    })
-
-@app.route('/admin/api/events/<int:event_id>/sync-calendars', methods=['POST'])
-@login_required
-def api_sync_event_calendars(event_id):
-    """Sync event to external calendars (admin only)"""
-    if not current_user.is_admin:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    event = EventSchedule.query.get(event_id)
-    if not event:
-        return jsonify({'error': 'Event not found'}), 404
-    
-    event_data = {
-        'id': event.id,
-        'title': event.title,
-        'event_date': event.event_date,
-        'end_date': event.end_date,
-        'description': event.description,
-        'location': event.location,
-        'meeting_link': event.meeting_link
-    }
-    
-    try:
-        # Synchronizuj z kalendarzami
-        sync_results = calendar_service.sync_event_to_calendars(event_data)
-        
-        # Zaktualizuj ID wydarzeń w bazie danych
-        if 'google' in sync_results and sync_results['google'][0]:
-            event.google_calendar_id = sync_results['google'][1]
-        
-        if 'outlook' in sync_results and sync_results['outlook'][0]:
-            event.outlook_event_id = sync_results['outlook'][1]
-        
-        if 'ical' in sync_results and sync_results['ical'][0]:
-            event.ical_uid = f"event_{event.id}_{int(datetime.now().timestamp())}@lepszezycie.pl"
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'sync_results': sync_results,
-            'message': 'Wydarzenie zostało zsynchronizowane z kalendarzami'
-        })
-        
-    except Exception as e:
-        return jsonify({'error': f'Błąd synchronizacji: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -211,45 +211,14 @@ class EventSchedule(db.Model):
     location = db.Column(db.String(200))  # Lokalizacja wydarzenia
     is_active = db.Column(db.Boolean, default=True)
     is_published = db.Column(db.Boolean, default=False)  # Czy opublikowane na stronie
-    calendar_integration = db.Column(db.Boolean, default=True)  # Czy włączyć integrację z kalendarzami
-    google_calendar_id = db.Column(db.String(500))  # ID wydarzenia w Google Calendar
-    outlook_event_id = db.Column(db.String(500))  # ID wydarzenia w Outlook
-    ical_uid = db.Column(db.String(200))  # Unikalny ID dla iCal
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def __repr__(self):
         return f'<EventSchedule {self.title} - {self.event_type} - {self.event_date}>'
     
-    def generate_ical_content(self):
-        """Generuje zawartość iCal dla wydarzenia"""
-        from datetime import datetime
-        
-        # Generuj unikalny UID jeśli nie istnieje
-        if not self.ical_uid:
-            self.ical_uid = f"event_{self.id}_{int(datetime.now().timestamp())}@lepszezycie.pl"
-        
-        # Ustaw datę zakończenia jeśli nie istnieje (domyślnie +1 godzina)
-        end_time = self.end_date or (self.event_date + timedelta(hours=1))
-        
-        ical_content = f"""BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Klub Lepsze Życie//Wydarzenie//PL
-BEGIN:VEVENT
-UID:{self.ical_uid}
-DTSTAMP:{datetime.now().strftime('%Y%m%dT%H%M%SZ')}
-DTSTART:{self.event_date.strftime('%Y%m%dT%H%M%SZ')}
-DTEND:{end_time.strftime('%Y%m%dT%H%M%SZ')}
-SUMMARY:{self.title}
-DESCRIPTION:{self.description or 'Wydarzenie klubu Lepsze Życie'}
-LOCATION:{self.location or 'Online'}
-URL:{self.meeting_link or ''}
-STATUS:CONFIRMED
-SEQUENCE:0
-END:VEVENT
-END:VCALENDAR"""
-        
-        return ical_content
+
 
 
 class PresentationSchedule(db.Model):

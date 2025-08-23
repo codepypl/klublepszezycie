@@ -34,20 +34,7 @@ class Config:
     EMAIL_BATCH_SIZE = int(os.getenv('EMAIL_BATCH_SIZE', 50))  # Max emails per batch
     EMAIL_DELAY = int(os.getenv('EMAIL_DELAY', 1))  # Delay between emails in seconds
 
-    # Calendar Integration Settings
-    GOOGLE_CALENDAR_CLIENT_ID = os.getenv('GOOGLE_CALENDAR_CLIENT_ID', '')
-    GOOGLE_CALENDAR_CLIENT_SECRET = os.getenv('GOOGLE_CALENDAR_CLIENT_SECRET', '')
-    GOOGLE_CALENDAR_API_KEY = os.getenv('GOOGLE_CALENDAR_API_KEY', '')
-    GOOGLE_CALENDAR_CALENDAR_ID = os.getenv('GOOGLE_CALENDAR_CALENDAR_ID', 'primary')
 
-    OUTLOOK_CLIENT_ID = os.getenv('OUTLOOK_CLIENT_ID', '')
-    OUTLOOK_CLIENT_SECRET = os.getenv('OUTLOOK_CLIENT_SECRET', '')
-    OUTLOOK_TENANT_ID = os.getenv('OUTLOOK_TENANT_ID', '')
-
-    # Apple Calendar (iCal) Settings
-    ICAL_TIMEZONE = os.getenv('ICAL_TIMEZONE', 'Europe/Warsaw')
-    ICAL_ORGANIZER = os.getenv('ICAL_ORGANIZER', 'noreply@lepszezycie.pl')
-    ICAL_ORGANIZER_NAME = os.getenv('ICAL_ORGANIZER_NAME', 'Klub Lepsze Życie')
 
 class DevelopmentConfig(Config):
     DEBUG = True
