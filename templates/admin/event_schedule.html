@@ -89,12 +89,20 @@
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="event_date" class="form-label">Data i godzina rozpoczęcia *</label>
-                                    <input type="datetime-local" class="form-control" id="event_date" name="event_date" required>
+                                    <label for="event_date" class="form-label">Data rozpoczęcia *</label>
+                                    <input type="date" class="form-control" id="event_date" name="event_date" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="end_date" class="form-label">Data i godzina zakończenia</label>
-                                    <input type="datetime-local" class="form-control" id="end_date" name="end_date">
+                                    <label for="event_time" class="form-label">Godzina rozpoczęcia *</label>
+                                    <input type="time" class="form-control" id="event_time" name="event_time" required step="900">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="end_date" class="form-label">Data zakończenia</label>
+                                    <input type="date" class="form-control" id="end_date" name="end_date">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="end_time" class="form-label">Godzina zakończenia</label>
+                                    <input type="time" class="form-control" id="end_time" name="end_time" step="900">
                                     <small class="text-muted">Pozostaw puste, aby automatycznie ustawić +1 godzinę</small>
                                 </div>
                                 <div class="mb-3">
@@ -127,14 +135,7 @@
                                         </label>
                                     </div>
                                 </div>
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="calendar_integration" name="calendar_integration" checked>
-                                        <label class="form-check-label" for="calendar_integration">
-                                            Włącz integrację z kalendarzami
-                                        </label>
-                                    </div>
-                                </div>
+
                             </div>
                         </div>
                     </div>
@@ -177,12 +178,20 @@
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="edit_event_date" class="form-label">Data i godzina rozpoczęcia *</label>
-                                    <input type="datetime-local" class="form-control" id="edit_event_date" name="event_date" required>
+                                    <label for="edit_event_date" class="form-label">Data rozpoczęcia *</label>
+                                    <input type="date" class="form-control" id="edit_event_date" name="event_date" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="edit_end_date" class="form-label">Data i godzina zakończenia</label>
-                                    <input type="datetime-local" class="form-control" id="edit_end_date" name="end_date">
+                                    <label for="edit_event_time" class="form-label">Godzina rozpoczęcia *</label>
+                                    <input type="time" class="form-control" id="edit_event_time" name="event_time" required step="900">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_end_date" class="form-label">Data zakończenia</label>
+                                    <input type="date" class="form-control" id="edit_end_date" name="end_date">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_end_time" class="form-label">Godzina zakończenia</label>
+                                    <input type="time" class="form-control" id="edit_end_time" name="end_time" step="900">
                                     <small class="text-muted">Pozostaw puste, aby automatycznie ustawić +1 godzinę</small>
                                 </div>
                                 <div class="mb-3">
@@ -341,12 +350,20 @@
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="edit_event_date" class="form-label">Data i godzina rozpoczęcia *</label>
-                                    <input type="datetime-local" class="form-control" id="edit_event_date" name="event_date" required>
+                                    <label for="edit_event_date" class="form-label">Data rozpoczęcia *</label>
+                                    <input type="date" class="form-control" id="edit_event_date" name="event_date" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="edit_end_date" class="form-label">Data i godzina zakończenia</label>
-                                    <input type="datetime-local" class="form-control" id="edit_end_date" name="end_date">
+                                    <label for="edit_event_time" class="form-label">Godzina rozpoczęcia *</label>
+                                    <input type="time" class="form-control" id="edit_event_time" name="event_time" required step="900">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_end_date" class="form-label">Data zakończenia</label>
+                                    <input type="date" class="form-control" id="edit_end_date" name="end_date">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_end_time" class="form-label">Godzina zakończenia</label>
+                                    <input type="time" class="form-control" id="edit_end_time" name="end_time" step="900">
                                     <small class="text-muted">Pozostaw puste, aby automatycznie ustawić +1 godzinę</small>
                                 </div>
                                 <div class="mb-3">
@@ -567,13 +584,25 @@
                         document.getElementById('edit_event_id').value = event.id;
                         document.getElementById('edit_title').value = event.title;
                         document.getElementById('edit_event_type').value = event.event_type;
-                        document.getElementById('edit_event_date').value = event.event_date.replace('Z', '').slice(0, 16);
-                        document.getElementById('edit_end_date').value = event.end_date ? event.end_date.replace('Z', '').slice(0, 16) : '';
+                        // Ustaw datę i czas rozpoczęcia
+                        const startDate = new Date(event.event_date);
+                        document.getElementById('edit_event_date').value = startDate.toISOString().split('T')[0];
+                        document.getElementById('edit_event_time').value = startDate.toTimeString().slice(0, 5);
+                        
+                        // Ustaw datę i czas zakończenia
+                        if (event.end_date) {
+                            const endDate = new Date(event.end_date);
+                            document.getElementById('edit_end_date').value = endDate.toISOString().split('T')[0];
+                            document.getElementById('edit_end_time').value = endDate.toTimeString().slice(0, 5);
+                        } else {
+                            document.getElementById('edit_end_date').value = '';
+                            document.getElementById('edit_end_time').value = '';
+                        }
                         document.getElementById('edit_location').value = event.location || '';
                         document.getElementById('edit_meeting_link').value = event.meeting_link || '';
                         document.getElementById('edit_is_active').checked = event.is_active;
                         document.getElementById('edit_is_published').checked = event.is_published;
-                        document.getElementById('edit_calendar_integration').checked = event.calendar_integration;
+
                         tinymce.get('edit_description').setContent(event.description || '');
                         new bootstrap.Modal(document.getElementById('editEventModal')).show();
                     } else {
@@ -730,10 +759,23 @@
         document.getElementById('addEventForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
+            
+            // Łącz datę i czas w jeden string
+            const eventDate = document.getElementById('event_date').value;
+            const eventTime = document.getElementById('event_time').value;
+            if (eventDate && eventTime) {
+                formData.set('event_date', `${eventDate}T${eventTime}`);
+            }
+            
+            const endDate = document.getElementById('end_date').value;
+            const endTime = document.getElementById('end_time').value;
+            if (endDate && endTime) {
+                formData.set('end_date', `${endDate}T${endTime}`);
+            }
+            
             formData.set('description', tinymce.get('description').getContent());
-            formData.set('is_active', document.getElementById('is_active').checked);
-            formData.set('is_published', document.getElementById('is_published').checked);
-            formData.set('calendar_integration', document.getElementById('calendar_integration').checked);
+            formData.append('is_active', document.getElementById('is_active').checked.toString());
+            formData.append('is_published', document.getElementById('is_published').checked.toString());
             fetch('/admin/api/event-schedule', {
                 method: 'POST',
                 body: formData
@@ -757,10 +799,23 @@
         document.getElementById('editEventForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
+            
+            // Łącz datę i czas w jeden string
+            const eventDate = document.getElementById('edit_event_date').value;
+            const eventTime = document.getElementById('edit_event_time').value;
+            if (eventDate && eventTime) {
+                formData.set('event_date', `${eventDate}T${eventTime}`);
+            }
+            
+            const endDate = document.getElementById('edit_end_date').value;
+            const endTime = document.getElementById('edit_end_time').value;
+            if (endDate && endTime) {
+                formData.set('end_date', `${endDate}T${endTime}`);
+            }
+            
             formData.set('description', tinymce.get('edit_description').getContent());
-            formData.set('is_active', document.getElementById('edit_is_active').checked);
-            formData.set('is_published', document.getElementById('edit_is_published').checked);
-            formData.set('calendar_integration', document.getElementById('edit_calendar_integration').checked);
+            formData.append('is_active', document.getElementById('edit_is_active').checked.toString());
+            formData.append('is_published', document.getElementById('edit_is_published').checked.toString());
             fetch('/admin/api/event-schedule', {
                 method: 'PUT',
                 body: formData

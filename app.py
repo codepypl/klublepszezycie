@@ -274,8 +274,11 @@ def api_menu():
             data = request.get_json()
         else:
             data = request.form.to_dict()
-            # Konwertujemy checkbox na boolean
-            data['is_active'] = 'is_active' in request.form
+            # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+            if 'is_active' in data:
+                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+            else:
+                data['is_active'] = False
         
         new_item = MenuItem(
             title=data['title'],
@@ -299,8 +302,11 @@ def api_menu():
             data = request.get_json()
         else:
             data = request.form.to_dict()
-            # Konwertujemy checkbox na boolean
-            data['is_active'] = 'is_active' in request.form
+            # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+            if 'is_active' in data:
+                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+            else:
+                data['is_active'] = False
         
         item = MenuItem.query.get(data['id'])
         if item:
@@ -353,13 +359,20 @@ def api_sections():
             data = request.get_json()
         else:
             data = request.form.to_dict()
-            # Konwertujemy checkbox na boolean
-            data['is_active'] = 'is_active' in request.form
-            # Konwertujemy stringi boolean na prawdziwe boolean
+            # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+            if 'is_active' in data:
+                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+            else:
+                data['is_active'] = False
+            # Konwertujemy boolean na prawdziwe boolean
             if 'enable_pillars' in data:
-                data['enable_pillars'] = data['enable_pillars'] == 'true'
+                data['enable_pillars'] = data['enable_pillars'] in [True, 'true', 'True', '1', 1]
+            else:
+                data['enable_pillars'] = False
             if 'enable_floating_cards' in data:
-                data['enable_floating_cards'] = data['enable_floating_cards'] == 'true'
+                data['enable_floating_cards'] = data['enable_floating_cards'] in [True, 'true', 'True', '1', 1]
+            else:
+                data['enable_floating_cards'] = False
         
         new_section = Section(
             name=data['name'],
@@ -680,8 +693,11 @@ def api_social():
             data = request.get_json()
         else:
             data = request.form.to_dict()
-            # Konwertujemy checkbox na boolean
-            data['is_active'] = 'is_active' in request.form
+            # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+            if 'is_active' in data:
+                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+            else:
+                data['is_active'] = False
         
         new_link = SocialLink(
             platform=data['platform'],
@@ -700,8 +716,11 @@ def api_social():
             data = request.get_json()
         else:
             data = request.form.to_dict()
-            # Konwertujemy checkbox na boolean
-            data['is_active'] = 'is_active' in request.form
+            # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+            if 'is_active' in data:
+                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+            else:
+                data['is_active'] = False
         
         link = SocialLink.query.get(data['id'])
         if link:
@@ -745,8 +764,11 @@ def api_faq():
             data = request.get_json()
         else:
             data = request.form.to_dict()
-            # Konwertujemy checkbox na boolean
-            data['is_active'] = 'is_active' in request.form
+            # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+            if 'is_active' in data:
+                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+            else:
+                data['is_active'] = False
         
         new_faq = FAQ(
             question=data['question'],
@@ -810,8 +832,11 @@ def api_testimonials():
             data = request.get_json()
         else:
             data = request.form.to_dict()
-            # Konwertujemy checkbox na boolean
-            data['is_active'] = 'is_active' in request.form
+            # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+            if 'is_active' in data:
+                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+            else:
+                data['is_active'] = False
         
         new_testimonial = Testimonial(
             author_name=data['author_name'],
@@ -830,8 +855,11 @@ def api_testimonials():
             data = request.get_json()
         else:
             data = request.form.to_dict()
-            # Konwertujemy checkbox na boolean
-            data['is_active'] = 'is_active' in request.form
+            # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+            if 'is_active' in data:
+                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+            else:
+                data['is_active'] = False
         
         testimonial = Testimonial.query.get(data['id'])
         if testimonial:
@@ -975,8 +1003,23 @@ def api_event_schedule():
     
     elif request.method == 'POST':
         data = request.form.to_dict()
-        data['is_active'] = 'is_active' in request.form
-        data['is_published'] = 'is_published' in request.form
+        print(f"DEBUG EVENT POST: Received form data: {data}")
+        print(f"DEBUG EVENT POST: request.form keys: {list(request.form.keys())}")
+        print(f"DEBUG EVENT POST: is_active raw value: {data.get('is_active')} (type: {type(data.get('is_active'))})")
+        print(f"DEBUG EVENT POST: is_published raw value: {data.get('is_published')} (type: {type(data.get('is_published'))})")
+        
+        # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+        if 'is_active' in data:
+            data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+        else:
+            data['is_active'] = False
+            
+        if 'is_published' in data:
+            data['is_published'] = data['is_published'] in [True, 'true', 'True', '1', 1]
+        else:
+            data['is_published'] = False
+        
+        print(f"DEBUG EVENT POST: After conversion - is_active: {data['is_active']}, is_published: {data['is_published']}")
         
         # Parse datetime
         event_date = datetime.fromisoformat(data['event_date'].replace('Z', '+00:00'))
@@ -999,8 +1042,23 @@ def api_event_schedule():
     
     elif request.method == 'PUT':
         data = request.form.to_dict()
-        data['is_active'] = 'is_active' in request.form
-        data['is_published'] = 'is_published' in request.form
+        print(f"DEBUG EVENT PUT: Received form data: {data}")
+        print(f"DEBUG EVENT PUT: request.form keys: {list(request.form.keys())}")
+        print(f"DEBUG EVENT PUT: is_active raw value: {data.get('is_active')} (type: {type(data.get('is_active'))})")
+        print(f"DEBUG EVENT PUT: is_published raw value: {data.get('is_published')} (type: {type(data.get('is_published'))})")
+        
+        # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+        if 'is_active' in data:
+            data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+        else:
+            data['is_active'] = False
+            
+        if 'is_published' in data:
+            data['is_published'] = data['is_published'] in [True, 'true', 'True', '1', 1]
+        else:
+            data['is_published'] = False
+        
+        print(f"DEBUG EVENT PUT: After conversion - is_active: {data['is_active']}, is_published: {data['is_published']}")
         
         event = EventSchedule.query.get(data['id'])
         if event:
@@ -1136,9 +1194,16 @@ def api_pages():
     elif request.method == 'POST':
         data = request.form.to_dict()
         
-        # Handle checkboxes
-        data['is_active'] = 'is_active' in request.form
-        data['is_published'] = 'is_published' in request.form
+        # Handle checkboxes - sprawdzamy wartość pola
+        if 'is_active' in data:
+            data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+        else:
+            data['is_active'] = False
+            
+        if 'is_published' in data:
+            data['is_published'] = data['is_published'] in [True, 'true', 'True', '1', 1]
+        else:
+            data['is_published'] = False
         
         # Set published_at if publishing
         published_at = None
@@ -1162,9 +1227,16 @@ def api_pages():
     elif request.method == 'PUT':
         data = request.form.to_dict()
         
-        # Handle checkboxes
-        data['is_active'] = 'is_active' in request.form
-        data['is_published'] = 'is_published' in request.form
+        # Handle checkboxes - sprawdzamy wartość pola
+        if 'is_active' in data:
+            data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+        else:
+            data['is_active'] = False
+            
+        if 'is_published' in data:
+            data['is_published'] = data['is_published'] in [True, 'true', 'True', '1', 1]
+        else:
+            data['is_published'] = False
         
         page = Page.query.get(data['id'])
         if page:
@@ -1245,7 +1317,11 @@ def api_email_templates():
     
     elif request.method == 'POST':
         data = request.form.to_dict()
-        data['is_active'] = 'is_active' in request.form
+        # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+        if 'is_active' in data:
+            data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+        else:
+            data['is_active'] = False
         
         new_template = EmailTemplate(
             name=data['name'],
@@ -1262,7 +1338,11 @@ def api_email_templates():
     
     elif request.method == 'PUT':
         data = request.form.to_dict()
-        data['is_active'] = 'is_active' in request.form
+        # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+        if 'is_active' in data:
+            data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+        else:
+            data['is_active'] = False
         
         template = EmailTemplate.query.get(data['id'])
         if template:

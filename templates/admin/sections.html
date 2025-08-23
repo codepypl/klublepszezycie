@@ -396,7 +396,6 @@
             .then(data => {
                 console.log('Save section response:', data);
                 if (data.success) {
-                    alert('Sekcja została zapisana pomyślnie!');
                     location.reload();
                 } else {
                     alert('Błąd: ' + data.error);
@@ -629,7 +628,6 @@
             .then(data => {
                 console.log('Response:', data);
                 if (data.success) {
-                    alert('Pillars zostały zapisane pomyślnie!');
                     location.reload();
                 } else {
                     alert('Błąd: ' + data.error);
@@ -790,7 +788,6 @@
             .then(data => {
                 console.log('Response:', data);
                 if (data.success) {
-                    alert('Floating Cards zostały zapisane pomyślnie!');
                     location.reload();
                 } else {
                     alert('Błąd: ' + data.error);
