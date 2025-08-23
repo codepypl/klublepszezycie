@@ -388,19 +388,41 @@ def api_sections():
         else:
             data = request.form.to_dict()
             print(f"Received form data: {data}")
+            print(f"DEBUG: request.form keys: {list(request.form.keys())}")
+            print(f"DEBUG: request.form values: {list(request.form.values())}")
+            print(f"DEBUG: request.form.getlist('is_active'): {request.form.getlist('is_active')}")
             
-            # Konwertujemy checkbox na boolean
-            data['is_active'] = 'is_active' in request.form
-            # Konwertujemy stringi boolean na prawdziwe boolean
+            # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+            # Jeśli wartość to 'true' (string) lub true (boolean), ustaw na True
+            print(f"DEBUG: is_active raw value: {data.get('is_active')} (type: {type(data.get('is_active'))})")
+            if 'is_active' in data:
+                original_value = data['is_active']
+                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+                print(f"DEBUG: is_active converted from '{original_value}' to {data['is_active']}")
+            else:
+                data['is_active'] = False
+                print(f"DEBUG: is_active not found, set to False")
+            
+            print(f"DEBUG: Final data['is_active'] value: {data['is_active']}")
+            print(f"DEBUG: Final data['is_active'] type: {type(data['is_active'])}")
+            # Konwertujemy boolean na prawdziwe boolean
             if 'enable_pillars' in data:
-                data['enable_pillars'] = data['enable_pillars'] == 'true'
+                # Jeśli wartość to 'true' (string) lub true (boolean), ustaw na True
+                data['enable_pillars'] = data['enable_pillars'] in [True, 'true', 'True', '1', 1]
             else:
                 data['enable_pillars'] = False  # Jeśli pole nie jest wysłane, ustaw na False
                 
             if 'enable_floating_cards' in data:
-                data['enable_floating_cards'] = data['enable_floating_cards'] == 'true'
+                # Jeśli wartość to 'true' (string) lub true (boolean), ustaw na True
+                data['enable_floating_cards'] = data['enable_floating_cards'] in [True, 'true', 'True', '1', 1]
             else:
                 data['enable_floating_cards'] = False  # Jeśli pole nie jest wysłane, ustaw na False
+            
+            # Usuwamy ukryte pola, które mogą powodować konflikty
+            if 'enable_pillars_hidden' in data:
+                del data['enable_pillars_hidden']
+            if 'enable_floating_cards_hidden' in data:
+                del data['enable_floating_cards_hidden']
         
         print(f"Processed data for update: {data}")
         

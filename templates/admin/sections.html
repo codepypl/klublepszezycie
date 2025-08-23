@@ -263,8 +263,6 @@
                                         Włącz Pillars
                                     </label>
                                 </div>
-                                <!-- Hidden field to always send enable_pillars value -->
-                                <input type="hidden" name="enable_pillars_hidden" value="false">
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Liczba Pillars</label>
@@ -277,8 +275,6 @@
                                         Włącz Floating Cards
                                     </label>
                                 </div>
-                                <!-- Hidden field to always send enable_floating_cards value -->
-                                <input type="hidden" name="enable_floating_cards_hidden" value="false">
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Liczba Floating Cards</label>
@@ -377,10 +373,16 @@
             formData.delete('enable_pillars');
             formData.delete('enable_floating_cards');
             formData.delete('is_active');
-            // Add boolean values
-            formData.append('enable_pillars', enablePillars);
-            formData.append('enable_floating_cards', enableFloatingCards);
-            formData.append('is_active', isActive);
+            // Add boolean values as strings (backend expects strings)
+            formData.append('enable_pillars', enablePillars.toString());
+            formData.append('enable_floating_cards', enableFloatingCards.toString());
+            formData.append('is_active', isActive.toString());
+            // Debug: sprawdź co jest w FormData
+            console.log('FormData contents:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value} (type: ${typeof value})`);
+            }
+            
             console.log('Saving section with data:', {
                 enable_pillars: enablePillars,
                 enable_floating_cards: enableFloatingCards,
