@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmonogram Wydarzeń - Panel Administratora</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
+    <script src="https://cdn.tiny.cloud/1/nzk6x47f5uoxs3thrhw5hjtjhrby1u3skrpld6z2z032z7tv/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+</head>
+<body class="admin-body">
+        <div class="container-fluid">
+            <div class="row">            <!-- Sidebar -->
+            {% include 'admin/sidebar.html' %}
+            <!-- Main Content -->
+            <main class="col-lg-10 admin-content">
+                <div class="admin-header">
+                    <h1><i class="fas fa-calendar-alt me-2"></i>Harmonogram Wydarzeń</h1>
+                    <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
+                        <i class="fas fa-sign-out-alt me-2"></i>
+                        Wyloguj
+                    </a>
+                </div>
+                <!-- Add Event Button -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div></div>
+                    <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addEventModal">
+                        <i class="fas fa-plus me-2"></i>
+                        Dodaj Wydarzenie
+                    </button>
+                </div>
+                <!-- Events Table -->
+                <div class="admin-card">
+                    <div class="admin-card-body">
+                        <div class="table-responsive">
+                            <table class="table admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tytuł</th>
+                                        <th>Typ</th>
+                                        <th>Data i godzina</th>
+                                        <th>Lokalizacja</th>
+                                        <th>Status</th>
+                                        <th>Publikacja</th>
+                                        <th>Kalendarze</th>
+                                        <th>Utworzono</th>
+                                        <th>Akcje</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="eventsTableBody">
+                                    <!-- Events will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <!-- Add Event Modal -->
+    <div class="modal fade admin-modal" id="addEventModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus me-2"></i>
+                        Dodaj Nowe Wydarzenie
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addEventForm">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">Tytuł wydarzenia *</label>
+                                    <input type="text" class="form-control" id="title" name="title" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="event_type" class="form-label">Typ wydarzenia *</label>
+                                    <select class="form-control" id="event_type" name="event_type" required>
+                                        <option value="">Wybierz typ</option>
+                                        <option value="Prezentacja">Prezentacja</option>
+                                        <option value="Webinar">Webinar</option>
+                                        <option value="Spotkanie">Spotkanie</option>
+                                        <option value="Event">Event</option>
+                                        <option value="Inne">Inne</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="event_date" class="form-label">Data i godzina rozpoczęcia *</label>
+                                    <input type="datetime-local" class="form-control" id="event_date" name="event_date" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="end_date" class="form-label">Data i godzina zakończenia</label>
+                                    <input type="datetime-local" class="form-control" id="end_date" name="end_date">
+                                    <small class="text-muted">Pozostaw puste, aby automatycznie ustawić +1 godzinę</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="location" class="form-label">Lokalizacja</label>
+                                    <input type="text" class="form-control" id="location" name="location" placeholder="np. Online, Warszawa, ul. Przykładowa 1">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="meeting_link" class="form-label">Link do spotkania</label>
+                                    <input type="url" class="form-control" id="meeting_link" name="meeting_link" placeholder="https://...">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Opis wydarzenia</label>
+                                    <textarea class="form-control" id="description" name="description" rows="8" placeholder="Opisz wydarzenie..."></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                        <label class="form-check-label" for="is_active">
+                                            Aktywne
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="is_published" name="is_published">
+                                        <label class="form-check-label" for="is_published">
+                                            Opublikowane na stronie
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="calendar_integration" name="calendar_integration" checked>
+                                        <label class="form-check-label" for="calendar_integration">
+                                            Włącz integrację z kalendarzami
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">Dodaj Wydarzenie</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Edit Event Modal -->
+    <div class="modal fade admin-modal" id="editEventModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit me-2"></i>
+                        Edytuj Wydarzenie
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editEventForm">
+                    <input type="hidden" id="edit_event_id" name="id">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_title" class="form-label">Tytuł wydarzenia *</label>
+                                    <input type="text" class="form-control" id="edit_title" name="title" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_event_type" class="form-label">Typ wydarzenia *</label>
+                                    <select class="form-control" id="edit_event_type" name="event_type" required>
+                                        <option value="Prezentacja">Prezentacja</option>
+                                        <option value="Webinar">Webinar</option>
+                                        <option value="Spotkanie">Spotkanie</option>
+                                        <option value="Event">Event</option>
+                                        <option value="Inne">Inne</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_event_date" class="form-label">Data i godzina rozpoczęcia *</label>
+                                    <input type="datetime-local" class="form-control" id="edit_event_date" name="event_date" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_end_date" class="form-label">Data i godzina zakończenia</label>
+                                    <input type="datetime-local" class="form-control" id="edit_end_date" name="end_date">
+                                    <small class="text-muted">Pozostaw puste, aby automatycznie ustawić +1 godzinę</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_location" class="form-label">Lokalizacja</label>
+                                    <input type="text" class="form-control" id="edit_location" name="location" placeholder="np. Online, Warszawa, ul. Przykładowa 1">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_meeting_link" class="form-label">Link do spotkania</label>
+                                    <input type="url" class="form-control" id="edit_meeting_link" name="meeting_link" placeholder="https://...">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_description" class="form-label">Opis wydarzenia</label>
+                                    <textarea class="form-control" id="edit_description" name="description" rows="8" placeholder="Opisz wydarzenie..."></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
+                                        <label class="form-check-label" for="edit_is_active">
+                                            Aktywne
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="edit_is_published" name="is_published">
+                                        <label class="form-check-label" for="edit_is_published">
+                                            Opublikowane na stronie
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="edit_calendar_integration" name="calendar_integration">
+                                        <label class="form-check-label" for="edit_calendar_integration">
+                                            Włącz integrację z kalendarzami
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">Zapisz Zmiany</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Calendar Integration Modal -->
+    <div class="modal fade admin-modal" id="calendarIntegrationModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-calendar-plus me-2"></i>
+                        Integracja z Kalendarzami
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Dodaj do kalendarza:</h6>
+                            <div class="d-grid gap-2">
+                                <a href="#" class="btn btn-outline-primary" id="googleCalendarBtn">
+                                    <i class="fab fa-google me-2"></i>Google Calendar
+                                </a>
+                                <a href="#" class="btn btn-outline-info" id="outlookCalendarBtn">
+                                    <i class="fab fa-microsoft me-2"></i>Outlook/Office 365
+                                </a>
+                                <a href="#" class="btn btn-outline-secondary" id="yahooCalendarBtn">
+                                    <i class="fas fa-calendar me-2"></i>Yahoo Calendar
+                                </a>
+                                <a href="#" class="btn btn-outline-dark" id="downloadIcalBtn">
+                                    <i class="fas fa-download me-2"></i>Pobierz iCal (.ics)
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Status synchronizacji:</h6>
+                            <div id="syncStatus">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Kliknij "Synchronizuj" aby zaktualizować status
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2 mt-3">
+                                <button class="btn btn-success" id="syncCalendarsBtn">
+                                    <i class="fas fa-sync me-2"></i>Synchronizuj z kalendarzami
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade admin-modal" id="deleteEventModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                        Potwierdź usunięcie
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Czy na pewno chcesz usunąć to wydarzenie?</p>
+                    <p class="text-muted">Ta operacja nie może być cofnięta.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteEvent">Usuń</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    <!-- Edit Event Modal -->
+    <div class="modal fade admin-modal" id="editEventModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit me-2"></i>
+                        Edytuj Wydarzenie
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editEventForm">
+                    <input type="hidden" id="edit_event_id" name="id">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_title" class="form-label">Tytuł wydarzenia *</label>
+                                    <input type="text" class="form-control" id="edit_title" name="title" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_event_type" class="form-label">Typ wydarzenia *</label>
+                                    <select class="form-control" id="edit_event_type" name="event_type" required>
+                                        <option value="Prezentacja">Prezentacja</option>
+                                        <option value="Webinar">Webinar</option>
+                                        <option value="Spotkanie">Spotkanie</option>
+                                        <option value="Event">Event</option>
+                                        <option value="Inne">Inne</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_event_date" class="form-label">Data i godzina rozpoczęcia *</label>
+                                    <input type="datetime-local" class="form-control" id="edit_event_date" name="event_date" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_end_date" class="form-label">Data i godzina zakończenia</label>
+                                    <input type="datetime-local" class="form-control" id="edit_end_date" name="end_date">
+                                    <small class="text-muted">Pozostaw puste, aby automatycznie ustawić +1 godzinę</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_location" class="form-label">Lokalizacja</label>
+                                    <input type="text" class="form-control" id="edit_location" name="location" placeholder="np. Online, Warszawa, ul. Przykładowa 1">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_meeting_link" class="form-label">Link do spotkania</label>
+                                    <input type="url" class="form-control" id="edit_meeting_link" name="meeting_link" placeholder="https://...">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_description" class="form-label">Opis wydarzenia</label>
+                                    <textarea class="form-control" id="edit_description" name="description" rows="8" placeholder="Opisz wydarzenie..."></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
+                                        <label class="form-check-label" for="edit_is_active">
+                                            Aktywne
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="edit_is_published" name="is_published">
+                                        <label class="form-check-label" for="edit_is_published">
+                                            Opublikowane na stronie
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="edit_calendar_integration" name="calendar_integration">
+                                        <label class="form-check-label" for="edit_calendar_integration">
+                                            Włącz integrację z kalendarzami
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">Zapisz Zmiany</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Calendar Integration Modal -->
+    <div class="modal fade admin-modal" id="calendarIntegrationModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-calendar-plus me-2"></i>
+                        Integracja z Kalendarzami
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Dodaj do kalendarza:</h6>
+                            <div class="d-grid gap-2">
+                                <a href="#" class="btn btn-outline-primary" id="googleCalendarBtn">
+                                    <i class="fas fa-google me-2"></i>Google Calendar
+                                </a>
+                                <a href="#" class="btn btn-outline-info" id="outlookCalendarBtn">
+                                    <i class="fab fa-microsoft me-2"></i>Outlook/Office 365
+                                </a>
+                                <a href="#" class="btn btn-outline-secondary" id="yahooCalendarBtn">
+                                    <i class="fas fa-calendar me-2"></i>Yahoo Calendar
+                                </a>
+                                <a href="#" class="btn btn-outline-dark" id="downloadIcalBtn">
+                                    <i class="fas fa-download me-2"></i>Pobierz iCal (.ics)
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Status synchronizacji:</h6>
+                            <div id="syncStatus">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Kliknij "Synchronizuj" aby zaktualizować status
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2 mt-3">
+                                <button class="btn btn-success" id="syncCalendarsBtn">
+                                    <i class="fas fa-sync me-2"></i>Synchronizuj z kalendarzami
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade admin-modal" id="deleteEventModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                        Potwierdź usunięcie
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Czy na pewno chcesz usunąć to wydarzenie?</p>
+                    <p class="text-muted">Ta operacja nie może być cofnięta.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteEvent">Usuń</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentEventId = null;
+        let currentEventData = null;
+        // Initialize TinyMCE for description fields
+        tinymce.init({
+            selector: '#description, #edit_description',
+            height: 200,
+            plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
+            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
+            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }'
+        });
+        // Load events on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEvents();
+        });
+        // Load events from API
+        function loadEvents() {
+            fetch('/admin/api/event-schedule')
+                .then(response => response.json())
+                .then(events => {
+                    displayEvents(events);
+                })
+                .catch(error => {
+                    console.error('Error loading events:', error);
+                    alert('Wystąpił błąd podczas ładowania wydarzeń');
+                });
+        }
+        // Display events in table
+        function displayEvents(events) {
+            const tbody = document.getElementById('eventsTableBody');
+            tbody.innerHTML = '';
+            events.forEach(event => {
+                const row = document.createElement('tr');
+                // Format dates
+                const startDate = new Date(event.event_date).toLocaleString('pl-PL');
+                const endDate = event.end_date ? new Date(event.end_date).toLocaleString('pl-PL') : 'Auto (+1h)';
+                // Calendar integration status
+                let calendarStatus = '';
+                if (event.calendar_integration) {
+                    if (event.google_calendar_id || event.outlook_event_id || event.ical_uid) {
+                        calendarStatus = '<span class="badge bg-success">Zsynchronizowane</span>';
+                    } else {
+                        calendarStatus = '<span class="badge bg-warning">Oczekuje</span>';
+                    }
+                } else {
+                    calendarStatus = '<span class="badge bg-secondary">Wyłączone</span>';
+                }
+                row.innerHTML = `
+                    <td>
+                        <strong>${event.title}</strong>
+                        ${event.meeting_link ? `<br><small><a href="${event.meeting_link}" target="_blank" class="text-info"><i class="fas fa-link me-1"></i>Link do spotkania</a></small>` : ''}
+                    </td>
+                    <td><span class="badge bg-info">${event.event_type}</span></td>
+                    <td>
+                        <div><strong>Start:</strong> ${startDate}</div>
+                        <div><small>Koniec: ${endDate}</small></div>
+                    </td>
+                    <td>${event.location || 'Online'}</td>
+                    <td>
+                        ${event.is_active ? '<span class="badge bg-success">Aktywne</span>' : '<span class="badge bg-danger">Nieaktywne</span>'}
+                    </td>
+                    <td>
+                        ${event.is_published ? '<span class="badge bg-primary">Opublikowane</span>' : '<span class="badge bg-secondary">Szkic</span>'}
+                    </td>
+                    <td>${calendarStatus}</td>
+                    <td>${new Date(event.created_at).toLocaleDateString('pl-PL')}</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm admin-btn-outline" onclick="editEvent(${event.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm admin-btn-info" onclick="showCalendarIntegration(${event.id})">
+                                <i class="fas fa-calendar-plus"></i>
+                            </button>
+                            <button class="btn btn-sm admin-btn-danger" onclick="deleteEvent(${event.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        // Edit event
+        function editEvent(eventId) {
+            fetch(`/admin/api/event-schedule/${eventId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const event = data.event;
+                        currentEventId = event.id;
+                        document.getElementById('edit_event_id').value = event.id;
+                        document.getElementById('edit_title').value = event.title;
+                        document.getElementById('edit_event_type').value = event.event_type;
+                        document.getElementById('edit_event_date').value = event.event_date.replace('Z', '').slice(0, 16);
+                        document.getElementById('edit_end_date').value = event.end_date ? event.end_date.replace('Z', '').slice(0, 16) : '';
+                        document.getElementById('edit_location').value = event.location || '';
+                        document.getElementById('edit_meeting_link').value = event.meeting_link || '';
+                        document.getElementById('edit_is_active').checked = event.is_active;
+                        document.getElementById('edit_is_published').checked = event.is_published;
+                        document.getElementById('edit_calendar_integration').checked = event.calendar_integration;
+                        tinymce.get('edit_description').setContent(event.description || '');
+                        new bootstrap.Modal(document.getElementById('editEventModal')).show();
+                    } else {
+                        alert('Błąd: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Wystąpił błąd podczas ładowania danych wydarzenia');
+                });
+        }
+        // Show calendar integration modal
+        function showCalendarIntegration(eventId) {
+            currentEventId = eventId;
+            // Load event data
+            fetch(`/admin/api/event-schedule/${eventId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentEventData = data.event;
+                        setupCalendarLinks();
+                        new bootstrap.Modal(document.getElementById('calendarIntegrationModal')).show();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Wystąpił błąd podczas ładowania danych wydarzenia');
+                });
+        }
+        // Setup calendar links
+        function setupCalendarLinks() {
+            if (!currentEventData) return;
+            // Get calendar links
+            fetch(`/api/events/${currentEventId}/calendar-links`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const links = data.calendar_links;
+                        // Setup Google Calendar
+                        document.getElementById('googleCalendarBtn').href = links.google || '#';
+                        document.getElementById('googleCalendarBtn').onclick = () => {
+                            if (links.google) window.open(links.google, '_blank');
+                        };
+                        // Setup Outlook
+                        document.getElementById('outlookCalendarBtn').href = links.outlook || '#';
+                        document.getElementById('outlookCalendarBtn').onclick = () => {
+                            if (links.outlook) window.open(links.outlook, '_blank');
+                        };
+                        // Setup Yahoo
+                        document.getElementById('yahooCalendarBtn').href = links.yahoo || '#';
+                        document.getElementById('yahooCalendarBtn').onclick = () => {
+                            if (links.yahoo) window.open(links.yahoo, '_blank');
+                        };
+                        // Setup iCal download
+                        document.getElementById('downloadIcalBtn').href = `/api/events/${currentEventId}/calendar/ical`;
+                        document.getElementById('downloadIcalBtn').onclick = () => {
+                            window.location.href = `/api/events/${currentEventId}/calendar/ical`;
+                        };
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading calendar links:', error);
+                });
+        }
+        // Sync calendars
+        document.getElementById('syncCalendarsBtn').addEventListener('click', function() {
+            if (!currentEventId) return;
+            const button = this;
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Synchronizowanie...';
+            fetch(`/admin/api/events/${currentEventId}/sync-calendars`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSyncStatus(data.sync_results);
+                    loadEvents(); // Refresh table
+                } else {
+                    showSyncStatus({}, data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showSyncStatus({}, 'Błąd synchronizacji');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            });
+        });
+        // Show sync status
+        function showSyncStatus(syncResults, error = null) {
+            const statusDiv = document.getElementById('syncStatus');
+            if (error) {
+                statusDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        ${error}
+                    </div>
+                `;
+                return;
+            }
+            let statusHtml = '<div class="list-group">';
+            if (syncResults.google) {
+                const [success, eventId, errorMsg] = syncResults.google;
+                statusHtml += `
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fab fa-google me-2"></i>Google Calendar</span>
+                        ${success ? 
+                            '<span class="badge bg-success">OK</span>' : 
+                            '<span class="badge bg-danger">Błąd</span>'
+                        }
+                    </div>
+                `;
+            }
+            if (syncResults.outlook) {
+                const [success, eventId, errorMsg] = syncResults.outlook;
+                statusHtml += `
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fab fa-microsoft me-2"></i>Outlook</span>
+                        ${success ? 
+                            '<span class="badge bg-success">OK</span>' : 
+                            '<span class="badge bg-danger">Błąd</span>'
+                        }
+                    </div>
+                `;
+            }
+            if (syncResults.ical) {
+                const [success, content, errorMsg] = syncResults.ical;
+                statusHtml += `
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-calendar me-2"></i>iCal</span>
+                        ${success ? 
+                            '<span class="badge bg-success">OK</span>' : 
+                            '<span class="badge bg-danger">Błąd</span>'
+                        }
+                    </div>
+                `;
+            }
+            statusHtml += '</div>';
+            statusDiv.innerHTML = statusHtml;
+        }
+        // Delete event
+        function deleteEvent(eventId) {
+            currentEventId = eventId;
+            new bootstrap.Modal(document.getElementById('deleteEventModal')).show();
+        }
+        // Handle add event form submission
+        document.getElementById('addEventForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            formData.set('description', tinymce.get('description').getContent());
+            formData.set('is_active', document.getElementById('is_active').checked);
+            formData.set('is_published', document.getElementById('is_published').checked);
+            formData.set('calendar_integration', document.getElementById('calendar_integration').checked);
+            fetch('/admin/api/event-schedule', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
+                    loadEvents();
+                    alert('Wydarzenie zostało dodane pomyślnie!');
+                } else {
+                    alert('Błąd: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas dodawania wydarzenia');
+            });
+        });
+        // Handle edit event form submission
+        document.getElementById('editEventForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            formData.set('description', tinymce.get('edit_description').getContent());
+            formData.set('is_active', document.getElementById('edit_is_active').checked);
+            formData.set('is_published', document.getElementById('edit_is_published').checked);
+            formData.set('calendar_integration', document.getElementById('edit_calendar_integration').checked);
+            fetch('/admin/api/event-schedule', {
+                method: 'PUT',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('editEventModal')).hide();
+                    loadEvents();
+                    alert('Wydarzenie zostało zaktualizowane pomyślnie!');
+                } else {
+                    alert('Błąd: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas aktualizacji wydarzenia');
+            });
+        });
+        // Handle delete confirmation
+        document.getElementById('confirmDeleteEvent').addEventListener('click', function() {
+            if (currentEventId) {
+                fetch(`/admin/api/event-schedule?id=${currentEventId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        bootstrap.Modal.getInstance(document.getElementById('deleteEventModal')).hide();
+                        loadEvents();
+                        alert('Wydarzenie zostało usunięte pomyślnie!');
+                    } else {
+                        alert('Błąd: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Wystąpił błąd podczas usuwania wydarzenia');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

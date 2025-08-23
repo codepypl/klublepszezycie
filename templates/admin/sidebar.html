@@ -1,0 +1,82 @@
+<!-- Admin Sidebar -->
+<nav class="col-lg-2 admin-sidebar">
+    <div class="admin-sidebar-header">
+        <h5><i class="fas fa-cog me-2"></i>Panel Admin</h5>
+    </div>
+    
+    <ul class="nav nav-pills flex-column mb-auto">
+        <li class="nav-item">
+            <a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+                <i class="fas fa-tachometer-alt"></i>
+                Dashboard
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('admin_sections') }}" class="nav-link {% if request.endpoint == 'admin_sections' %}active{% endif %}">
+                <i class="fas fa-th-large"></i>
+                Sekcje
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('admin_benefits') }}" class="nav-link {% if request.endpoint == 'admin_benefits' %}active{% endif %}">
+                <i class="fas fa-star"></i>
+                Korzyści
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('admin_testimonials') }}" class="nav-link {% if request.endpoint == 'admin_testimonials' %}active{% endif %}">
+                <i class="fas fa-quote-left"></i>
+                Opinie
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('admin_pages') }}" class="nav-link {% if request.endpoint == 'admin_pages' %}active{% endif %}">
+                <i class="fas fa-file-alt"></i>
+                Podstrony
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('admin_seo') }}" class="nav-link {% if request.endpoint == 'admin_seo' %}active{% endif %}">
+                <i class="fas fa-search"></i>
+                SEO
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('admin_menu') }}" class="nav-link {% if request.endpoint == 'admin_menu' %}active{% endif %}">
+                <i class="fas fa-bars"></i>
+                Menu
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('admin_event_schedule') }}" class="nav-link {% if request.endpoint == 'admin_event_schedule' %}active{% endif %}">
+                <i class="fas fa-calendar-alt"></i>
+                Harmonogram wydarzeń
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('email_templates') }}" class="nav-link {% if request.endpoint == 'email_templates' %}active{% endif %}">
+                <i class="fas fa-envelope"></i>
+                Szablony e-mail
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('admin_registrations') }}" class="nav-link {% if request.endpoint == 'admin_registrations' %}active{% endif %}">
+                <i class="fas fa-users"></i>
+                Rejestracje
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('admin_social') }}" class="nav-link {% if request.endpoint == 'admin_social' %}active{% endif %}">
+                <i class="fas fa-share-alt"></i>
+                Media społecznościowe
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('admin_faq') }}" class="nav-link {% if request.endpoint == 'admin_faq' %}active{% endif %}">
+                <i class="fas fa-question-circle"></i>
+                FAQ
+            </a>
+        </li>
+    </ul>
+    
+</nav>

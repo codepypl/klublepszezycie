@@ -6,135 +6,35 @@
     <title>Panel Administratora - Social Media</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
 </head>
-<body>
-    <div class="admin-panel">
-        <!-- Top Navigation Bar -->
-        <nav class="navbar navbar-expand-lg admin-top-nav">
-            <div class="container-fluid">
-                <button class="btn admin-btn-outline d-lg-none" id="sidebarToggle">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <span class="navbar-brand text-white mb-0 h1">
-                    <i class="fas fa-cog me-2"></i>
-                    Panel Administratora
-                </span>
-                <div class="navbar-nav ms-auto">
-                    <a class="nav-link text-white" href="{{ url_for('index') }}">
-                        <i class="fas fa-home me-1"></i>
-                        Strona główna
+<body class="admin-body">
+        <div class="container-fluid">
+            <div class="row">            <!-- Sidebar -->
+            {% include 'admin/sidebar.html' %}
+                <!-- Main Content -->
+                <main class="col-lg-10 admin-content">
+                                    <div class="admin-header">
+                    <h1><i class="fas fa-share-alt me-2"></i>Zarządzanie Social Media</h1>
+                    <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
+                        <i class="fas fa-sign-out-alt me-2"></i>
+                        Wyloguj
                     </a>
                 </div>
-            </div>
-        </nav>
-
-        <div class="container-fluid">
-            <div class="row flex-nowrap">
-                <!-- Sidebar -->
-                <nav class="col-lg-2 admin-sidebar p-3" id="sidebar">
-                    <div class="d-flex flex-column">
-                        <hr class="text-muted">
-                        <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
-                                    <i class="fas fa-tachometer-alt"></i>
-                                    Dashboard
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_menu') }}">
-                                    <i class="fas fa-bars"></i>
-                                    Menu
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_sections') }}">
-                                    <i class="fas fa-layer-group"></i>
-                                    Sekcje
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_pages') }}">
-                                    <i class="fas fa-file-alt"></i>
-                                    Podstrony
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_benefits') }}">
-                                    <i class="fas fa-star"></i>
-                                    Korzyści
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_testimonials') }}">
-                                    <i class="fas fa-comments"></i>
-                                    Opinie
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_faq') }}">
-                                    <i class="fas fa-question-circle"></i>
-                                    FAQ
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_registrations') }}">
-                                    <i class="fas fa-user-plus"></i>
-                                    Rejestracje
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link active" href="{{ url_for('admin_social') }}">
-                                    <i class="fas fa-share-alt"></i>
-                                    Social Media
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_seo') }}">
-                                    <i class="fas fa-search"></i>
-                                    SEO/SEM
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_presentation_schedule') }}">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    Harmonogram Prezentacji
-                                </a>
-                            </li>
-
-                        </ul>
-                        <hr class="text-muted mt-auto">
-                        <div class="text-center">
-                            <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout w-100">
-                                <i class="fas fa-sign-out-alt me-2"></i>
-                                Wyloguj
-                            </a>
-                        </div>
-                    </div>
-                </nav>
-
-                <!-- Main Content -->
-                <main class="col-lg-10 admin-content m-0">
-                    <div class="admin-header">
-                        <h1><i class="fas fa-share-alt me-2"></i>Zarządzanie Social Media</h1>
-                    </div>
-
                     <!-- Add Social Link Button -->
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="text-muted mb-0">Zarządzaj linkami do mediów społecznościowych</p>
+                        <div></div>
                         <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addSocialLinkModal">
                             <i class="fas fa-plus me-2"></i>
                             Dodaj Link Social Media
                         </button>
                     </div>
-
                     <!-- Social Links Table -->
                     <div class="admin-card">
                         <div class="admin-card-body">
                             {% if social_links %}
                                 <div class="table-responsive">
-                                    <table class="table admin-table">
+                                    <table class="table admin-table admin-table">
                                         <thead>
                                             <tr>
                                                 <th>Platforma</th>
@@ -164,18 +64,18 @@
                                                 </td>
                                                 <td>
                                                     {% if link.is_active %}
-                                                        <span class="admin-badge admin-badge-success">Aktywny</span>
+                                                        <span class="badge bg-success">Aktywny</span>
                                                     {% else %}
-                                                        <span class="admin-badge admin-badge-danger">Nieaktywny</span>
+                                                        <span class="badge bg-danger">Nieaktywny</span>
                                                     {% endif %}
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <button class="btn btn-sm admin-btn-outline" 
+                                                        <button <button class="btn btn-sm admin-btn-outline" 
                                                                 onclick="editSocialLink({{ link.id }}, '{{ link.platform }}', '{{ link.name }}', '{{ link.url }}', {{ link.is_active|lower }})">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
-                                                        <button class="btn btn-sm admin-btn-danger" 
+                                                        <button <button class="btn btn-sm admin-btn-danger" 
                                                                 onclick="deleteSocialLink({{ link.id }})">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
@@ -203,7 +103,6 @@
             </div>
         </div>
     </div>
-
     <!-- Add Social Link Modal -->
     <div class="modal fade admin-modal" id="addSocialLinkModal" tabindex="-1">
         <div class="modal-dialog">
@@ -256,7 +155,6 @@
             </div>
         </div>
     </div>
-
     <!-- Edit Social Link Modal -->
     <div class="modal fade admin-modal" id="editSocialLinkModal" tabindex="-1">
         <div class="modal-dialog">
@@ -309,14 +207,12 @@
             </div>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Add Social Link
         function addSocialLink() {
             const form = document.getElementById('addSocialLinkForm');
             const formData = new FormData(form);
-            
             fetch('/admin/api/social', {
                 method: 'POST',
                 body: formData
@@ -334,7 +230,6 @@
                 alert('Wystąpił błąd podczas dodawania linku social media');
             });
         }
-
         // Edit Social Link
         function editSocialLink(id, platform, name, url, isActive) {
             document.getElementById('edit_id').value = id;
@@ -342,15 +237,12 @@
             document.getElementById('edit_name').value = name;
             document.getElementById('edit_url').value = url;
             document.getElementById('edit_is_active').checked = isActive;
-            
             new bootstrap.Modal(document.getElementById('editSocialLinkModal')).show();
         }
-
         // Save Social Link
         function saveSocialLink() {
             const form = document.getElementById('editSocialLinkForm');
             const formData = new FormData(form);
-            
             fetch('/admin/api/social', {
                 method: 'PUT',
                 body: formData
@@ -368,13 +260,11 @@
                 alert('Wystąpił błąd podczas zapisywania zmian');
             });
         }
-
         // Delete Social Link
         function deleteSocialLink(id) {
             if (confirm('Czy na pewno chcesz usunąć ten link social media?')) {
                 const formData = new FormData();
                 formData.append('id', id);
-                
                 fetch('/admin/api/social', {
                     method: 'DELETE',
                     body: formData
@@ -393,29 +283,24 @@
                 });
             }
         }
-
         // Form submissions
         document.getElementById('addSocialLinkForm').addEventListener('submit', function(e) {
             e.preventDefault();
             addSocialLink();
         });
-
         document.getElementById('editSocialLinkForm').addEventListener('submit', function(e) {
             e.preventDefault();
             saveSocialLink();
         });
-
         // Sidebar toggle functionality
         document.getElementById('sidebarToggle').addEventListener('click', function() {
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('show');
         });
-
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', function(event) {
             const sidebar = document.getElementById('sidebar');
             const sidebarToggle = document.getElementById('sidebarToggle');
-            
             if (window.innerWidth < 992 && 
                 !sidebar.contains(event.target) && 
                 !sidebarToggle.contains(event.target)) {

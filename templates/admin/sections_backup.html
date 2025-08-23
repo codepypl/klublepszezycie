@@ -15,25 +15,15 @@
                 <!-- Main Content -->
                 <main class="col-lg-10 admin-content">
                     <div class="admin-header">
-                        <h1><i class="fas fa-layer-group me-2"></i>Zarządzanie Sekcjami</h1>
-                        <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
-                            <i class="fas fa-sign-out-alt me-2"></i>
-                            Wyloguj
-                        </a>
+                        <h1><i class="fas fa-cog me-2"></i><i class="fas fa-layer-group me-2"></i>Zarządzanie Sekcjami</h1>
                     </div>
                     <!-- Add Section Button -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 class="mb-2"></h5>
-                                </div>
-                                <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addSectionModal">
-                                    <i class="fas fa-plus me-2"></i>
-                                    Dodaj Sekcję
-                                </button>
-                            </div>
-                        </div>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <p class="text-muted mb-0">Zarządzaj sekcjami wyświetlanymi na stronie głównej</p>
+                        <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addSectionModal">
+                            <i class="fas fa-plus me-2"></i>
+                            Dodaj Sekcję
+                        </button>
                     </div>
                     <!-- Sections Table -->
                     <div class="admin-card">
@@ -59,41 +49,41 @@
                                                     <span class="admin-badge admin-badge-primary">{{ section.order }}</span>
                                                 </td>
                                                 <td>
-                                                    <code class="admin-text-primary">{{ section.name }}</code>
+                                                    <code class="text-primary">{{ section.name }}</code>
                                                 </td>
                                                 <td>
                                                     <strong>{{ section.title }}</strong>
                                                 </td>
                                                 <td>
-                                                    <small class="admin-text-muted">{{ section.subtitle or 'Brak' }}</small>
+                                                    <small class="text-muted">{{ section.subtitle or 'Brak' }}</small>
                                                 </td>
                                                 <td>
-                                                    <small class="admin-text-muted">{{ section.content[:100] if section.content else 'Brak' }}{% if section.content and section.content|length > 100 %}...{% endif %}</small>
+                                                    <small class="text-muted">{{ section.content[:100] if section.content else 'Brak' }}{% if section.content and section.content|length > 100 %}...{% endif %}</small>
                                                 </td>
                                                 <td>
                                                     {% if section.is_active %}
-                                                        <span class="admin-badge admin-badge-success">Aktywna</span>
+                                                        <span class="badge bg-success">Aktywna</span>
                                                     {% else %}
-                                                        <span class="admin-badge admin-badge-danger">Nieaktywna</span>
+                                                        <span class="badge bg-danger">Nieaktywna</span>
                                                     {% endif %}
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <button class="btn btn-sm admin-btn-outline" 
+                                                        <button <button class="btn btn-sm admin-btn-outline" 
                                                                 onclick="editSectionData({{ section.id }})">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
                                                         {% if section.name == 'about' %}
-                                                            <button class="btn btn-sm admin-btn-info" 
+                                                            <button <button class="btn btn-sm admin-btn-info" 
                                                                     onclick="editPillars({{ section.id }})">
                                                                 <i class="fas fa-th-large"></i>
                                                             </button>
-                                                            <button class="btn btn-sm admin-btn-warning" 
+                                                            <button <button class="btn btn-sm admin-btn-warning" 
                                                                     onclick="editFloatingCards({{ section.id }})">
                                                                 <i class="fas fa-layer-group"></i>
                                                             </button>
                                                         {% endif %}
-                                                        <button class="btn btn-sm admin-btn-danger" 
+                                                        <button <button class="btn btn-sm admin-btn-danger" 
                                                                 onclick="deleteSection({{ section.id }})">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
@@ -106,9 +96,9 @@
                                 </div>
                             {% else %}
                                 <div class="text-center py-5">
-                                    <i class="fas fa-layer-group fa-3x admin-text-muted mb-3"></i>
-                                    <h5 class="admin-text-muted">Brak sekcji</h5>
-                                    <p class="admin-text-muted">Dodaj pierwszą sekcję, aby rozpocząć</p>
+                                    <i class="fas fa-layer-group fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">Brak sekcji</h5>
+                                    <p class="text-muted">Dodaj pierwszą sekcję, aby rozpocząć</p>
                                     <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addSectionModal">
                                         <i class="fas fa-plus me-2"></i>
                                         Dodaj Sekcję

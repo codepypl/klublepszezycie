@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
-from datetime import datetime
+from datetime import datetime, timedelta
 
 db = SQLAlchemy()
 
@@ -117,6 +117,54 @@ class Page(db.Model):
     def __repr__(self):
         return f'<Page {self.title}>'
 
+class EmailTemplate(db.Model):
+    __tablename__ = 'email_templates'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    subject = db.Column(db.String(200), nullable=False)
+    html_content = db.Column(db.Text, nullable=False)
+    text_content = db.Column(db.Text)  # Plain text version
+    template_type = db.Column(db.String(50), nullable=False)  # welcome, reminder, newsletter, etc.
+    variables = db.Column(db.Text)  # JSON string of available variables
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<EmailTemplate {self.name}>'
+
+class EmailSubscription(db.Model):
+    __tablename__ = 'email_subscriptions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False, unique=True)
+    name = db.Column(db.String(100))
+    is_active = db.Column(db.Boolean, default=True)
+    subscription_type = db.Column(db.String(50), default='all')  # all, reminders, newsletter, etc.
+    unsubscribe_token = db.Column(db.String(255), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<EmailSubscription {self.email}>'
+
+class EmailLog(db.Model):
+    __tablename__ = 'email_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False)
+    template_id = db.Column(db.Integer, db.ForeignKey('email_templates.id'))
+    subject = db.Column(db.String(200), nullable=False)
+    status = db.Column(db.String(20), default='sent')  # sent, failed, bounced
+    error_message = db.Column(db.Text)
+    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    template = db.relationship('EmailTemplate', backref='email_logs')
+    
+    def __repr__(self):
+        return f'<EmailLog {self.email} - {self.subject}>'
+
 class FAQ(db.Model):
     __tablename__ = 'faqs'
     
@@ -151,14 +199,70 @@ class SEOSettings(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class EventSchedule(db.Model):
+    __tablename__ = 'event_schedule'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    event_type = db.Column(db.String(50), nullable=False)  # Prezentacja, Webinar, Spotkanie, Event, Inne
+    event_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime)  # Data zakończenia wydarzenia
+    description = db.Column(db.Text)  # Opis wydarzenia z edytora WYSIWYG
+    meeting_link = db.Column(db.String(500))  # Link do spotkania
+    location = db.Column(db.String(200))  # Lokalizacja wydarzenia
+    is_active = db.Column(db.Boolean, default=True)
+    is_published = db.Column(db.Boolean, default=False)  # Czy opublikowane na stronie
+    calendar_integration = db.Column(db.Boolean, default=True)  # Czy włączyć integrację z kalendarzami
+    google_calendar_id = db.Column(db.String(500))  # ID wydarzenia w Google Calendar
+    outlook_event_id = db.Column(db.String(500))  # ID wydarzenia w Outlook
+    ical_uid = db.Column(db.String(200))  # Unikalny ID dla iCal
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<EventSchedule {self.title} - {self.event_type} - {self.event_date}>'
+    
+    def generate_ical_content(self):
+        """Generuje zawartość iCal dla wydarzenia"""
+        from datetime import datetime
+        
+        # Generuj unikalny UID jeśli nie istnieje
+        if not self.ical_uid:
+            self.ical_uid = f"event_{self.id}_{int(datetime.now().timestamp())}@lepszezycie.pl"
+        
+        # Ustaw datę zakończenia jeśli nie istnieje (domyślnie +1 godzina)
+        end_time = self.end_date or (self.event_date + timedelta(hours=1))
+        
+        ical_content = f"""BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Klub Lepsze Życie//Wydarzenie//PL
+BEGIN:VEVENT
+UID:{self.ical_uid}
+DTSTAMP:{datetime.now().strftime('%Y%m%dT%H%M%SZ')}
+DTSTART:{self.event_date.strftime('%Y%m%dT%H%M%SZ')}
+DTEND:{end_time.strftime('%Y%m%dT%H%M%SZ')}
+SUMMARY:{self.title}
+DESCRIPTION:{self.description or 'Wydarzenie klubu Lepsze Życie'}
+LOCATION:{self.location or 'Online'}
+URL:{self.meeting_link or ''}
+STATUS:CONFIRMED
+SEQUENCE:0
+END:VEVENT
+END:VCALENDAR"""
+        
+        return ical_content
+
+
 class PresentationSchedule(db.Model):
     __tablename__ = 'presentation_schedule'
     
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), default='Następna sesja')
+    title = db.Column(db.String(200), nullable=False)
     next_presentation_date = db.Column(db.DateTime, nullable=False)
-    custom_text = db.Column(db.String(500))  # Opcjonalny niestandardowy tekst
+    custom_text = db.Column(db.Text)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<PresentationSchedule {self.title} - {self.next_presentation_date}>'
 

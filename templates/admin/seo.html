@@ -6,177 +6,73 @@
     <title>Panel Administratora - SEO/SEM</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
 </head>
-<body>
-    <div class="admin-panel">
-        <!-- Top Navigation Bar -->
-        <nav class="navbar navbar-expand-lg admin-top-nav">
-            <div class="container-fluid">
-                <button class="btn admin-btn-outline d-lg-none" id="sidebarToggle">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <span class="navbar-brand text-white mb-0 h1">
-                    <i class="fas fa-cog me-2"></i>
-                    Panel Administratora
-                </span>
-                <div class="navbar-nav ms-auto">
-                    <a class="nav-link text-white" href="{{ url_for('index') }}">
-                        <i class="fas fa-home me-1"></i>
-                        Strona główna
-                    </a>
-                </div>
-            </div>
-        </nav>
-
+<body class="admin-body">
         <div class="container-fluid">
-            <div class="row flex-nowrap">
-                <!-- Sidebar -->
-                <nav class="col-lg-2 admin-sidebar p-3" id="sidebar">
-                    <div class="d-flex flex-column">
-                        <hr class="text-muted">
-                        <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
-                                    <i class="fas fa-tachometer-alt"></i>
-                                    Dashboard
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_menu') }}">
-                                    <i class="fas fa-bars"></i>
-                                    Menu
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_sections') }}">
-                                    <i class="fas fa-layer-group"></i>
-                                    Sekcje
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_pages') }}">
-                                    <i class="fas fa-file-alt"></i>
-                                    Podstrony
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_benefits') }}">
-                                    <i class="fas fa-star"></i>
-                                    Korzyści
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_testimonials') }}">
-                                    <i class="fas fa-comments"></i>
-                                    Opinie
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_faq') }}">
-                                    <i class="fas fa-question-circle"></i>
-                                    FAQ
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_registrations') }}">
-                                    <i class="fas fa-user-plus"></i>
-                                    Rejestracje
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_social') }}">
-                                    <i class="fas fa-share-alt"></i>
-                                    Social Media
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link active" href="{{ url_for('admin_seo') }}">
-                                    <i class="fas fa-search"></i>
-                                    SEO/SEM
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_presentation_schedule') }}">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    Harmonogram Prezentacji
-                                </a>
-                            </li>
-
-                        </ul>
-                        <hr class="text-muted mt-auto">
-                        <div class="text-center">
-                            <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout w-100">
-                                <i class="fas fa-sign-out-alt me-2"></i>
-                                Wyloguj
-                            </a>
-                        </div>
-                    </div>
-                </nav>
-
+            <div class="row">            <!-- Sidebar -->
+            {% include 'admin/sidebar.html' %}
                 <!-- Main Content -->
-                <main class="col-lg-10 admin-content m-0">
+                <main class="col-lg-10 admin-content">
                     <div class="admin-header">
                         <h1><i class="fas fa-search me-2"></i>Zarządzanie SEO/SEM</h1>
+                        <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
+                            <i class="fas fa-sign-out-alt me-2"></i>
+                            Wyloguj
+                        </a>
                     </div>
-
                     <!-- Add SEO Settings Button -->
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="text-muted mb-0">Zarządzaj ustawieniami SEO i meta tagami</p>
-                        <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addSeoModal">
-                            <i class="fas fa-plus me-2"></i>
-                            Dodaj Ustawienia SEO
-                        </button>
-                    </div>
-
-                    <!-- SEO Overview -->
-                    <div class="admin-card mb-4">
-                        <div class="admin-card-header">
-                            <h5 class="mb-0">
-                                <i class="fas fa-chart-line me-2"></i>
-                                Przegląd SEO
-                            </h5>
-                        </div>
-                        <div class="admin-card-body">
-                            <div class="row">
-                                <div class="col-md-3">
-                                    <div class="text-center">
-                                        <i class="fas fa-tags fa-2x text-primary mb-2"></i>
-                                        <h4>{{ seo_settings|length }}</h4>
-                                        <p class="text-muted mb-0">Meta Tagi</p>
-                                    </div>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-2"></h5>
+                                    <p class="text-muted mb-0"></p>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="text-center">
-                                        <i class="fas fa-share-alt fa-2x text-info mb-2"></i>
-                                        <h4>{{ seo_settings|selectattr('og_title')|list|length }}</h4>
-                                        <p class="text-muted mb-0">Open Graph</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="text-center">
-                                        <i class="fab fa-twitter fa-2x text-info mb-2"></i>
-                                        <h4>{{ seo_settings|selectattr('twitter_card')|list|length }}</h4>
-                                        <p class="text-muted mb-0">Twitter Cards</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="text-center">
-                                        <i class="fas fa-code fa-2x text-success mb-2"></i>
-                                        <h4>{{ seo_settings|selectattr('structured_data')|list|length }}</h4>
-                                        <p class="text-muted mb-0">Structured Data</p>
-                                    </div>
-                                </div>
+                                <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addSeoModal">
+                                    <i class="fas fa-plus me-2"></i>
+                                    Dodaj Ustawienia SEO
+                                </button>
                             </div>
                         </div>
                     </div>
-
+                    <!-- Stats Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="admin-stats-card">
+                                <i class="fas fa-tags"></i>
+                                <h3>{{ seo_settings|length }}</h3>
+                                <p>Meta Tagi</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="admin-stats-card">
+                                <i class="fas fa-share-alt"></i>
+                                <h3>{{ seo_settings|selectattr('og_title')|list|length }}</h3>
+                                <p>Open Graph</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="admin-stats-card">
+                                <i class="fab fa-twitter"></i>
+                                <h3>{{ seo_settings|selectattr('twitter_card')|list|length }}</h3>
+                                <p>Twitter Cards</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="admin-stats-card">
+                                <i class="fas fa-code"></i>
+                                <h3>{{ seo_settings|selectattr('structured_data')|list|length }}</h3>
+                                <p>Structured Data</p>
+                            </div>
+                        </div>
+                    </div>
                     <!-- SEO Settings Table -->
                     <div class="admin-card">
                         <div class="admin-card-body">
                             {% if seo_settings %}
                                 <div class="table-responsive">
-                                    <table class="table admin-table">
+                                    <table class="table admin-table admin-table">
                                         <thead>
                                             <tr>
                                                 <th>Strona</th>
@@ -201,25 +97,25 @@
                                                 </td>
                                                 <td>
                                                     {% if seo.og_title %}
-                                                        <span class="admin-badge admin-badge-success">Tak</span>
+                                                        <span class="badge bg-success">Tak</span>
                                                     {% else %}
                                                         <span class="admin-badge admin-badge-secondary">Nie</span>
                                                     {% endif %}
                                                 </td>
                                                 <td>
                                                     {% if seo.twitter_card %}
-                                                        <span class="admin-badge admin-badge-success">Tak</span>
+                                                        <span class="badge bg-success">Tak</span>
                                                     {% else %}
                                                         <span class="admin-badge admin-badge-secondary">Nie</span>
                                                     {% endif %}
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <button class="btn btn-sm admin-btn-outline" 
+                                                        <button <button class="btn btn-sm admin-btn-outline" 
                                                                 onclick="editSeo({{ seo.id }}, '{{ seo.page_name }}', '{{ seo.meta_title or '' }}', '{{ seo.meta_description or '' }}', '{{ seo.og_title or '' }}', '{{ seo.og_description or '' }}', '{{ seo.og_image or '' }}', '{{ seo.twitter_card or '' }}', '{{ seo.twitter_title or '' }}', '{{ seo.twitter_description or '' }}', '{{ seo.structured_data or '' }}')">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
-                                                        <button class="btn btn-sm admin-btn-danger" 
+                                                        <button <button class="btn btn-sm admin-btn-danger" 
                                                                 onclick="deleteSeo({{ seo.id }})">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
@@ -247,7 +143,6 @@
             </div>
         </div>
     </div>
-
     <!-- Add SEO Modal -->
     <div class="modal fade admin-modal" id="addSeoModal" tabindex="-1">
         <div class="modal-dialog modal-xl">
@@ -355,7 +250,6 @@
             </div>
         </div>
     </div>
-
     <!-- Edit SEO Modal -->
     <div class="modal fade admin-modal" id="editSeoModal" tabindex="-1">
         <div class="modal-dialog modal-xl">
@@ -463,7 +357,6 @@
             </div>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Character counters
@@ -476,12 +369,10 @@
                 counter.classList.remove('text-danger');
             }
         }
-
         // Add SEO
         function addSeo() {
             const form = document.getElementById('addSeoForm');
             const formData = new FormData(form);
-            
             fetch('/admin/api/seo', {
                 method: 'POST',
                 body: formData
@@ -499,7 +390,6 @@
                 alert('Wystąpił błąd podczas dodawania ustawień SEO');
             });
         }
-
         // Edit SEO
         function editSeo(id, pageName, metaTitle, metaDescription, ogTitle, ogDescription, ogImage, twitterCard, twitterTitle, twitterDescription, structuredData) {
             document.getElementById('edit_id').value = id;
@@ -513,19 +403,15 @@
             document.getElementById('edit_twitter_title').value = twitterTitle;
             document.getElementById('edit_twitter_description').value = twitterDescription;
             document.getElementById('edit_structured_data').value = structuredData;
-            
             // Update character counts
             updateCount(document.getElementById('edit_meta_title'), document.getElementById('edit_title_count'), 60);
             updateCount(document.getElementById('edit_meta_description'), document.getElementById('edit_desc_count'), 160);
-            
             new bootstrap.Modal(document.getElementById('editSeoModal')).show();
         }
-
         // Save SEO
         function saveSeo() {
             const form = document.getElementById('editSeoForm');
             const formData = new FormData(form);
-            
             fetch('/admin/api/seo', {
                 method: 'PUT',
                 body: formData
@@ -543,13 +429,11 @@
                 alert('Wystąpił błąd podczas zapisywania zmian');
             });
         }
-
         // Delete SEO
         function deleteSeo(id) {
             if (confirm('Czy na pewno chcesz usunąć te ustawienia SEO?')) {
                 const formData = new FormData();
                 formData.append('id', id);
-                
                 fetch('/admin/api/seo', {
                     method: 'DELETE',
                     body: formData
@@ -568,46 +452,37 @@
                 });
             }
         }
-
         // Form submissions
         document.getElementById('addSeoForm').addEventListener('submit', function(e) {
             e.preventDefault();
             addSeo();
         });
-
         document.getElementById('editSeoForm').addEventListener('submit', function(e) {
             e.preventDefault();
             saveSeo();
         });
-
         // Character count listeners
         document.getElementById('meta_title').addEventListener('input', function() {
             updateCount(this, document.getElementById('title_count'), 60);
         });
-
         document.getElementById('meta_description').addEventListener('input', function() {
             updateCount(this, document.getElementById('desc_count'), 160);
         });
-
         document.getElementById('edit_meta_title').addEventListener('input', function() {
             updateCount(this, document.getElementById('edit_title_count'), 60);
         });
-
         document.getElementById('edit_meta_description').addEventListener('input', function() {
             updateCount(this, document.getElementById('edit_desc_count'), 160);
         });
-
         // Sidebar toggle functionality
         document.getElementById('sidebarToggle').addEventListener('click', function() {
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('show');
         });
-
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', function(event) {
             const sidebar = document.getElementById('sidebar');
             const sidebarToggle = document.getElementById('sidebarToggle');
-            
             if (window.innerWidth < 992 && 
                 !sidebar.contains(event.target) && 
                 !sidebarToggle.contains(event.target)) {

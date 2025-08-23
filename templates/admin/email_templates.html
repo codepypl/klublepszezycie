@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Szablony E-mail - Panel Administratora</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
+    <script src="https://cdn.tiny.cloud/1/nzk6x47f5uoxs3thrhw5hjtjhrby1u3skrpld6z2z032z7tv/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+</head>
+<body class="admin-body">
+    <div class="admin-container">
+        <div class="admin-sidebar" id="sidebar">
+            {% include 'admin/sidebar.html' %}
+        </div>
+        <div class="admin-content">
+            <div class="admin-header">
+                <h1>
+                    <i class="fas fa-envelope me-2"></i>
+                    Szablony E-mail
+                </h1>
+                <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
+                    <i class="fas fa-sign-out-alt me-2"></i>
+                    Wyloguj
+                </a>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="admin-stats-card">
+                        <i class="fas fa-envelope"></i>
+                        <h3 id="totalTemplates">0</h3>
+                        <p>Wszystkie Szablony</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="admin-stats-card">
+                        <i class="fas fa-check-circle"></i>
+                        <h3 id="activeTemplates">0</h3>
+                        <p>Aktywne Szablony</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="admin-stats-card">
+                        <i class="fas fa-users"></i>
+                        <h3 id="totalSubscribers">0</h3>
+                        <p>Subskrybenci</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="admin-stats-card">
+                        <i class="fas fa-paper-plane"></i>
+                        <h3 id="totalEmailsSent">0</h3>
+                        <p>Wysłane E-maile</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Add Template Button -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-2"></h5>
+                            <p class="text-muted mb-0"></p>
+                        </div>
+                        <button class="btn admin-btn" onclick="showAddTemplateModal()">
+                            <i class="fas fa-plus me-2"></i>
+                            Dodaj Szablon
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Templates Table -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5>
+                        <i class="fas fa-list me-2"></i>
+                        Lista Szablonów
+                    </h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="table-responsive">
+                        <table class="table admin-table admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Nazwa</th>
+                                    <th>Typ</th>
+                                    <th>Temat</th>
+                                    <th>Status</th>
+                                    <th>Zmienne</th>
+                                    <th>Utworzono</th>
+                                    <th>Akcje</th>
+                                </tr>
+                            </thead>
+                            <tbody id="templatesTableBody">
+                                <!-- Templates will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add/Edit Template Modal -->
+    <div class="modal fade admin-modal" id="templateModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="templateModalTitle">
+                        <i class="fas fa-plus me-2"></i>
+                        Dodaj Szablon
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="templateForm">
+                    <input type="hidden" id="template_id" name="id">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="admin-form-label">Nazwa szablonu</label>
+                                    <input type="text" class="admin-form-control" name="name" id="template_name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="admin-form-label">Typ szablonu</label>
+                                    <select class="admin-form-control" name="template_type" id="template_type" required>
+                                        <option value="">Wybierz typ</option>
+                                        <option value="welcome">Powitanie</option>
+                                        <option value="reminder">Przypomnienie</option>
+                                        <option value="newsletter">Newsletter</option>
+                                        <option value="notification">Powiadomienie</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="admin-form-label">Temat e-maila</label>
+                            <input type="text" class="admin-form-control" name="subject" id="template_subject" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="admin-form-label">Treść HTML</label>
+                            <textarea id="template_html_content" name="html_content"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="admin-form-label">Treść tekstowa (opcjonalnie)</label>
+                            <textarea class="admin-form-control admin-form-textarea" name="text_content" id="template_text_content" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="admin-form-label">Dostępne zmienne (opcjonalnie)</label>
+                            <textarea class="admin-form-control admin-form-textarea" name="variables" id="template_variables" rows="2" placeholder='np. {{name}}, {{email}}, {{event_date}}'></textarea>
+                            <small class="admin-text-muted">Wprowadź zmienne w formacie {{nazwa_zmiennej}}</small>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="template_is_active" checked>
+                            <label class="form-check-label" for="template_is_active">
+                                Aktywny
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">
+                            <i class="fas fa-save me-2"></i>
+                            Zapisz Szablon
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize TinyMCE
+        tinymce.init({
+            selector: '#template_html_content',
+            height: 500,
+            plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
+            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat'
+        });
+        
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle form submission
+            document.getElementById('templateForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                alert('Formularz został wysłany! (To jest test - API nie jest jeszcze zaimplementowane)');
+                
+                // TODO: Implement actual form submission to API
+                // const formData = new FormData(this);
+                // fetch('/admin/api/email-templates', { method: 'POST', body: formData })
+            });
+        });
+        
+        // Global functions - dostępne globalnie
+        function showAddTemplateModal() {
+            console.log('showAddTemplateModal called');
+            try {
+                // Reset form
+                document.getElementById('templateForm').reset();
+                document.getElementById('template_id').value = '';
+                document.getElementById('templateModalTitle').innerHTML = '<i class="fas fa-plus me-2"></i>Dodaj Szablon';
+                
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('templateModal'));
+                modal.show();
+            } catch (error) {
+                console.error('Error in showAddTemplateModal:', error);
+                alert('Błąd podczas otwierania modala: ' + error.message);
+            }
+        }
+        
+        function editTemplate(templateId) {
+            console.log('editTemplate called with ID:', templateId);
+            // TODO: Implement edit functionality
+            alert('Edycja szablonu ID: ' + templateId);
+        }
+        
+        function testTemplate(templateId) {
+            console.log('testTemplate called with ID:', templateId);
+            // TODO: Implement test functionality
+            alert('Test szablonu ID: ' + templateId);
+        }
+        
+        function deleteTemplate(templateId) {
+            console.log('deleteTemplate called with ID:', templateId);
+            if (confirm('Czy na pewno chcesz usunąć ten szablon?')) {
+                // TODO: Implement delete functionality
+                alert('Usuwanie szablonu ID: ' + templateId);
+            }
+        }
+        
+        function sendReminders() {
+            console.log('sendReminders called');
+            if (confirm('Czy na pewno chcesz wysłać przypomnienia?')) {
+                // TODO: Implement send reminders functionality
+                alert('Wysyłanie przypomnień...');
+            }
+        }
+    </script>
+</body>
+</html>

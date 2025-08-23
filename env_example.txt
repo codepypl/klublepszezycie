@@ -1,0 +1,27 @@
+# Database Configuration
+DATABASE_URL=postgresql://shadi@localhost:5432/betterlife
+DEV_DATABASE_URL=postgresql://shadi@localhost:5432/betterlife
+TEST_DATABASE_URL=postgresql://shadi@localhost:5432/betterlife
+
+# Security
+SECRET_KEY=your-secret-key-here-change-in-production
+
+# Admin Settings
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin123
+ADMIN_EMAIL=admin@lepszezycie.pl
+
+# Email Configuration (Zoho Mail)
+MAIL_SERVER=smtp.zoho.com
+MAIL_PORT=587
+MAIL_USE_TLS=true
+MAIL_USE_SSL=false
+MAIL_USERNAME=noreply@lepszezycie.pl
+MAIL_PASSWORD=your-zoho-mail-password-here
+MAIL_DEFAULT_SENDER=noreply@lepszezycie.pl
+MAIL_DEFAULT_SENDER_NAME=Lepsze Życie Club
+
+# Email Settings
+EMAIL_BATCH_SIZE=50
+EMAIL_DELAY=1
+

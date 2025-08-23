@@ -11,8 +11,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import models and config
-from models import db, User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, Registration, FAQ, SEOSettings, PresentationSchedule, Page
+from models import db, User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, Registration, FAQ, SEOSettings, EventSchedule, Page, EmailTemplate, EmailSubscription, EmailLog
 from config import config
+from email_service import email_service
+from calendar_service import calendar_service
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -71,22 +73,16 @@ def index():
     social_links = SocialLink.query.filter_by(is_active=True).order_by(SocialLink.order).all()
     faqs = FAQ.query.filter_by(is_active=True).order_by(FAQ.order).all() if faq_section else []
     
-    # Get next presentation date from database or calculate default
-    schedule = PresentationSchedule.query.filter_by(is_active=True).first()
-    if schedule and schedule.next_presentation_date:
-        next_presentation = schedule.next_presentation_date
-    else:
-        # Fallback to automatic calculation
-        today = datetime.now()
-        days_until_saturday = (5 - today.weekday()) % 7
-        if days_until_saturday == 0 and today.hour >= 10:
-            days_until_saturday = 7
-        next_saturday = today + timedelta(days=days_until_saturday)
-        next_presentation = next_saturday.replace(hour=10, minute=0, second=0, microsecond=0)
+    # Get next published and active event from database
+    next_event = EventSchedule.query.filter_by(
+        is_active=True, 
+        is_published=True
+    ).filter(
+        EventSchedule.event_date > datetime.now()
+    ).order_by(EventSchedule.event_date).first()
     
     return render_template('index.html',
-                         next_presentation=next_presentation,
-                         schedule=schedule,
+                         next_event=next_event,
                          testimonials=testimonials,
                          testimonials_section=testimonials_section,
                          cta_section=cta_section,
@@ -232,14 +228,14 @@ def admin_seo():
     seo_settings = SEOSettings.query.all()
     return render_template('admin/seo.html', seo_settings=seo_settings)
 
-@app.route('/admin/presentation-schedule')
+@app.route('/admin/event-schedule')
 @login_required
-def admin_presentation_schedule():
+def admin_event_schedule():
     if not current_user.is_admin:
         return redirect(url_for('admin_login'))
     
-    schedule = PresentationSchedule.query.first()
-    return render_template('admin/presentation_schedule.html', schedule=schedule)
+    events = EventSchedule.query.order_by(EventSchedule.event_date.desc()).all()
+    return render_template('admin/event_schedule.html', events=events)
 
 @app.route('/admin/pages')
 @login_required
@@ -247,6 +243,13 @@ def admin_pages():
     if not current_user.is_admin:
         return redirect(url_for('admin_login'))
     return render_template('admin/pages.html')
+
+@app.route('/admin/email-templates')
+@login_required
+def email_templates():
+    if not current_user.is_admin:
+        return redirect(url_for('admin_login'))
+    return render_template('admin/email_templates.html')
 
 # API routes for content management
 @app.route('/admin/api/menu', methods=['GET', 'POST', 'PUT', 'DELETE'])
@@ -924,68 +927,161 @@ def api_seo():
             return jsonify({'success': True})
         return jsonify({'success': False, 'message': 'SEO settings not found'}), 404
 
-@app.route('/admin/api/presentation-schedule', methods=['GET', 'POST', 'PUT'])
+@app.route('/admin/api/event-schedule', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @login_required
-def api_presentation_schedule():
+def api_event_schedule():
     if not current_user.is_admin:
         return jsonify({'error': 'Unauthorized'}), 403
     
     if request.method == 'GET':
-        schedule = PresentationSchedule.query.first()
-        if schedule:
-            return jsonify({
-                'id': schedule.id,
-                'title': schedule.title,
-                'next_presentation_date': schedule.next_presentation_date.isoformat() if schedule.next_presentation_date else None,
-                'custom_text': schedule.custom_text,
-                'is_active': schedule.is_active
-            })
-        return jsonify({'error': 'No schedule found'}), 404
+        events = EventSchedule.query.order_by(EventSchedule.event_date.desc()).all()
+        return jsonify([{
+            'id': event.id,
+            'title': event.title,
+            'event_type': event.event_type,
+            'event_date': event.event_date.isoformat() if event.event_date else None,
+            'end_date': event.end_date.isoformat() if event.end_date else None,
+            'description': event.description,
+            'meeting_link': event.meeting_link,
+            'location': event.location,
+            'is_active': event.is_active,
+            'is_published': event.is_published,
+            'calendar_integration': event.calendar_integration,
+            'google_calendar_id': event.google_calendar_id,
+            'outlook_event_id': event.outlook_event_id,
+            'ical_uid': event.ical_uid,
+            'created_at': event.created_at.isoformat(),
+            'updated_at': event.updated_at.isoformat()
+        } for event in events])
     
     elif request.method == 'POST':
-        # Obsługujemy zarówno JSON jak i FormData
-        if request.is_json:
-            data = request.get_json()
-        else:
-            data = request.form.to_dict()
-            # Konwertujemy checkbox na boolean
-            data['is_active'] = 'is_active' in request.form
+        data = request.form.to_dict()
+        data['is_active'] = 'is_active' in request.form
+        data['is_published'] = 'is_published' in request.form
         
-        # Konwertujemy string daty na datetime
-        from datetime import datetime
-        presentation_date = datetime.fromisoformat(data['next_presentation_date'].replace('Z', '+00:00'))
+        # Parse datetime
+        event_date = datetime.fromisoformat(data['event_date'].replace('Z', '+00:00'))
         
-        new_schedule = PresentationSchedule(
-            title=data.get('title', 'Następna sesja'),
-            next_presentation_date=presentation_date,
-            custom_text=data.get('custom_text', ''),
-            is_active=data.get('is_active', True)
+        new_event = EventSchedule(
+            title=data['title'],
+            event_type=data['event_type'],
+            event_date=event_date,
+            end_date=datetime.fromisoformat(data['end_date'].replace('Z', '+00:00')) if data.get('end_date') else None,
+            description=data.get('description', ''),
+            meeting_link=data.get('meeting_link', ''),
+            location=data.get('location', ''),
+            is_active=data['is_active'],
+            is_published=data['is_published'],
+            calendar_integration=data.get('calendar_integration', True)
         )
-        db.session.add(new_schedule)
+        db.session.add(new_event)
         db.session.commit()
-        return jsonify({'success': True, 'id': new_schedule.id})
+        return jsonify({'success': True, 'id': new_event.id})
     
     elif request.method == 'PUT':
-        # Obsługujemy zarówno JSON jak i FormData
-        if request.is_json:
-            data = request.get_json()
-        else:
-            data = request.form.to_dict()
-            # Konwertujemy checkbox na boolean
-            data['is_active'] = 'is_active' in request.form
+        data = request.form.to_dict()
+        data['is_active'] = 'is_active' in request.form
+        data['is_published'] = 'is_published' in request.form
         
-        schedule = PresentationSchedule.query.get(data['id'])
-        if schedule:
-            schedule.title = data.get('title', 'Następna sesja')
-            # Konwertujemy string daty na datetime
-            from datetime import datetime
-            presentation_date = datetime.fromisoformat(data['next_presentation_date'].replace('Z', '+00:00'))
-            schedule.next_presentation_date = presentation_date
-            schedule.custom_text = data.get('custom_text', '')
-            schedule.is_active = data.get('is_active', True)
+        event = EventSchedule.query.get(data['id'])
+        if event:
+            # Parse datetime
+            event_date = datetime.fromisoformat(data['event_date'].replace('Z', '+00:00'))
+            event.title = data['title']
+            event.event_type = data['event_type']
+            event.event_date = event_date
+            event.end_date = datetime.fromisoformat(data['end_date'].replace('Z', '+00:00')) if data.get('end_date') else None
+            event.description = data.get('description', '')
+            event.meeting_link = data.get('meeting_link', '')
+            event.location = data.get('location', '')
+            event.is_active = data['is_active']
+            event.is_published = data['is_published']
+            event.calendar_integration = data.get('calendar_integration', True)
             db.session.commit()
             return jsonify({'success': True})
-        return jsonify({'success': False, 'message': 'Schedule not found'}), 404
+        return jsonify({'success': False, 'error': 'Event not found'}), 404
+    
+    elif request.method == 'DELETE':
+        event_id = request.args.get('id', type=int)
+        event = EventSchedule.query.get(event_id)
+        if event:
+            db.session.delete(event)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'error': 'Event not found'}), 404
+
+@app.route('/admin/api/event-schedule/<int:event_id>', methods=['GET'])
+@login_required
+def api_event_by_id(event_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    event = EventSchedule.query.get(event_id)
+    if event:
+            return jsonify({
+            'success': True,
+            'event': {
+                'id': event.id,
+                'title': event.title,
+                'event_type': event.event_type,
+                'event_date': event.event_date.isoformat() if event.event_date else None,
+                'end_date': event.end_date.isoformat() if event.end_date else None,
+                'description': event.description,
+                'meeting_link': event.meeting_link,
+                'location': event.location,
+                'is_active': event.is_active,
+                'is_published': event.is_published,
+                'calendar_integration': event.calendar_integration,
+                'google_calendar_id': event.google_calendar_id,
+                'outlook_event_id': event.outlook_event_id,
+                'ical_uid': event.ical_uid,
+                'created_at': event.created_at.isoformat(),
+                'updated_at': event.updated_at.isoformat()
+            }
+        })
+    return jsonify({'success': False, 'error': 'Event not found'}), 404
+
+def send_event_reminders():
+    """Send reminders about upcoming events to all subscribers"""
+    try:
+        # Get next published and active event
+        now = datetime.now()
+        next_event = EventSchedule.query.filter_by(
+            is_active=True, 
+            is_published=True
+        ).filter(
+            EventSchedule.event_date > now
+        ).order_by(EventSchedule.event_date).first()
+        
+        if not next_event:
+            return False
+        
+        # Check if event is within next 24 hours
+        time_diff = next_event.event_date - now
+        
+        if time_diff.total_seconds() < 0 or time_diff.total_seconds() > 86400:  # 24 hours
+            return False
+        
+        # Get all active subscribers
+        subscribers = EmailSubscription.query.filter_by(is_active=True).all()
+        
+        # Send reminders
+        for subscriber in subscribers:
+            try:
+                email_service.send_reminder_email(
+                    email=subscriber.email,
+                    name=subscriber.name or 'Użytkowniku',
+                    event_type=next_event.title,
+                    event_date=next_event.event_date,
+                    event_details=next_event.description or f'Zapraszamy na {next_event.event_type.lower()}, który odbędzie się o godzinie {next_event.event_date.strftime("%H:%M")}.'
+                )
+            except Exception as e:
+                print(f"Failed to send reminder to {subscriber.email}: {str(e)}")
+        
+        return True
+    except Exception as e:
+        print(f"Error sending event reminders: {str(e)}")
+        return False
 
 # Page routes
 @app.route('/<slug>')
@@ -1108,6 +1204,328 @@ def api_page_by_id(page_id):
             }
         })
     return jsonify({'success': False, 'error': 'Page not found'}), 404
+
+# Admin API for email templates
+@app.route('/admin/api/email-templates', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@login_required
+def api_email_templates():
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    if request.method == 'GET':
+        templates = EmailTemplate.query.order_by(EmailTemplate.created_at.desc()).all()
+        return jsonify([{
+            'id': template.id,
+            'name': template.name,
+            'subject': template.subject,
+            'html_content': template.html_content,
+            'text_content': template.text_content,
+            'template_type': template.template_type,
+            'variables': template.variables,
+            'is_active': template.is_active,
+            'created_at': template.created_at.isoformat(),
+            'updated_at': template.updated_at.isoformat()
+        } for template in templates])
+    
+    elif request.method == 'POST':
+        data = request.form.to_dict()
+        data['is_active'] = 'is_active' in request.form
+        
+        new_template = EmailTemplate(
+            name=data['name'],
+            subject=data['subject'],
+            html_content=data.get('html_content', ''),
+            text_content=data.get('text_content', ''),
+            template_type=data['template_type'],
+            variables=data.get('variables', ''),
+            is_active=data['is_active']
+        )
+        db.session.add(new_template)
+        db.session.commit()
+        return jsonify({'success': True, 'id': new_template.id})
+    
+    elif request.method == 'PUT':
+        data = request.form.to_dict()
+        data['is_active'] = 'is_active' in request.form
+        
+        template = EmailTemplate.query.get(data['id'])
+        if template:
+            template.name = data['name']
+            template.subject = data['subject']
+            template.html_content = data.get('html_content', '')
+            template.text_content = data.get('text_content', '')
+            template.template_type = data['template_type']
+            template.variables = data.get('variables', '')
+            template.is_active = data['is_active']
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Template not found'}), 404
+    
+    elif request.method == 'DELETE':
+        template_id = request.args.get('id', type=int)
+        template = EmailTemplate.query.get(template_id)
+        if template:
+            db.session.delete(template)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Template not found'}), 404
+
+@app.route('/admin/api/email-templates/<int:template_id>', methods=['GET'])
+@login_required
+def api_email_template_by_id(template_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    template = EmailTemplate.query.get(template_id)
+    if template:
+        return jsonify({
+            'success': True,
+            'template': {
+                'id': template.id,
+                'name': template.name,
+                'subject': template.subject,
+                'html_content': template.html_content,
+                'text_content': template.text_content,
+                'template_type': template.template_type,
+                'variables': template.variables,
+                'is_active': template.is_active,
+                'created_at': template.created_at.isoformat(),
+                'updated_at': template.updated_at.isoformat()
+            }
+        })
+    return jsonify({'success': False, 'error': 'Template not found'}), 404
+
+@app.route('/admin/api/email-templates/test', methods=['POST'])
+@login_required
+def api_test_email_template():
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.get_json()
+    template_id = data.get('template_id')
+    test_email = data.get('test_email')
+    variables = data.get('variables', {})
+    
+    try:
+        # Send test email
+        success = email_service.send_template_email(test_email, 'test', variables)
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to send test email'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# Admin API for email subscriptions
+@app.route('/admin/api/email-subscriptions', methods=['GET', 'DELETE'])
+@login_required
+def api_email_subscriptions():
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    if request.method == 'GET':
+        subscriptions = EmailSubscription.query.order_by(EmailSubscription.created_at.desc()).all()
+        return jsonify([{
+            'id': sub.id,
+            'email': sub.email,
+            'name': sub.name,
+            'subscription_type': sub.subscription_type,
+            'is_active': sub.is_active,
+            'created_at': sub.created_at.isoformat(),
+            'updated_at': sub.updated_at.isoformat()
+        } for sub in subscriptions])
+    
+    elif request.method == 'DELETE':
+        sub_id = request.args.get('id', type=int)
+        subscription = EmailSubscription.query.get(sub_id)
+        if subscription:
+            db.session.delete(subscription)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Subscription not found'}), 404
+
+@app.route('/admin/api/email-stats', methods=['GET'])
+@login_required
+def api_email_stats():
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    stats = {
+        'total_templates': EmailTemplate.query.count(),
+        'active_templates': EmailTemplate.query.filter_by(is_active=True).count(),
+        'total_subscribers': EmailSubscription.query.count(),
+        'total_emails_sent': EmailLog.query.filter_by(status='sent').count()
+    }
+    
+    return jsonify(stats)
+
+@app.route('/admin/api/send-reminders', methods=['POST'])
+@login_required
+def api_send_reminders():
+    """Manually send event reminders"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        success = send_event_reminders()
+        if success:
+            return jsonify({'success': True, 'message': 'Przypomnienia zostały wysłane'})
+        else:
+            return jsonify({'success': False, 'message': 'Brak nadchodzących wydarzeń lub błąd wysyłania'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# Email routes
+@app.route('/unsubscribe/<token>')
+def unsubscribe_email(token):
+    """Unsubscribe from email notifications"""
+    success = email_service.unsubscribe_email(token)
+    if success:
+        return render_template('email/unsubscribe_success.html')
+    else:
+        return render_template('email/unsubscribe_error.html'), 404
+
+@app.route('/delete-account/<token>')
+def delete_account(token):
+    """Delete account via email link"""
+    success = email_service.delete_account(token)
+    if success:
+        return render_template('email/delete_account_success.html')
+    else:
+        return render_template('email/delete_account_error.html'), 404
+
+# Initialize email service
+with app.app_context():
+    email_service.init_app(app)
+
+# Calendar integration endpoints
+@app.route('/api/events/<int:event_id>/calendar/<calendar_type>')
+def api_event_calendar(event_id, calendar_type):
+    """Get calendar file or link for specific event"""
+    event = EventSchedule.query.get(event_id)
+    if not event or not event.is_active or not event.is_published:
+        return jsonify({'error': 'Event not found or not available'}), 404
+    
+    event_data = {
+        'id': event.id,
+        'title': event.title,
+        'event_date': event.event_date,
+        'end_date': event.end_date,
+        'description': event.description,
+        'location': event.location,
+        'meeting_link': event.meeting_link
+    }
+    
+    if calendar_type == 'ical':
+        success, ical_content, error = calendar_service.generate_ical_file(event_data)
+        if success:
+            response = app.response_class(ical_content, mimetype='text/calendar')
+            response.headers['Content-Disposition'] = f'attachment; filename="{event.title.replace(" ", "_")}.ics"'
+            return response
+        else:
+            return jsonify({'error': error}), 500
+    
+    elif calendar_type == 'google':
+        calendar_links = calendar_service.create_calendar_links(event_data)
+        if 'google' in calendar_links:
+            return redirect(calendar_links['google'])
+        else:
+            return jsonify({'error': 'Google Calendar link not available'}), 500
+    
+    elif calendar_type == 'outlook':
+        calendar_links = calendar_service.create_calendar_links(event_data)
+        if 'outlook' in calendar_links:
+            return redirect(calendar_links['outlook'])
+        else:
+            return jsonify({'error': 'Outlook link not available'}), 500
+    
+    elif calendar_type == 'yahoo':
+        calendar_links = calendar_service.create_calendar_links(event_data)
+        if 'yahoo' in calendar_links:
+            return redirect(calendar_links['yahoo'])
+        else:
+            return jsonify({'error': 'Yahoo Calendar link not available'}), 500
+    
+    else:
+        return jsonify({'error': 'Unsupported calendar type'}), 400
+
+@app.route('/api/events/<int:event_id>/calendar-links')
+def api_event_calendar_links(event_id):
+    """Get all calendar links for specific event"""
+    event = EventSchedule.query.get(event_id)
+    if not event or not event.is_active or not event.is_published:
+        return jsonify({'error': 'Event not found or not available'}), 404
+    
+    event_data = {
+        'id': event.id,
+        'title': event.title,
+        'event_date': event.event_date,
+        'end_date': event.end_date,
+        'description': event.description,
+        'location': event.location,
+        'meeting_link': event.meeting_link
+    }
+    
+    calendar_links = calendar_service.create_calendar_links(event_data)
+    return jsonify({
+        'success': True,
+        'calendar_links': calendar_links,
+        'event': {
+            'id': event.id,
+            'title': event.title,
+            'event_date': event.event_date.isoformat(),
+            'end_date': event.end_date.isoformat() if event.end_date else None,
+            'description': event.description,
+            'location': event.location,
+            'meeting_link': event.meeting_link
+        }
+    })
+
+@app.route('/admin/api/events/<int:event_id>/sync-calendars', methods=['POST'])
+@login_required
+def api_sync_event_calendars(event_id):
+    """Sync event to external calendars (admin only)"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    event = EventSchedule.query.get(event_id)
+    if not event:
+        return jsonify({'error': 'Event not found'}), 404
+    
+    event_data = {
+        'id': event.id,
+        'title': event.title,
+        'event_date': event.event_date,
+        'end_date': event.end_date,
+        'description': event.description,
+        'location': event.location,
+        'meeting_link': event.meeting_link
+    }
+    
+    try:
+        # Synchronizuj z kalendarzami
+        sync_results = calendar_service.sync_event_to_calendars(event_data)
+        
+        # Zaktualizuj ID wydarzeń w bazie danych
+        if 'google' in sync_results and sync_results['google'][0]:
+            event.google_calendar_id = sync_results['google'][1]
+        
+        if 'outlook' in sync_results and sync_results['outlook'][0]:
+            event.outlook_event_id = sync_results['outlook'][1]
+        
+        if 'ical' in sync_results and sync_results['ical'][0]:
+            event.ical_uid = f"event_{event.id}_{int(datetime.now().timestamp())}@lepszezycie.pl"
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'sync_results': sync_results,
+            'message': 'Wydarzenie zostało zsynchronizowane z kalendarzami'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Błąd synchronizacji: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -9,12 +9,17 @@ import sys
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import json
+import secrets
 
 # Add current directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from app import app, db
-from models import User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, FAQ, PresentationSchedule
+from models import (
+    User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, 
+    FAQ, PresentationSchedule, Registration, Page, EmailTemplate, 
+    EmailSubscription, EmailLog, SEOSettings, EventSchedule
+)
 from werkzeug.security import generate_password_hash
 
 def init_database():
@@ -318,6 +323,135 @@ def init_database():
                 print(f"✓ FAQ '{faq_item['question'][:30]}...' created")
             else:
                 print(f"✓ FAQ '{faq_item['question'][:30]}...' already exists")
+        
+        print("Creating email templates...")
+        # Create email templates
+        email_templates_data = [
+            {
+                'name': 'welcome',
+                'subject': 'Witamy w Klubie Lepsze Życie!',
+                'html_content': '''
+                <h2>Witamy w Klubie Lepsze Życie!</h2>
+                <p>Cześć {{name}},</p>
+                <p>Dziękujemy za dołączenie do naszego klubu! Jesteśmy podekscytowani, że będziesz częścią społeczności osób 50+, które dążą do lepszego życia.</p>
+                <p>Wkrótce otrzymasz więcej informacji o naszych wydarzeniach i możliwościach rozwoju.</p>
+                <p>Pozdrawiamy,<br>Zespół Klubu Lepsze Życie</p>
+                ''',
+                'text_content': 'Witamy w Klubie Lepsze Życie! Dziękujemy za dołączenie.',
+                'template_type': 'welcome',
+                'variables': json.dumps(['name', 'email']),
+                'is_active': True
+            },
+            {
+                'name': 'reminder',
+                'subject': 'Przypomnienie o wydarzeniu - {{event_title}}',
+                'html_content': '''
+                <h2>Przypomnienie o wydarzeniu</h2>
+                <p>Cześć {{name}},</p>
+                <p>Przypominamy o jutrzejszym wydarzeniu: <strong>{{event_title}}</strong></p>
+                <p><strong>Data:</strong> {{event_date}}<br>
+                <strong>Godzina:</strong> {{event_time}}<br>
+                <strong>Miejsce:</strong> {{event_location}}</p>
+                <p>Do zobaczenia!</p>
+                <p>Pozdrawiamy,<br>Zespół Klubu Lepsze Życie</p>
+                ''',
+                'text_content': 'Przypomnienie o jutrzejszym wydarzeniu: {{event_title}}',
+                'template_type': 'reminder',
+                'variables': json.dumps(['name', 'event_title', 'event_date', 'event_time', 'event_location']),
+                'is_active': True
+            }
+        ]
+        
+        for template_data in email_templates_data:
+            existing_template = EmailTemplate.query.filter_by(name=template_data['name']).first()
+            if not existing_template:
+                template = EmailTemplate(**template_data)
+                db.session.add(template)
+                print(f"✓ Email template '{template_data['name']}' created")
+            else:
+                print(f"✓ Email template '{template_data['name']}' already exists")
+        
+        print("Creating SEO settings...")
+        # Create SEO settings
+        seo_settings_data = [
+            {
+                'page_type': 'home',
+                'page_title': 'Klub Lepsze Życie - Lepsze życie po 50-tce',
+                'meta_description': 'Dołącz do klubu osób 50+ i odkryj, jak poprawić finanse, zdrowie, budować społeczność i opanować narzędzia AI.',
+                'meta_keywords': 'klub 50+, rozwój osobisty, finanse, zdrowie, społeczność, AI, lepsze życie',
+                'og_title': 'Klub Lepsze Życie - Lepsze życie po 50-tce',
+                'og_description': 'Dołącz do klubu osób 50+ i odkryj, jak poprawić finanse, zdrowie, budować społeczność i opanować narzędzia AI.',
+                'og_image': 'static/images/hero/hero-bg.jpg',
+                'og_type': 'website',
+                'twitter_card': 'summary_large_image',
+                'twitter_title': 'Klub Lepsze Życie - Lepsze życie po 50-tce',
+                'twitter_description': 'Dołącz do klubu osób 50+ i odkryj, jak poprawić finanse, zdrowie, budować społeczność i opanować narzędzia AI.',
+                'twitter_image': 'static/images/hero/hero-bg.jpg',
+                'canonical_url': 'https://lepszezycie.pl',
+                'is_active': True
+            }
+        ]
+        
+        for seo_data in seo_settings_data:
+            existing_seo = SEOSettings.query.filter_by(page_type=seo_data['page_type']).first()
+            if not existing_seo:
+                seo = SEOSettings(**seo_data)
+                db.session.add(seo)
+                print(f"✓ SEO settings for '{seo_data['page_type']}' created")
+            else:
+                print(f"✓ SEO settings for '{seo_data['page_type']}' already exists")
+        
+        print("Creating sample pages...")
+        # Create sample pages
+        pages_data = [
+            {
+                'title': 'O nas',
+                'slug': 'o-nas',
+                'content': '<h1>O Klubie Lepsze Życie</h1><p>Jesteśmy społecznością osób 50+, które wierzą, że życie po pięćdziesiątce może być najlepszym okresem w życiu.</p>',
+                'meta_description': 'Poznaj historię i misję Klubu Lepsze Życie - społeczności osób 50+ dążących do lepszego życia.',
+                'meta_keywords': 'o nas, historia, misja, klub lepsze życie',
+                'is_active': True,
+                'is_published': True,
+                'published_at': datetime.now()
+            }
+        ]
+        
+        for page_data in pages_data:
+            existing_page = Page.query.filter_by(slug=page_data['slug']).first()
+            if not existing_page:
+                page = Page(**page_data)
+                db.session.add(page)
+                print(f"✓ Page '{page_data['title']}' created")
+            else:
+                print(f"✓ Page '{page_data['title']}' already exists")
+        
+        print("Creating sample event schedule...")
+        # Create sample event schedule
+        existing_event = EventSchedule.query.first()
+        if not existing_event:
+            # Calculate next Saturday at 10:00
+            today = datetime.now()
+            days_until_saturday = (5 - today.weekday()) % 7
+            if days_until_saturday == 0 and today.hour >= 10:
+                days_until_saturday = 7
+            next_saturday = today + timedelta(days=days_until_saturday)
+            next_event = next_saturday.replace(hour=10, minute=0, second=0, microsecond=0)
+            
+            sample_event = EventSchedule(
+                title='Prezentacja "Lepsze Życie"',
+                event_type='Prezentacja',
+                event_date=next_event,
+                end_date=next_event + timedelta(hours=1, minutes=30),
+                description='Darmowa prezentacja o tym, jak klub może pomóc Ci żyć lepiej po 50-tce.',
+                meeting_link='https://meet.google.com/xxx-yyyy-zzz',
+                location='Online',
+                is_active=True,
+                is_published=True
+            )
+            db.session.add(sample_event)
+            print(f"✓ Sample event created for {next_event.strftime('%d.%m.%Y o %H:%M')}")
+        else:
+            print("✓ Sample event already exists")
         
         # Commit all changes
         db.session.commit()

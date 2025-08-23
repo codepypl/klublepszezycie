@@ -2128,3 +2128,147 @@ html {
 .animate-delay-3 { animation-delay: 0.3s; }
 .animate-delay-4 { animation-delay: 0.4s; }
 .animate-delay-5 { animation-delay: 0.5s; }
+
+/* Calendar Integration Styles */
+.calendar-integration {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.calendar-integration h6 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.calendar-integration .btn {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.calendar-integration .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.calendar-integration .btn-outline-light:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: var(--primary-color);
+}
+
+/* Event Schedule Admin Styles */
+.event-details {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid var(--warning-color);
+}
+
+.event-icon {
+    opacity: 0.8;
+    transition: all 0.3s ease;
+}
+
+.event-icon:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Calendar Status Badges */
+.calendar-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.calendar-status .badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Integration Modal Styles */
+.integration-modal .modal-body {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.calendar-links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.calendar-link-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.calendar-link-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.calendar-link-card .icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.calendar-link-card .title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.calendar-link-card .description {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+/* Sync Status Styles */
+.sync-status-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.sync-status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.sync-status-item:last-child {
+    border-bottom: none;
+}
+
+.sync-status-item .status-icon {
+    width: 20px;
+    text-align: center;
+}
+
+.sync-status-item .status-badge {
+    font-size: 0.75rem;
+}
+
+/* Responsive Calendar Integration */
+@media (max-width: 768px) {
+    .calendar-integration .d-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .calendar-links-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .event-details .row > div {
+        margin-bottom: 1rem;
+    }
+}

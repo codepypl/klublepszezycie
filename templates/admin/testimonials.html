@@ -6,202 +6,106 @@
     <title>Panel Administratora - Opinie</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
 </head>
-<body>
-    <div class="admin-panel">
-        <!-- Top Navigation Bar -->
-        <nav class="navbar navbar-expand-lg admin-top-nav">
-            <div class="container-fluid">
-                <button class="btn admin-btn-outline d-lg-none" id="sidebarToggle">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <span class="navbar-brand text-white mb-0 h1">
-                    <i class="fas fa-cog me-2"></i>
-                    Panel Administratora
-                </span>
-                <div class="navbar-nav ms-auto">
-                    <a class="nav-link text-white" href="{{ url_for('index') }}">
-                        <i class="fas fa-home me-1"></i>
-                        Strona główna
+<body class="admin-body">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            {% include 'admin/sidebar.html' %}
+
+            <!-- Main Content -->
+            <main class="col-lg-10 admin-content">
+                <div class="admin-header">
+                    <h1><i class="fas fa-comments me-2"></i>Zarządzanie Opiniami</h1>
+                    <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
+                        <i class="fas fa-sign-out-alt me-2"></i>
+                        Wyloguj
                     </a>
                 </div>
-            </div>
-        </nav>
 
-        <div class="container-fluid">
-            <div class="row flex-nowrap">
-                <!-- Sidebar -->
-                <nav class="col-lg-2 admin-sidebar p-3" id="sidebar">
-                    <div class="d-flex flex-column">
-                        <hr class="text-muted">
-                        <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
-                                    <i class="fas fa-tachometer-alt"></i>
-                                    Dashboard
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_menu') }}">
-                                    <i class="fas fa-bars"></i>
-                                    Menu
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_sections') }}">
-                                    <i class="fas fa-layer-group"></i>
-                                    Sekcje
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_pages') }}">
-                                    <i class="fas fa-file-alt"></i>
-                                    Podstrony
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_benefits') }}">
-                                    <i class="fas fa-star"></i>
-                                    Korzyści
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link active" href="{{ url_for('admin_testimonials') }}">
-                                    <i class="fas fa-comments"></i>
-                                    Opinie
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_faq') }}">
-                                    <i class="fas fa-question-circle"></i>
-                                    FAQ
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_registrations') }}">
-                                    <i class="fas fa-user-plus"></i>
-                                    Rejestracje
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_social') }}">
-                                    <i class="fas fa-share-alt"></i>
-                                    Social Media
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_seo') }}">
-                                    <i class="fas fa-search"></i>
-                                    SEO/SEM
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_presentation_schedule') }}">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    Harmonogram Prezentacji
-                                </a>
-                            </li>
-                        </ul>
-                        <hr class="text-muted mt-auto">
-                        <div class="text-center">
-                            <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout w-100">
-                                <i class="fas fa-sign-out-alt me-2"></i>
-                                Wyloguj
-                            </a>
-                        </div>
-                    </div>
-                </nav>
+                <!-- Add Testimonial Button -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div></div>
+                    <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addTestimonialModal">
+                        <i class="fas fa-plus me-2"></i>
+                        Dodaj Opinię
+                    </button>
+                </div>
 
-                <!-- Main Content -->
-                <main class="col-lg-10 admin-content m-0">
-                    <div class="admin-header">
-                        <h1><i class="fas fa-comments me-2"></i>Zarządzanie Opiniami</h1>
+                <!-- Testimonials Table -->
+                <div class="admin-card">
+                    <div class="admin-card-body">
+                        {% if testimonials %}
+                            <div class="table-responsive">
+                                <table class="table admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Autor</th>
+                                            <th>Treść</th>
+                                            <th>Członek od</th>
+                                            <th>Ocena</th>
+                                            <th>Status</th>
+                                            <th>Data</th>
+                                            <th>Akcje</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for testimonial in testimonials %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ testimonial.author_name }}</strong>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">{{ testimonial.content[:100] }}{% if testimonial.content|length > 100 %}...{% endif %}</small>
+                                            </td>
+                                            <td>{{ testimonial.member_since or 'Brak' }}</td>
+                                            <td>
+                                                <div class="star-rating-display" data-rating="{{ testimonial.rating }}">
+                                                    {% for i in range(5) %}
+                                                        <i class="fas fa-star {% if i < testimonial.rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                                    {% endfor %}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if testimonial.is_active %}
+                                                    <span class="badge bg-success">Aktywna</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Nieaktywna</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ testimonial.created_at.strftime('%d.%m.%Y') if testimonial.created_at else 'Brak' }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm admin-btn-outline" 
+                                                            onclick="editTestimonial({{ testimonial.id }}, '{{ testimonial.author_name }}', '{{ testimonial.content }}', '{{ testimonial.member_since or '' }}', {{ testimonial.rating }}, {{ testimonial.is_active|lower }})">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm admin-btn-danger" 
+                                                            onclick="deleteTestimonial({{ testimonial.id }})">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Brak opinii</h5>
+                                <p class="text-muted">Dodaj pierwszą opinię, aby rozpocząć</p>
+                                <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addTestimonialModal">
+                                    <i class="fas fa-plus me-2"></i>
+                                    Dodaj Opinię
+                                </button>
+                            </div>
+                        {% endif %}
                     </div>
-
-                    <!-- Add Testimonial Button -->
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="text-muted mb-0">Zarządzaj opiniami klientów wyświetlanymi na stronie głównej</p>
-                        <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addTestimonialModal">
-                            <i class="fas fa-plus me-2"></i>
-                            Dodaj Opinię
-                        </button>
-                    </div>
-
-                    <!-- Testimonials Table -->
-                    <div class="admin-card">
-                        <div class="admin-card-body">
-                            {% if testimonials %}
-                                <div class="table-responsive">
-                                    <table class="table admin-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Autor</th>
-                                                <th>Treść</th>
-                                                <th>Członek od</th>
-                                                <th>Ocena</th>
-                                                <th>Status</th>
-                                                <th>Data</th>
-                                                <th>Akcje</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for testimonial in testimonials %}
-                                            <tr>
-                                                <td>
-                                                    <strong>{{ testimonial.author_name }}</strong>
-                                                </td>
-                                                <td>
-                                                    <small class="text-muted">{{ testimonial.content[:100] }}{% if testimonial.content|length > 100 %}...{% endif %}</small>
-                                                </td>
-                                                <td>{{ testimonial.member_since or 'Brak' }}</td>
-                                                <td>
-                                                    <div class="star-rating-display" data-rating="{{ testimonial.rating }}">
-                                                        {% for i in range(5) %}
-                                                            <i class="fas fa-star {% if i < testimonial.rating %}text-warning{% else %}text-muted{% endif %}"></i>
-                                                        {% endfor %}
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    {% if testimonial.is_active %}
-                                                        <span class="admin-badge admin-badge-success">Aktywna</span>
-                                                    {% else %}
-                                                        <span class="admin-badge admin-badge-danger">Nieaktywna</span>
-                                                    {% endif %}
-                                                </td>
-                                                <td>{{ testimonial.created_at.strftime('%d.%m.%Y') if testimonial.created_at else 'Brak' }}</td>
-                                                <td>
-                                                    <div class="btn-group" role="group">
-                                                        <button class="btn btn-sm admin-btn-outline" 
-                                                                onclick="editTestimonial({{ testimonial.id }}, '{{ testimonial.author_name }}', '{{ testimonial.content }}', '{{ testimonial.member_since or '' }}', {{ testimonial.rating }}, {{ testimonial.is_active|lower }})">
-                                                            <i class="fas fa-edit"></i>
-                                                        </button>
-                                                        <button class="btn btn-sm admin-btn-danger" 
-                                                                onclick="deleteTestimonial({{ testimonial.id }})">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            {% else %}
-                                <div class="text-center py-5">
-                                    <i class="fas fa-comments fa-3x text-muted mb-3"></i>
-                                    <h5 class="text-muted">Brak opinii</h5>
-                                    <p class="text-muted">Dodaj pierwszą opinię, aby rozpocząć</p>
-                                    <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addTestimonialModal">
-                                        <i class="fas fa-plus me-2"></i>
-                                        Dodaj Opinię
-                                    </button>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </main>
-            </div>
+                </div>
+            </main>
         </div>
     </div>
 
@@ -221,37 +125,40 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="author_name" class="form-label">Imię i Nazwisko Autora</label>
-                                    <input type="text" class="form-control" id="author_name" name="author_name" required placeholder="np. Jan Kowalski">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="member_since" class="form-label">Członek od</label>
-                                    <input type="text" class="form-control" id="member_since" name="member_since" placeholder="np. 2020, 2 lata">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="rating" class="form-label">Ocena</label>
-                                    <div class="star-rating-input">
-                                        <input type="hidden" id="rating" name="rating" value="5">
-                                        <div class="stars">
-                                            <i class="fas fa-star text-warning" data-rating="1"></i>
-                                            <i class="fas fa-star text-warning" data-rating="2"></i>
-                                            <i class="fas fa-star text-warning" data-rating="3"></i>
-                                            <i class="fas fa-star text-warning" data-rating="4"></i>
-                                            <i class="fas fa-star text-warning" data-rating="5"></i>
-                                        </div>
-                                        <small class="text-muted">Kliknij gwiazdkę, aby ustawić ocenę</small>
-                                    </div>
+                                    <label for="authorName" class="form-label">Imię i Nazwisko</label>
+                                    <input type="text" class="form-control" id="authorName" name="author_name" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="content" class="form-label">Treść Opinii</label>
-                                    <textarea class="form-control" id="content" name="content" rows="6" required placeholder="Wpisz treść opinii..."></textarea>
+                                    <label for="memberSince" class="form-label">Członek od</label>
+                                    <input type="text" class="form-control" id="memberSince" name="member_since" placeholder="np. 2020">
                                 </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Treść Opinii</label>
+                            <textarea class="form-control" id="content" name="content" rows="4" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="rating" class="form-label">Ocena</label>
+                                    <select class="form-control" id="rating" name="rating" required>
+                                        <option value="">Wybierz ocenę</option>
+                                        <option value="5">5 gwiazdek</option>
+                                        <option value="4">4 gwiazdki</option>
+                                        <option value="3">3 gwiazdki</option>
+                                        <option value="2">2 gwiazdki</option>
+                                        <option value="1">1 gwiazdka</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
                                 <div class="mb-3">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
-                                        <label class="form-check-label" for="is_active">
+                                        <input class="form-check-input" type="checkbox" id="isActive" name="is_active" checked>
+                                        <label class="form-check-label" for="isActive">
                                             Aktywna
                                         </label>
                                     </div>
@@ -260,8 +167,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn admin-btn">Zapisz Opinię</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">Dodaj Opinię</button>
                     </div>
                 </form>
             </div>
@@ -280,42 +187,45 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="editTestimonialForm">
-                    <input type="hidden" id="edit_id" name="id">
+                    <input type="hidden" id="editTestimonialId" name="id">
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="edit_author_name" class="form-label">Imię i Nazwisko Autora</label>
-                                    <input type="text" class="form-control" id="edit_author_name" name="author_name" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="edit_member_since" class="form-label">Członek od</label>
-                                    <input type="text" class="form-control" id="edit_member_since" name="member_since">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="edit_rating" class="form-label">Ocena</label>
-                                    <div class="star-rating-input">
-                                        <input type="hidden" id="edit_rating" name="rating" value="5">
-                                        <div class="stars">
-                                            <i class="fas fa-star text-warning" data-rating="1"></i>
-                                            <i class="fas fa-star text-warning" data-rating="2"></i>
-                                            <i class="fas fa-star text-warning" data-rating="3"></i>
-                                            <i class="fas fa-star text-warning" data-rating="4"></i>
-                                            <i class="fas fa-star text-warning" data-rating="5"></i>
-                                        </div>
-                                        <small class="text-muted">Kliknij gwiazdkę, aby ustawić ocenę</small>
-                                    </div>
+                                    <label for="editAuthorName" class="form-label">Imię i Nazwisko</label>
+                                    <input type="text" class="form-control" id="editAuthorName" name="author_name" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="edit_content" class="form-label">Treść Opinii</label>
-                                    <textarea class="form-control" id="edit_content" name="content" rows="6" required></textarea>
+                                    <label for="editMemberSince" class="form-label">Członek od</label>
+                                    <input type="text" class="form-control" id="editMemberSince" name="member_since" placeholder="np. 2020">
                                 </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editContent" class="form-label">Treść Opinii</label>
+                            <textarea class="form-control" id="editContent" name="content" rows="4" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editRating" class="form-label">Ocena</label>
+                                    <select class="form-control" id="editRating" name="rating" required>
+                                        <option value="">Wybierz ocenę</option>
+                                        <option value="5">5 gwiazdek</option>
+                                        <option value="4">4 gwiazdki</option>
+                                        <option value="3">3 gwiazdki</option>
+                                        <option value="2">2 gwiazdki</option>
+                                        <option value="1">1 gwiazdka</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
                                 <div class="mb-3">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
-                                        <label class="form-check-label" for="edit_is_active">
+                                        <input class="form-check-input" type="checkbox" id="editIsActive" name="is_active">
+                                        <label class="form-check-label" for="editIsActive">
                                             Aktywna
                                         </label>
                                     </div>
@@ -324,7 +234,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
                         <button type="submit" class="btn admin-btn">Zapisz Zmiany</button>
                     </div>
                 </form>
@@ -332,98 +242,103 @@
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade admin-modal" id="deleteTestimonialModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Potwierdź Usunięcie
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Czy na pewno chcesz usunąć tę opinię? Tej operacji nie można cofnąć.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="button" class="btn admin-btn-danger" id="confirmDelete">Usuń</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Star rating functionality
-        function initializeStarRating(containerId, ratingInputId) {
-            const container = document.querySelector(containerId);
-            const ratingInput = document.querySelector(ratingInputId);
-            const stars = container.querySelectorAll('.stars i');
-            
-            stars.forEach(star => {
-                star.addEventListener('click', function() {
-                    const rating = this.getAttribute('data-rating');
-                    ratingInput.value = rating;
-                    updateStarDisplay(container, rating);
-                });
-            });
-        }
-
-        function updateStarDisplay(container, rating) {
-            const stars = container.querySelectorAll('.stars i');
-            stars.forEach((star, index) => {
-                if (index < rating) {
-                    star.classList.add('text-warning');
-                } else {
-                    star.classList.remove('text-warning');
-                }
-            });
-        }
-
         // Add Testimonial
-        function addTestimonial() {
-            const form = document.getElementById('addTestimonialForm');
-            const formData = new FormData(form);
+        document.getElementById('addTestimonialForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            data.is_active = formData.has('is_active');
             
             fetch('/admin/api/testimonials', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     location.reload();
                 } else {
-                    alert('Błąd: ' + data.error);
+                    alert('Błąd: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
                 alert('Wystąpił błąd podczas dodawania opinii');
             });
-        }
+        });
 
         // Edit Testimonial
         function editTestimonial(id, authorName, content, memberSince, rating, isActive) {
-            document.getElementById('edit_id').value = id;
-            document.getElementById('edit_author_name').value = authorName;
-            document.getElementById('edit_content').value = content;
-            document.getElementById('edit_member_since').value = memberSince;
-            document.getElementById('edit_rating').value = rating;
-            document.getElementById('edit_is_active').checked = isActive;
-            
-            updateStarDisplay(document.querySelector('#editTestimonialModal .star-rating-input'), rating);
+            document.getElementById('editTestimonialId').value = id;
+            document.getElementById('editAuthorName').value = authorName;
+            document.getElementById('editContent').value = content;
+            document.getElementById('editMemberSince').value = memberSince;
+            document.getElementById('editRating').value = rating;
+            document.getElementById('editIsActive').checked = isActive === 'true';
             
             new bootstrap.Modal(document.getElementById('editTestimonialModal')).show();
         }
 
-        // Save Testimonial
-        function saveTestimonial() {
-            const form = document.getElementById('editTestimonialForm');
-            const formData = new FormData(form);
+        document.getElementById('editTestimonialForm').addEventListener('submit', function(e) {
+            e.preventDefault();
             
-            fetch('/admin/api/testimonials', {
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            data.is_active = formData.has('is_active');
+            
+            fetch(`/admin/api/testimonials/${data.id}`, {
                 method: 'PUT',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     location.reload();
                 } else {
-                    alert('Błąd: ' + data.error);
+                    alert('Błąd: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Wystąpił błąd podczas zapisywania zmian');
+                alert('Wystąpił błąd podczas edycji opinii');
             });
-        }
+        });
 
         // Delete Testimonial
         function deleteTestimonial(id) {
-            if (confirm('Czy na pewno chcesz usunąć tę opinię?')) {
-                fetch(`/admin/api/testimonials?id=${id}`, {
+            document.getElementById('confirmDelete').onclick = function() {
+                fetch(`/admin/api/testimonials/${id}`, {
                     method: 'DELETE'
                 })
                 .then(response => response.json())
@@ -431,50 +346,17 @@
                     if (data.success) {
                         location.reload();
                     } else {
-                        alert('Błąd: ' + data.error);
+                        alert('Błąd: ' + data.message);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     alert('Wystąpił błąd podczas usuwania opinii');
                 });
-            }
-        }
-
-        // Form submissions
-        document.getElementById('addTestimonialForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            addTestimonial();
-        });
-
-        document.getElementById('editTestimonialForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            saveTestimonial();
-        });
-
-        // Initialize star ratings
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeStarRating('#addTestimonialModal .star-rating-input', '#rating');
-            initializeStarRating('#editTestimonialModal .star-rating-input', '#edit_rating');
-        });
-
-        // Sidebar toggle functionality
-        document.getElementById('sidebarToggle').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('show');
-        });
-
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', function(event) {
-            const sidebar = document.getElementById('sidebar');
-            const sidebarToggle = document.getElementById('sidebarToggle');
+            };
             
-            if (window.innerWidth < 992 && 
-                !sidebar.contains(event.target) && 
-                !sidebarToggle.contains(event.target)) {
-                sidebar.classList.remove('show');
-            }
-        });
+            new bootstrap.Modal(document.getElementById('deleteTestimonialModal')).show();
+        }
     </script>
 </body>
 </html>

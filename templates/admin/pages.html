@@ -6,167 +6,79 @@
     <title>Panel Administratora - Podstrony</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
-    
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
     <!-- TinyMCE WYSIWYG Editor -->
     <script src="https://cdn.tiny.cloud/1/nzk6x47f5uoxs3thrhw5hjtjhrby1u3skrpld6z2z032z7tv/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
-<body>
-    <div class="admin-panel">
-        <!-- Top Navigation Bar -->
-        <nav class="navbar navbar-expand-lg admin-top-nav">
-            <div class="container-fluid">
-                <button class="btn admin-btn-outline d-lg-none" id="sidebarToggle">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <span class="navbar-brand text-white mb-0 h1">
-                    <i class="fas fa-file-alt me-2"></i>
-                    Zarządzanie Podstronami
-                </span>
-                <div class="navbar-nav ms-auto">
-                    <a class="nav-link text-white" href="{{ url_for('index') }}">
-                        <i class="fas fa-home me-1"></i>
-                        Strona główna
-                    </a>
-                </div>
-            </div>
-        </nav>
-
+<body class="admin-body">
         <div class="container-fluid">
-            <div class="row flex-nowrap">
-                <!-- Sidebar -->
-                <nav class="col-lg-2 admin-sidebar p-3" id="sidebar">
-                    <div class="d-flex flex-column">
-                        <hr class="text-muted">
-                        <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
-                                    <i class="fas fa-tachometer-alt"></i>
-                                    Dashboard
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_menu') }}">
-                                    <i class="fas fa-bars"></i>
-                                    Menu
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_sections') }}">
-                                    <i class="fas fa-layer-group"></i>
-                                    Sekcje
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link active" href="{{ url_for('admin_pages') }}">
-                                    <i class="fas fa-file-alt"></i>
-                                    Podstrony
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_benefits') }}">
-                                    <i class="fas fa-star"></i>
-                                    Korzyści
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_testimonials') }}">
-                                    <i class="fas fa-comments"></i>
-                                    Opinie
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_faq') }}">
-                                    <i class="fas fa-question-circle"></i>
-                                    FAQ
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_registrations') }}">
-                                    <i class="fas fa-user-plus"></i>
-                                    Rejestracje
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_social') }}">
-                                    <i class="fas fa-share-alt"></i>
-                                    Social Media
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_seo') }}">
-                                    <i class="fas fa-search"></i>
-                                    SEO/SEM
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_presentation_schedule') }}">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    Harmonogram Prezentacji
-                                </a>
-                            </li>
-                        </ul>
-                        <hr class="text-muted mt-auto">
-                        <div class="mt-auto">
-                            <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout w-100">
-                                <i class="fas fa-sign-out-alt me-2"></i>
-                                Wyloguj
-                            </a>
-                        </div>
-                    </div>
-                </nav>
-
+            <div class="row">            <!-- Sidebar -->
+            {% include 'admin/sidebar.html' %}
                 <!-- Main Content -->
-                <main class="col-lg-10 admin-content m-0">
+                <main class="col-lg-10 admin-content">
                     <!-- Header -->
                     <div class="admin-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h1>
-                                <i class="fas fa-file-alt me-2"></i>
-                                Zarządzanie Podstronami
-                            </h1>
-                            <button class="btn admin-btn" onclick="showAddPageModal()">
-                                <i class="fas fa-plus me-2"></i>
-                                Dodaj Podstronę
-                            </button>
-                        </div>
+                        <h1>
+                            <i class="fas fa-file-alt me-2"></i>
+                            Zarządzanie Podstronami
+                        </h1>
+                        <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
+                            <i class="fas fa-sign-out-alt me-2"></i>
+                            Wyloguj
+                        </a>
                     </div>
-
                     <!-- Stats Cards -->
-                    <div class="admin-stats">
-                        <div class="admin-stat-card">
-                            <i class="fas fa-file-alt"></i>
-                            <h3 id="totalPages">0</h3>
-                            <p>Wszystkie Podstrony</p>
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="admin-stats-card">
+                                <i class="fas fa-file-alt"></i>
+                                <h3 id="totalPages">0</h3>
+                                <p>Wszystkie Podstrony</p>
+                            </div>
                         </div>
-                        <div class="admin-stat-card">
-                            <i class="fas fa-globe"></i>
-                            <h3 id="publishedPages">0</h3>
-                            <p>Opublikowane</p>
+                        <div class="col-md-3">
+                            <div class="admin-stats-card">
+                                <i class="fas fa-globe"></i>
+                                <h3 id="publishedPages">0</h3>
+                                <p>Opublikowane</p>
+                            </div>
                         </div>
-                        <div class="admin-stat-card">
-                            <i class="fas fa-eye"></i>
-                            <h3 id="activePages">0</h3>
-                            <p>Aktywne</p>
+                        <div class="col-md-3">
+                            <div class="admin-stats-card">
+                                <i class="fas fa-eye"></i>
+                                <h3 id="activePages">0</h3>
+                                <p>Aktywne</p>
+                            </div>
                         </div>
-                        <div class="admin-stat-card">
-                            <i class="fas fa-clock"></i>
-                            <h3 id="draftPages">0</h3>
-                            <p>Szkice</p>
+                        <div class="col-md-3">
+                            <div class="admin-stats-card">
+                                <i class="fas fa-clock"></i>
+                                <h3 id="draftPages">0</h3>
+                                <p>Szkice</p>
+                            </div>
                         </div>
                     </div>
-
+                    <!-- Add Page Button -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-2"></h5>
+                                    <p class="text-muted mb-0"></p>
+                                </div>
+                                <button class="btn admin-btn" onclick="showAddPageModal()">
+                                    <i class="fas fa-plus me-2"></i>
+                                    Dodaj Podstronę
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Pages Table -->
                     <div class="admin-card">
-                        <div class="admin-card-header">
-                            <h5>
-                                <i class="fas fa-list me-2"></i>
-                                Lista Podstron
-                            </h5>
-                        </div>
                         <div class="admin-card-body">
                             <div class="table-responsive">
-                                <table class="table admin-table">
+                                <table class="table admin-table admin-table">
                                     <thead>
                                         <tr>
                                             <th>Tytuł</th>
@@ -188,9 +100,8 @@
             </div>
         </div>
     </div>
-
     <!-- Add/Edit Page Modal -->
-    <div class="modal fade" id="pageModal" tabindex="-1">
+    <div class="modal fade admin-modal" id="pageModal" tabindex="-1">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
@@ -206,41 +117,38 @@
                         <div class="row">
                             <div class="col-md-8">
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">Tytuł podstrony</label>
-                                    <input type="text" class="form-control" name="title" id="page_title" required>
+                                    <label class="admin-form-label">Tytuł podstrony</label>
+                                    <input type="text" class="admin-form-control" name="title" id="page_title" required>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">Slug (URL)</label>
-                                    <input type="text" class="form-control" name="slug" id="page_slug" required>
-                                    <small class="text-muted">np. o-nas, kontakt, uslugi</small>
+                                    <label class="admin-form-label">Slug (URL)</label>
+                                    <input type="text" class="admin-form-control" name="slug" id="page_slug" required>
+                                    <small class="admin-text-muted">np. o-nas, kontakt, uslugi</small>
                                 </div>
                             </div>
                         </div>
-                        
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Treść podstrony</label>
+                            <label class="admin-form-label">Treść podstrony</label>
                             <textarea id="page_content" name="content"></textarea>
                         </div>
-                        
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">Meta opis (SEO)</label>
-                                    <textarea class="form-control" name="meta_description" id="page_meta_description" rows="3" maxlength="300"></textarea>
-                                    <small class="text-muted">Maksymalnie 300 znaków</small>
+                                    <label class="admin-form-label">Meta opis (SEO)</label>
+                                    <textarea class="admin-form-control admin-form-textarea" name="meta_description" id="page_meta_description" rows="3" maxlength="300"></textarea>
+                                    <small class="admin-text-muted">Maksymalnie 300 znaków</small>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">Meta słowa kluczowe (SEO)</label>
-                                    <textarea class="form-control" name="meta_keywords" id="page_meta_keywords" rows="3"></textarea>
-                                    <small class="text-muted">Słowa kluczowe oddzielone przecinkami</small>
+                                    <label class="admin-form-label">Meta słowa kluczowe (SEO)</label>
+                                    <textarea class="admin-form-control admin-form-textarea" name="meta_keywords" id="page_meta_keywords" rows="3"></textarea>
+                                    <small class="admin-text-muted">Słowa kluczowe oddzielone przecinkami</small>
                                 </div>
                             </div>
                         </div>
-                        
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-check">
@@ -261,7 +169,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="button" class="btn admin-btn-secondary" data-bs-dismiss="modal">Anuluj</button>
                         <button type="submit" class="btn admin-btn">
                             <i class="fas fa-save me-2"></i>
                             Zapisz Podstronę
@@ -271,9 +179,8 @@
             </div>
         </div>
     </div>
-
     <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deletePageModal" tabindex="-1">
+    <div class="modal fade admin-modal" id="deletePageModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -288,7 +195,7 @@
                     <p class="text-muted">Ta operacja nie może być cofnięta.</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="button" class="btn admin-btn-secondary" data-bs-dismiss="modal">Anuluj</button>
                     <button type="button" class="btn admin-btn-danger" onclick="deletePage()">
                         <i class="fas fa-trash me-2"></i>
                         Usuń
@@ -297,12 +204,10 @@
             </div>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let currentPageId = null;
         let deletePageId = null;
-
         // Initialize TinyMCE
         tinymce.init({
             selector: '#page_content',
@@ -318,12 +223,10 @@
             ai_request: (request, respondWith) => respondWith.string(() => Promise.reject("See docs to implement AI Assistant")),
             content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }'
         });
-
         // Load pages on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadPages();
         });
-
         // Load pages from API
         function loadPages() {
             fetch('/admin/api/pages')
@@ -337,12 +240,10 @@
                     alert('Wystąpił błąd podczas ładowania podstron');
                 });
         }
-
         // Display pages in table
         function displayPages(pages) {
             const tbody = document.getElementById('pagesTableBody');
             tbody.innerHTML = '';
-
             pages.forEach(page => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -373,7 +274,6 @@
                 tbody.appendChild(row);
             });
         }
-
         // Update statistics
         function updateStats(pages) {
             document.getElementById('totalPages').textContent = pages.length;
@@ -381,20 +281,16 @@
             document.getElementById('activePages').textContent = pages.filter(p => p.is_active).length;
             document.getElementById('draftPages').textContent = pages.filter(p => !p.is_published).length;
         }
-
         // Show add page modal
         function showAddPageModal() {
             currentPageId = null;
             document.getElementById('pageModalTitle').innerHTML = '<i class="fas fa-plus me-2"></i>Dodaj Podstronę';
             document.getElementById('pageForm').reset();
             document.getElementById('page_id').value = '';
-            
             // Reset TinyMCE
             tinymce.get('page_content').setContent('');
-            
             new bootstrap.Modal(document.getElementById('pageModal')).show();
         }
-
         // Edit page
         function editPage(pageId) {
             fetch(`/admin/api/pages/${pageId}`)
@@ -403,7 +299,6 @@
                     if (data.success) {
                         const page = data.page;
                         currentPageId = page.id;
-                        
                         document.getElementById('pageModalTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Edytuj Podstronę';
                         document.getElementById('page_id').value = page.id;
                         document.getElementById('page_title').value = page.title;
@@ -412,10 +307,8 @@
                         document.getElementById('page_meta_keywords').value = page.meta_keywords || '';
                         document.getElementById('page_is_active').checked = page.is_active;
                         document.getElementById('page_is_published').checked = page.is_published;
-                        
                         // Set TinyMCE content
                         tinymce.get('page_content').setContent(page.content || '');
-                        
                         new bootstrap.Modal(document.getElementById('pageModal')).show();
                     } else {
                         alert('Błąd: ' + data.error);
@@ -426,23 +319,19 @@
                     alert('Wystąpił błąd podczas ładowania danych podstrony');
                 });
         }
-
         // View page
         function viewPage(slug) {
             window.open(`/${slug}`, '_blank');
         }
-
         // Confirm delete page
         function confirmDeletePage(pageId, title) {
             deletePageId = pageId;
             document.getElementById('deletePageTitle').textContent = title;
             new bootstrap.Modal(document.getElementById('deletePageModal')).show();
         }
-
         // Delete page
         function deletePage() {
             if (!deletePageId) return;
-            
             fetch(`/admin/api/pages?id=${deletePageId}`, {
                 method: 'DELETE'
             })
@@ -461,25 +350,19 @@
                 alert('Wystąpił błąd podczas usuwania podstrony');
             });
         }
-
         // Handle form submission
         document.getElementById('pageForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            
             const formData = new FormData(this);
-            
             // Get TinyMCE content
             formData.set('content', tinymce.get('page_content').getContent());
-            
             // Handle checkboxes
             formData.set('is_active', document.getElementById('page_is_active').checked);
             formData.set('is_published', document.getElementById('page_is_published').checked);
-            
             const method = currentPageId ? 'PUT' : 'POST';
             if (currentPageId) {
                 formData.append('id', currentPageId);
             }
-            
             fetch('/admin/api/pages', {
                 method: method,
                 body: formData
@@ -499,7 +382,6 @@
                 alert('Wystąpił błąd podczas zapisywania podstrony');
             });
         });
-
         // Auto-generate slug from title
         document.getElementById('page_title').addEventListener('input', function() {
             if (!currentPageId) { // Only auto-generate for new pages
@@ -513,18 +395,15 @@
                 document.getElementById('page_slug').value = slug;
             }
         });
-
         // Sidebar toggle functionality
         document.getElementById('sidebarToggle').addEventListener('click', function() {
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('show');
         });
-
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', function(event) {
             const sidebar = document.getElementById('sidebar');
             const sidebarToggle = document.getElementById('sidebarToggle');
-            
             if (window.innerWidth < 992 && 
                 !sidebar.contains(event.target) && 
                 !sidebarToggle.contains(event.target)) {

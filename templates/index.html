@@ -68,10 +68,10 @@
                         </a>
                         <p class="text-light small">
                             <i class="fas fa-check-circle me-1"></i>
-                            {% if schedule and schedule.custom_text %}
-                                {{ schedule.custom_text }}
+                            {% if next_event %}
+                                {{ next_event.title }}: {{ next_event.event_date.strftime('%d.%m.%Y o %H:%M') }}
                             {% else %}
-                            Następna sesja: {{ next_presentation.strftime('%d.%m.%Y o %H:%M') }}
+                                Brak zaplanowanych wydarzeń
                             {% endif %}
                         </p>
                         <p class="text-white-50 small">
@@ -104,6 +104,66 @@
             </div>
         </div>
         <div class="hero-bg-animation"></div>
+    </section>
+    {% endif %}
+
+    <!-- Next Event Section -->
+    {% if next_event %}
+    <section class="py-5 bg-primary text-white">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8" data-aos="fade-right">
+                    <h2 class="display-6 fw-bold mb-3">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        {{ next_event.title }}
+                    </h2>
+                    <p class="lead mb-3">{{ next_event.description or 'Zapraszamy na nasze wydarzenie!' }}</p>
+                    <div class="event-details mb-4">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-clock me-2 text-warning"></i>
+                                    <span>{{ next_event.event_date.strftime('%d.%m.%Y o %H:%M') }}</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-tag me-2 text-info"></i>
+                                    <span>{{ next_event.event_type }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                {% if next_event.meeting_link %}
+                                <a href="{{ next_event.meeting_link }}" target="_blank" class="btn btn-warning btn-lg mb-3">
+                                    <i class="fas fa-video me-2"></i>
+                                    Dołącz do spotkania
+                                </a>
+                                {% endif %}
+                                
+                                <!-- Calendar Integration Buttons -->
+                                <div class="calendar-integration">
+                                    <h6 class="text-white mb-2">Dodaj do kalendarza:</h6>
+                                    <div class="d-grid gap-2">
+                                        <a href="/api/events/{{ next_event.id }}/calendar/google" target="_blank" class="btn btn-outline-light btn-sm">
+                                            <i class="fab fa-google me-2"></i>Google Calendar
+                                        </a>
+                                        <a href="/api/events/{{ next_event.id }}/calendar/outlook" target="_blank" class="btn btn-outline-light btn-sm">
+                                            <i class="fab fa-microsoft me-2"></i>Outlook
+                                        </a>
+                                        <a href="/api/events/{{ next_event.id }}/calendar/ical" class="btn btn-outline-light btn-sm">
+                                            <i class="fas fa-download me-2"></i>Pobierz iCal
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 text-center" data-aos="fade-left">
+                    <div class="event-icon">
+                        <i class="fas fa-calendar-check fa-5x text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
     {% endif %}
 

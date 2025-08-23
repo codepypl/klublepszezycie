@@ -6,91 +6,50 @@
     <title>Panel Administratora - Logowanie</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
 </head>
-<body class="admin-panel">
-    <div class="container-fluid">
-        <div class="row min-vh-100 flex-nowrap">
-            <div class="col-md-6 d-none d-md-flex align-items-center justify-content-center" style="background: var(--blue-gradient);">
-                <div class="text-center text-white">
-                    <i class="fas fa-cog fa-5x mb-4"></i>
-                    <h2 class="display-5 fw-bold mb-3">Panel Administratora</h2>
-                    <p class="lead">Zarządzaj treścią i ustawieniami strony</p>
-                    <div class="mt-5">
-                        <div class="row text-center">
-                            <div class="col-4">
-                                <i class="fas fa-users fa-2x mb-2"></i>
-                                <p>Użytkownicy</p>
-                            </div>
-                            <div class="col-4">
-                                <i class="fas fa-edit fa-2x mb-2"></i>
-                                <p>Treść</p>
-                            </div>
-                            <div class="col-4">
-                                <i class="fas fa-chart-line fa-2x mb-2"></i>
-                                <p>Statystyki</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<body class="admin-login-body">
+    <div class="admin-login-container">
+        <div class="admin-login-card">
+            <div class="admin-login-header">
+                <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                <h2>Panel Administratora</h2>
+                <p class="text-muted">Zaloguj się, aby uzyskać dostęp</p>
             </div>
-            <div class="col-md-6 d-flex align-items-center justify-content-center">
-                <div class="w-100" style="max-width: 400px;">
-                    <div class="text-center mb-5">
-                        <h1 class="h3 text-primary mb-2">Witaj ponownie!</h1>
-                        <p class="text-muted">Zaloguj się do panelu administratora</p>
-                    </div>
-
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="admin-alert admin-alert-{{ 'danger' if category == 'error' else 'success' }} mb-4">
-                                    <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
-                                    {{ message }}
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
-
-                    <div class="admin-form">
-                        <form method="POST">
-                            <div class="mb-4">
-                                <label for="username" class="form-label">
-                                    <i class="fas fa-user me-2"></i>
-                                    Nazwa użytkownika
-                                </label>
-                                <input type="text" class="form-control" id="username" name="username" required autofocus>
-                            </div>
-                            <div class="mb-4">
-                                <label for="password" class="form-label">
-                                    <i class="fas fa-lock me-2"></i>
-                                    Hasło
-                                </label>
-                                <input type="password" class="form-control" id="password" name="password" required>
-                            </div>
-                            <div class="d-grid">
-                                <button type="submit" class="btn admin-btn btn-lg">
-                                    <i class="fas fa-sign-in-alt me-2"></i>
-                                    Zaloguj się
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="text-center mt-4">
-                        <a href="{{ url_for('index') }}" class="text-decoration-none">
-                            <i class="fas fa-arrow-left me-2"></i>
-                            Powrót do strony głównej
-                        </a>
-                    </div>
-
-                    <div class="text-center mt-5">
-                        <small class="text-muted">
-                            <i class="fas fa-shield-alt me-1"></i>
-                            Bezpieczne logowanie SSL
-                        </small>
-                    </div>
+            
+            {% if error %}
+            <div class="alert alert-danger" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                {{ error }}
+            </div>
+            {% endif %}
+            
+            <form method="POST" class="admin-login-form">
+                <div class="mb-3">
+                    <label for="username" class="form-label">
+                        <i class="fas fa-user me-2"></i>Nazwa użytkownika
+                    </label>
+                    <input type="text" class="form-control admin-form-control" id="username" name="username" required>
                 </div>
+                
+                <div class="mb-3">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock me-2"></i>Hasło
+                    </label>
+                    <input type="password" class="form-control admin-form-control" id="password" name="password" required>
+                </div>
+                
+                <button type="submit" class="btn admin-btn w-100">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    Zaloguj się
+                </button>
+            </form>
+            
+            <div class="admin-login-footer">
+                <a href="{{ url_for('index') }}" class="text-muted">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Powrót do strony głównej
+                </a>
             </div>
         </div>
     </div>

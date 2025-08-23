@@ -6,174 +6,58 @@
     <title>Panel Administratora - Rejestracje</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
 </head>
-<body>
-    <div class="admin-panel">
-        <!-- Top Navigation Bar -->
-        <nav class="navbar navbar-expand-lg admin-top-nav">
-            <div class="container-fluid">
-                <button class="btn admin-btn-outline d-lg-none" id="sidebarToggle">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <span class="navbar-brand text-white mb-0 h1">
-                    <i class="fas fa-cog me-2"></i>
-                    Panel Administratora
-                </span>
-                <div class="navbar-nav ms-auto">
-                    <a class="nav-link text-white" href="{{ url_for('index') }}">
-                        <i class="fas fa-home me-1"></i>
-                        Strona główna
-                    </a>
-                </div>
-            </div>
-        </nav>
-
+<body class="admin-body">
         <div class="container-fluid">
-            <div class="row flex-nowrap">
-                <!-- Sidebar -->
-                <nav class="col-lg-2 admin-sidebar p-3" id="sidebar">
-                    <div class="d-flex flex-column">
-                        <hr class="text-muted">
-                        <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
-                                    <i class="fas fa-tachometer-alt"></i>
-                                    Dashboard
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_menu') }}">
-                                    <i class="fas fa-bars"></i>
-                                    Menu
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_sections') }}">
-                                    <i class="fas fa-layer-group"></i>
-                                    Sekcje
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_pages') }}">
-                                    <i class="fas fa-file-alt"></i>
-                                    Podstrony
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_benefits') }}">
-                                    <i class="fas fa-star"></i>
-                                    Korzyści
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_testimonials') }}">
-                                    <i class="fas fa-comments"></i>
-                                    Opinie
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_faq') }}">
-                                    <i class="fas fa-question-circle"></i>
-                                    FAQ
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link active" href="{{ url_for('admin_registrations') }}">
-                                    <i class="fas fa-user-plus"></i>
-                                    Rejestracje
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_social') }}">
-                                    <i class="fas fa-share-alt"></i>
-                                    Social Media
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_seo') }}">
-                                    <i class="fas fa-search"></i>
-                                    SEO/SEM
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_presentation_schedule') }}">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    Harmonogram Prezentacji
-                                </a>
-                            </li>
-
-                        </ul>
-                        <hr class="text-muted mt-auto">
-                        <div class="text-center">
-                            <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout w-100">
-                                <i class="fas fa-sign-out-alt me-2"></i>
-                                Wyloguj
-                            </a>
-                        </div>
-                    </div>
-                </nav>
-
+            <div class="row">            <!-- Sidebar -->
+            {% include 'admin/sidebar.html' %}
                 <!-- Main Content -->
-                <main class="col-lg-10 admin-content m-0">
+                <main class="col-lg-10 admin-content">
                     <div class="admin-header">
                         <h1><i class="fas fa-user-plus me-2"></i>Zarządzanie Rejestracjami</h1>
+                        <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
+                            <i class="fas fa-sign-out-alt me-2"></i>
+                            Wyloguj
+                        </a>
                     </div>
-
                     <!-- Statistics Cards -->
                     <div class="row mb-4">
                         <div class="col-md-3">
-                            <div class="admin-stats">
-                                <div class="admin-stats-icon">
-                                    <i class="fas fa-users"></i>
-                                </div>
-                                <div class="admin-stats-content">
-                                    <h3>{{ registrations|length }}</h3>
-                                    <p>Wszystkie Rejestracje</p>
-                                </div>
+                            <div class="admin-stats-card">
+                                <i class="fas fa-users"></i>
+                                <h3>{{ registrations|length }}</h3>
+                                <p>Wszystkie Rejestracje</p>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="admin-stats">
-                                <div class="admin-stats-icon">
-                                    <i class="fas fa-clock"></i>
-                                </div>
-                                <div class="admin-stats-content">
-                                    <h3>{{ registrations|selectattr('status', 'equalto', 'pending')|list|length }}</h3>
-                                    <p>Oczekujące</p>
-                                </div>
+                            <div class="admin-stats-card">
+                                <i class="fas fa-clock"></i>
+                                <h3>{{ registrations|selectattr('status', 'equalto', 'pending')|list|length }}</h3>
+                                <p>Oczekujące</p>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="admin-stats">
-                                <div class="admin-stats-icon">
-                                    <i class="fas fa-check-circle"></i>
-                                </div>
-                                <div class="admin-stats-content">
-                                    <h3>{{ registrations|selectattr('status', 'equalto', 'approved')|list|length }}</h3>
-                                    <p>Zatwierdzone</p>
-                                </div>
+                            <div class="admin-stats-card">
+                                <i class="fas fa-check-circle"></i>
+                                <h3>{{ registrations|selectattr('status', 'equalto', 'approved')|list|length }}</h3>
+                                <p>Zatwierdzone</p>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="admin-stats">
-                                <div class="admin-stats-icon">
-                                    <i class="fas fa-times-circle"></i>
-                                </div>
-                                <div class="admin-stats-content">
-                                    <h3>{{ registrations|selectattr('status', 'equalto', 'rejected')|list|length }}</h3>
-                                    <p>Odrzucone</p>
-                                </div>
+                            <div class="admin-stats-card">
+                                <i class="fas fa-times-circle"></i>
+                                <h3>{{ registrations|selectattr('status', 'equalto', 'rejected')|list|length }}</h3>
+                                <p>Odrzucone</p>
                             </div>
                         </div>
                     </div>
-
                     <!-- Registrations Table -->
                     <div class="admin-card">
                         <div class="admin-card-body">
                             {% if registrations %}
                                 <div class="table-responsive">
-                                    <table class="table admin-table">
+                                    <table class="table admin-table admin-table">
                                         <thead>
                                             <tr>
                                                 <th>Data</th>
@@ -207,27 +91,27 @@
                                                 </td>
                                                 <td>
                                                     {% if registration.status == 'pending' %}
-                                                        <span class="admin-badge admin-badge-warning">Oczekująca</span>
+                                                        <span class="badge bg-warning">Oczekująca</span>
                                                     {% elif registration.status == 'approved' %}
-                                                        <span class="admin-badge admin-badge-success">Zatwierdzona</span>
+                                                        <span class="badge bg-success">Zatwierdzona</span>
                                                     {% elif registration.status == 'rejected' %}
-                                                        <span class="admin-badge admin-badge-danger">Odrzucona</span>
+                                                        <span class="badge bg-danger">Odrzucona</span>
                                                     {% else %}
                                                         <span class="admin-badge admin-badge-secondary">{{ registration.status }}</span>
                                                     {% endif %}
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <button class="btn btn-sm admin-btn-outline" 
+                                                        <button <button class="btn btn-sm admin-btn-outline" 
                                                                 onclick="viewRegistration({{ registration.id }}, '{{ registration.name }}', '{{ registration.email }}', '{{ registration.phone }}', '{{ registration.message or '' }}', '{{ registration.status }}')">
                                                             <i class="fas fa-eye"></i>
                                                         </button>
                                                         {% if registration.status == 'pending' %}
-                                                        <button class="btn btn-sm admin-btn-success" 
+                                                        <button <button class="btn btn-sm admin-btn-success" 
                                                                 onclick="updateStatus({{ registration.id }}, 'approved')">
                                                             <i class="fas fa-check"></i>
                                                         </button>
-                                                        <button class="btn btn-sm admin-btn-danger" 
+                                                        <button <button class="btn btn-sm admin-btn-danger" 
                                                                 onclick="updateStatus({{ registration.id }}, 'rejected')">
                                                             <i class="fas fa-times"></i>
                                                         </button>
@@ -252,7 +136,6 @@
             </div>
         </div>
     </div>
-
     <!-- View Registration Modal -->
     <div class="modal fade admin-modal" id="viewRegistrationModal" tabindex="-1">
         <div class="modal-dialog">
@@ -302,7 +185,6 @@
             </div>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // View Registration
@@ -311,7 +193,6 @@
             document.getElementById('view_email').textContent = email;
             document.getElementById('view_phone').textContent = phone;
             document.getElementById('view_message').textContent = message || 'Brak wiadomości';
-            
             let statusText = '';
             let statusClass = '';
             if (status === 'pending') {
@@ -327,13 +208,10 @@
                 statusText = status;
                 statusClass = 'admin-badge admin-badge-secondary';
             }
-            
             document.getElementById('view_status').innerHTML = `<span class="${statusClass}">${statusText}</span>`;
             document.getElementById('view_date').textContent = new Date().toLocaleDateString('pl-PL');
-            
             new bootstrap.Modal(document.getElementById('viewRegistrationModal')).show();
         }
-
         // Update Status
         function updateStatus(id, status) {
             const statusText = status === 'approved' ? 'zatwierdzić' : 'odrzucić';
@@ -341,7 +219,6 @@
                 const formData = new FormData();
                 formData.append('id', id);
                 formData.append('status', status);
-                
                 fetch('/admin/api/registrations', {
                     method: 'PUT',
                     body: formData
@@ -360,18 +237,15 @@
                 });
             }
         }
-
         // Sidebar toggle functionality
         document.getElementById('sidebarToggle').addEventListener('click', function() {
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('show');
         });
-
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', function(event) {
             const sidebar = document.getElementById('sidebar');
             const sidebarToggle = document.getElementById('sidebarToggle');
-            
             if (window.innerWidth < 992 && 
                 !sidebar.contains(event.target) && 
                 !sidebarToggle.contains(event.target)) {
