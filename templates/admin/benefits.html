@@ -55,6 +55,12 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_pages') }}">
+                                    <i class="fas fa-file-alt"></i>
+                                    Podstrony
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link active" href="{{ url_for('admin_benefits') }}">
                                     <i class="fas fa-star"></i>
                                     Korzyści
@@ -217,7 +223,7 @@
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="addBenefitForm">
+                <form id="addBenefitForm" enctype="multipart/form-data">
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6">
@@ -276,7 +282,7 @@
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="editBenefitForm">
+                <form id="editBenefitForm" enctype="multipart/form-data">
                     <input type="hidden" id="edit_id" name="id">
                     <div class="modal-body">
                         <div class="row">
@@ -304,6 +310,10 @@
                                     <label for="edit_image" class="form-label">Obraz (opcjonalnie)</label>
                                     <input type="file" class="form-control" id="edit_image" name="image" accept="image/*">
                                     <small class="text-muted">Zalecany format: JPG, PNG (max 2MB)</small>
+                                    <div id="current_image_display" class="mt-2" style="display: none;">
+                                        <small class="text-muted">Aktualny obraz:</small>
+                                        <img id="current_image" src="" alt="Aktualny obraz" class="img-thumbnail mt-1" style="max-width: 100px; max-height: 100px;">
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <div class="form-check">
@@ -358,6 +368,17 @@
             document.getElementById('edit_icon').value = icon;
             document.getElementById('edit_order').value = order;
             document.getElementById('edit_is_active').checked = isActive;
+            
+            // Wyświetl aktualny obraz jeśli istnieje
+            const currentImageDisplay = document.getElementById('current_image_display');
+            const currentImage = document.getElementById('current_image');
+            
+            if (image && image !== 'None' && image !== '') {
+                currentImage.src = '/' + image.replace('static/', '');
+                currentImageDisplay.style.display = 'block';
+            } else {
+                currentImageDisplay.style.display = 'none';
+            }
             
             new bootstrap.Modal(document.getElementById('editBenefitModal')).show();
         }

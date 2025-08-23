@@ -17,6 +17,7 @@
     --shadow: 0 10px 25px rgba(30, 58, 138, 0.15);
     --shadow-lg: 0 20px 40px rgba(30, 58, 138, 0.2);
     --shadow-xl: 0 25px 50px rgba(30, 58, 138, 0.25);
+    --shadow-2xl: 0 35px 60px rgba(30, 58, 138, 0.3);
     --blue-gradient: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
     --blue-light-gradient: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
     --glass-bg: rgba(255, 255, 255, 0.1);
@@ -412,6 +413,7 @@ body {
     margin-bottom: 20px;
     color: var(--primary-color);
     font-size: 2.5rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .pillar-item h5 {
@@ -424,6 +426,826 @@ body {
 .pillar-item p {
     color: var(--text-muted);
     line-height: 1.6;
+}
+
+/* Pillar and Floating Card Links */
+.pillar-item-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pillar-item-link:hover {
+    text-decoration: none;
+    color: inherit;
+}
+
+.pillar-item-link:hover .pillar-item {
+    transform: translateY(-12px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary-color);
+    background: var(--white-color);
+}
+
+.floating-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-card-link:hover {
+    text-decoration: none;
+    color: inherit;
+}
+
+.floating-card-link:hover .floating-card {
+    transform: scale(1.08) translateY(-15px);
+    box-shadow: var(--shadow-2xl);
+    border-color: var(--primary-color);
+}
+
+/* Cursor pointer for clickable elements */
+.pillar-item-link,
+.floating-card-link {
+    cursor: pointer;
+    outline: none;
+}
+
+.pillar-item-link:focus,
+.floating-card-link:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Enhanced hover effects */
+.pillar-item-link:hover .pillar-item i {
+    transform: scale(1.1);
+    color: var(--primary-color);
+}
+
+.floating-card-link:hover .floating-card i {
+    transform: scale(1.1);
+}
+
+.floating-card-link:hover .floating-card h4 {
+    color: var(--primary-color);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .pillar-item-link:hover .pillar-item {
+        transform: translateY(-6px);
+    }
+    
+    .floating-card-link:hover .floating-card {
+        transform: scale(1.05) translateY(-8px);
+    }
+    
+    .pillar-item-link:hover .pillar-item i,
+    .floating-card-link:hover .floating-card i {
+        transform: scale(1.05);
+    }
+}
+
+/* Admin form improvements */
+.pillar-item-edit,
+.floating-card-item-edit {
+    background: var(--light-color);
+    border: 1px solid rgba(30, 58, 138, 0.15);
+    transition: all 0.3s ease;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px rgba(30, 58, 138, 0.08);
+}
+
+.pillar-item-edit:hover,
+.floating-card-item-edit:hover {
+    background: var(--white-color);
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+}
+
+.pillar-item-edit h6,
+.floating-card-item-edit h6 {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid rgba(30, 58, 138, 0.1);
+}
+
+/* Enhanced form field improvements */
+.pillar-item-edit .form-control,
+.floating-card-item-edit .form-control {
+    border: 1px solid rgba(30, 58, 138, 0.2);
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--dark-color) !important;
+    background-color: var(--white-color);
+}
+
+.pillar-item-edit .form-control:focus,
+.floating-card-item-edit .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.15);
+    transform: translateY(-1px);
+}
+
+.pillar-item-edit .form-label,
+.floating-card-item-edit .form-label {
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Enhanced select element improvements */
+.pillar-item-edit select.form-control,
+.floating-card-item-edit select.form-control {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.25em 1.25em;
+    padding-right: 2.75rem;
+    cursor: pointer;
+}
+
+/* Enhanced textarea improvements */
+.pillar-item-edit textarea.form-control,
+.floating-card-item-edit textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.6;
+}
+
+/* Enhanced number input improvements */
+.pillar-item-edit input[type="number"].form-control,
+.floating-card-item-edit input[type="number"].form-control {
+    -moz-appearance: textfield;
+    text-align: center;
+    font-weight: 500;
+    color: var(--dark-color) !important;
+}
+
+.pillar-item-edit input[type="number"].form-control::-webkit-outer-spin-button,
+.pillar-item-edit input[type="number"].form-control::-webkit-inner-spin-button,
+.floating-card-item-edit input[type="number"].form-control::-webkit-outer-spin-button,
+.floating-card-item-edit input[type="number"].form-control::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Enhanced link input improvements */
+.pillar-item-edit input[name*="link"].form-control,
+.floating-card-item-edit input[name*="link"].form-control {
+    font-family: 'Courier New', monospace;
+    background-color: rgba(30, 58, 138, 0.05);
+    border-left: 3px solid var(--info-color);
+    color: var(--dark-color) !important;
+}
+
+.pillar-item-edit input[name*="link"].form-control:focus,
+.floating-card-item-edit input[name*="link"].form-control:focus {
+    background-color: var(--white-color);
+    border-left-color: var(--primary-color);
+    color: var(--dark-color) !important;
+}
+
+/* Enhanced icon input improvements */
+.pillar-item-edit input[name*="icon"].form-control,
+.floating-card-item-edit input[name*="icon"].form-control {
+    font-family: 'Courier New', monospace;
+    background-color: rgba(30, 58, 138, 0.05);
+    border-left: 3px solid var(--warning-color);
+    color: var(--dark-color) !important;
+}
+
+.pillar-item-edit input[name*="icon"].form-control:focus,
+.floating-card-item-edit input[name*="icon"].form-control:focus {
+    background-color: var(--white-color);
+    border-left-color: var(--primary-color);
+    color: var(--dark-color) !important;
+}
+
+/* Enhanced title input improvements */
+.pillar-item-edit input[name*="title"].form-control,
+.floating-card-item-edit input[name*="title"].form-control {
+    font-weight: 500;
+    background-color: rgba(30, 58, 138, 0.02);
+    border-left: 3px solid var(--success-color);
+    color: var(--dark-color) !important;
+}
+
+.pillar-item-edit input[name*="title"].form-control:focus,
+.floating-card-item-edit input[name*="title"].form-control:focus {
+    background-color: var(--white-color);
+    border-left-color: var(--primary-color);
+    color: var(--dark-color) !important;
+}
+
+/* Enhanced description input improvements */
+.pillar-item-edit textarea[name*="description"].form-control {
+    background-color: rgba(30, 58, 138, 0.02);
+    line-height: 1.6;
+    border-left: 3px solid var(--primary-color);
+    color: var(--dark-color) !important;
+}
+
+.pillar-item-edit textarea[name*="description"].form-control:focus {
+    background-color: var(--white-color);
+    color: var(--dark-color) !important;
+}
+
+/* Enhanced color select improvements */
+.pillar-item-edit select[name*="color"].form-control,
+.floating-card-item-edit select[name*="color"].form-control {
+    background-color: rgba(30, 58, 138, 0.02);
+    border-left: 3px solid var(--primary-light);
+    color: var(--dark-color) !important;
+}
+
+.pillar-item-edit select[name*="color"].form-control:focus,
+.floating-card-item-edit select[name*="color"].form-control:focus {
+    background-color: var(--white-color);
+    color: var(--dark-color) !important;
+}
+
+/* Enhanced delay input improvements */
+.floating-card-item-edit input[name*="delay"].form-control {
+    background-color: rgba(30, 58, 138, 0.02);
+    text-align: center;
+    border-left: 3px solid var(--info-color);
+    color: var(--dark-color) !important;
+}
+
+.floating-card-item-edit input[name*="delay"].form-control:focus {
+    background-color: var(--white-color);
+    color: var(--dark-color) !important;
+}
+
+/* Enhanced small text hints */
+.pillar-item-edit .text-muted,
+.floating-card-item-edit .text-muted {
+    font-size: 0.8rem;
+    color: var(--text-muted) !important;
+    font-style: italic;
+    margin-top: 0.25rem;
+    display: block;
+    line-height: 1.4;
+}
+
+/* Enhanced alert styling for modals */
+.modal .alert-info {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(6, 182, 212, 0.05) 100%);
+    border: 1px solid rgba(6, 182, 212, 0.2);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.modal .alert-info .fas {
+    color: var(--info-color);
+}
+
+/* Enhanced modal header styling */
+.modal-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: var(--white-color);
+    border-bottom: none;
+    border-radius: 12px 12px 0 0;
+    padding: 1.5rem 2rem;
+}
+
+.modal-title {
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.modal-title .fas {
+    color: var(--white-color);
+}
+
+/* Enhanced modal footer styling */
+.modal-footer {
+    background: var(--light-color);
+    border-top: 1px solid rgba(30, 58, 138, 0.1);
+    border-radius: 0 0 12px 12px;
+    padding: 1.5rem 2rem;
+}
+
+/* Enhanced button styling in modals */
+.modal .btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+    border: none;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+}
+
+.modal .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.modal .admin-btn {
+    background: var(--primary-color);
+    color: var(--white-color);
+}
+
+.modal .admin-btn:hover {
+    background: var(--primary-dark);
+    color: var(--white-color);
+}
+
+.modal .admin-btn-outline {
+    background: transparent;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+}
+
+.modal .admin-btn-outline:hover {
+    background: var(--primary-color);
+    color: var(--white-color);
+}
+
+/* Enhanced container styling for better visual hierarchy */
+#pillarsContainer,
+#floatingCardsContainer {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+#pillarsContainer::-webkit-scrollbar,
+#floatingCardsContainer::-webkit-scrollbar {
+    width: 6px;
+}
+
+#pillarsContainer::-webkit-scrollbar-track,
+#floatingCardsContainer::-webkit-scrollbar-track {
+    background: rgba(30, 58, 138, 0.05);
+    border-radius: 3px;
+}
+
+#pillarsContainer::-webkit-scrollbar-thumb,
+#floatingCardsContainer::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 3px;
+}
+
+#pillarsContainer::-webkit-scrollbar-thumb:hover,
+#floatingCardsContainer::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-dark);
+}
+
+/* Enhanced spacing and layout improvements */
+.pillar-item-edit .row.g-3,
+.floating-card-item-edit .row.g-3 {
+    margin: 0;
+}
+
+.pillar-item-edit .row.g-3 > div,
+.floating-card-item-edit .row.g-3 > div {
+    padding: 0.75rem;
+}
+
+/* Enhanced form group styling */
+.pillar-item-edit .mb-3,
+.floating-card-item-edit .mb-3 {
+    margin-bottom: 1.5rem !important;
+}
+
+/* Enhanced focus states for better accessibility */
+.pillar-item-edit .form-control:focus,
+.floating-card-item-edit .form-control:focus,
+.pillar-item-edit select:focus,
+.floating-card-item-edit select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+}
+
+/* Enhanced hover states for interactive elements */
+.pillar-item-edit .form-control:hover,
+.floating-card-item-edit .form-control:hover {
+    border-color: rgba(30, 58, 138, 0.4);
+}
+
+/* Enhanced disabled state styling */
+.pillar-item-edit .form-control:disabled,
+.floating-card-item-edit .form-control:disabled {
+    background-color: rgba(30, 58, 138, 0.05);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+/* Enhanced placeholder styling */
+.pillar-item-edit .form-control::placeholder,
+.floating-card-item-edit .form-control::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+    font-style: italic;
+}
+
+/* Ensure all form inputs, selects, and textareas have visible text */
+.pillar-item-edit input,
+.pillar-item-edit select,
+.pillar-item-edit textarea,
+.floating-card-item-edit input,
+.floating-card-item-edit select,
+.floating-card-item-edit textarea {
+    color: var(--dark-color) !important;
+}
+
+.pillar-item-edit input:focus,
+.pillar-item-edit select:focus,
+.pillar-item-edit textarea:focus,
+.floating-card-item-edit input:focus,
+.floating-card-item-edit select:focus,
+.floating-card-item-edit textarea:focus {
+    color: var(--dark-color) !important;
+}
+
+/* Enhanced validation states */
+.pillar-item-edit .form-control.is-valid,
+.floating-card-item-edit .form-control.is-valid {
+    border-color: var(--success-color);
+    background-color: rgba(5, 150, 105, 0.05);
+}
+
+.pillar-item-edit .form-control.is-invalid,
+.floating-card-item-edit .form-control.is-invalid {
+    border-color: var(--danger-color);
+    background-color: rgba(239, 68, 68, 0.05);
+}
+
+/* Enhanced modal body styling */
+.modal-body {
+    padding: 2rem;
+    background: var(--white-color);
+}
+
+/* Enhanced form section headers */
+.pillar-item-edit h6 .fas,
+.floating-card-item-edit h6 .fas {
+    margin-right: 0.75rem;
+    font-size: 1.1em;
+    opacity: 0.8;
+}
+
+/* Enhanced form field groups */
+.pillar-item-edit .form-group,
+.floating-card-item-edit .form-group {
+    position: relative;
+}
+
+/* Enhanced required field indicators */
+.pillar-item-edit .form-label.required::after,
+.floating-card-item-edit .form-label.required::after {
+    content: " *";
+    color: var(--danger-color);
+    font-weight: bold;
+}
+
+/* Enhanced help text positioning */
+.pillar-item-edit .text-muted,
+.floating-card-item-edit .text-muted {
+    position: relative;
+    padding-left: 0.5rem;
+}
+
+.pillar-item-edit .text-muted::before,
+.floating-card-item-edit .text-muted::before {
+    content: "💡";
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: 0.7em;
+}
+
+/* Enhanced typography consistency */
+.pillar-item-edit,
+.floating-card-item-edit {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Enhanced spacing consistency with system */
+.pillar-item-edit .container,
+.floating-card-item-edit .container {
+    max-width: 100%;
+    padding: 0;
+}
+
+/* Enhanced border radius consistency */
+.pillar-item-edit .form-control,
+.floating-card-item-edit .form-control,
+.pillar-item-edit,
+.floating-card-item-edit,
+.modal-content {
+    border-radius: var(--border-radius);
+}
+
+/* Enhanced shadow consistency */
+.pillar-item-edit:hover,
+.floating-card-item-edit:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+/* Enhanced color consistency with system variables */
+.pillar-item-edit h6,
+.floating-card-item-edit h6 {
+    color: var(--primary-color);
+}
+
+.pillar-item-edit .form-label,
+.floating-card-item-edit .form-label {
+    color: var(--dark-color);
+}
+
+.pillar-item-edit .text-muted,
+.floating-card-item-edit .text-muted {
+    color: var(--text-muted) !important;
+}
+
+/* Enhanced transition consistency */
+.pillar-item-edit,
+.floating-card-item-edit,
+.pillar-item-edit .form-control,
+.floating-card-item-edit .form-control {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced focus ring consistency */
+.pillar-item-edit .form-control:focus,
+.floating-card-item-edit .form-control:focus {
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.15);
+}
+
+/* Enhanced button consistency with system */
+.modal .btn {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+}
+
+/* Enhanced modal consistency */
+.modal-content {
+    border: none;
+    box-shadow: var(--shadow-xl);
+}
+
+/* Enhanced form field consistency */
+.pillar-item-edit .form-control,
+.floating-card-item-edit .form-control {
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* Enhanced label consistency */
+.pillar-item-edit .form-label,
+.floating-card-item-edit .form-label {
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+/* Enhanced small text consistency */
+.pillar-item-edit .text-muted,
+.floating-card-item-edit .text-muted {
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+/* Enhanced spacing consistency */
+.pillar-item-edit .mb-3,
+.floating-card-item-edit .mb-3 {
+    margin-bottom: 1.5rem !important;
+}
+
+/* Enhanced padding consistency */
+.pillar-item-edit,
+.floating-card-item-edit {
+    padding: 1.5rem;
+}
+
+/* Enhanced border consistency */
+.pillar-item-edit,
+.floating-card-item-edit {
+    border: 1px solid rgba(30, 58, 138, 0.15);
+}
+
+/* Enhanced hover border consistency */
+.pillar-item-edit:hover,
+.floating-card-item-edit:hover {
+    border-color: var(--primary-color);
+}
+
+/* Enhanced background consistency */
+.pillar-item-edit,
+.floating-card-item-edit {
+    background: var(--light-color);
+}
+
+.pillar-item-edit:hover,
+.floating-card-item-edit:hover {
+    background: var(--white-color);
+}
+
+/* Enhanced responsive improvements */
+@media (max-width: 576px) {
+    .pillar-item-edit,
+    .floating-card-item-edit {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .pillar-item-edit .row.g-3 > div,
+    .floating-card-item-edit .row.g-3 > div {
+        padding: 0.5rem;
+    }
+    
+    .pillar-item-edit .form-control,
+    .floating-card-item-edit .form-control {
+        font-size: 0.9rem;
+        padding: 0.6rem 0.8rem;
+    }
+    
+    .pillar-item-edit .form-label,
+    .floating-card-item-edit .form-label {
+        font-size: 0.8rem;
+        margin-bottom: 0.4rem;
+    }
+    
+    .pillar-item-edit h6,
+    .floating-card-item-edit h6 {
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .modal-header,
+    .modal-footer {
+        padding: 1rem 1.5rem;
+    }
+}
+
+@media (min-width: 577px) and (max-width: 768px) {
+    .pillar-item-edit,
+    .floating-card-item-edit {
+        padding: 1.25rem;
+    }
+    
+    .pillar-item-edit .form-control,
+    .floating-card-item-edit .form-control {
+        font-size: 0.92rem;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 991px) {
+    .pillar-item-edit,
+    .floating-card-item-edit {
+        padding: 1.5rem;
+    }
+    
+    .pillar-item-edit .form-control,
+    .floating-card-item-edit .form-control {
+        font-size: 0.95rem;
+    }
+}
+
+@media (min-width: 992px) {
+    .pillar-item-edit,
+    .floating-card-item-edit {
+        padding: 2rem;
+    }
+    
+    .pillar-item-edit .form-control,
+    .floating-card-item-edit .form-control {
+        font-size: 1rem;
+        padding: 0.875rem 1.125rem;
+    }
+    
+    .pillar-item-edit .form-label,
+    .floating-card-item-edit .form-label {
+        font-size: 0.9rem;
+        margin-bottom: 0.6rem;
+    }
+}
+
+/* Enhanced print styles for forms */
+@media print {
+    .pillar-item-edit,
+    .floating-card-item-edit {
+        background: var(--white-color) !important;
+        border: 1px solid var(--dark-color) !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    
+    .pillar-item-edit .form-control,
+    .floating-card-item-edit .form-control {
+        border: 1px solid var(--dark-color) !important;
+        background: var(--white-color) !important;
+        color: var(--dark-color) !important;
+    }
+}
+
+/* Enhanced dark mode support */
+@media (prefers-color-scheme: dark) {
+    .pillar-item-edit,
+    .floating-card-item-edit {
+        background: var(--darker-color);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: var(--light-color);
+    }
+    
+    .pillar-item-edit:hover,
+    .floating-card-item-edit:hover {
+        background: var(--dark-color);
+        border-color: var(--primary-color);
+    }
+    
+    .pillar-item-edit .form-control,
+    .floating-card-item-edit .form-control {
+        background: var(--darker-color);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: var(--light-color);
+    }
+    
+    .pillar-item-edit .form-control:focus,
+    .floating-card-item-edit .form-control:focus {
+        background: var(--dark-color);
+        border-color: var(--primary-color);
+    }
+    
+    .pillar-item-edit .form-label,
+    .floating-card-item-edit .form-label {
+        color: var(--light-color);
+    }
+    
+    .pillar-item-edit .text-muted,
+    .floating-card-item-edit .text-muted {
+        color: rgba(255, 255, 255, 0.6) !important;
+    }
+}
+
+/* Enhanced reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .pillar-item-edit,
+    .floating-card-item-edit,
+    .pillar-item-edit .form-control,
+    .floating-card-item-edit .form-control,
+    .modal .btn {
+        transition: none;
+        transform: none;
+    }
+    
+    .pillar-item-edit:hover,
+    .floating-card-item-edit:hover {
+        transform: none;
+    }
+    
+    .pillar-item-edit .form-control:focus,
+    .floating-card-item-edit .form-control:focus {
+        transform: none;
+    }
+    
+    .modal .btn:hover {
+        transform: none;
+    }
+}
+
+/* Enhanced high contrast mode support */
+@media (prefers-contrast: high) {
+    .pillar-item-edit,
+    .floating-card-item-edit {
+        border: 2px solid var(--dark-color);
+    }
+    
+    .pillar-item-edit .form-control,
+    .floating-card-item-edit .form-control {
+        border: 2px solid var(--dark-color);
+    }
+    
+    .pillar-item-edit .form-control:focus,
+    .floating-card-item-edit .form-control:focus {
+        border: 3px solid var(--primary-color);
+        box-shadow: none;
+    }
 }
 
 /* About Visual */
@@ -453,6 +1275,14 @@ body {
     border: 2px solid var(--primary-color);
     z-index: 10;
     backdrop-filter: blur(10px);
+}
+
+.floating-card i {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-card h4 {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .floating-card:nth-child(1) {

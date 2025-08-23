@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import models and config
-from models import db, User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, Registration, FAQ, SEOSettings, PresentationSchedule
+from models import db, User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, Registration, FAQ, SEOSettings, PresentationSchedule, Page
 from config import config
 
 # Initialize Flask app
@@ -241,6 +241,13 @@ def admin_presentation_schedule():
     schedule = PresentationSchedule.query.first()
     return render_template('admin/presentation_schedule.html', schedule=schedule)
 
+@app.route('/admin/pages')
+@login_required
+def admin_pages():
+    if not current_user.is_admin:
+        return redirect(url_for('admin_login'))
+    return render_template('admin/pages.html')
+
 # API routes for content management
 @app.route('/admin/api/menu', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @login_required
@@ -329,6 +336,10 @@ def api_sections():
             'pillars_data': section.pillars_data,
             'final_text': section.final_text,
             'floating_cards_data': section.floating_cards_data,
+            'enable_pillars': section.enable_pillars,
+            'enable_floating_cards': section.enable_floating_cards,
+            'pillars_count': section.pillars_count,
+            'floating_cards_count': section.floating_cards_count,
             'order': section.order,
             'is_active': section.is_active
         } for section in sections])
@@ -341,6 +352,11 @@ def api_sections():
             data = request.form.to_dict()
             # Konwertujemy checkbox na boolean
             data['is_active'] = 'is_active' in request.form
+            # Konwertujemy stringi boolean na prawdziwe boolean
+            if 'enable_pillars' in data:
+                data['enable_pillars'] = data['enable_pillars'] == 'true'
+            if 'enable_floating_cards' in data:
+                data['enable_floating_cards'] = data['enable_floating_cards'] == 'true'
         
         new_section = Section(
             name=data['name'],
@@ -351,6 +367,10 @@ def api_sections():
             pillars_data=data.get('pillars_data'),
             final_text=data.get('final_text'),
             floating_cards_data=data.get('floating_cards_data'),
+            enable_pillars=data.get('enable_pillars', False),
+            enable_floating_cards=data.get('enable_floating_cards', False),
+            pillars_count=data.get('pillars_count', 4),
+            floating_cards_count=data.get('floating_cards_count', 3),
             order=data.get('order', 0),
             is_active=data.get('is_active', True)
         )
@@ -364,8 +384,22 @@ def api_sections():
             data = request.get_json()
         else:
             data = request.form.to_dict()
+            print(f"Received form data: {data}")
+            
             # Konwertujemy checkbox na boolean
             data['is_active'] = 'is_active' in request.form
+            # Konwertujemy stringi boolean na prawdziwe boolean
+            if 'enable_pillars' in data:
+                data['enable_pillars'] = data['enable_pillars'] == 'true'
+            else:
+                data['enable_pillars'] = False  # Jeśli pole nie jest wysłane, ustaw na False
+                
+            if 'enable_floating_cards' in data:
+                data['enable_floating_cards'] = data['enable_floating_cards'] == 'true'
+            else:
+                data['enable_floating_cards'] = False  # Jeśli pole nie jest wysłane, ustaw na False
+        
+        print(f"Processed data for update: {data}")
         
         section = Section.query.get(data['id'])
         if section:
@@ -386,11 +420,24 @@ def api_sections():
                 section.final_text = data['final_text']
             if 'floating_cards_data' in data:
                 section.floating_cards_data = data['floating_cards_data']
+            if 'enable_pillars' in data:
+                section.enable_pillars = data['enable_pillars']
+                print(f"Updated enable_pillars to: {section.enable_pillars}")
+            if 'enable_floating_cards' in data:
+                section.enable_floating_cards = data['enable_floating_cards']
+                print(f"Updated enable_floating_cards to: {section.enable_floating_cards}")
+            if 'pillars_count' in data:
+                section.pillars_count = data['pillars_count']
+            if 'floating_cards_count' in data:
+                section.floating_cards_count = data['floating_cards_count']
             if 'order' in data:
                 section.order = data['order']
             if 'is_active' in data:
                 section.is_active = data['is_active']
+                print(f"Updated is_active to: {section.is_active}")
+            
             db.session.commit()
+            print(f"Section {section.id} updated successfully")
             return jsonify({'success': True})
         return jsonify({'success': False, 'message': 'Section not found'}), 404
     
@@ -423,6 +470,10 @@ def api_section_by_id(section_id):
                 'pillars_data': section.pillars_data,
                 'final_text': section.final_text,
                 'floating_cards_data': section.floating_cards_data,
+                'enable_pillars': section.enable_pillars,
+                'enable_floating_cards': section.enable_floating_cards,
+                'pillars_count': section.pillars_count,
+                'floating_cards_count': section.floating_cards_count,
                 'order': section.order,
                 'is_active': section.is_active
             }
@@ -449,6 +500,10 @@ def api_sections_bulk_update():
                 section.pillars_data = section_data.get('pillars_data')
                 section.final_text = section_data.get('final_text')
                 section.floating_cards_data = section_data.get('floating_cards_data')
+                section.enable_pillars = section_data.get('enable_pillars', False)
+                section.enable_floating_cards = section_data.get('enable_floating_cards', False)
+                section.pillars_count = section_data.get('pillars_count', 4)
+                section.floating_cards_count = section_data.get('floating_cards_count', 3)
                 section.order = section_data.get('order', 0)
                 section.is_active = section_data.get('is_active', True)
         
@@ -477,19 +532,38 @@ def api_benefits():
         } for item in benefits])
     
     elif request.method == 'POST':
-        # Obsługujemy zarówno JSON jak i FormData
-        if request.is_json:
-            data = request.get_json()
-        else:
-            data = request.form.to_dict()
-            # Konwertujemy checkbox na boolean
-            data['is_active'] = 'is_active' in request.form
+        # Obsługujemy FormData z plikami
+        data = request.form.to_dict()
+        data['is_active'] = 'is_active' in request.form
+        
+        # Obsługa uploadu pliku
+        image_path = ''
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename:
+                # Sprawdź rozszerzenie pliku
+                allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+                if '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in allowed_extensions:
+                    # Generuj unikalną nazwę pliku
+                    import uuid
+                    import os
+                    filename = f"{uuid.uuid4().hex}.{file.filename.rsplit('.', 1)[1].lower()}"
+                    filepath = os.path.join('static', 'images', 'benefits', filename)
+                    
+                    # Zapisz plik
+                    try:
+                        file.save(filepath)
+                        image_path = filepath
+                    except Exception as e:
+                        return jsonify({'success': False, 'error': f'Błąd podczas zapisywania pliku: {str(e)}'}), 500
+                else:
+                    return jsonify({'success': False, 'error': 'Niedozwolony format pliku. Dozwolone: PNG, JPG, JPEG, GIF, WEBP'}), 400
         
         new_benefit = BenefitItem(
             title=data['title'],
             description=data.get('description', ''),
             icon=data.get('icon', ''),
-            image=data.get('image', ''),
+            image=image_path,
             order=data.get('order', 0),
             is_active=data.get('is_active', True)
         )
@@ -498,20 +572,44 @@ def api_benefits():
         return jsonify({'success': True, 'id': new_benefit.id})
     
     elif request.method == 'PUT':
-        # Obsługujemy zarówno JSON jak i FormData
-        if request.is_json:
-            data = request.get_json()
-        else:
-            data = request.form.to_dict()
-            # Konwertujemy checkbox na boolean
-            data['is_active'] = 'is_active' in request.form
+        # Obsługujemy FormData z plikami
+        data = request.form.to_dict()
+        data['is_active'] = 'is_active' in request.form
         
         benefit = BenefitItem.query.get(data['id'])
         if benefit:
+            # Obsługa uploadu nowego pliku
+            if 'image' in request.files:
+                file = request.files['image']
+                if file and file.filename:
+                    # Sprawdź rozszerzenie pliku
+                    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+                    if '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in allowed_extensions:
+                        # Generuj unikalną nazwę pliku
+                        import uuid
+                        import os
+                        filename = f"{uuid.uuid4().hex}.{file.filename.rsplit('.', 1)[1].lower()}"
+                        filepath = os.path.join('static', 'images', 'benefits', filename)
+                        
+                        # Usuń stary plik jeśli istnieje
+                        if benefit.image and os.path.exists(benefit.image):
+                            try:
+                                os.remove(benefit.image)
+                            except:
+                                pass  # Ignoruj błędy usuwania
+                        
+                        # Zapisz nowy plik
+                        try:
+                            file.save(filepath)
+                            benefit.image = filepath
+                        except Exception as e:
+                            return jsonify({'success': False, 'error': f'Błąd podczas zapisywania pliku: {str(e)}'}), 500
+                    else:
+                        return jsonify({'success': False, 'error': 'Niedozwolony format pliku. Dozwolone: PNG, JPG, JPEG, GIF, WEBP'}), 400
+            
             benefit.title = data['title']
             benefit.description = data.get('description', '')
             benefit.icon = data.get('icon', '')
-            benefit.image = data.get('image', '')
             benefit.order = data.get('order', 0)
             benefit.is_active = data.get('is_active', True)
             db.session.commit()
@@ -522,6 +620,13 @@ def api_benefits():
         benefit_id = request.args.get('id', type=int)
         benefit = BenefitItem.query.get(benefit_id)
         if benefit:
+            # Usuń plik obrazu jeśli istnieje
+            if benefit.image and os.path.exists(benefit.image):
+                try:
+                    os.remove(benefit.image)
+                except:
+                    pass  # Ignoruj błędy usuwania
+            
             db.session.delete(benefit)
             db.session.commit()
             return jsonify({'success': True})
@@ -881,6 +986,128 @@ def api_presentation_schedule():
             db.session.commit()
             return jsonify({'success': True})
         return jsonify({'success': False, 'message': 'Schedule not found'}), 404
+
+# Page routes
+@app.route('/<slug>')
+def page(slug):
+    """Display individual page by slug"""
+    page = Page.query.filter_by(slug=slug, is_active=True, is_published=True).first()
+    if page:
+        return render_template('page.html', page=page)
+    else:
+        # Return 404 if page not found
+        return render_template('404.html'), 404
+
+# Admin API for pages
+@app.route('/admin/api/pages', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@login_required
+def api_pages():
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    if request.method == 'GET':
+        pages = Page.query.order_by(Page.created_at.desc()).all()
+        return jsonify([{
+            'id': page.id,
+            'title': page.title,
+            'slug': page.slug,
+            'content': page.content,
+            'meta_description': page.meta_description,
+            'meta_keywords': page.meta_keywords,
+            'is_active': page.is_active,
+            'is_published': page.is_published,
+            'published_at': page.published_at.isoformat() if page.published_at else None,
+            'created_at': page.created_at.isoformat(),
+            'updated_at': page.updated_at.isoformat()
+        } for page in pages])
+    
+    elif request.method == 'POST':
+        data = request.form.to_dict()
+        
+        # Handle checkboxes
+        data['is_active'] = 'is_active' in request.form
+        data['is_published'] = 'is_published' in request.form
+        
+        # Set published_at if publishing
+        published_at = None
+        if data['is_published']:
+            published_at = datetime.utcnow()
+        
+        new_page = Page(
+            title=data['title'],
+            slug=data['slug'],
+            content=data.get('content', ''),
+            meta_description=data.get('meta_description', ''),
+            meta_keywords=data.get('meta_keywords', ''),
+            is_active=data['is_active'],
+            is_published=data['is_published'],
+            published_at=published_at
+        )
+        db.session.add(new_page)
+        db.session.commit()
+        return jsonify({'success': True, 'id': new_page.id})
+    
+    elif request.method == 'PUT':
+        data = request.form.to_dict()
+        
+        # Handle checkboxes
+        data['is_active'] = 'is_active' in request.form
+        data['is_published'] = 'is_published' in request.form
+        
+        page = Page.query.get(data['id'])
+        if page:
+            page.title = data['title']
+            page.slug = data['slug']
+            page.content = data.get('content', '')
+            page.meta_description = data.get('meta_description', '')
+            page.meta_keywords = data.get('meta_keywords', '')
+            page.is_active = data['is_active']
+            page.is_published = data['is_published']
+            
+            # Update published_at if publishing
+            if data['is_published'] and not page.published_at:
+                page.published_at = datetime.utcnow()
+            elif not data['is_published']:
+                page.published_at = None
+            
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Page not found'}), 404
+    
+    elif request.method == 'DELETE':
+        page_id = request.args.get('id', type=int)
+        page = Page.query.get(page_id)
+        if page:
+            db.session.delete(page)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Page not found'}), 404
+
+@app.route('/admin/api/pages/<int:page_id>', methods=['GET'])
+@login_required
+def api_page_by_id(page_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    page = Page.query.get(page_id)
+    if page:
+        return jsonify({
+            'success': True,
+            'page': {
+                'id': page.id,
+                'title': page.title,
+                'slug': page.slug,
+                'content': page.content,
+                'meta_description': page.meta_description,
+                'meta_keywords': page.meta_keywords,
+                'is_active': page.is_active,
+                'is_published': page.is_published,
+                'published_at': page.published_at.isoformat() if page.published_at else None,
+                'created_at': page.created_at.isoformat(),
+                'updated_at': page.updated_at.isoformat()
+            }
+        })
+    return jsonify({'success': False, 'error': 'Page not found'}), 404
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

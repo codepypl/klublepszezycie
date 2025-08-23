@@ -165,16 +165,38 @@
                     <p class="lead mb-4">
                         {{ about_section.content }}
                     </p>
-                    {% if about_section.pillars_data %}
+                    {% if about_section.enable_pillars and about_section.pillars_data %}
                     <div class="pillars-grid">
                         {% set pillars = about_section.pillars_data|from_json %}
+                        <!-- DEBUG: Pillars data -->
+                        <!-- <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">
+                            <strong>DEBUG Pillars:</strong><br>
+                            enable_pillars: {{ about_section.enable_pillars }}<br>
+                            pillars_data: {{ about_section.pillars_data }}<br>
+                            pillars count: {{ pillars|length }}<br>
+                            pillars: {{ pillars }}
+                        </div> -->
                         {% for pillar in pillars %}
+                        {% if pillar.link %}
+                        <a href="{{ pillar.link }}" class="pillar-item-link">
+                        {% endif %}
                         <div class="pillar-item">
                             <i class="{{ pillar.icon }} fa-2x {{ pillar.color }}"></i>
                             <h5>{{ pillar.title }}</h5>
                             <p>{{ pillar.description }}</p>
                         </div>
+                        {% if pillar.link %}
+                        </a>
+                        {% endif %}
                         {% endfor %}
+                    </div>
+                    {% else %}
+                    <!-- DEBUG: Why pillars are not showing -->
+                    <div style="background: #fff3cd; padding: 10px; margin: 10px 0; border: 1px solid #ffc107; border-radius: 5px;">
+                        <strong>⚠️ Pillars nie są wyświetlane:</strong><br>
+                        enable_pillars: {{ about_section.enable_pillars }}<br>
+                        pillars_data: {{ about_section.pillars_data }}<br>
+                        about_section.is_active: {{ about_section.is_active if about_section else 'No section' }}
                     </div>
                     {% endif %}
                     {% if about_section.final_text %}
@@ -186,14 +208,35 @@
                 <div class="col-lg-6" data-aos="fade-left" data-aos-delay="200">
                     <div class="about-visual">
                         <img src="{{ url_for('static', filename='images/about/community.jpg') }}" alt="Społeczność" class="img-fluid rounded shadow" style="width: 100%; height: 400px; object-fit: cover;">
-                        {% if about_section.floating_cards_data %}
+                        {% if about_section.enable_floating_cards and about_section.floating_cards_data %}
                             {% set floating_cards = about_section.floating_cards_data|from_json %}
+                            <!-- DEBUG: Floating cards data -->
+                            <!-- <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">
+                                <strong>DEBUG Floating Cards:</strong><br>
+                                enable_floating_cards: {{ about_section.enable_floating_cards }}<br>
+                                floating_cards_data: {{ about_section.floating_cards_data }}<br>
+                                floating_cards count: {{ floating_cards|length }}
+                            </div> -->
                             {% for card in floating_cards %}
+                            {% if card.link %}
+                            <a href="{{ card.link }}" class="floating-card-link">
+                            {% endif %}
                             <div class="floating-card" data-aos="zoom-in" data-aos-delay="{{ card.delay }}">
                                 <i class="{{ card.icon }} fa-4x {{ card.color }}"></i>
                                 <h4>{{ card.title }}</h4>
                             </div>
+                            {% if card.link %}
+                            </a>
+                            {% endif %}
                             {% endfor %}
+                        {% else %}
+                        <!-- DEBUG: Why floating cards are not showing -->
+                        <div style="background: #fff3cd; padding: 10px; margin: 10px 0; border: 1px solid #ffc107; border-radius: 5px;">
+                            <strong>⚠️ Floating Cards nie są wyświetlane:</strong><br>
+                            enable_floating_cards: {{ about_section.enable_floating_cards }}<br>
+                            floating_cards_data: {{ about_section.floating_cards_data }}<br>
+                            about_section.is_active: {{ about_section.is_active if about_section else 'No section' }}
+                        </div>
                         {% endif %}
                     </div>
                 </div>

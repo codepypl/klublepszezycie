@@ -8,6 +8,7 @@ import os
 import sys
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+import json
 
 # Add current directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -80,6 +81,63 @@ def init_database():
                 'title': '🌱 Klub zbudowany specjalnie dla osób 50+',
                 'content': '"Lepsze Życie" to więcej niż tylko klub. To społeczność osób 50+, które rozumieją, że życie po pięćdziesiątce może być najlepszym okresem w życiu.',
                 'background_image': 'static/images/about/community-senior.jpg',
+                'enable_pillars': True,
+                'enable_floating_cards': True,
+                'pillars_count': 4,
+                'floating_cards_count': 3,
+                'pillars_data': json.dumps([
+                    {
+                        'icon': 'fas fa-coins',
+                        'title': 'Finanse',
+                        'color': 'text-primary',
+                        'description': 'Mądre zarządzanie finansami po 50-tce',
+                        'link': '/finanse'
+                    },
+                    {
+                        'icon': 'fas fa-heart',
+                        'title': 'Zdrowie',
+                        'color': 'text-success',
+                        'description': 'Witalność i energia w każdym wieku',
+                        'link': '/zdrowie'
+                    },
+                    {
+                        'icon': 'fas fa-users',
+                        'title': 'Społeczność',
+                        'color': 'text-info',
+                        'description': 'Budowanie prawdziwych przyjaźni',
+                        'link': '/spolecznosc'
+                    },
+                    {
+                        'icon': 'fas fa-robot',
+                        'title': 'AI & Technologia',
+                        'color': 'text-warning',
+                        'description': 'Nowoczesne narzędzia dla lepszego życia',
+                        'link': '/ai-technologia'
+                    }
+                ]),
+                'floating_cards_data': json.dumps([
+                    {
+                        'icon': 'fas fa-lightbulb',
+                        'title': 'Inspiracja',
+                        'color': 'text-primary',
+                        'delay': 0,
+                        'link': '/inspiracja'
+                    },
+                    {
+                        'icon': 'fas fa-star',
+                        'title': 'Wiedza',
+                        'color': 'text-warning',
+                        'delay': 200,
+                        'link': '/wiedza'
+                    },
+                    {
+                        'icon': 'fas fa-rocket',
+                        'title': 'Rozwój',
+                        'color': 'text-success',
+                        'delay': 400,
+                        'link': '/rozwoj'
+                    }
+                ]),
                 'order': 3,
                 'is_active': True
             },

@@ -39,6 +39,11 @@ class Section(db.Model):
     pillars_data = db.Column(db.Text)  # JSON string for pillar items
     final_text = db.Column(db.Text)    # Final text in About section
     floating_cards_data = db.Column(db.Text)  # JSON string for floating cards
+    # New fields for enabling/disabling features
+    enable_pillars = db.Column(db.Boolean, default=False)
+    enable_floating_cards = db.Column(db.Boolean, default=False)
+    pillars_count = db.Column(db.Integer, default=4)  # Default number of pillars
+    floating_cards_count = db.Column(db.Integer, default=3)  # Default number of floating cards
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -93,6 +98,24 @@ class Registration(db.Model):
     status = db.Column(db.String(20), default='pending')  # pending, confirmed, attended
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Page(db.Model):
+    __tablename__ = 'pages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), nullable=False, unique=True)
+    content = db.Column(db.Text)  # HTML content from WYSIWYG editor
+    meta_description = db.Column(db.String(300))
+    meta_keywords = db.Column(db.String(200))
+    is_active = db.Column(db.Boolean, default=True)
+    is_published = db.Column(db.Boolean, default=False)
+    published_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Page {self.title}>'
 
 class FAQ(db.Model):
     __tablename__ = 'faqs'
