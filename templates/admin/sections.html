@@ -434,18 +434,15 @@
         // Delete Section
         function deleteSection(id) {
             if (confirm('Czy na pewno chcesz usunąć tę sekcję?')) {
-                const formData = new FormData();
-                formData.append('id', id);
-                fetch('/admin/api/sections', {
-                    method: 'DELETE',
-                    body: formData
+                fetch(`/admin/api/sections?id=${id}`, {
+                    method: 'DELETE'
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         location.reload();
                     } else {
-                        alert('Błąd: ' + data.error);
+                        alert('Błąd: ' + (data.message || data.error || 'Nieznany błąd'));
                     }
                 })
                 .catch(error => {

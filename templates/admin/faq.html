@@ -238,18 +238,15 @@
         // Delete FAQ
         function deleteFaq(id) {
             if (confirm('Czy na pewno chcesz usunąć to pytanie FAQ?')) {
-                const formData = new FormData();
-                formData.append('id', id);
-                fetch('/admin/api/faq', {
-                    method: 'DELETE',
-                    body: formData
+                fetch(`/admin/api/faq?id=${id}`, {
+                    method: 'DELETE'
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         location.reload();
                     } else {
-                        alert('Błąd: ' + data.error);
+                        alert('Błąd: ' + (data.message || data.error || 'Nieznany błąd'));
                     }
                 })
                 .catch(error => {

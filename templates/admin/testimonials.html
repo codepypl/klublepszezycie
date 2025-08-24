@@ -338,7 +338,7 @@
         // Delete Testimonial
         function deleteTestimonial(id) {
             document.getElementById('confirmDelete').onclick = function() {
-                fetch(`/admin/api/testimonials/${id}`, {
+                fetch(`/admin/api/testimonials?id=${id}`, {
                     method: 'DELETE'
                 })
                 .then(response => response.json())
@@ -346,7 +346,7 @@
                     if (data.success) {
                         location.reload();
                     } else {
-                        alert('Błąd: ' + data.message);
+                        alert('Błąd: ' + (data.message || data.error || 'Nieznany błąd'));
                     }
                 })
                 .catch(error => {

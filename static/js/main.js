@@ -109,7 +109,7 @@ function initializeFormHandling() {
     
     if (form) {
         form.addEventListener('submit', function(e) {
-            // Usuwam e.preventDefault() żeby formularz mógł się wysłać normalnie
+            e.preventDefault(); // Blokujemy domyślne wysłanie
             
             const submitButton = this.querySelector('button[type="submit"]');
             const originalText = submitButton.innerHTML;
@@ -118,15 +118,39 @@ function initializeFormHandling() {
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
             submitButton.disabled = true;
             
-            // Formularz wysyła się normalnie - nie blokujemy go
-            // Usuwamy setTimeout i symulację
-        });
-        
-        // Dodajemy event listener na reset formularza żeby przywrócić przycisk
-        form.addEventListener('reset', function() {
-            const submitButton = this.querySelector('button[type="submit"]');
-            submitButton.innerHTML = '<i class="fas fa-ticket-alt me-2"></i>Zarejestruj się na darmową prezentację teraz';
-            submitButton.disabled = false;
+            // Collect form data
+            const formData = new FormData(this);
+            
+            // Send AJAX request
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    showNotification(data.message, 'success');
+                    // Reset form
+                    this.reset();
+                    // Reset button
+                    submitButton.innerHTML = originalText;
+                    submitButton.disabled = false;
+                } else {
+                    // Show error message
+                    showNotification(data.error || 'Wystąpił błąd podczas rejestracji.', 'error');
+                    // Reset button
+                    submitButton.innerHTML = originalText;
+                    submitButton.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Wystąpił błąd podczas rejestracji. Spróbuj ponownie.', 'error');
+                // Reset button
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            });
         });
         
         // Real-time form validation

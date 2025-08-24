@@ -185,7 +185,7 @@ class EmailService:
             'unsubscribe_url': self._generate_unsubscribe_url(email),
             'delete_account_url': self._generate_delete_account_url(email)
         }
-        return self.send_template_email(email, 'welcome', variables)
+        return self.send_template_email(email, 'Email Powitalny', variables)
     
     def send_reminder_email(self, email: str, name: str, event_type: str, 
                            event_date: datetime, event_details: str = None) -> bool:
@@ -199,7 +199,7 @@ class EmailService:
             'unsubscribe_url': self._generate_unsubscribe_url(email),
             'delete_account_url': self._generate_delete_account_url(email)
         }
-        return self.send_template_email(email, 'reminder', variables)
+        return self.send_template_email(email, 'Przypomnienie o Wydarzeniu', variables)
     
     def send_newsletter_email(self, email: str, name: str, newsletter_content: str) -> bool:
         """Send newsletter email"""
@@ -210,7 +210,7 @@ class EmailService:
             'unsubscribe_url': self._generate_unsubscribe_url(email),
             'delete_account_url': self._generate_delete_account_url(email)
         }
-        return self.send_template_email(email, 'newsletter', variables)
+        return self.send_template_email(email, 'Newsletter Klubu', variables)
     
     def _replace_variables(self, content: str, variables: Dict) -> str:
         """Replace variables in template content"""

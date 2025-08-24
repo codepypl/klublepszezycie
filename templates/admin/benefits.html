@@ -283,14 +283,14 @@
                 body: formData
             })
             .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    bootstrap.Modal.getInstance(document.getElementById('addBenefitModal')).hide();
-                    location.reload();
-                } else {
-                    alert('Błąd: ' + data.error);
-                }
-            })
+                            .then(data => {
+                    if (data.success) {
+                        bootstrap.Modal.getInstance(document.getElementById('addBenefitModal')).hide();
+                        location.reload();
+                    } else {
+                        alert('Błąd: ' + (data.message || data.error || 'Nieznany błąd'));
+                    }
+                })
             .catch(error => {
                 console.error('Error:', error);
                 alert('Wystąpił błąd podczas dodawania korzyści');
@@ -306,14 +306,14 @@
                 body: formData
             })
             .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    bootstrap.Modal.getInstance(document.getElementById('editBenefitModal')).hide();
-                    location.reload();
-                } else {
-                    alert('Błąd: ' + data.error);
-                }
-            })
+                            .then(data => {
+                    if (data.success) {
+                        bootstrap.Modal.getInstance(document.getElementById('editBenefitModal')).hide();
+                        location.reload();
+                    } else {
+                        alert('Błąd: ' + (data.message || data.error || 'Nieznany błąd'));
+                    }
+                })
             .catch(error => {
                 console.error('Error:', error);
                 alert('Wystąpił błąd podczas aktualizacji korzyści');
@@ -331,7 +331,7 @@
                         bootstrap.Modal.getInstance(document.getElementById('deleteBenefitModal')).hide();
                         location.reload();
                     } else {
-                        alert('Błąd: ' + data.error);
+                        alert('Błąd: ' + (data.message || data.error || 'Nieznany błąd'));
                     }
                 })
                 .catch(error => {

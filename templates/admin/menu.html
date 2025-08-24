@@ -238,18 +238,15 @@
         // Delete Menu Item
         function deleteMenuItem(id) {
             if (confirm('Czy na pewno chcesz usunąć ten element menu?')) {
-                const formData = new FormData();
-                formData.append('id', id);
-                fetch('/admin/api/menu', {
-                    method: 'DELETE',
-                    body: formData
+                fetch(`/admin/api/menu?id=${id}`, {
+                    method: 'DELETE'
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         location.reload();
                     } else {
-                        alert('Błąd: ' + data.error);
+                        alert('Błąd: ' + (data.message || data.error || 'Nieznany błąd'));
                     }
                 })
                 .catch(error => {

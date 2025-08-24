@@ -263,18 +263,15 @@
         // Delete Social Link
         function deleteSocialLink(id) {
             if (confirm('Czy na pewno chcesz usunąć ten link social media?')) {
-                const formData = new FormData();
-                formData.append('id', id);
-                fetch('/admin/api/social', {
-                    method: 'DELETE',
-                    body: formData
+                fetch(`/admin/api/social?id=${id}`, {
+                    method: 'DELETE'
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         location.reload();
                     } else {
-                        alert('Błąd: ' + data.error);
+                        alert('Błąd: ' + (data.message || data.error || 'Nieznany błąd'));
                     }
                 })
                 .catch(error => {

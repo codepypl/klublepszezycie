@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 import os
+import uuid
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -580,7 +581,7 @@ def register():
         for admin in admin_users:
             email_service.send_template_email(
                 to_email=admin.email,
-                template_name='admin_notification',
+                template_name='Powiadomienie dla Administratora',
                 variables={
                     'admin_name': admin.username,
                     'new_member_name': name,
@@ -591,15 +592,18 @@ def register():
         
         db.session.commit()
         
-        flash(f'Dziękujemy {name}! Twoje miejsce zostało zarezerwowane. Administrator zostanie powiadomiony o Twojej rejestracji i skontaktuje się z Tobą.', 'success')
-            
-        return redirect(url_for('index'))
+        return jsonify({
+            'success': True,
+            'message': f'Dziękujemy {name}! Twoje miejsce zostało zarezerwowane.'
+        })
         
     except Exception as e:
         db.session.rollback()
         print(f"Error during registration: {str(e)}")
-        flash('Wystąpił błąd podczas rejestracji. Spróbuj ponownie.', 'error')
-        return redirect(url_for('index'))
+        return jsonify({
+            'success': False,
+            'error': 'Wystąpił błąd podczas rejestracji. Spróbuj ponownie.'
+        }), 500
 
 # Admin routes
 @app.route('/admin/login', methods=['GET', 'POST'])
@@ -796,16 +800,24 @@ def api_menu():
         return jsonify({'success': True})
     
     elif request.method == 'DELETE':
-        data = request.get_json() if request.is_json else request.form.to_dict()
-        item_id = data.get('id')
-        item = MenuItem.query.get(item_id)
-        
-        if not item:
-            return jsonify({'success': False, 'error': 'Menu item not found'}), 404
-        
-        db.session.delete(item)
-        db.session.commit()
-        return jsonify({'success': True})
+        try:
+            item_id = request.args.get('id', type=int)
+            
+            if not item_id:
+                return jsonify({'success': False, 'message': 'Brak ID elementu menu'}), 400
+            
+            item = MenuItem.query.get(item_id)
+            if not item:
+                return jsonify({'success': False, 'message': 'Element menu nie został znaleziony'}), 404
+            
+            db.session.delete(item)
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Element menu został usunięty pomyślnie'})
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error deleting menu item: {str(e)}")
+            return jsonify({'success': False, 'message': f'Wystąpił błąd podczas usuwania elementu menu: {str(e)}'}), 500
 
 @app.route('/admin/api/sections', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @login_required
@@ -960,13 +972,23 @@ def api_sections():
         return jsonify({'success': False, 'message': 'Section not found'}), 404
     
     elif request.method == 'DELETE':
-        section_id = request.args.get('id', type=int)
-        section = Section.query.get(section_id)
-        if section:
+        try:
+            section_id = request.args.get('id', type=int)
+            if not section_id:
+                return jsonify({'success': False, 'message': 'Brak ID sekcji'}), 400
+            
+            section = Section.query.get(section_id)
+            if not section:
+                return jsonify({'success': False, 'message': 'Sekcja nie została znaleziona'}), 404
+            
             db.session.delete(section)
             db.session.commit()
-            return jsonify({'success': True})
-        return jsonify({'success': False, 'message': 'Section not found'}), 404
+            return jsonify({'success': True, 'message': 'Sekcja została usunięta pomyślnie'})
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error deleting section: {str(e)}")
+            return jsonify({'success': False, 'message': f'Wystąpił błąd podczas usuwania sekcji: {str(e)}'}), 500
 
 @app.route('/admin/api/sections/<int:section_id>', methods=['GET'])
 @login_required
@@ -1063,8 +1085,6 @@ def api_benefits():
                 allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
                 if '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in allowed_extensions:
                     # Generuj unikalną nazwę pliku
-                    import uuid
-                    import os
                     filename = f"{uuid.uuid4().hex}.{file.filename.rsplit('.', 1)[1].lower()}"
                     filepath = os.path.join('static', 'images', 'benefits', filename)
                     
@@ -1104,8 +1124,6 @@ def api_benefits():
                     allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
                     if '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in allowed_extensions:
                         # Generuj unikalną nazwę pliku
-                        import uuid
-                        import os
                         filename = f"{uuid.uuid4().hex}.{file.filename.rsplit('.', 1)[1].lower()}"
                         filepath = os.path.join('static', 'images', 'benefits', filename)
                         
@@ -1135,20 +1153,31 @@ def api_benefits():
         return jsonify({'success': False, 'message': 'Benefit not found'}), 404
     
     elif request.method == 'DELETE':
-        benefit_id = request.args.get('id', type=int)
-        benefit = BenefitItem.query.get(benefit_id)
-        if benefit:
+        try:
+            benefit_id = request.args.get('id', type=int)
+            if not benefit_id:
+                return jsonify({'success': False, 'message': 'Brak ID korzyści'}), 400
+            
+            benefit = BenefitItem.query.get(benefit_id)
+            if not benefit:
+                return jsonify({'success': False, 'message': 'Korzyść nie została znaleziona'}), 404
+            
             # Usuń plik obrazu jeśli istnieje
             if benefit.image and os.path.exists(benefit.image):
                 try:
                     os.remove(benefit.image)
-                except:
-                    pass  # Ignoruj błędy usuwania
+                except Exception as e:
+                    print(f"Warning: Could not remove image file {benefit.image}: {str(e)}")
+                    pass  # Ignoruj błędy usuwania pliku
             
             db.session.delete(benefit)
             db.session.commit()
-            return jsonify({'success': True})
-        return jsonify({'success': False, 'message': 'Benefit not found'}), 404
+            return jsonify({'success': True, 'message': 'Korzyść została usunięta pomyślnie'})
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error deleting benefit: {str(e)}")
+            return jsonify({'success': False, 'message': f'Wystąpił błąd podczas usuwania korzyści: {str(e)}'}), 500
 
 @app.route('/admin/api/social', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @login_required
@@ -1214,13 +1243,23 @@ def api_social():
         return jsonify({'success': False, 'message': 'Social link not found'}), 404
     
     elif request.method == 'DELETE':
-        link_id = request.args.get('id', type=int)
-        link = SocialLink.query.get(link_id)
-        if link:
+        try:
+            link_id = request.args.get('id', type=int)
+            if not link_id:
+                return jsonify({'success': False, 'message': 'Brak ID linku społecznościowego'}), 400
+            
+            link = SocialLink.query.get(link_id)
+            if not link:
+                return jsonify({'success': False, 'message': 'Link społecznościowy nie został znaleziony'}), 404
+            
             db.session.delete(link)
             db.session.commit()
-            return jsonify({'success': True})
-        return jsonify({'success': False, 'message': 'Social link not found'}), 404
+            return jsonify({'success': True, 'message': 'Link społecznościowy został usunięty pomyślnie'})
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error deleting social link: {str(e)}")
+            return jsonify({'success': False, 'message': f'Wystąpił błąd podczas usuwania linku społecznościowego: {str(e)}'}), 500
 
 @app.route('/admin/api/faq', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @login_required
@@ -1353,13 +1392,23 @@ def api_testimonials():
         return jsonify({'success': False, 'message': 'Testimonial not found'}), 404
     
     elif request.method == 'DELETE':
-        testimonial_id = request.args.get('id', type=int)
-        testimonial = Testimonial.query.get(testimonial_id)
-        if testimonial:
+        try:
+            testimonial_id = request.args.get('id', type=int)
+            if not testimonial_id:
+                return jsonify({'success': False, 'message': 'Brak ID opinii'}), 400
+            
+            testimonial = Testimonial.query.get(testimonial_id)
+            if not testimonial:
+                return jsonify({'success': False, 'message': 'Opinia nie została znaleziona'}), 404
+            
             db.session.delete(testimonial)
             db.session.commit()
-            return jsonify({'success': True})
-        return jsonify({'success': False, 'message': 'Testimonial not found'}), 404
+            return jsonify({'success': True, 'message': 'Opinia została usunięta pomyślnie'})
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error deleting testimonial: {str(e)}")
+            return jsonify({'success': False, 'message': f'Wystąpił błąd podczas usuwania opinii: {str(e)}'}), 500
 
 @app.route('/admin/api/seo', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @login_required
@@ -1810,10 +1859,12 @@ def api_email_templates():
     elif request.method == 'POST':
         data = request.form.to_dict()
         # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
-        if 'is_active' in data:
-            data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+        print(f"DEBUG: POST data received: {data}")
+        if 'is_active' in data and data['is_active'] == '1':
+            data['is_active'] = True
         else:
             data['is_active'] = False
+        print(f"DEBUG: is_active converted to: {data['is_active']}")
         
         new_template = EmailTemplate(
             name=data['name'],
@@ -1831,10 +1882,12 @@ def api_email_templates():
     elif request.method == 'PUT':
         data = request.form.to_dict()
         # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
-        if 'is_active' in data:
-            data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+        print(f"DEBUG: PUT data received: {data}")
+        if 'is_active' in data and data['is_active'] == '1':
+            data['is_active'] = True
         else:
             data['is_active'] = False
+        print(f"DEBUG: is_active converted to: {data['is_active']}")
         
         template = EmailTemplate.query.get(data['id'])
         if template:
@@ -1994,7 +2047,7 @@ def api_send_newsletter():
             
             success = email_service.send_template_email(
                 to_email=subscriber.email,
-                template_name='newsletter',
+                template_name='Newsletter Klubu',
                 variables=variables
             )
             
@@ -2043,7 +2096,7 @@ def api_send_notification():
             
             success = email_service.send_template_email(
                 to_email=subscriber.email,
-                template_name='notification',
+                template_name='Powiadomienie Systemowe',
                 variables=variables
             )
             
@@ -2091,7 +2144,7 @@ def api_send_custom_email():
             
             success = email_service.send_template_email(
                 to_email=subscriber.email,
-                template_name='custom',
+                template_name='Email Własny',
                 variables=variables
             )
             
@@ -2202,7 +2255,7 @@ def api_update_registration_status(registration_id=None):
                 for admin in admin_users:
                     email_service.send_template_email(
                         to_email=admin.email,
-                        template_name='admin_notification',
+                        template_name='Powiadomienie dla Administratora',
                         variables={
                             'admin_name': admin.username,
                             'new_member_name': registration.name,

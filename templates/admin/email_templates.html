@@ -185,7 +185,8 @@
                             </small>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="is_active" id="template_is_active">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="template_is_active" value="1">
+                            <input type="hidden" name="is_active_hidden" value="0">
                             <label class="form-check-label" for="template_is_active">
                                 Aktywny
                             </label>
@@ -367,6 +368,12 @@
                 e.preventDefault();
                 sendCustomEmail();
             });
+            
+            // Add event listener for checkbox
+            const checkbox = document.getElementById('template_is_active');
+            if (checkbox) {
+                checkbox.addEventListener('change', syncCheckboxValue);
+            }
         });
 
         // Function to update available variables based on template type
@@ -534,6 +541,15 @@
             });
         }
         
+        // Function to sync checkbox value with hidden field
+        function syncCheckboxValue() {
+            const checkbox = document.getElementById('template_is_active');
+            const hiddenField = document.querySelector('input[name="is_active_hidden"]');
+            if (checkbox && hiddenField) {
+                hiddenField.value = checkbox.checked ? '1' : '0';
+            }
+        }
+        
         // Function to load email statistics
         function loadEmailStats() {
             fetch('/admin/api/email-stats')
@@ -634,6 +650,9 @@
                 document.getElementById('template_id').value = '';
                 document.getElementById('template_is_active').checked = true; // Domyślnie aktywny dla nowych szablonów
                 document.getElementById('templateModalTitle').innerHTML = '<i class="fas fa-plus me-2"></i>Dodaj Szablon';
+                
+                // Synchronize hidden field with checkbox
+                syncCheckboxValue();
                 
                 // Show modal
                 const modal = new bootstrap.Modal(document.getElementById('templateModal'));
