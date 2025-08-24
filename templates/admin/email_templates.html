@@ -291,8 +291,28 @@
             }
             
             if (templateType && templateType !== '') {
-                variablesDiv.innerHTML = '<strong>Dostępne zmienne dla typu "' + typeName + '":</strong><br><br>' + 
-                    variables.map(v => '<div class="mb-2"><code class="bg-light px-2 py-1 rounded border">' + v + '</code></div>').join('');
+                // Clear and rebuild content safely
+                variablesDiv.innerHTML = '';
+                
+                // Add title
+                const title = document.createElement('strong');
+                title.textContent = 'Dostępne zmienne dla typu "' + typeName + '":';
+                variablesDiv.appendChild(title);
+                variablesDiv.appendChild(document.createElement('br'));
+                variablesDiv.appendChild(document.createElement('br'));
+                
+                // Add variables
+                variables.forEach(variable => {
+                    const div = document.createElement('div');
+                    div.className = 'mb-2';
+                    
+                    const code = document.createElement('code');
+                    code.className = 'bg-light px-2 py-1 rounded border';
+                    code.textContent = variable;
+                    
+                    div.appendChild(code);
+                    variablesDiv.appendChild(div);
+                });
             } else {
                 variablesDiv.innerHTML = '<strong>Wybierz typ szablonu, aby zobaczyć dostępne zmienne</strong>';
             }
