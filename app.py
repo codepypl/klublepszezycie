@@ -56,6 +56,397 @@ with app.app_context():
         )
         db.session.add(admin_user)
         db.session.commit()
+    
+    # Create default email templates if they don't exist
+    welcome_template = EmailTemplate.query.filter_by(template_type='welcome').first()
+    if not welcome_template:
+        welcome_template = EmailTemplate(
+            name='Email Powitalny',
+            subject='Witamy w Klubie Lepsze Życie! 🎉',
+            html_content='''
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Witamy w Klubie Lepsze Życie</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #28a745; margin-bottom: 10px;">🎉 Witamy w Klubie Lepsze Życie!</h1>
+        <p style="font-size: 18px; color: #666;">Cieszę się, że dołączyłeś do nas!</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: #007bff; margin-top: 0;">Cześć {{name}}!</h2>
+        <p>Dziękujemy za zarejestrowanie się na naszą darmową prezentację. Twoje miejsce zostało zarezerwowane!</p>
+        
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #155724; margin-top: 0;">📅 Co dalej?</h3>
+            <ul style="text-align: left; margin: 0; padding-left: 20px;">
+                <li>Otrzymasz przypomnienie o wydarzeniu na 24h przed</li>
+                <li>Będziesz informowany o nowych wydarzeniach i webinarach</li>
+                <li>Dostaniesz dostęp do ekskluzywnych materiałów</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #856404; margin-top: 0;">🔒 Twoje dane są bezpieczne</h3>
+        <p style="margin-bottom: 10px;">Możesz w każdej chwili:</p>
+        <p style="margin: 5px 0;"><a href="{{unsubscribe_url}}" style="color: #856404;">📧 Zrezygnować z subskrypcji</a></p>
+        <p style="margin: 5px 0;"><a href="{{delete_account_url}}" style="color: #856404;">🗑️ Usunąć swoje konto</a></p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 14px;">
+            Z poważaniem,<br>
+            <strong>Zespół Klubu Lepsze Życie</strong>
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            Ten email został wysłany na adres {{email}}
+        </p>
+    </div>
+</body>
+</html>
+            ''',
+            text_content='''
+Witamy w Klubie Lepsze Życie! 🎉
+
+Cześć {{name}}!
+
+Dziękujemy za zarejestrowanie się na naszą darmową prezentację. Twoje miejsce zostało zarezerwowane!
+
+Co dalej?
+- Otrzymasz przypomnienie o wydarzeniu na 24h przed
+- Będziesz informowany o nowych wydarzeniach i webinarach
+- Dostaniesz dostęp do ekskluzywnych materiałów
+
+Twoje dane są bezpieczne - możesz w każdej chwili:
+- Zrezygnować z subskrypcji: {{unsubscribe_url}}
+- Usunąć swoje konto: {{delete_account_url}}
+
+Z poważaniem,
+Zespół Klubu Lepsze Życie
+
+Ten email został wysłany na adres {{email}}
+            ''',
+            template_type='welcome',
+            variables='name,email,unsubscribe_url,delete_account_url',
+            is_active=True
+        )
+        db.session.add(welcome_template)
+        
+        reminder_template = EmailTemplate.query.filter_by(template_type='reminder').first()
+        if not reminder_template:
+            reminder_template = EmailTemplate(
+                name='Przypomnienie o Wydarzeniu',
+                subject='🔔 Przypomnienie: {{event_type}} - {{event_date}}',
+                html_content='''
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Przypomnienie o Wydarzeniu</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #dc3545; margin-bottom: 10px;">🔔 Przypomnienie o Wydarzeniu</h1>
+        <p style="font-size: 18px; color: #666;">Nie przegap tego wydarzenia!</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: #007bff; margin-top: 0;">Cześć {{name}}!</h2>
+        <p>Przypominamy o nadchodzącym wydarzeniu:</p>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #856404; margin-top: 0;">📅 {{event_type}}</h3>
+            <p style="margin: 5px 0;"><strong>Data:</strong> {{event_date}}</p>
+            <p style="margin: 5px 0;"><strong>Szczegóły:</strong> {{event_details}}</p>
+        </div>
+        
+        <p style="text-align: center;">
+            <a href="#" style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">📋 Sprawdź szczegóły</a>
+        </p>
+    </div>
+    
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #856404; margin-top: 0;">🔒 Twoje dane są bezpieczne</h3>
+        <p style="margin-bottom: 10px;">Możesz w każdej chwili:</p>
+        <p style="margin: 5px 0;"><a href="{{unsubscribe_url}}" style="color: #856404;">📧 Zrezygnować z subskrypcji</a></p>
+        <p style="margin: 5px 0;"><a href="{{delete_account_url}}" style="color: #856404;">🗑️ Usunąć swoje konto</a></p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 14px;">
+            Z poważaniem,<br>
+            <strong>Zespół Klubu Lepsze Życie</strong>
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            Ten email został wysłany na adres {{email}}
+        </p>
+    </div>
+</body>
+</html>
+                ''',
+                text_content='''
+Przypomnienie o Wydarzeniu 🔔
+
+Cześć {{name}}!
+
+Przypominamy o nadchodzącym wydarzeniu:
+
+{{event_type}}
+Data: {{event_date}}
+Szczegóły: {{event_details}}
+
+Twoje dane są bezpieczne - możesz w każdej chwili:
+- Zrezygnować z subskrypcji: {{unsubscribe_url}}
+- Usunąć swoje konto: {{delete_account_url}}
+
+Z poważaniem,
+Zespół Klubu Lepsze Życie
+
+Ten email został wysłany na adres {{email}}
+                ''',
+                template_type='reminder',
+                variables='name,email,event_type,event_date,event_details,unsubscribe_url,delete_account_url',
+                is_active=True
+            )
+            db.session.add(reminder_template)
+        
+        # Create default newsletter template
+        newsletter_template = EmailTemplate.query.filter_by(template_type='newsletter').first()
+        if not newsletter_template:
+            newsletter_template = EmailTemplate(
+                name='Newsletter Klubu',
+                subject='📰 Newsletter Klubu Lepsze Życie - {{newsletter_title}}',
+                html_content='''
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newsletter Klubu Lepsze Życie</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #28a745; margin-bottom: 10px;">📰 Newsletter Klubu Lepsze Życie</h1>
+        <p style="font-size: 18px; color: #666;">Najnowsze informacje i aktualności</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: #007bff; margin-top: 0;">Cześć {{name}}!</h2>
+        <p>Oto najnowsze informacje z naszego klubu:</p>
+        
+        <div style="background-color: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #0056b3; margin-top: 0;">📋 {{newsletter_title}}</h3>
+                            {{newsletter_content}}
+        </div>
+    </div>
+    
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #856404; margin-top: 0;">🔒 Twoje dane są bezpieczne</h3>
+        <p style="margin-bottom: 10px;">Możesz w każdej chwili:</p>
+        <p style="margin: 5px 0;"><a href="{{unsubscribe_url}}" style="color: #856404;">📧 Zrezygnować z subskrypcji</a></p>
+        <p style="margin: 5px 0;"><a href="{{delete_account_url}}" style="color: #856404;">🗑️ Usunąć swoje konto</a></p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 14px;">
+            Z poważaniem,<br>
+            <strong>Zespół Klubu Lepsze Życie</strong>
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            Ten email został wysłany na adres {{email}}
+        </p>
+    </div>
+</body>
+</html>
+                ''',
+                text_content='''
+Newsletter Klubu Lepsze Życie 📰
+
+Cześć {{name}}!
+
+Oto najnowsze informacje z naszego klubu:
+
+{{newsletter_title}}
+
+{{newsletter_content}}
+
+Twoje dane są bezpieczne - możesz w każdej chwili:
+- Zrezygnować z subskrypcji: {{unsubscribe_url}}
+- Usunąć swoje konto: {{delete_account_url}}
+
+Z poważaniem,
+Zespół Klubu Lepsze Życie
+
+Ten email został wysłany na adres {{email}}
+                ''',
+                template_type='newsletter',
+                variables='name,email,newsletter_title,newsletter_content,unsubscribe_url,delete_account_url',
+                is_active=True
+            )
+            db.session.add(newsletter_template)
+        
+        # Create default notification template
+        notification_template = EmailTemplate.query.filter_by(template_type='notification').first()
+        if not notification_template:
+            notification_template = EmailTemplate(
+                name='Powiadomienie Systemowe',
+                subject='🔔 {{notification_title}}',
+                html_content='''
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Powiadomienie Systemowe</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #dc3545; margin-bottom: 10px;">🔔 Powiadomienie Systemowe</h1>
+        <p style="font-size: 18px; color: #666;">Ważna informacja dla Ciebie</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: #007bff; margin-top: 0;">Cześć {{name}}!</h2>
+        <p>Mamy dla Ciebie ważną wiadomość:</p>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #856404; margin-top: 0;">📢 {{notification_title}}</h3>
+            <p style="margin: 5px 0;"><strong>Data:</strong> {{notification_date}}</p>
+            <p style="margin: 5px 0;"><strong>Wiadomość:</strong></p>
+            <div style="background-color: white; padding: 10px; border-radius: 3px; margin-top: 10px;">
+                {{notification_message}}
+            </div>
+        </div>
+    </div>
+    
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #856404; margin-top: 0;">🔒 Twoje dane są bezpieczne</h3>
+        <p style="margin-bottom: 10px;">Możesz w każdej chwili:</p>
+        <p style="margin: 5px 0;"><a href="{{unsubscribe_url}}" style="color: #856404;">📧 Zrezygnować z subskrypcji</a></p>
+        <p style="margin: 5px 0;"><a href="{{delete_account_url}}" style="color: #856404;">🗑️ Usunąć swoje konto</a></p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 14px;">
+            Z poważaniem,<br>
+            <strong>Zespół Klubu Lepsze Życie</strong>
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            Ten email został wysłany na adres {{email}}
+        </p>
+    </div>
+</body>
+</html>
+                ''',
+                text_content='''
+Powiadomienie Systemowe 🔔
+
+Cześć {{name}}!
+
+Mamy dla Ciebie ważną wiadomość:
+
+{{notification_title}}
+Data: {{notification_date}}
+
+Wiadomość:
+{{notification_message}}
+
+Twoje dane są bezpieczne - możesz w każdej chwili:
+- Zrezygnować z subskrypcji: {{unsubscribe_url}}
+- Usunąć swoje konto: {{delete_account_url}}
+
+Z poważaniem,
+Zespół Klubu Lepsze Życie
+
+Ten email został wysłany na adres {{email}}
+                ''',
+                template_type='notification',
+                variables='name,email,notification_title,notification_date,notification_message,unsubscribe_url,delete_account_url',
+                is_active=True
+            )
+            db.session.add(notification_template)
+        
+        # Create default custom template
+        custom_template = EmailTemplate.query.filter_by(template_type='custom').first()
+        if not custom_template:
+            custom_template = EmailTemplate(
+                name='Email Własny',
+                subject='📧 {{custom_subject}}',
+                html_content='''
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Własny</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #6f42c1; margin-bottom: 10px;">📧 Email Własny</h1>
+        <p style="font-size: 18px; color: #666;">Wiadomość od Klubu Lepsze Życie</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: #007bff; margin-top: 0;">Cześć {{name}}!</h2>
+        
+        <div style="background-color: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #0056b3; margin-top: 0;">{{custom_subject}}</h3>
+            <div style="background-color: white; padding: 15px; border-radius: 3px; margin-top: 10px;">
+                {{custom_content}}
+            </div>
+        </div>
+    </div>
+    
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #856404; margin-top: 0;">🔒 Twoje dane są bezpieczne</h3>
+        <p style="margin-bottom: 10px;">Możesz w każdej chwili:</p>
+        <p style="margin: 5px 0;"><a href="{{unsubscribe_url}}" style="color: #856404;">📧 Zrezygnować z subskrypcji</a></p>
+        <p style="margin: 5px 0;"><a href="{{delete_account_url}}" style="color: #856404;">🗑️ Usunąć swoje konto</a></p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 14px;">
+            Z poważaniem,<br>
+            <strong>Zespół Klubu Lepsze Życie</strong>
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            Ten email został wysłany na adres {{email}}
+        </p>
+    </div>
+</body>
+</html>
+                ''',
+                text_content='''
+Email Własny 📧
+
+Cześć {{name}}!
+
+{{custom_subject}}
+
+{{custom_content}}
+
+Twoje dane są bezpieczne - możesz w każdej chwili:
+- Zrezygnować z subskrypcji: {{unsubscribe_url}}
+- Usunąć swoje konto: {{delete_account_url}}
+
+Z poważaniem,
+Zespół Klubu Lepsze Życie
+
+Ten email został wysłany na adres {{email}}
+                ''',
+                template_type='custom',
+                variables='name,email,custom_subject,custom_content,unsubscribe_url,delete_account_url',
+                is_active=True
+            )
+            db.session.add(custom_template)
+        
+        db.session.commit()
 
 # Routes
 @app.route('/')
@@ -105,18 +496,36 @@ def register():
         flash('Proszę wypełnić wszystkie wymagane pola.', 'error')
         return redirect(url_for('index'))
     
-    # Save registration to database
-    registration = Registration(
-        name=name,
-        email=email,
-        phone=phone,
-        status='pending'
-    )
-    db.session.add(registration)
-    db.session.commit()
-    
-    flash(f'Dziękujemy {name}! Twoje miejsce zostało zarezerwowane. Wysyłamy potwierdzenie na adres {email}.', 'success')
-    return redirect(url_for('index'))
+    try:
+        # Save registration to database
+        registration = Registration(
+            name=name,
+            email=email,
+            phone=phone,
+            status='pending'
+        )
+        db.session.add(registration)
+        
+        # Add user to email subscription for automatic reminders
+        email_service.add_subscriber(email, name, subscription_type='all')
+        
+        # Send welcome email
+        welcome_sent = email_service.send_welcome_email(email, name)
+        
+        db.session.commit()
+        
+        if welcome_sent:
+            flash(f'Dziękujemy {name}! Twoje miejsce zostało zarezerwowane. Wysłaliśmy potwierdzenie na adres {email}. Będziesz otrzymywać przypomnienia o wydarzeniach.', 'success')
+        else:
+            flash(f'Dziękujemy {name}! Twoje miejsce zostało zarezerwowane. Wysyłamy potwierdzenie na adres {email}.', 'success')
+            
+        return redirect(url_for('index'))
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error during registration: {str(e)}")
+        flash('Wystąpił błąd podczas rejestracji. Spróbuj ponownie.', 'error')
+        return redirect(url_for('index'))
 
 # Admin routes
 @app.route('/admin/login', methods=['GET', 'POST'])
@@ -1139,16 +1548,28 @@ def send_event_reminders():
         # Get all active subscribers
         subscribers = EmailSubscription.query.filter_by(is_active=True).all()
         
-        # Send reminders
+        # Send reminders using email template
         for subscriber in subscribers:
             try:
-                email_service.send_reminder_email(
-                    email=subscriber.email,
-                    name=subscriber.name or 'Użytkowniku',
-                    event_type=next_event.title,
-                    event_date=next_event.event_date,
-                    event_details=next_event.description or f'Zapraszamy na {next_event.event_type.lower()}, który odbędzie się o godzinie {next_event.event_date.strftime("%H:%M")}.'
+                # Prepare variables for the reminder template
+                variables = {
+                    'name': subscriber.name or 'Użytkowniku',
+                    'email': subscriber.email,
+                    'event_type': next_event.title,
+                    'event_date': next_event.event_date.strftime('%d.%m.%Y %H:%M'),
+                    'event_details': next_event.description or f'Zapraszamy na {next_event.event_type.lower()}, który odbędzie się o godzinie {next_event.event_date.strftime("%H:%M")}.'
+                }
+                
+                # Send email using the reminder template
+                success = email_service.send_template_email(
+                    to_email=subscriber.email,
+                    template_name='Przypomnienie o Wydarzeniu',
+                    variables=variables
                 )
+                
+                if not success:
+                    print(f"Failed to send reminder to {subscriber.email}")
+                    
             except Exception as e:
                 print(f"Failed to send reminder to {subscriber.email}: {str(e)}")
         
@@ -1397,16 +1818,29 @@ def api_test_email_template():
     if not current_user.is_admin:
         return jsonify({'error': 'Unauthorized'}), 403
     
-    data = request.get_json()
-    template_id = data.get('template_id')
-    test_email = data.get('test_email')
-    variables = data.get('variables', {})
+    template_id = request.form.get('template_id')
+    test_email = request.form.get('test_email')
+    
+    if not template_id or not test_email:
+        return jsonify({'success': False, 'error': 'Missing template_id or test_email'})
     
     try:
-        # Send test email
-        success = email_service.send_template_email(test_email, 'test', variables)
+        # Get template
+        template = EmailTemplate.query.get(template_id)
+        if not template:
+            return jsonify({'success': False, 'error': 'Template not found'})
+        
+        # Send test email using the template
+        success = email_service.send_email(
+            to_email=test_email,
+            subject=f"[TEST] {template.subject}",
+            html_content=template.html_content,
+            text_content=template.text_content,
+            template_id=template.id
+        )
+        
         if success:
-            return jsonify({'success': True})
+            return jsonify({'success': True, 'message': 'Test email sent successfully'})
         else:
             return jsonify({'success': False, 'error': 'Failed to send test email'})
     except Exception as e:
@@ -1440,21 +1874,6 @@ def api_email_subscriptions():
             return jsonify({'success': True})
         return jsonify({'success': False, 'message': 'Subscription not found'}), 404
 
-@app.route('/admin/api/email-stats', methods=['GET'])
-@login_required
-def api_email_stats():
-    if not current_user.is_admin:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    stats = {
-        'total_templates': EmailTemplate.query.count(),
-        'active_templates': EmailTemplate.query.filter_by(is_active=True).count(),
-        'total_subscribers': EmailSubscription.query.count(),
-        'total_emails_sent': EmailLog.query.filter_by(status='sent').count()
-    }
-    
-    return jsonify(stats)
-
 @app.route('/admin/api/send-reminders', methods=['POST'])
 @login_required
 def api_send_reminders():
@@ -1468,6 +1887,151 @@ def api_send_reminders():
             return jsonify({'success': True, 'message': 'Przypomnienia zostały wysłane'})
         else:
             return jsonify({'success': False, 'message': 'Brak nadchodzących wydarzeń lub błąd wysyłania'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/admin/api/send-newsletter', methods=['POST'])
+@login_required
+def api_send_newsletter():
+    """Send newsletter to all subscribers"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        data = request.form.to_dict()
+        newsletter_title = data.get('newsletter_title', '')
+        newsletter_content = data.get('newsletter_content', '')
+        
+        if not newsletter_title or not newsletter_content:
+            return jsonify({'success': False, 'error': 'Brak tytułu lub treści newslettera'})
+        
+        # Get all active subscribers
+        subscribers = EmailSubscription.query.filter_by(is_active=True).all()
+        
+        if not subscribers:
+            return jsonify({'success': False, 'error': 'Brak aktywnych subskrybentów'})
+        
+        # Send newsletter to all subscribers
+        success_count = 0
+        for subscriber in subscribers:
+            variables = {
+                'name': subscriber.name or 'Użytkowniku',
+                'email': subscriber.email,
+                'newsletter_title': newsletter_title,
+                'newsletter_content': newsletter_content
+            }
+            
+            success = email_service.send_template_email(
+                to_email=subscriber.email,
+                template_name='newsletter',
+                variables=variables
+            )
+            
+            if success:
+                success_count += 1
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Newsletter wysłany do {success_count}/{len(subscribers)} subskrybentów'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/admin/api/send-notification', methods=['POST'])
+@login_required
+def api_send_notification():
+    """Send system notification to all subscribers"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        data = request.form.to_dict()
+        notification_title = data.get('notification_title', '')
+        notification_message = data.get('notification_message', '')
+        
+        if not notification_title or not notification_message:
+            return jsonify({'success': False, 'error': 'Brak tytułu lub treści powiadomienia'})
+        
+        # Get all active subscribers
+        subscribers = EmailSubscription.query.filter_by(is_active=True).all()
+        
+        if not subscribers:
+            return jsonify({'success': False, 'error': 'Brak aktywnych subskrybentów'})
+        
+        # Send notification to all subscribers
+        success_count = 0
+        for subscriber in subscribers:
+            variables = {
+                'name': subscriber.name or 'Użytkowniku',
+                'email': subscriber.email,
+                'notification_title': notification_title,
+                'notification_message': notification_message,
+                'notification_date': datetime.now().strftime('%d.%m.%Y %H:%M')
+            }
+            
+            success = email_service.send_template_email(
+                to_email=subscriber.email,
+                template_name='notification',
+                variables=variables
+            )
+            
+            if success:
+                success_count += 1
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Powiadomienie wysłane do {success_count}/{len(subscribers)} subskrybentów'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/admin/api/send-custom-email', methods=['POST'])
+@login_required
+def api_send_custom_email():
+    """Send custom email to all subscribers"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        data = request.form.to_dict()
+        custom_subject = data.get('custom_subject', '')
+        custom_content = data.get('custom_content', '')
+        
+        if not custom_subject or not custom_content:
+            return jsonify({'success': False, 'error': 'Brak tematu lub treści emaila'})
+        
+        # Get all active subscribers
+        subscribers = EmailSubscription.query.filter_by(is_active=True).all()
+        
+        if not subscribers:
+            return jsonify({'success': False, 'error': 'Brak aktywnych subskrybentów'})
+        
+        # Send custom email to all subscribers
+        success_count = 0
+        for subscriber in subscribers:
+            variables = {
+                'name': subscriber.name or 'Użytkowniku',
+                'email': subscriber.email,
+                'custom_subject': custom_subject,
+                'custom_content': custom_content
+            }
+            
+            success = email_service.send_template_email(
+                to_email=subscriber.email,
+                template_name='custom',
+                variables=variables
+            )
+            
+            if success:
+                success_count += 1
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Email własny wysłany do {success_count}/{len(subscribers)} subskrybentów'
+        })
+        
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -1493,6 +2057,18 @@ def delete_account(token):
 # Initialize email service
 with app.app_context():
     email_service.init_app(app)
+    
+    # Schedule automatic event reminder checking
+    def check_and_send_reminders():
+        """Check for upcoming events and send reminders automatically"""
+        try:
+            send_event_reminders()
+        except Exception as e:
+            print(f"Error in automatic reminder check: {str(e)}")
+    
+    # Note: In production, you would use a proper task scheduler like Celery or APScheduler
+    # For now, this function can be called manually via admin panel or cron job
+    print("Email service initialized. Use admin panel to manually send reminders or set up a cron job.")
 
 
 

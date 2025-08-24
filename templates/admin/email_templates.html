@@ -69,10 +69,28 @@
                             <h5 class="mb-2"></h5>
                             <p class="text-muted mb-0"></p>
                         </div>
-                        <button class="btn admin-btn" onclick="showAddTemplateModal()">
-                            <i class="fas fa-plus me-2"></i>
-                            Dodaj Szablon
-                        </button>
+                        <div class="d-flex gap-2">
+                            <button class="btn admin-btn" onclick="showAddTemplateModal()">
+                                <i class="fas fa-plus me-2"></i>
+                                Dodaj Szablon
+                            </button>
+                            <button class="btn admin-btn-secondary" onclick="sendReminders()">
+                                <i class="fas fa-bell me-2"></i>
+                                Wyślij Przypomnienia
+                            </button>
+                            <button class="btn admin-btn-secondary" onclick="showNewsletterModal()">
+                                <i class="fas fa-newspaper me-2"></i>
+                                Wyślij Newsletter
+                            </button>
+                            <button class="btn admin-btn-secondary" onclick="showNotificationModal()">
+                                <i class="fas fa-bullhorn me-2"></i>
+                                Wyślij Powiadomienie
+                            </button>
+                            <button class="btn admin-btn-secondary" onclick="showCustomEmailModal()">
+                                <i class="fas fa-envelope me-2"></i>
+                                Email Własny
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -185,6 +203,120 @@
         </div>
     </div>
     
+    <!-- Newsletter Modal -->
+    <div class="modal fade admin-modal" id="newsletterModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-newspaper me-2"></i>
+                        Wyślij Newsletter
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="newsletterForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="admin-form-label">Tytuł newslettera</label>
+                            <input type="text" class="admin-form-control" name="newsletter_title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="admin-form-label">Treść newslettera</label>
+                            <textarea class="admin-form-control admin-form-textarea" name="newsletter_content" rows="8" required></textarea>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Newsletter zostanie wysłany do wszystkich aktywnych subskrybentów.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            Wyślij Newsletter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification Modal -->
+    <div class="modal fade admin-modal" id="notificationModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-bullhorn me-2"></i>
+                        Wyślij Powiadomienie Systemowe
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="notificationForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="admin-form-label">Tytuł powiadomienia</label>
+                            <input type="text" class="admin-form-control" name="notification_title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="admin-form-label">Treść powiadomienia</label>
+                            <textarea class="admin-form-control admin-form-textarea" name="notification_message" rows="8" required></textarea>
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Powiadomienie zostanie wysłane do wszystkich aktywnych subskrybentów.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            Wyślij Powiadomienie
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Custom Email Modal -->
+    <div class="modal fade admin-modal" id="customEmailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-envelope me-2"></i>
+                        Wyślij Email Własny
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="customEmailForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="admin-form-label">Temat emaila</label>
+                            <input type="text" class="admin-form-control" name="custom_subject" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="admin-form-label">Treść emaila</label>
+                            <textarea class="admin-form-control admin-form-textarea" name="custom_content" rows="8" required></textarea>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Email zostanie wysłany do wszystkich aktywnych subskrybentów.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            Wyślij Email
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Cache busting - force reload of JavaScript
@@ -203,11 +335,7 @@
             // Handle form submission
             document.getElementById('templateForm').addEventListener('submit', function(e) {
                 e.preventDefault();
-                alert('Formularz został wysłany! (To jest test - API nie jest jeszcze zaimplementowane)');
-                
-                // TODO: Implement actual form submission to API
-                // const formData = new FormData(this);
-                // fetch('/admin/api/email-templates', { method: 'POST', body: formData })
+                saveTemplate();
             });
 
             // Handle template type change to show available variables
@@ -217,6 +345,28 @@
             
             // Initialize available variables display
             updateAvailableVariables();
+            
+            // Load existing templates and stats
+            loadTemplates();
+            loadEmailStats();
+            
+            // Handle newsletter form submission
+            document.getElementById('newsletterForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                sendNewsletter();
+            });
+            
+            // Handle notification form submission
+            document.getElementById('notificationForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                sendNotification();
+            });
+            
+            // Handle custom email form submission
+            document.getElementById('customEmailForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                sendCustomEmail();
+            });
         });
 
         // Function to update available variables based on template type
@@ -318,6 +468,155 @@
             }
         }
         
+        // Function to save template
+        function saveTemplate() {
+            const form = document.getElementById('templateForm');
+            const formData = new FormData(form);
+            
+            // Get TinyMCE content
+            const htmlContent = tinymce.get('template_html_content').getContent();
+            formData.set('html_content', htmlContent);
+            
+            // Get template ID to determine if it's edit or create
+            const templateId = document.getElementById('template_id').value;
+            const method = templateId ? 'PUT' : 'POST';
+            const url = '/admin/api/email-templates';
+            
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Zapisywanie...';
+            submitBtn.disabled = true;
+            
+            fetch(url, {
+                method: method,
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    showNotification('Szablon został zapisany pomyślnie!', 'success');
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('templateModal'));
+                    modal.hide();
+                    
+                    // Reset form
+                    form.reset();
+                    document.getElementById('template_id').value = '';
+                    
+                    // Reload templates list
+                    loadTemplates();
+                    
+                    // Reset TinyMCE
+                    tinymce.get('template_html_content').setContent('');
+                } else {
+                    showNotification('Błąd podczas zapisywania szablonu: ' + (data.message || 'Nieznany błąd'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving template:', error);
+                showNotification('Błąd podczas zapisywania szablonu: ' + error.message, 'error');
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        }
+        
+        // Function to load email statistics
+        function loadEmailStats() {
+            fetch('/admin/api/email-stats')
+            .then(response => response.json())
+            .then(stats => {
+                document.getElementById('totalSubscribers').textContent = stats.total_subscribers;
+                document.getElementById('totalEmailsSent').textContent = stats.total_emails_sent;
+            })
+            .catch(error => {
+                console.error('Error loading email stats:', error);
+                document.getElementById('totalSubscribers').textContent = '0';
+                document.getElementById('totalEmailsSent').textContent = '0';
+            });
+        }
+        
+        // Function to load templates
+        function loadTemplates() {
+            fetch('/admin/api/email-templates')
+            .then(response => response.json())
+            .then(templates => {
+                const tbody = document.getElementById('templatesTableBody');
+                tbody.innerHTML = '';
+                
+                templates.forEach(template => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${template.name}</td>
+                        <td>${template.template_type}</td>
+                        <td>${template.subject}</td>
+                        <td>
+                            <span class="badge ${template.is_active ? 'bg-success' : 'bg-secondary'}">
+                                ${template.is_active ? 'Aktywny' : 'Nieaktywny'}
+                            </span>
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                ${template.variables ? template.variables.split(',').length : 0} zmiennych
+                            </small>
+                        </td>
+                        <td>${new Date(template.created_at).toLocaleDateString('pl-PL')}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-primary btn-sm" onclick="editTemplate(${template.id})" title="Edytuj">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-info btn-sm" onclick="testTemplate(${template.id})" title="Test">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="deleteTemplate(${template.id})" title="Usuń">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                // Update stats
+                document.getElementById('totalTemplates').textContent = templates.length;
+                document.getElementById('activeTemplates').textContent = templates.filter(t => t.is_active).length;
+                
+                // Load email stats
+                loadEmailStats();
+            })
+            .catch(error => {
+                console.error('Error loading templates:', error);
+                showNotification('Błąd podczas ładowania szablonów', 'error');
+            });
+        }
+        
+        // Function to show notifications
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+        
         // Global functions - dostępne globalnie
         function showAddTemplateModal() {
             console.log('showAddTemplateModal called at:', new Date().toISOString());
@@ -344,36 +643,261 @@
         
         function editTemplate(templateId) {
             console.log('editTemplate called with ID:', templateId, 'at:', new Date().toISOString());
-            // TODO: Implement edit functionality
-            alert('Edycja szablonu ID: ' + templateId);
             
-            // Update available variables for editing
-            setTimeout(() => {
-                console.log('Updating variables for editing');
-                updateAvailableVariables();
-            }, 100);
+            // Fetch template data
+            fetch(`/admin/api/email-templates/${templateId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const template = data.template;
+                    
+                    // Fill form with template data
+                    document.getElementById('template_id').value = template.id;
+                    document.getElementById('template_name').value = template.name;
+                    document.getElementById('template_type').value = template.template_type;
+                    document.getElementById('template_subject').value = template.subject;
+                    document.getElementById('template_text_content').value = template.text_content || '';
+                    document.getElementById('template_is_active').checked = template.is_active;
+                    
+                    // Set TinyMCE content
+                    tinymce.get('template_html_content').setContent(template.html_content || '');
+                    
+                    // Update modal title
+                    document.getElementById('templateModalTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Edytuj Szablon';
+                    
+                    // Show modal
+                    const modal = new bootstrap.Modal(document.getElementById('templateModal'));
+                    modal.show();
+                    
+                    // Update available variables
+                    updateAvailableVariables();
+                } else {
+                    showNotification('Błąd podczas ładowania szablonu: ' + (data.error || 'Nieznany błąd'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading template:', error);
+                showNotification('Błąd podczas ładowania szablonu: ' + error.message, 'error');
+            });
         }
         
         function testTemplate(templateId) {
             console.log('testTemplate called with ID:', templateId);
-            // TODO: Implement test functionality
-            alert('Test szablonu ID: ' + templateId);
+            
+            // Show test email modal or prompt for test email
+            const testEmail = prompt('Podaj adres e-mail do wysłania testu szablonu:');
+            if (testEmail && testEmail.trim()) {
+                // Send test email using FormData
+                const formData = new FormData();
+                formData.append('template_id', templateId);
+                formData.append('test_email', testEmail.trim());
+                
+                fetch('/admin/api/email-templates/test', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Test e-mail został wysłany pomyślnie!', 'success');
+                    } else {
+                        showNotification('Błąd podczas wysyłania testu: ' + (data.message || 'Nieznany błąd'), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error sending test email:', error);
+                    showNotification('Błąd podczas wysylania testu: ' + error.message, 'error');
+                });
+            }
         }
         
         function deleteTemplate(templateId) {
             console.log('deleteTemplate called with ID:', templateId);
             if (confirm('Czy na pewno chcesz usunąć ten szablon?')) {
-                // TODO: Implement delete functionality
-                alert('Usuwanie szablonu ID: ' + templateId);
+                fetch(`/admin/api/email-templates?id=${templateId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Szablon został usunięty pomyślnie!', 'success');
+                        loadTemplates(); // Reload list
+                    } else {
+                        showNotification('Błąd podczas usuwania szablonu: ' + (data.message || 'Nieznany błąd'), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting template:', error);
+                    showNotification('Błąd podczas usuwania szablonu: ' + error.message, 'error');
+                });
             }
         }
         
         function sendReminders() {
             console.log('sendReminders called');
-            if (confirm('Czy na pewno chcesz wysłać przypomnienia?')) {
-                // TODO: Implement send reminders functionality
-                alert('Wysyłanie przypomnień...');
+            if (confirm('Czy na pewno chcesz wysłać przypomnienia o nadchodzących wydarzeniach?')) {
+                // Show loading state
+                const btn = event.target;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
+                btn.disabled = true;
+                
+                fetch('/admin/api/send-reminders', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Przypomnienia zostały wysłane pomyślnie!', 'success');
+                    } else {
+                        showNotification('Błąd podczas wysyłania przypomnień: ' + (data.message || 'Nieznany błąd'), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error sending reminders:', error);
+                    showNotification('Błąd podczas wysyłania przypomnień: ' + error.message, 'error');
+                })
+                .finally(() => {
+                    // Restore button state
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
             }
+        }
+        
+        // Function to show newsletter modal
+        function showNewsletterModal() {
+            const modal = new bootstrap.Modal(document.getElementById('newsletterModal'));
+            modal.show();
+        }
+        
+        // Function to show notification modal
+        function showNotificationModal() {
+            const modal = new bootstrap.Modal(document.getElementById('notificationModal'));
+            modal.show();
+        }
+        
+        // Function to show custom email modal
+        function showCustomEmailModal() {
+            const modal = new bootstrap.Modal(document.getElementById('customEmailModal'));
+            modal.show();
+        }
+        
+        // Function to send newsletter
+        function sendNewsletter() {
+            const form = document.getElementById('newsletterForm');
+            const formData = new FormData(form);
+            
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
+            submitBtn.disabled = true;
+            
+            fetch('/admin/api/send-newsletter', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    
+                    // Close modal and reset form
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('newsletterModal'));
+                    modal.hide();
+                    form.reset();
+                } else {
+                    showNotification('Błąd podczas wysyłania newslettera: ' + (data.error || 'Nieznany błąd'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error sending newsletter:', error);
+                showNotification('Błąd podczas wysyłania newslettera: ' + error.message, 'error');
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        }
+        
+        // Function to send notification
+        function sendNotification() {
+            const form = document.getElementById('notificationForm');
+            const formData = new FormData(form);
+            
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
+            submitBtn.disabled = true;
+            
+            fetch('/admin/api/send-notification', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    
+                    // Close modal and reset form
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('notificationModal'));
+                    modal.hide();
+                    form.reset();
+                } else {
+                    showNotification('Błąd podczas wysyłania powiadomienia: ' + (data.error || 'Nieznany błąd'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error sending notification:', error);
+                showNotification('Błąd podczas wysyłania powiadomienia: ' + error.message, 'error');
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        }
+        
+        // Function to send custom email
+        function sendCustomEmail() {
+            const form = document.getElementById('customEmailForm');
+            const formData = new FormData(form);
+            
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
+            submitBtn.disabled = true;
+            
+            fetch('/admin/api/send-custom-email', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    
+                    // Close modal and reset form
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('customEmailModal'));
+                    modal.hide();
+                    form.reset();
+                } else {
+                    showNotification('Błąd podczas wysyłania emaila: ' + (data.error || 'Nieznany błąd'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error sending custom email:', error);
+                showNotification('Błąd podczas wysyłania emaila: ' + error.message, 'error');
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
         }
     </script>
 </body>

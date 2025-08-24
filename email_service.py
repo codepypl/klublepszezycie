@@ -107,8 +107,12 @@ class EmailService:
             bool: True if email sent successfully, False otherwise
         """
         try:
-            # Get template
+            # Get template by name first, then by type if not found
             template = EmailTemplate.query.filter_by(name=template_name, is_active=True).first()
+            if not template:
+                # Try to find by template type
+                template = EmailTemplate.query.filter_by(template_type=template_name, is_active=True).first()
+            
             if not template:
                 logger.error(f"Template '{template_name}' not found or inactive")
                 return False
