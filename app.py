@@ -356,86 +356,7 @@ Ten email został wysłany na adres {{email}}
             )
             db.session.add(newsletter_template)
         
-        # Create default notification template
-        notification_template = EmailTemplate.query.filter_by(template_type='notification').first()
-        if not notification_template:
-            notification_template = EmailTemplate(
-                name='Powiadomienie Systemowe',
-                subject='🔔 {{notification_title}}',
-                html_content='''
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Powiadomienie Systemowe</title>
-</head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #dc3545; margin-bottom: 10px;">🔔 Powiadomienie Systemowe</h1>
-        <p style="font-size: 18px; color: #666;">Ważna informacja dla Ciebie</p>
-    </div>
-    
-    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-        <h2 style="color: #007bff; margin-top: 0;">Cześć {{name}}!</h2>
-        <p>Mamy dla Ciebie ważną wiadomość:</p>
-        
-        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
-            <h3 style="color: #856404; margin-top: 0;">📢 {{notification_title}}</h3>
-            <p style="margin: 5px 0;"><strong>Data:</strong> {{notification_date}}</p>
-            <p style="margin: 5px 0;"><strong>Wiadomość:</strong></p>
-            <div style="background-color: white; padding: 10px; border-radius: 3px; margin-top: 10px;">
-                {{notification_message}}
-            </div>
-        </div>
-    </div>
-    
-    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
-        <h3 style="color: #856404; margin-top: 0;">🔒 Twoje dane są bezpieczne</h3>
-        <p style="margin-bottom: 10px;">Możesz w każdej chwili:</p>
-        <p style="margin: 5px 0;"><a href="{{unsubscribe_url}}" style="color: #856404;">📧 Zrezygnować z subskrypcji</a></p>
-        <p style="margin: 5px 0;"><a href="{{delete_account_url}}" style="color: #856404;">🗑️ Usunąć swoje konto</a></p>
-    </div>
-    
-    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-        <p style="color: #666; font-size: 14px;">
-            Z poważaniem,<br>
-            <strong>Zespół Klubu Lepsze Życie</strong>
-        </p>
-        <p style="color: #999; font-size: 12px; margin-top: 20px;">
-            Ten email został wysłany na adres {{email}}
-        </p>
-    </div>
-</body>
-</html>
-                ''',
-                text_content='''
-Powiadomienie Systemowe 🔔
 
-Cześć {{name}}!
-
-Mamy dla Ciebie ważną wiadomość:
-
-{{notification_title}}
-Data: {{notification_date}}
-
-Wiadomość:
-{{notification_message}}
-
-Twoje dane są bezpieczne - możesz w każdej chwili:
-- Zrezygnować z subskrypcji: {{unsubscribe_url}}
-- Usunąć swoje konto: {{delete_account_url}}
-
-Z poważaniem,
-Zespół Klubu Lepsze Życie
-
-Ten email został wysłany na adres {{email}}
-                ''',
-                template_type='notification',
-                variables='name,email,notification_title,notification_date,notification_message,unsubscribe_url,delete_account_url',
-                is_active=True
-            )
-            db.session.add(notification_template)
         
         # Create default custom template
         custom_template = EmailTemplate.query.filter_by(template_type='custom').first()
@@ -581,7 +502,7 @@ def register():
         for admin in admin_users:
             email_service.send_template_email(
                 to_email=admin.email,
-                template_name='Powiadomienie dla Administratora',
+                template_name='admin_notification',
                 variables={
                     'admin_name': admin.username,
                     'new_member_name': name,
@@ -1683,7 +1604,7 @@ def send_event_reminders():
                 # Send email using the reminder template
                 success = email_service.send_template_email(
                     to_email=subscriber.email,
-                    template_name='Przypomnienie o Wydarzeniu',
+                    template_name='reminder',
                     variables=variables
                 )
                 
@@ -2047,7 +1968,7 @@ def api_send_newsletter():
             
             success = email_service.send_template_email(
                 to_email=subscriber.email,
-                template_name='Newsletter Klubu',
+                template_name='newsletter',
                 variables=variables
             )
             
@@ -2062,54 +1983,7 @@ def api_send_newsletter():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/admin/api/send-notification', methods=['POST'])
-@login_required
-def api_send_notification():
-    """Send system notification to all subscribers"""
-    if not current_user.is_admin:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    try:
-        data = request.form.to_dict()
-        notification_title = data.get('notification_title', '')
-        notification_message = data.get('notification_message', '')
-        
-        if not notification_title or not notification_message:
-            return jsonify({'success': False, 'error': 'Brak tytułu lub treści powiadomienia'})
-        
-        # Get all active subscribers
-        subscribers = email_service.get_approved_subscribers()
-        
-        if not subscribers:
-            return jsonify({'success': False, 'error': 'Brak aktywnych subskrybentów'})
-        
-        # Send notification to all subscribers
-        success_count = 0
-        for subscriber in subscribers:
-            variables = {
-                'name': subscriber.name or 'Użytkowniku',
-                'email': subscriber.email,
-                'notification_title': notification_title,
-                'notification_message': notification_message,
-                'notification_date': datetime.now().strftime('%d.%m.%Y %H:%M')
-            }
-            
-            success = email_service.send_template_email(
-                to_email=subscriber.email,
-                template_name='Powiadomienie Systemowe',
-                variables=variables
-            )
-            
-            if success:
-                success_count += 1
-        
-        return jsonify({
-            'success': True, 
-            'message': f'Powiadomienie wysłane do {success_count}/{len(subscribers)} subskrybentów'
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+
 
 @app.route('/admin/api/send-custom-email', methods=['POST'])
 @login_required
@@ -2144,7 +2018,7 @@ def api_send_custom_email():
             
             success = email_service.send_template_email(
                 to_email=subscriber.email,
-                template_name='Email Własny',
+                template_name='custom',
                 variables=variables
             )
             
@@ -2247,22 +2121,32 @@ def api_update_registration_status(registration_id=None):
             
             # If approved, send notification to admin about new approved member
             if new_status == 'approved':
+                print(f"DEBUG: Sending welcome email to {registration.email} for {registration.name}")
+                
                 # Send welcome email to the newly approved user
-                email_service.send_welcome_email(registration.email, registration.name)
+                try:
+                    welcome_result = email_service.send_welcome_email(registration.email, registration.name)
+                    print(f"DEBUG: Welcome email result: {welcome_result}")
+                except Exception as e:
+                    print(f"DEBUG: Error sending welcome email: {str(e)}")
                 
                 # Send notification to admin about new approved member
                 admin_users = User.query.filter_by(is_admin=True).all()
                 for admin in admin_users:
-                    email_service.send_template_email(
-                        to_email=admin.email,
-                        template_name='Powiadomienie dla Administratora',
-                        variables={
-                            'admin_name': admin.username,
-                            'new_member_name': registration.name,
-                            'new_member_email': registration.email,
-                            'registration_date': registration.created_at.strftime('%d.%m.%Y %H:%M') if registration.created_at else 'Brak'
-                        }
-                    )
+                    try:
+                        admin_result = email_service.send_template_email(
+                            to_email=admin.email,
+                            template_name='admin_notification',
+                            variables={
+                                'admin_name': admin.username,
+                                'new_member_name': registration.name,
+                                'new_member_email': registration.email,
+                                'registration_date': registration.created_at.strftime('%d.%m.%Y %H:%M') if registration.created_at else 'Brak'
+                            }
+                        )
+                        print(f"DEBUG: Admin notification result for {admin.email}: {admin_result}")
+                    except Exception as e:
+                        print(f"DEBUG: Error sending admin notification to {admin.email}: {str(e)}")
             
             db.session.commit()
             return jsonify({'success': True, 'message': f'Status rejestracji został zmieniony na {new_status}'})

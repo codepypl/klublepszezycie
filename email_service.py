@@ -155,11 +155,11 @@ class EmailService:
                 logger.info(f"Email not sent to {to_email} - user not approved")
                 return False
             
-            # Get template by name first, then by type if not found
-            template = EmailTemplate.query.filter_by(name=template_name, is_active=True).first()
+            # Get template by template type (since we now use types instead of names)
+            template = EmailTemplate.query.filter_by(template_type=template_name, is_active=True).first()
             if not template:
-                # Try to find by template type
-                template = EmailTemplate.query.filter_by(template_type=template_name, is_active=True).first()
+                # Fallback: try to find by name for backward compatibility
+                template = EmailTemplate.query.filter_by(name=template_name, is_active=True).first()
             
             if not template:
                 logger.error(f"Template '{template_name}' not found or inactive")
@@ -185,7 +185,7 @@ class EmailService:
             'unsubscribe_url': self._generate_unsubscribe_url(email),
             'delete_account_url': self._generate_delete_account_url(email)
         }
-        return self.send_template_email(email, 'Email Powitalny', variables)
+        return self.send_template_email(email, 'welcome', variables)
     
     def send_reminder_email(self, email: str, name: str, event_type: str, 
                            event_date: datetime, event_details: str = None) -> bool:
@@ -199,7 +199,7 @@ class EmailService:
             'unsubscribe_url': self._generate_unsubscribe_url(email),
             'delete_account_url': self._generate_delete_account_url(email)
         }
-        return self.send_template_email(email, 'Przypomnienie o Wydarzeniu', variables)
+        return self.send_template_email(email, 'reminder', variables)
     
     def send_newsletter_email(self, email: str, name: str, newsletter_content: str) -> bool:
         """Send newsletter email"""
@@ -210,7 +210,7 @@ class EmailService:
             'unsubscribe_url': self._generate_unsubscribe_url(email),
             'delete_account_url': self._generate_delete_account_url(email)
         }
-        return self.send_template_email(email, 'Newsletter Klubu', variables)
+        return self.send_template_email(email, 'newsletter', variables)
     
     def _replace_variables(self, content: str, variables: Dict) -> str:
         """Replace variables in template content"""

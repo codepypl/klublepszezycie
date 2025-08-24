@@ -82,10 +82,7 @@
                                 <i class="fas fa-newspaper me-2"></i>
                                 Wyślij Newsletter
                             </button>
-                            <button class="btn admin-btn-secondary" onclick="showNotificationModal()">
-                                <i class="fas fa-bullhorn me-2"></i>
-                                Wyślij Powiadomienie
-                            </button>
+
                             <button class="btn admin-btn-secondary" onclick="showCustomEmailModal()">
                                 <i class="fas fa-envelope me-2"></i>
                                 Email Własny
@@ -156,7 +153,7 @@
                                         <option value="welcome">Powitanie</option>
                                         <option value="reminder">Przypomnienie</option>
                                         <option value="newsletter">Newsletter</option>
-                                        <option value="notification">Powiadomienie</option>
+                                        <option value="admin_notification">Powiadomienie Administratora</option>
                                         <option value="custom">Własny typ</option>
                                     </select>
                                 </div>
@@ -242,43 +239,7 @@
         </div>
     </div>
     
-    <!-- Notification Modal -->
-    <div class="modal fade admin-modal" id="notificationModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-bullhorn me-2"></i>
-                        Wyślij Powiadomienie Systemowe
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="notificationForm">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="admin-form-label">Tytuł powiadomienia</label>
-                            <input type="text" class="admin-form-control" name="notification_title" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="admin-form-label">Treść powiadomienia</label>
-                            <textarea class="admin-form-control admin-form-textarea" name="notification_message" rows="8" required></textarea>
-                        </div>
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            Powiadomienie zostanie wysłane do wszystkich aktywnych subskrybentów.
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn admin-btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn admin-btn">
-                            <i class="fas fa-paper-plane me-2"></i>
-                            Wyślij Powiadomienie
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+
     
     <!-- Custom Email Modal -->
     <div class="modal fade admin-modal" id="customEmailModal" tabindex="-1">
@@ -421,16 +382,22 @@
                         '&lbrace;&lbrace;delete_account_url&rbrace;&rbrace; : link do usunięcia konta'
                     ];
                     break;
-                case 'notification':
-                    typeName = 'Powiadomienie';
+                case 'admin_notification':
+                    typeName = 'Powiadomienie Administratora';
                     variables = [
-                        '&lbrace;&lbrace;name&rbrace;&rbrace; : imię użytkownika',
-                        '&lbrace;&lbrace;email&rbrace;&rbrace; : adres e-mail użytkownika',
-                        '&lbrace;&lbrace;notification_title&rbrace;&rbrace; : tytuł powiadomienia',
-                        '&lbrace;&lbrace;notification_message&rbrace;&rbrace; : treść powiadomienia',
-                        '&lbrace;&lbrace;notification_date&rbrace;&rbrace; : data powiadomienia',
-                        '&lbrace;&lbrace;unsubscribe_url&rbrace;&rbrace; : link do rezygnacji z subskrypcji',
-                        '&lbrace;&lbrace;delete_account_url&rbrace;&rbrace; : link do usunięcia konta'
+                        '&lbrace;&lbrace;admin_name&rbrace;&rbrace; : nazwa administratora',
+                        '&lbrace;&lbrace;new_member_name&rbrace;&rbrace; : imię nowego członka',
+                        '&lbrace;&lbrace;new_member_email&rbrace;&rbrace; : e-mail nowego członka',
+                        '&lbrace;&lbrace;registration_date&rbrace;&rbrace; : data rejestracji'
+                    ];
+                    break;
+                case 'admin_notification':
+                    typeName = 'Powiadomienie Administratora';
+                    variables = [
+                        '&lbrace;&lbrace;admin_name&rbrace;&rbrace; : nazwa administratora',
+                        '&lbrace;&lbrace;new_member_name&rbrace;&rbrace; : imię nowego członka',
+                        '&lbrace;&lbrace;new_member_email&rbrace;&rbrace; : e-mail nowego członka',
+                        '&lbrace;&lbrace;registration_date&rbrace;&rbrace; : data rejestracji'
                     ];
                     break;
                 case 'custom':
@@ -807,11 +774,7 @@
             modal.show();
         }
         
-        // Function to show notification modal
-        function showNotificationModal() {
-            const modal = new bootstrap.Modal(document.getElementById('notificationModal'));
-            modal.show();
-        }
+
         
         // Function to show custom email modal
         function showCustomEmailModal() {
@@ -858,44 +821,7 @@
             });
         }
         
-        // Function to send notification
-        function sendNotification() {
-            const form = document.getElementById('notificationForm');
-            const formData = new FormData(form);
-            
-            // Show loading state
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
-            submitBtn.disabled = true;
-            
-            fetch('/admin/api/send-notification', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification(data.message, 'success');
-                    
-                    // Close modal and reset form
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('notificationModal'));
-                    modal.hide();
-                    form.reset();
-                } else {
-                    showNotification('Błąd podczas wysyłania powiadomienia: ' + (data.error || 'Nieznany błąd'), 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error sending notification:', error);
-                showNotification('Błąd podczas wysyłania powiadomienia: ' + error.message, 'error');
-            })
-            .finally(() => {
-                // Restore button state
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            });
-        }
+
         
         // Function to send custom email
         function sendCustomEmail() {
