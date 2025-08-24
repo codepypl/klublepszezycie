@@ -234,56 +234,56 @@
                 case 'welcome':
                     typeName = 'Powitanie';
                     variables = [
-                        '{{name}} : imię użytkownika',
-                        '{{email}} : adres e-mail użytkownika',
-                        '{{unsubscribe_url}} : link do rezygnacji z subskrypcji',
-                        '{{delete_account_url}} : link do usunięcia konta'
+                        '&lbrace;&lbrace;name&rbrace;&rbrace; : imię użytkownika',
+                        '&lbrace;&lbrace;email&rbrace;&rbrace; : adres e-mail użytkownika',
+                        '&lbrace;&lbrace;unsubscribe_url&rbrace;&rbrace; : link do rezygnacji z subskrypcji',
+                        '&lbrace;&lbrace;delete_account_url&rbrace;&rbrace; : link do usunięcia konta'
                     ];
                     break;
                 case 'reminder':
                     typeName = 'Przypomnienie';
                     variables = [
-                        '{{name}} : imię użytkownika',
-                        '{{email}} : adres e-mail użytkownika',
-                        '{{event_type}} : typ wydarzenia (np. "Prezentacja", "Webinar")',
-                        '{{event_date}} : data wydarzenia (DD.MM.YYYY HH:MM)',
-                        '{{event_time}} : godzina wydarzenia',
-                        '{{event_location}} : lokalizacja wydarzenia',
-                        '{{event_details}} : szczegóły wydarzenia',
-                        '{{unsubscribe_url}} : link do rezygnacji z subskrypcji',
-                        '{{delete_account_url}} : link do usunięcia konta'
+                        '&lbrace;&lbrace;name&rbrace;&rbrace; : imię użytkownika',
+                        '&lbrace;&lbrace;email&rbrace;&rbrace; : adres e-mail użytkownika',
+                        '&lbrace;&lbrace;event_type&rbrace;&rbrace; : typ wydarzenia (np. "Prezentacja", "Webinar")',
+                        '&lbrace;&lbrace;event_date&rbrace;&rbrace; : data wydarzenia (DD.MM.YYYY HH:MM)',
+                        '&lbrace;&lbrace;event_time&rbrace;&rbrace; : godzina wydarzenia',
+                        '&lbrace;&lbrace;event_location&rbrace;&rbrace; : lokalizacja wydarzenia',
+                        '&lbrace;&lbrace;event_details&rbrace;&rbrace; : szczegóły wydarzenia',
+                        '&lbrace;&lbrace;unsubscribe_url&rbrace;&rbrace; : link do rezygnacji z subskrypcji',
+                        '&lbrace;&lbrace;delete_account_url&rbrace;&rbrace; : link do usunięcia konta'
                     ];
                     break;
                 case 'newsletter':
                     typeName = 'Newsletter';
                     variables = [
-                        '{{name}} : imię użytkownika',
-                        '{{email}} : adres e-mail użytkownika',
-                        '{{newsletter_content}} : treść newslettera',
-                        '{{unsubscribe_url}} : link do rezygnacji z subskrypcji',
-                        '{{delete_account_url}} : link do usunięcia konta'
+                        '&lbrace;&lbrace;name&rbrace;&rbrace; : imię użytkownika',
+                        '&lbrace;&lbrace;email&rbrace;&rbrace; : adres e-mail użytkownika',
+                        '&lbrace;&lbrace;newsletter_content&rbrace;&rbrace; : treść newslettera',
+                        '&lbrace;&lbrace;unsubscribe_url&rbrace;&rbrace; : link do rezygnacji z subskrypcji',
+                        '&lbrace;&lbrace;delete_account_url&rbrace;&rbrace; : link do usunięcia konta'
                     ];
                     break;
                 case 'notification':
                     typeName = 'Powiadomienie';
                     variables = [
-                        '{{name}} : imię użytkownika',
-                        '{{email}} : adres e-mail użytkownika',
-                        '{{notification_title}} : tytuł powiadomienia',
-                        '{{notification_message}} : treść powiadomienia',
-                        '{{notification_date}} : data powiadomienia',
-                        '{{unsubscribe_url}} : link do rezygnacji z subskrypcji',
-                        '{{delete_account_url}} : link do usunięcia konta'
+                        '&lbrace;&lbrace;name&rbrace;&rbrace; : imię użytkownika',
+                        '&lbrace;&lbrace;email&rbrace;&rbrace; : adres e-mail użytkownika',
+                        '&lbrace;&lbrace;notification_title&rbrace;&rbrace; : tytuł powiadomienia',
+                        '&lbrace;&lbrace;notification_message&rbrace;&rbrace; : treść powiadomienia',
+                        '&lbrace;&lbrace;notification_date&rbrace;&rbrace; : data powiadomienia',
+                        '&lbrace;&lbrace;unsubscribe_url&rbrace;&rbrace; : link do rezygnacji z subskrypcji',
+                        '&lbrace;&lbrace;delete_account_url&rbrace;&rbrace; : link do usunięcia konta'
                     ];
                     break;
                 case 'custom':
                     typeName = 'Własny typ';
                     variables = [
-                        '{{name}} : imię użytkownika',
-                        '{{email}} : adres e-mail użytkownika',
-                        '{{unsubscribe_url}} : link do rezygnacji z subskrypcji',
-                        '{{delete_account_url}} : link do usunięcia konta',
-                        'Dodaj własne zmienne w formacie {{nazwa_zmiennej}}'
+                        '&lbrace;&lbrace;name&rbrace;&rbrace; : imię użytkownika',
+                        '&lbrace;&lbrace;email&rbrace;&rbrace; : adres e-mail użytkownika',
+                        '&lbrace;&lbrace;unsubscribe_url&rbrace;&rbrace; : link do rezygnacji z subskrypcji',
+                        '&lbrace;&lbrace;delete_account_url&rbrace;&rbrace; : link do usunięcia konta',
+                        'Dodaj własne zmienne w formacie &lbrace;&lbrace;nazwa_zmiennej&rbrace;&rbrace;'
                     ];
                     break;
                 default:
@@ -308,7 +308,7 @@
                     
                     const code = document.createElement('code');
                     code.className = 'bg-light px-2 py-1 rounded border';
-                    code.textContent = variable;
+                    code.innerHTML = variable;
                     
                     div.appendChild(code);
                     variablesDiv.appendChild(div);
