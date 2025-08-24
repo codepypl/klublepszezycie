@@ -513,7 +513,7 @@ def register():
             )
         
         db.session.commit()
-        
+    
         return jsonify({
             'success': True,
             'message': f'Dziękujemy {name}! Twoje miejsce zostało zarezerwowane.'
@@ -1228,18 +1228,80 @@ def admin_recipient_groups():
     return render_template('admin/recipient_groups.html', groups=groups)
 
 # API endpoints for recipient groups
-@app.route('/admin/api/recipient-groups', methods=['GET'])
+@app.route('/admin/api/recipient-groups', methods=['GET', 'POST'])
 @login_required
-def api_get_recipient_groups():
-    """Get all recipient groups"""
+def api_recipient_groups():
+    """Get all recipient groups or create new one"""
     if not current_user.is_admin:
         return jsonify({'error': 'Unauthorized'}), 403
     
-    try:
-        groups = EmailRecipientGroup.query.order_by(EmailRecipientGroup.created_at.desc()).all()
-        groups_data = []
-        
-        for group in groups:
+    if request.method == 'GET':
+        try:
+            groups = EmailRecipientGroup.query.order_by(EmailRecipientGroup.created_at.desc()).all()
+            groups_data = []
+            
+            for group in groups:
+                group_dict = {
+                    'id': group.id,
+                    'name': group.name,
+                    'description': group.description,
+                    'criteria_type': group.criteria_type,
+                    'member_count': group.member_count,
+                    'is_active': group.is_active,
+                    'created_at': group.created_at.isoformat(),
+                    'updated_at': group.updated_at.isoformat()
+                }
+                
+                # Add criteria configuration if exists
+                if group.criteria_config:
+                    group_dict['criteria_config'] = group.criteria_config
+                
+                groups_data.append(group_dict)
+            
+            return jsonify({'success': True, 'groups': groups_data})
+            
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    elif request.method == 'POST':
+        try:
+            data = request.form.to_dict()
+            
+            # Convert checkbox to boolean
+            data['is_active'] = 'is_active' in request.form
+            
+            new_group = EmailRecipientGroup(
+                name=data['name'],
+                description=data.get('description', ''),
+                criteria_type=data['criteria_type'],
+                criteria_config=data.get('criteria_config', ''),
+                is_active=data['is_active']
+            )
+            
+            db.session.add(new_group)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True, 
+                'message': f'Grupa "{new_group.name}" została utworzona pomyślnie',
+                'id': new_group.id
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/recipient-groups/<int:group_id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
+def api_recipient_group_by_id(group_id):
+    """Get, update or delete recipient group by ID"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    group = EmailRecipientGroup.query.get_or_404(group_id)
+    
+    if request.method == 'GET':
+        try:
             group_dict = {
                 'id': group.id,
                 'name': group.name,
@@ -1251,39 +1313,54 @@ def api_get_recipient_groups():
                 'updated_at': group.updated_at.isoformat()
             }
             
-            # Add criteria configuration if exists
             if group.criteria_config:
                 group_dict['criteria_config'] = group.criteria_config
             
-            groups_data.append(group_dict)
-        
-        return jsonify({'success': True, 'groups': groups_data})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/admin/api/recipient-groups/<int:group_id>', methods=['DELETE'])
-@login_required
-def api_delete_recipient_group(group_id):
-    """Delete recipient group"""
-    if not current_user.is_admin:
-        return jsonify({'error': 'Unauthorized'}), 403
+            return jsonify({'success': True, 'group': group_dict})
+            
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
     
-    try:
-        group = EmailRecipientGroup.query.get_or_404(group_id)
-        name = group.name
-        
-        db.session.delete(group)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True, 
-            'message': f'Grupa "{name}" została usunięta pomyślnie'
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+    elif request.method == 'PUT':
+        try:
+            data = request.form.to_dict()
+            
+            # Convert checkbox to boolean
+            data['is_active'] = 'is_active' in request.form
+            
+            group.name = data['name']
+            group.description = data.get('description', '')
+            group.criteria_type = data['criteria_type']
+            group.criteria_config = data.get('criteria_config', '')
+            group.is_active = data['is_active']
+            group.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True, 
+                'message': f'Grupa "{group.name}" została zaktualizowana pomyślnie'
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    elif request.method == 'DELETE':
+        try:
+            name = group.name
+            
+            db.session.delete(group)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True, 
+                'message': f'Grupa "{name}" została usunięta pomyślnie'
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/admin/api/check-schedules', methods=['POST'])
 @login_required
@@ -3236,7 +3313,7 @@ def delete_account(token):
 # Initialize email service
 with app.app_context():
     email_service.init_app(app)
-    
+
     # Schedule automatic event reminder checking
     def check_and_send_reminders():
         """Check for upcoming events and send reminders automatically"""

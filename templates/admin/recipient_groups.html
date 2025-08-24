@@ -25,8 +25,8 @@
                 <div class="col-12">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h5 class="mb-2">Zarządzanie grupami odbiorców</h5>
-                            <p class="text-muted mb-0">Twórz i zarządzaj grupami odbiorców na podstawie różnych kryteriów</p>
+                            <h5 class="mb-2"></h5>
+                            <p class="text-muted mb-0"></p>
                         </div>
                         <div class="d-flex gap-2">
                             <button class="btn admin-btn" onclick="showAddGroupModal()">
@@ -38,9 +38,6 @@
             </div>
             
             <div class="admin-card">
-                <div class="admin-card-header">
-                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Lista Grup</h5>
-                </div>
                 <div class="admin-card-body">
                     <div class="table-responsive">
                         <table class="table admin-table">
@@ -64,10 +61,124 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal Dodawania/Edytowania Grupy -->
+    <div class="modal fade" id="groupModal" tabindex="-1" aria-labelledby="groupModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="groupModalLabel">Nowa Grupa Odbiorców</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="groupForm">
+                        <input type="hidden" id="groupId" name="id">
+                        
+                        <div class="mb-3">
+                            <label for="groupName" class="form-label">Nazwa grupy *</label>
+                            <input type="text" class="form-control" id="groupName" name="name" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="groupDescription" class="form-label">Opis</label>
+                            <textarea class="form-control" id="groupDescription" name="description" rows="3" placeholder="Opis grupy i jej przeznaczenia"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="criteriaType" class="form-label">Typ kryteriów *</label>
+                            <select class="form-select" id="criteriaType" name="criteria_type" required onchange="toggleCriteriaFields()">
+                                <option value="">Wybierz typ</option>
+                                <option value="registration_date">Data rejestracji</option>
+                                <option value="status">Status użytkownika</option>
+                                <option value="custom">Własne kryteria</option>
+                            </select>
+                        </div>
+
+                        <!-- Kryteria daty rejestracji -->
+                        <div id="registrationDateCriteria" class="mb-3" style="display: none;">
+                            <label class="form-label">Kryteria daty rejestracji</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="dateOperator" class="form-label">Operator</label>
+                                    <select class="form-select" id="dateOperator" name="date_operator">
+                                        <option value="after">Po dacie</option>
+                                        <option value="before">Przed datą</option>
+                                        <option value="between">Między datami</option>
+                                        <option value="last_days">Ostatnie X dni</option>
+                                        <option value="last_months">Ostatnie X miesięcy</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="dateValue" class="form-label">Wartość</label>
+                                    <input type="date" class="form-control" id="dateValue" name="date_value">
+                                </div>
+                            </div>
+                            <div id="dateRangeFields" class="row mt-2" style="display: none;">
+                                <div class="col-md-6">
+                                    <label for="dateValue2" class="form-label">Druga data</label>
+                                    <input type="date" class="form-control" id="dateValue2" name="date_value2">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="dateNumber" class="form-label">Liczba (dni/miesięcy)</label>
+                                    <input type="number" class="form-control" id="dateNumber" name="date_number" min="1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Kryteria statusu -->
+                        <div id="statusCriteria" class="mb-3" style="display: none;">
+                            <label class="form-label">Kryteria statusu</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="statusApproved" name="status_approved" checked>
+                                        <label class="form-check-label" for="statusApproved">
+                                            Zatwierdzeni użytkownicy
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="statusActive" name="status_active" checked>
+                                        <label class="form-check-label" for="statusActive">
+                                            Aktywni użytkownicy
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Własne kryteria -->
+                        <div id="customCriteria" class="mb-3" style="display: none;">
+                            <label for="customCriteriaConfig" class="form-label">Konfiguracja własnych kryteriów (JSON)</label>
+                            <textarea class="form-control" id="customCriteriaConfig" name="custom_criteria_config" rows="4" placeholder='{"field": "value", "operator": "equals"}'></textarea>
+                            <div class="form-text">Wprowadź kryteria w formacie JSON</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="groupActive" name="is_active" checked>
+                                <label class="form-check-label" for="groupActive">
+                                    Grupa aktywna
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="button" class="btn btn-primary" onclick="saveGroup()">Zapisz Grupę</button>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        let groupModal;
+        
         document.addEventListener('DOMContentLoaded', function() {
+            groupModal = new bootstrap.Modal(document.getElementById('groupModal'));
             loadGroups();
         });
         
@@ -99,11 +210,12 @@
             groups.forEach(group => {
                 const row = document.createElement('tr');
                 const createdDate = group.created_at ? new Date(group.created_at).toLocaleDateString('pl-PL') : 'Brak';
+                const criteriaText = getCriteriaText(group.criteria_type, group.criteria_config);
                 
                 row.innerHTML = `
                     <td><strong>${group.name}</strong></td>
                     <td>${group.description || 'Brak opisu'}</td>
-                    <td>${group.criteria_type}</td>
+                    <td>${criteriaText}</td>
                     <td>${group.member_count}</td>
                     <td><span class="badge ${group.is_active ? 'bg-success' : 'bg-secondary'}">${group.is_active ? 'Aktywna' : 'Nieaktywna'}</span></td>
                     <td>${createdDate}</td>
@@ -123,12 +235,180 @@
             });
         }
         
+        function getCriteriaText(criteriaType, criteriaConfig) {
+            const types = {
+                'registration_date': 'Data rejestracji',
+                'status': 'Status użytkownika',
+                'custom': 'Własne kryteria'
+            };
+            
+            let text = types[criteriaType] || criteriaType;
+            
+            if (criteriaConfig) {
+                try {
+                    const config = JSON.parse(criteriaConfig);
+                    if (criteriaType === 'registration_date') {
+                        if (config.operator === 'last_days') {
+                            text += ` (ostatnie ${config.value} dni)`;
+                        } else if (config.operator === 'last_months') {
+                            text += ` (ostatnie ${config.value} miesięcy)`;
+                        }
+                    }
+                } catch (e) {
+                    text += ' (błąd parsowania)';
+                }
+            }
+            
+            return text;
+        }
+        
         function showAddGroupModal() {
-            alert('Funkcjonalność w trakcie implementacji');
+            document.getElementById('groupModalLabel').textContent = 'Nowa Grupa Odbiorców';
+            document.getElementById('groupForm').reset();
+            document.getElementById('groupId').value = '';
+            document.getElementById('groupActive').checked = true;
+            
+            // Pokaż domyślne pola
+            toggleCriteriaFields();
+            
+            groupModal.show();
         }
         
         function editGroup(id) {
-            alert('Funkcjonalność w trakcie implementacji');
+            fetch(`/admin/api/recipient-groups/${id}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const group = data.group;
+                        
+                        document.getElementById('groupModalLabel').textContent = 'Edytuj Grupę Odbiorców';
+                        document.getElementById('groupId').value = group.id;
+                        document.getElementById('groupName').value = group.name;
+                        document.getElementById('groupDescription').value = group.description || '';
+                        document.getElementById('criteriaType').value = group.criteria_type;
+                        document.getElementById('groupActive').checked = group.is_active;
+                        
+                        // Załaduj kryteria
+                        if (group.criteria_config) {
+                            try {
+                                const config = JSON.parse(group.criteria_config);
+                                if (group.criteria_type === 'registration_date') {
+                                    document.getElementById('dateOperator').value = config.operator || 'after';
+                                    document.getElementById('dateValue').value = config.value || '';
+                                    document.getElementById('dateValue2').value = config.value2 || '';
+                                    document.getElementById('dateNumber').value = config.number || '';
+                                } else if (group.criteria_type === 'status') {
+                                    document.getElementById('statusApproved').checked = config.approved !== false;
+                                    document.getElementById('statusActive').checked = config.active !== false;
+                                } else if (group.criteria_type === 'custom') {
+                                    document.getElementById('customCriteriaConfig').value = group.criteria_config;
+                                }
+                            } catch (e) {
+                                console.error('Error parsing criteria config:', e);
+                            }
+                        }
+                        
+                        // Pokaż odpowiednie pola
+                        toggleCriteriaFields();
+                        
+                        groupModal.show();
+                    } else {
+                        showNotification('Błąd podczas ładowania grupy: ' + (data.error || 'Nieznany błąd'), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading group:', error);
+                    showNotification('Błąd podczas ładowania grupy: ' + error.message, 'error');
+                });
+        }
+        
+        function toggleCriteriaFields() {
+            const criteriaType = document.getElementById('criteriaType').value;
+            
+            // Ukryj wszystkie pola kryteriów
+            document.getElementById('registrationDateCriteria').style.display = 'none';
+            document.getElementById('statusCriteria').style.display = 'none';
+            document.getElementById('customCriteria').style.display = 'none';
+            
+            // Pokaż odpowiednie pola
+            if (criteriaType === 'registration_date') {
+                document.getElementById('registrationDateCriteria').style.display = 'block';
+            } else if (criteriaType === 'status') {
+                document.getElementById('statusCriteria').style.display = 'block';
+            } else if (criteriaType === 'custom') {
+                document.getElementById('customCriteria').style.display = 'block';
+            }
+            
+            // Pokaż/ukryj dodatkowe pola daty
+            toggleDateFields();
+        }
+        
+        function toggleDateFields() {
+            const operator = document.getElementById('dateOperator').value;
+            const dateRangeFields = document.getElementById('dateRangeFields');
+            
+            if (operator === 'between') {
+                dateRangeFields.style.display = 'block';
+            } else if (operator === 'last_days' || operator === 'last_months') {
+                dateRangeFields.style.display = 'block';
+            } else {
+                dateRangeFields.style.display = 'none';
+            }
+        }
+        
+        function saveGroup() {
+            const form = document.getElementById('groupForm');
+            const formData = new FormData(form);
+            
+            // Zbuduj konfigurację kryteriów
+            const criteriaType = document.getElementById('criteriaType').value;
+            let criteriaConfig = {};
+            
+            if (criteriaType === 'registration_date') {
+                criteriaConfig = {
+                    operator: document.getElementById('dateOperator').value,
+                    value: document.getElementById('dateValue').value,
+                    value2: document.getElementById('dateValue2').value,
+                    number: document.getElementById('dateNumber').value
+                };
+            } else if (criteriaType === 'status') {
+                criteriaConfig = {
+                    approved: document.getElementById('statusApproved').checked,
+                    active: document.getElementById('statusActive').checked
+                };
+            } else if (criteriaType === 'custom') {
+                try {
+                    criteriaConfig = JSON.parse(document.getElementById('customCriteriaConfig').value);
+                } catch (e) {
+                    showNotification('Błąd: Nieprawidłowy format JSON w kryteriach', 'error');
+                    return;
+                }
+            }
+            
+            formData.set('criteria_config', JSON.stringify(criteriaConfig));
+            
+            const groupId = document.getElementById('groupId').value;
+            const url = groupId ? `/admin/api/recipient-groups/${groupId}` : '/admin/api/recipient-groups';
+            const method = groupId ? 'PUT' : 'POST';
+            
+            fetch(url, {
+                method: method,
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    groupModal.hide();
+                    loadGroups();
+                } else {
+                    showNotification('Błąd podczas zapisywania grupy: ' + (data.error || 'Nieznany błąd'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving group:', error);
+                showNotification('Błąd podczas zapisywania grupy: ' + error.message, 'error');
+            });
         }
         
         function deleteGroup(id, name) {
@@ -166,6 +446,9 @@
                 }
             }, 5000);
         }
+        
+        // Dodaj event listenery dla pól daty
+        document.getElementById('dateOperator').addEventListener('change', toggleDateFields);
     </script>
 </body>
 </html>

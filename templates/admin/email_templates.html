@@ -70,10 +70,10 @@
                             <p class="text-muted mb-0"></p>
                         </div>
                         <div class="d-flex gap-2">
-                            <button class="btn admin-btn" onclick="showAddTemplateModal()">
-                                <i class="fas fa-plus me-2"></i>
-                                Dodaj Szablon
-                            </button>
+                        <button class="btn admin-btn" onclick="showAddTemplateModal()">
+                            <i class="fas fa-plus me-2"></i>
+                            Dodaj Szablon
+                        </button>
                             <button class="btn admin-btn-secondary" onclick="sendReminders()">
                                 <i class="fas fa-bell me-2"></i>
                                 Wyślij Przypomnienia
@@ -98,12 +98,6 @@
             
             <!-- Templates Table -->
             <div class="admin-card">
-                <div class="admin-card-header">
-                    <h5>
-                        <i class="fas fa-list me-2"></i>
-                        Lista Szablonów
-                    </h5>
-                </div>
                 <div class="admin-card-body">
                     <div class="table-responsive">
                         <table class="table admin-table admin-table">
@@ -677,7 +671,7 @@
                     modal.show();
                     
                     // Update available variables
-                    updateAvailableVariables();
+                updateAvailableVariables();
                 } else {
                     showNotification('Błąd podczas ładowania szablonu: ' + (data.error || 'Nieznany błąd'), 'error');
                 }
