@@ -77,6 +77,10 @@
                                 <i class="fas fa-play me-2"></i>
                                 Uruchom Wszystkie
                             </button>
+                            <button class="btn admin-btn-warning" onclick="checkSchedules()">
+                                <i class="fas fa-sync me-2"></i>
+                                Sprawdź Harmonogramy
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -139,10 +143,11 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="admin-form-label">Typ e-maila</label>
-                                    <select class="admin-form-control" name="template_type" id="schedule_template_type" required>
+                                    <select class="admin-form-control" name="template_type" id="schedule_template_type" required onchange="updateAvailableVariables()">
                                         <option value="">Wybierz typ</option>
                                         <option value="newsletter">Newsletter</option>
                                         <option value="notification">Powiadomienie</option>
+                                        <option value="reminder">Przypomnienie</option>
                                     </select>
                                 </div>
                             </div>
@@ -223,6 +228,14 @@
                             </div>
                         </div>
                         
+                        <!-- Variables Info -->
+                        <div class="mb-3">
+                            <div class="alert alert-secondary">
+                                <i class="fas fa-code me-2"></i>
+                                <span id="variablesInfo">Wybierz typ szablonu aby zobaczyć dostępne zmienne</span>
+                            </div>
+                        </div>
+                        
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
                             <strong>Interwał czasowy:</strong> E-mail będzie wysyłany co określoną ilość czasu<br>
@@ -260,6 +273,9 @@
             
             // Sync checkbox value
             syncCheckboxValue();
+            
+            // Initialize variables info
+            updateAvailableVariables();
         });
         
         // Function to sync checkbox value
@@ -291,6 +307,31 @@
             }
         }
         
+        // Function to update available variables based on template type
+        function updateAvailableVariables() {
+            const templateType = document.getElementById('schedule_template_type').value;
+            const variablesInfo = document.getElementById('variablesInfo');
+            
+            if (!variablesInfo) return;
+            
+            let variables = '';
+            switch (templateType) {
+                case 'newsletter':
+                    variables = 'Dostępne zmienne: {{name}}, {{email}}, {{unsubscribe_url}}, {{delete_account_url}}';
+                    break;
+                case 'notification':
+                    variables = 'Dostępne zmienne: {{name}}, {{email}}, {{unsubscribe_url}}, {{delete_account_url}}';
+                    break;
+                case 'reminder':
+                    variables = 'Dostępne zmienne: {{name}}, {{email}}, {{reminder_type}}, {{reminder_message}}, {{weekly_stats}}, {{monthly_stats}}, {{unsubscribe_url}}, {{delete_account_url}}';
+                    break;
+                default:
+                    variables = 'Wybierz typ szablonu aby zobaczyć dostępne zmienne';
+            }
+            
+            variablesInfo.textContent = variables;
+        }
+        
         // Function to show add schedule modal
         function showAddScheduleModal() {
             document.getElementById('scheduleModalTitle').innerHTML = '<i class="fas fa-clock me-2"></i>Dodaj Harmonogram';
@@ -299,6 +340,9 @@
             
             // Reset fields visibility
             toggleScheduleFields();
+            
+            // Update variables info
+            updateAvailableVariables();
             
             // Set checkbox to active by default
             document.getElementById('schedule_is_active').checked = true;
@@ -335,6 +379,9 @@
                         }
                         
                         toggleScheduleFields();
+                        
+                        // Update variables info
+                        updateAvailableVariables();
                         
                         const modal = new bootstrap.Modal(document.getElementById('scheduleModal'));
                         modal.show();
@@ -475,6 +522,31 @@
             }
         }
         
+        // Function to check schedules
+        function checkSchedules() {
+            if (confirm('Czy na pewno chcesz sprawdzić i uruchomić harmonogramy, które są gotowe do wykonania?')) {
+                fetch('/admin/api/check-schedules', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        // Reload schedules after a short delay to show updated times
+                        setTimeout(() => {
+                            loadSchedules();
+                        }, 2000);
+                    } else {
+                        showNotification('Błąd podczas sprawdzania harmonogramów: ' + (data.error || 'Nieznany błąd'), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking schedules:', error);
+                    showNotification('Błąd podczas sprawdzania harmonogramów: ' + error.message, 'error');
+                });
+            }
+        }
+        
         // Function to load schedules
         function loadSchedules() {
             fetch('/admin/api/email-schedules')
@@ -595,7 +667,8 @@
         function getTemplateTypeText(type) {
             const types = {
                 'newsletter': 'Newsletter',
-                'notification': 'Powiadomienie'
+                'notification': 'Powiadomienie',
+                'reminder': 'Przypomnienie'
             };
             return types[type] || type;
         }

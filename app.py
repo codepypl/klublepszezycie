@@ -1285,6 +1285,23 @@ def api_delete_recipient_group(group_id):
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/admin/api/check-schedules', methods=['POST'])
+@login_required
+def api_check_schedules():
+    """Manually check and run due schedules"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        check_and_run_schedules()
+        return jsonify({
+            'success': True, 
+            'message': 'Sprawdzanie harmonogramów zostało uruchomione'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # Admin routes
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
@@ -3474,6 +3491,45 @@ def execute_email_schedule(schedule):
                 
                 return f"Wysłano powiadomienie do {sent_count}/{len(subscribers)} subskrybentów"
         
+        elif schedule.template_type == 'reminder':
+            # Send reminder emails based on schedule type
+            if schedule.schedule_type == 'event_based':
+                if schedule.trigger_event == 'event_reminder':
+                    return send_event_reminders()
+                elif schedule.trigger_event == 'weekly_summary':
+                    return send_weekly_summary_reminder()
+                elif schedule.trigger_event == 'monthly_summary':
+                    return send_monthly_summary_reminder()
+                else:
+                    return f"Nieznane zdarzenie dla przypomnienia: {schedule.trigger_event}"
+            else:
+                # For interval/cron schedules, send general reminders
+                subscribers = email_service.get_approved_subscribers()
+                if not subscribers:
+                    return "Brak aktywnych subskrybentów"
+                
+                sent_count = 0
+                for subscriber in subscribers:
+                    try:
+                        result = email_service.send_template_email(
+                            subscriber.email, 
+                            'reminder',
+                            {
+                                'name': subscriber.name or 'Użytkowniku',
+                                'email': subscriber.email,
+                                'reminder_type': 'Ogólne przypomnienie',
+                                'reminder_message': 'To jest automatyczne przypomnienie o aktywności w klubie',
+                                'unsubscribe_url': url_for('unsubscribe_email', token=subscriber.unsubscribe_token, _external=True),
+                                'delete_account_url': url_for('delete_account', token=subscriber.delete_token, _external=True)
+                            }
+                        )
+                        if result:
+                            sent_count += 1
+                    except Exception as e:
+                        print(f"Error sending reminder to {subscriber.email}: {str(e)}")
+                
+                return f"Wysłano przypomnienia do {sent_count}/{len(subscribers)} subskrybentów"
+        
         else:
             return f"Nieznany typ szablonu: {schedule.template_type}"
             
@@ -3557,6 +3613,141 @@ def send_monthly_summary_notification():
         
     except Exception as e:
         return f"Błąd podczas wysyłania podsumowania miesiąca: {str(e)}"
+
+def send_weekly_summary_reminder():
+    """Send weekly summary reminder to all subscribers"""
+    try:
+        subscribers = email_service.get_approved_subscribers()
+        if not subscribers:
+            return "Brak aktywnych subskrybentów"
+        
+        # Get weekly statistics for reminder
+        week_start = datetime.utcnow() - timedelta(days=7)
+        new_members = Registration.query.filter(
+            Registration.created_at >= week_start,
+            Registration.status == 'approved'
+        ).count()
+        
+        upcoming_events = 0  # Placeholder - można dodać logikę dla wydarzeń
+        
+        sent_count = 0
+        for subscriber in subscribers:
+            try:
+                result = email_service.send_template_email(
+                    subscriber.email, 
+                    'reminder',
+                    {
+                        'name': subscriber.name or 'Użytkowniku',
+                        'email': subscriber.email,
+                        'reminder_type': 'Podsumowanie tygodnia',
+                        'reminder_message': f'W tym tygodniu dołączyło {new_members} nowych członków. Sprawdź co nowego w klubie!',
+                        'weekly_stats': f"Nowi członkowie: {new_members}, Nadchodzące wydarzenia: {upcoming_events}",
+                        'unsubscribe_url': url_for('unsubscribe_email', token=subscriber.unsubscribe_token, _external=True),
+                        'delete_account_url': url_for('delete_account', token=subscriber.delete_token, _external=True)
+                    }
+                )
+                if result:
+                    sent_count += 1
+            except Exception as e:
+                print(f"Error sending weekly reminder to {subscriber.email}: {str(e)}")
+        
+        return f"Wysłano przypomnienia tygodniowe do {sent_count}/{len(subscribers)} subskrybentów"
+        
+    except Exception as e:
+        return f"Błąd podczas wysyłania przypomnienia tygodniowego: {str(e)}"
+
+def send_monthly_summary_reminder():
+    """Send monthly summary reminder to all subscribers"""
+    try:
+        subscribers = email_service.get_approved_subscribers()
+        if not subscribers:
+            return "Brak aktywnych subskrybentów"
+        
+        # Get monthly statistics for reminder
+        month_start = datetime.utcnow() - timedelta(days=30)
+        new_members = Registration.query.filter(
+            Registration.created_at >= month_start,
+            Registration.status == 'approved'
+        ).count()
+        
+        total_members = Registration.query.filter_by(status='approved').count()
+        
+        sent_count = 0
+        for subscriber in subscribers:
+            try:
+                result = email_service.send_template_email(
+                    subscriber.email, 
+                    'reminder',
+                    {
+                        'name': subscriber.name or 'Użytkowniku',
+                        'email': subscriber.email,
+                        'reminder_type': 'Podsumowanie miesiąca',
+                        'reminder_message': f'W tym miesiącu klub rośnie! Sprawdź co nowego i bądź aktywny.',
+                        'monthly_stats': f"Nowi członkowie: {new_members}, Łącznie w klubie: {total_members} osób",
+                        'unsubscribe_url': url_for('unsubscribe_email', token=subscriber.unsubscribe_token, _external=True),
+                        'delete_account_url': url_for('delete_account', token=subscriber.delete_token, _external=True)
+                    }
+                )
+                if result:
+                    sent_count += 1
+            except Exception as e:
+                print(f"Error sending monthly reminder to {subscriber.email}: {str(e)}")
+        
+        return f"Wysłano przypomnienia miesięczne do {sent_count}/{len(subscribers)} subskrybentów"
+        
+    except Exception as e:
+        return f"Błąd podczas wysyłania przypomnienia miesięcznego: {str(e)}"
+
+def check_and_run_schedules():
+    """Check and run due email schedules - to be called by cron job"""
+    try:
+        print(f"Checking schedules at {datetime.utcnow()}")
+        
+        # Find schedules that are due to run
+        now = datetime.utcnow()
+        due_schedules = EmailSchedule.query.filter(
+            EmailSchedule.is_active == True,
+            EmailSchedule.next_run <= now
+        ).all()
+        
+        if not due_schedules:
+            print("No schedules due to run")
+            return
+        
+        print(f"Found {len(due_schedules)} schedules to run")
+        
+        for schedule in due_schedules:
+            try:
+                print(f"Executing schedule: {schedule.name} (ID: {schedule.id})")
+                
+                # Execute the schedule
+                result = execute_email_schedule(schedule)
+                print(f"Schedule {schedule.name} result: {result}")
+                
+                # Update last_run and next_run
+                schedule.last_run = now
+                if schedule.schedule_type in ['interval', 'cron']:
+                    if schedule.schedule_type == 'interval':
+                        schedule.next_run = calculate_next_run_interval(
+                            schedule.interval_value, schedule.interval_unit
+                        )
+                    elif schedule.schedule_type == 'cron':
+                        schedule.next_run = calculate_next_run_cron(
+                            schedule.cron_expression
+                        )
+                
+                schedule.updated_at = now
+                
+            except Exception as e:
+                print(f"Error executing schedule {schedule.name}: {str(e)}")
+        
+        # Commit all changes
+        db.session.commit()
+        print(f"Successfully processed {len(due_schedules)} schedules")
+        
+    except Exception as e:
+        print(f"Error in check_and_run_schedules: {str(e)}")
+        db.session.rollback()
 
 # Helper functions for email campaigns
 def calculate_filtered_recipients_count(filters_json):
