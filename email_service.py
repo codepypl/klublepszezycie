@@ -18,7 +18,7 @@ from typing import Dict, List, Optional
 import logging
 
 from flask import current_app, render_template_string, url_for
-from models import db, EmailTemplate, EmailSubscription, EmailLog
+from models import db, EmailTemplate, EmailSubscription, EmailLog, EmailSchedule, CustomEmailCampaign, EmailRecipientGroup
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -165,6 +165,9 @@ class EmailService:
                 logger.error(f"Template '{template_name}' not found or inactive")
                 return False
             
+            # Debug: log which template was found
+            logger.info(f"Found template: ID={template.id}, name='{template.name}', subject='{template.subject}', type='{template.template_type}'")
+            
             # Replace variables in content
             html_content = self._replace_variables(template.html_content, variables or {})
             text_content = self._replace_variables(template.text_content, variables or {}) if template.text_content else None
@@ -185,7 +188,16 @@ class EmailService:
             'unsubscribe_url': self._generate_unsubscribe_url(email),
             'delete_account_url': self._generate_delete_account_url(email)
         }
-        return self.send_template_email(email, 'welcome', variables)
+        
+        # Debug: log which template is being used
+        logger.info(f"send_welcome_email called for {email} with name {name}")
+        
+        result = self.send_template_email(email, 'welcome', variables)
+        
+        # Debug: log result
+        logger.info(f"send_welcome_email result for {email}: {result}")
+        
+        return result
     
     def send_reminder_email(self, email: str, name: str, event_type: str, 
                            event_date: datetime, event_details: str = None) -> bool:
@@ -425,6 +437,50 @@ class EmailService:
         except Exception as e:
             logger.error(f"Bulk email failed: {str(e)}")
             return {'success': False, 'message': str(e)}
+    
+    def get_approved_subscribers_count(self) -> int:
+        """
+        Get count of approved subscribers
+        
+        Returns:
+            int: Number of approved subscribers
+        """
+        try:
+            approved_subscribers = self.get_approved_subscribers()
+            return len(approved_subscribers)
+        except Exception as e:
+            logger.error(f"Error getting approved subscribers count: {str(e)}")
+            return 0
+    
+    def send_custom_email(self, to_email: str, subject: str, html_content: str, 
+                          text_content: str = None, variables: Dict = None) -> bool:
+        """
+        Send custom email with provided content
+        
+        Args:
+            to_email: Recipient email address
+            subject: Email subject
+            html_content: HTML version of email
+            text_content: Plain text version (optional)
+            variables: Variables to replace in content
+            
+        Returns:
+            bool: True if email sent successfully, False otherwise
+        """
+        try:
+            # Replace variables in content if provided
+            if variables:
+                html_content = self._replace_variables(html_content, variables)
+                if text_content:
+                    text_content = self._replace_variables(text_content, variables)
+                subject = self._replace_variables(subject, variables)
+            
+            # Send email
+            return self.send_email(to_email, subject, html_content, text_content)
+            
+        except Exception as e:
+            logger.error(f"Failed to send custom email to {to_email}: {str(e)}")
+            return False
 
 # Global email service instance
 email_service = EmailService()

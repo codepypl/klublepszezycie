@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime, timedelta
+import json
 
 db = SQLAlchemy()
 
@@ -161,6 +162,75 @@ class EmailLog(db.Model):
     sent_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     template = db.relationship('EmailTemplate', backref='email_logs')
+
+class EmailSchedule(db.Model):
+    __tablename__ = 'email_schedules'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    template_type = db.Column(db.String(50), nullable=False)  # newsletter, notification
+    schedule_type = db.Column(db.String(20), nullable=False)  # interval, cron, event_based
+    schedule_config = db.Column(db.Text)  # JSON string with schedule configuration
+    is_active = db.Column(db.Boolean, default=True)
+    last_run = db.Column(db.DateTime)
+    next_run = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # For event-based schedules
+    trigger_event = db.Column(db.String(100))  # new_event, new_member, etc.
+    
+    # For interval schedules
+    interval_value = db.Column(db.Integer)  # number of units
+    interval_unit = db.Column(db.String(20))  # minutes, hours, days, weeks, months
+    
+    # For cron schedules
+    cron_expression = db.Column(db.String(100))  # "0 9 * * 1" (every Monday at 9 AM)
+
+class CustomEmailCampaign(db.Model):
+    __tablename__ = 'custom_email_campaigns'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    subject = db.Column(db.String(200), nullable=False)
+    html_content = db.Column(db.Text)
+    text_content = db.Column(db.Text)
+    
+    # Recipient selection
+    recipient_type = db.Column(db.String(20), nullable=False)  # specific, filtered, all
+    recipient_emails = db.Column(db.Text)  # JSON array of specific emails
+    recipient_filters = db.Column(db.Text)  # JSON with filter criteria
+    
+    # Scheduling
+    send_type = db.Column(db.String(20), default='immediate')  # immediate, scheduled
+    scheduled_at = db.Column(db.DateTime)
+    
+    # Status
+    status = db.Column(db.String(20), default='draft')  # draft, scheduled, sending, completed, cancelled
+    sent_count = db.Column(db.Integer, default=0)
+    total_count = db.Column(db.Integer, default=0)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    sent_at = db.Column(db.DateTime)
+
+class EmailRecipientGroup(db.Model):
+    __tablename__ = 'email_recipient_groups'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    
+    # Group criteria
+    criteria_type = db.Column(db.String(20), nullable=False)  # registration_date, status, custom
+    criteria_config = db.Column(db.Text)  # JSON with criteria configuration
+    
+    # Members count (cached)
+    member_count = db.Column(db.Integer, default=0)
+    
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
         return f'<EmailLog {self.email} - {self.subject}>'

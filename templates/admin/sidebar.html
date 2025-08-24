@@ -60,6 +60,24 @@
             </a>
         </li>
         <li class="nav-item">
+            <a href="{{ url_for('admin_email_schedules') }}" class="nav-link {% if request.endpoint == 'admin_email_schedules' %}active{% endif %}">
+                <i class="fas fa-clock"></i>
+                Harmonogram e-maili
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('admin_email_campaigns') }}" class="nav-link {% if request.endpoint == 'admin_email_campaigns' %}active{% endif %}">
+                <i class="fas fa-bullhorn"></i>
+                Kampanie e-mail
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('admin_recipient_groups') }}" class="nav-link {% if request.endpoint == 'admin_recipient_groups' %}active{% endif %}">
+                <i class="fas fa-users"></i>
+                Grupy odbiorców
+            </a>
+        </li>
+        <li class="nav-item">
             <a href="{{ url_for('admin_registrations') }}" class="nav-link {% if request.endpoint == 'admin_registrations' %}active{% endif %}">
                 <i class="fas fa-users"></i>
                 Rejestracje

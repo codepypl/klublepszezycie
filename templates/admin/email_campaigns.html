@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kampanie E-mail - Panel Administratora</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}?v={{ range(1, 1000) | random }}" rel="stylesheet">
+</head>
+<body class="admin-body">
+    <div class="admin-container">
+        <div class="admin-sidebar" id="sidebar">
+            {% include 'admin/sidebar.html' %}
+        </div>
+        <div class="admin-content">
+            <div class="admin-header">
+                <h1><i class="fas fa-bullhorn me-2"></i>Kampanie E-mail</h1>
+                <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
+                    <i class="fas fa-sign-out-alt me-2"></i>Wyloguj
+                </a>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-2">Własne kampanie e-mail</h5>
+                            <p class="text-muted mb-0">Twórz i zarządzaj kampaniami e-mail z zaawansowanymi opcjami</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn admin-btn" onclick="showAddCampaignModal()">
+                                <i class="fas fa-plus me-2"></i>Nowa Kampania
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Lista Kampanii</h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="table-responsive">
+                        <table class="table admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Nazwa</th>
+                                    <th>Temat</th>
+                                    <th>Odbiorcy</th>
+                                    <th>Status</th>
+                                    <th>Planowanie</th>
+                                    <th>Wysłane</th>
+                                    <th>Utworzona</th>
+                                    <th>Akcje</th>
+                                </tr>
+                            </thead>
+                            <tbody id="campaignsTableBody">
+                                <tr><td colspan="8" class="text-center text-muted">Ładowanie kampanii...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCampaigns();
+        });
+        
+        function loadCampaigns() {
+            fetch('/admin/api/email-campaigns')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayCampaigns(data.campaigns);
+                    } else {
+                        showNotification('Błąd podczas ładowania kampanii: ' + (data.error || 'Nieznany błąd'), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading campaigns:', error);
+                    showNotification('Błąd podczas ładowania kampanii: ' + error.message, 'error');
+                });
+        }
+        
+        function displayCampaigns(campaigns) {
+            const tbody = document.getElementById('campaignsTableBody');
+            tbody.innerHTML = '';
+            
+            if (campaigns.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Brak kampanii</td></tr>';
+                return;
+            }
+            
+            campaigns.forEach(campaign => {
+                const row = document.createElement('tr');
+                const createdDate = campaign.created_at ? new Date(campaign.created_at).toLocaleDateString('pl-PL') : 'Brak';
+                
+                row.innerHTML = `
+                    <td><strong>${campaign.name}</strong></td>
+                    <td>${campaign.subject}</td>
+                    <td>${campaign.recipient_type}</td>
+                    <td><span class="badge bg-secondary">${campaign.status}</span></td>
+                    <td>${campaign.send_type}</td>
+                    <td>${campaign.sent_count}/${campaign.total_count}</td>
+                    <td>${createdDate}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-primary" onclick="editCampaign(${campaign.id})" title="Edytuj">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="deleteCampaign(${campaign.id}, '${campaign.name}')" title="Usuń">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        function showAddCampaignModal() {
+            alert('Funkcjonalność w trakcie implementacji');
+        }
+        
+        function editCampaign(id) {
+            alert('Funkcjonalność w trakcie implementacji');
+        }
+        
+        function deleteCampaign(id, name) {
+            if (confirm(`Czy na pewno chcesz usunąć kampanię "${name}"?`)) {
+                fetch(`/admin/api/email-campaigns/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        loadCampaigns();
+                    } else {
+                        showNotification('Błąd podczas usuwania kampanii: ' + (data.error || 'Nieznany błąd'), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting campaign:', error);
+                    showNotification('Błąd podczas usuwania kampanii: ' + error.message, 'error');
+                });
+            }
+        }
+        
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

@@ -87,6 +87,10 @@
                                 <i class="fas fa-envelope me-2"></i>
                                 Email Własny
                             </button>
+                            <button class="btn admin-btn-secondary" onclick="createDefaultTemplates()">
+                                <i class="fas fa-magic me-2"></i>
+                                Utwórz Domyślne Szablony
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -822,6 +826,32 @@
         }
         
 
+        
+        // Function to create default templates
+        function createDefaultTemplates() {
+            if (confirm('Czy na pewno chcesz utworzyć domyślne szablony e-mail? To może nadpisać istniejące szablony.')) {
+                fetch('/admin/api/create-default-templates', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        // Reload templates list
+                        loadTemplates();
+                    } else {
+                        showNotification('Błąd podczas tworzenia szablonów: ' + (data.error || 'Nieznany błąd'), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error creating default templates:', error);
+                    showNotification('Błąd podczas tworzenia szablonów: ' + error.message, 'error');
+                });
+            }
+        }
         
         // Function to send custom email
         function sendCustomEmail() {

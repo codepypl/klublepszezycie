@@ -6,13 +6,14 @@ from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 import os
 import uuid
+import json
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
 # Import models and config
-from models import db, User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, Registration, FAQ, SEOSettings, EventSchedule, Page, EmailTemplate, EmailSubscription, EmailLog
+from models import db, User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, Registration, FAQ, SEOSettings, EventSchedule, Page, EmailTemplate, EmailSubscription, EmailLog, EmailSchedule, CustomEmailCampaign, EmailRecipientGroup
 from config import config
 from email_service import email_service
 
@@ -525,6 +526,764 @@ def register():
             'success': False,
             'error': 'Wystąpił błąd podczas rejestracji. Spróbuj ponownie.'
         }), 500
+
+# Admin routes for email management
+@app.route('/admin/email-schedules')
+@login_required
+def admin_email_schedules():
+    """Admin panel for email schedules"""
+    if not current_user.is_admin:
+        return redirect(url_for('index'))
+    
+    schedules = EmailSchedule.query.order_by(EmailSchedule.created_at.desc()).all()
+    return render_template('admin/email_schedules.html', schedules=schedules)
+
+# API endpoints for email schedules
+@app.route('/admin/api/email-schedules', methods=['GET'])
+@login_required
+def api_get_email_schedules():
+    """Get all email schedules"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        schedules = EmailSchedule.query.order_by(EmailSchedule.created_at.desc()).all()
+        schedules_data = []
+        
+        for schedule in schedules:
+            schedule_dict = {
+                'id': schedule.id,
+                'name': schedule.name,
+                'template_type': schedule.template_type,
+                'schedule_type': schedule.schedule_type,
+                'is_active': schedule.is_active,
+                'last_run': schedule.last_run.isoformat() if schedule.last_run else None,
+                'next_run': schedule.next_run.isoformat() if schedule.next_run else None,
+                'created_at': schedule.created_at.isoformat(),
+                'updated_at': schedule.updated_at.isoformat()
+            }
+            
+            # Add specific fields based on schedule type
+            if schedule.schedule_type == 'interval':
+                schedule_dict['interval_value'] = schedule.interval_value
+                schedule_dict['interval_unit'] = schedule.interval_unit
+            elif schedule.schedule_type == 'cron':
+                schedule_dict['cron_expression'] = schedule.cron_expression
+            elif schedule.schedule_type == 'event_based':
+                schedule_dict['trigger_event'] = schedule.trigger_event
+            
+            schedules_data.append(schedule_dict)
+        
+        return jsonify({'success': True, 'schedules': schedules_data})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/email-schedules', methods=['POST'])
+@login_required
+def api_create_email_schedule():
+    """Create new email schedule"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        name = request.form.get('name')
+        template_type = request.form.get('template_type')
+        schedule_type = request.form.get('schedule_type')
+        is_active = request.form.get('is_active') == '1'
+        
+        if not all([name, template_type, schedule_type]):
+            return jsonify({'success': False, 'error': 'Wszystkie pola są wymagane'}), 400
+        
+        # Create schedule object
+        schedule = EmailSchedule(
+            name=name,
+            template_type=template_type,
+            schedule_type=schedule_type,
+            is_active=is_active
+        )
+        
+        # Set specific fields based on schedule type
+        if schedule_type == 'interval':
+            interval_value = request.form.get('interval_value', type=int)
+            interval_unit = request.form.get('interval_unit')
+            if not interval_value or not interval_unit:
+                return jsonify({'success': False, 'error': 'Wartość i jednostka interwału są wymagane'}), 400
+            
+            schedule.interval_value = interval_value
+            schedule.interval_unit = interval_unit
+            
+            # Calculate next run for interval schedules
+            schedule.next_run = calculate_next_run_interval(interval_value, interval_unit)
+            
+        elif schedule_type == 'cron':
+            cron_expression = request.form.get('cron_expression')
+            if not cron_expression:
+                return jsonify({'success': False, 'error': 'Wyrażenie Cron jest wymagane'}), 400
+            
+            schedule.cron_expression = cron_expression
+            
+            # Calculate next run for cron schedules
+            schedule.next_run = calculate_next_run_cron(cron_expression)
+            
+        elif schedule_type == 'event_based':
+            trigger_event = request.form.get('trigger_event')
+            if not trigger_event:
+                return jsonify({'success': False, 'error': 'Zdarzenie wyzwalające jest wymagane'}), 400
+            
+            schedule.trigger_event = trigger_event
+            # Event-based schedules don't have next_run until triggered
+        
+        db.session.add(schedule)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Harmonogram "{name}" został utworzony pomyślnie'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/email-schedules/<int:schedule_id>', methods=['GET'])
+@login_required
+def api_get_email_schedule(schedule_id):
+    """Get specific email schedule"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        schedule = EmailSchedule.query.get_or_404(schedule_id)
+        
+        schedule_data = {
+            'id': schedule.id,
+            'name': schedule.name,
+            'template_type': schedule.template_type,
+            'schedule_type': schedule.schedule_type,
+            'is_active': schedule.is_active,
+            'last_run': schedule.last_run.isoformat() if schedule.last_run else None,
+            'next_run': schedule.next_run.isoformat() if schedule.next_run else None,
+            'created_at': schedule.created_at.isoformat(),
+            'updated_at': schedule.updated_at.isoformat()
+        }
+        
+        # Add specific fields based on schedule type
+        if schedule.schedule_type == 'interval':
+            schedule_data['interval_value'] = schedule.interval_value
+            schedule_data['interval_unit'] = schedule.interval_unit
+        elif schedule.schedule_type == 'cron':
+            schedule_data['cron_expression'] = schedule.cron_expression
+        elif schedule.schedule_type == 'event_based':
+            schedule_data['trigger_event'] = schedule.trigger_event
+        
+        return jsonify({'success': True, 'schedule': schedule_data})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/email-schedules/<int:schedule_id>', methods=['PUT'])
+@login_required
+def api_update_email_schedule(schedule_id):
+    """Update email schedule"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        schedule = EmailSchedule.query.get_or_404(schedule_id)
+        
+        name = request.form.get('name')
+        template_type = request.form.get('template_type')
+        schedule_type = request.form.get('schedule_type')
+        is_active = request.form.get('is_active') == '1'
+        
+        if not all([name, template_type, schedule_type]):
+            return jsonify({'success': False, 'error': 'Wszystkie pola są wymagane'}), 400
+        
+        # Update basic fields
+        schedule.name = name
+        schedule.template_type = template_type
+        schedule.is_active = is_active
+        
+        # Handle schedule type change
+        if schedule.schedule_type != schedule_type:
+            schedule.schedule_type = schedule_type
+            
+            # Clear old specific fields
+            schedule.interval_value = None
+            schedule.interval_unit = None
+            schedule.cron_expression = None
+            schedule.trigger_event = None
+        
+        # Set specific fields based on schedule type
+        if schedule_type == 'interval':
+            interval_value = request.form.get('interval_value', type=int)
+            interval_unit = request.form.get('interval_unit')
+            if not interval_value or not interval_unit:
+                return jsonify({'success': False, 'error': 'Wartość i jednostka interwału są wymagane'}), 400
+            
+            schedule.interval_value = interval_value
+            schedule.interval_unit = interval_unit
+            
+            # Recalculate next run
+            schedule.next_run = calculate_next_run_interval(interval_value, interval_unit)
+            
+        elif schedule_type == 'cron':
+            cron_expression = request.form.get('cron_expression')
+            if not cron_expression:
+                return jsonify({'success': False, 'error': 'Wyrażenie Cron jest wymagane'}), 400
+            
+            schedule.cron_expression = cron_expression
+            
+            # Recalculate next run
+            schedule.next_run = calculate_next_run_cron(cron_expression)
+            
+        elif schedule_type == 'event_based':
+            trigger_event = request.form.get('trigger_event')
+            if not trigger_event:
+                return jsonify({'success': False, 'error': 'Zdarzenie wyzwalające jest wymagane'}), 400
+            
+            schedule.trigger_event = trigger_event
+            # Event-based schedules don't have next_run until triggered
+        
+        schedule.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Harmonogram "{name}" został zaktualizowany pomyślnie'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/email-schedules/<int:schedule_id>', methods=['DELETE'])
+@login_required
+def api_delete_email_schedule(schedule_id):
+    """Delete email schedule"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        schedule = EmailSchedule.query.get_or_404(schedule_id)
+        name = schedule.name
+        
+        db.session.delete(schedule)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Harmonogram "{name}" został usunięty pomyślnie'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/email-schedules/<int:schedule_id>/toggle', methods=['POST'])
+@login_required
+def api_toggle_email_schedule(schedule_id):
+    """Toggle email schedule status"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        schedule = EmailSchedule.query.get_or_404(schedule_id)
+        schedule.is_active = not schedule.is_active
+        
+        if schedule.is_active and schedule.schedule_type in ['interval', 'cron']:
+            # Recalculate next run for active schedules
+            if schedule.schedule_type == 'interval':
+                schedule.next_run = calculate_next_run_interval(schedule.interval_value, schedule.interval_unit)
+            elif schedule.schedule_type == 'cron':
+                schedule.next_run = calculate_next_run_cron(schedule.cron_expression)
+        
+        schedule.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        status_text = 'aktywowany' if schedule.is_active else 'deaktywowany'
+        return jsonify({
+            'success': True, 
+            'message': f'Harmonogram "{schedule.name}" został {status_text}'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/email-schedules/<int:schedule_id>/run', methods=['POST'])
+@login_required
+def api_run_email_schedule(schedule_id):
+    """Run email schedule manually"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        schedule = EmailSchedule.query.get_or_404(schedule_id)
+        
+        if not schedule.is_active:
+            return jsonify({'success': False, 'error': 'Harmonogram jest nieaktywny'}), 400
+        
+        # Execute the schedule
+        result = execute_email_schedule(schedule)
+        
+        # Update last_run and next_run
+        schedule.last_run = datetime.utcnow()
+        if schedule.schedule_type in ['interval', 'cron']:
+            if schedule.schedule_type == 'interval':
+                schedule.next_run = calculate_next_run_interval(schedule.interval_value, schedule.interval_unit)
+            elif schedule.schedule_type == 'cron':
+                schedule.next_run = calculate_next_run_cron(schedule.cron_expression)
+        
+        schedule.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Harmonogram "{schedule.name}" został uruchomiony pomyślnie. {result}'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/email-schedules/run-all', methods=['POST'])
+@login_required
+def api_run_all_email_schedules():
+    """Run all active email schedules"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        active_schedules = EmailSchedule.query.filter_by(is_active=True).all()
+        
+        if not active_schedules:
+            return jsonify({'success': False, 'error': 'Brak aktywnych harmonogramów'}), 400
+        
+        results = []
+        for schedule in active_schedules:
+            try:
+                result = execute_email_schedule(schedule)
+                results.append(f"{schedule.name}: {result}")
+                
+                # Update last_run and next_run
+                schedule.last_run = datetime.utcnow()
+                if schedule.schedule_type in ['interval', 'cron']:
+                    if schedule.schedule_type == 'interval':
+                        schedule.next_run = calculate_next_run_interval(schedule.interval_value, schedule.interval_unit)
+                    elif schedule.schedule_type == 'cron':
+                        schedule.next_run = calculate_next_run_cron(schedule.cron_expression)
+                
+                schedule.updated_at = datetime.utcnow()
+                
+            except Exception as e:
+                results.append(f"{schedule.name}: Błąd - {str(e)}")
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Uruchomiono {len(active_schedules)} harmonogramów. Wyniki: {" | ".join(results)}'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/email-campaigns')
+@login_required
+def admin_email_campaigns():
+    """Admin panel for email campaigns"""
+    if not current_user.is_admin:
+        return redirect(url_for('index'))
+    
+    campaigns = CustomEmailCampaign.query.order_by(CustomEmailCampaign.created_at.desc()).all()
+    return render_template('admin/email_campaigns.html', campaigns=campaigns)
+
+# API endpoints for email campaigns
+@app.route('/admin/api/email-campaigns', methods=['GET'])
+@login_required
+def api_get_email_campaigns():
+    """Get all email campaigns"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        campaigns = CustomEmailCampaign.query.order_by(CustomEmailCampaign.created_at.desc()).all()
+        campaigns_data = []
+        
+        for campaign in campaigns:
+            campaign_dict = {
+                'id': campaign.id,
+                'name': campaign.name,
+                'subject': campaign.subject,
+                'recipient_type': campaign.recipient_type,
+                'send_type': campaign.send_type,
+                'status': campaign.status,
+                'sent_count': campaign.sent_count,
+                'total_count': campaign.total_count,
+                'created_at': campaign.created_at.isoformat(),
+                'updated_at': campaign.updated_at.isoformat()
+            }
+            
+            # Add specific fields based on recipient type
+            if campaign.recipient_type == 'specific':
+                campaign_dict['recipient_emails'] = campaign.recipient_emails
+            elif campaign.recipient_type == 'filtered':
+                campaign_dict['recipient_filters'] = campaign.recipient_filters
+            
+            # Add scheduling info
+            if campaign.send_type == 'scheduled':
+                campaign_dict['scheduled_at'] = campaign.scheduled_at.isoformat() if campaign.scheduled_at else None
+            
+            campaigns_data.append(campaign_dict)
+        
+        return jsonify({'success': True, 'campaigns': campaigns_data})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/email-campaigns', methods=['POST'])
+@login_required
+def api_create_email_campaign():
+    """Create new email campaign"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        name = request.form.get('name')
+        subject = request.form.get('subject')
+        html_content = request.form.get('html_content')
+        text_content = request.form.get('text_content')
+        recipient_type = request.form.get('recipient_type')
+        send_type = request.form.get('send_type')
+        
+        if not all([name, subject, html_content, recipient_type, send_type]):
+            return jsonify({'success': False, 'error': 'Wszystkie wymagane pola muszą być wypełnione'}), 400
+        
+        # Create campaign object
+        campaign = CustomEmailCampaign(
+            name=name,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+            recipient_type=recipient_type,
+            send_type=send_type,
+            status='draft'
+        )
+        
+        # Set recipient data based on type
+        if recipient_type == 'specific':
+            recipient_emails = request.form.get('recipient_emails')
+            if not recipient_emails:
+                return jsonify({'success': False, 'error': 'Adresy e-mail są wymagane dla konkretnych odbiorców'}), 400
+            
+            # Parse emails and store as JSON
+            emails_list = [email.strip() for email in recipient_emails.split('\n') if email.strip()]
+            campaign.recipient_emails = json.dumps(emails_list)
+            campaign.total_count = len(emails_list)
+            
+        elif recipient_type == 'filtered':
+            recipient_filters = request.form.get('recipient_filters')
+            if recipient_filters:
+                campaign.recipient_filters = recipient_filters
+                # Calculate total count based on filters
+                campaign.total_count = calculate_filtered_recipients_count(recipient_filters)
+            else:
+                campaign.total_count = 0
+                
+        elif recipient_type == 'all':
+            # Count all approved subscribers
+            campaign.total_count = email_service.get_approved_subscribers_count()
+        
+        # Set scheduling if needed
+        if send_type == 'scheduled':
+            scheduled_at = request.form.get('scheduled_at')
+            if scheduled_at:
+                campaign.scheduled_at = datetime.fromisoformat(scheduled_at.replace('T', ' '))
+                campaign.status = 'scheduled'
+        
+        db.session.add(campaign)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Kampania "{name}" została utworzona pomyślnie'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/email-campaigns/<int:campaign_id>', methods=['GET'])
+@login_required
+def api_get_email_campaign(campaign_id):
+    """Get specific email campaign"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        campaign = CustomEmailCampaign.query.get_or_404(campaign_id)
+        
+        campaign_data = {
+            'id': campaign.id,
+            'name': campaign.name,
+            'subject': campaign.subject,
+            'html_content': campaign.html_content,
+            'text_content': campaign.text_content,
+            'recipient_type': campaign.recipient_type,
+            'send_type': campaign.send_type,
+            'status': campaign.status,
+            'sent_count': campaign.sent_count,
+            'total_count': campaign.total_count,
+            'created_at': campaign.created_at.isoformat(),
+            'updated_at': campaign.updated_at.isoformat()
+        }
+        
+        # Add specific fields based on recipient type
+        if campaign.recipient_type == 'specific':
+            campaign_data['recipient_emails'] = campaign.recipient_emails
+        elif campaign.recipient_type == 'filtered':
+            campaign_data['recipient_filters'] = campaign.recipient_filters
+        
+        # Add scheduling info
+        if campaign.send_type == 'scheduled':
+            campaign_data['scheduled_at'] = campaign.scheduled_at.isoformat() if campaign.scheduled_at else None
+        
+        return jsonify({'success': True, 'campaign': campaign_data})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/email-campaigns/<int:campaign_id>', methods=['PUT'])
+@login_required
+def api_update_email_campaign(campaign_id):
+    """Update email campaign"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        campaign = CustomEmailCampaign.query.get_or_404(campaign_id)
+        
+        name = request.form.get('name')
+        subject = request.form.get('subject')
+        html_content = request.form.get('html_content')
+        text_content = request.form.get('text_content')
+        recipient_type = request.form.get('recipient_type')
+        send_type = request.form.get('send_type')
+        
+        if not all([name, subject, html_content, recipient_type, send_type]):
+            return jsonify({'success': False, 'error': 'Wszystkie wymagane pola muszą być wypełnione'}), 400
+        
+        # Update basic fields
+        campaign.name = name
+        campaign.subject = subject
+        campaign.html_content = html_content
+        campaign.text_content = text_content
+        campaign.recipient_type = recipient_type
+        campaign.send_type = send_type
+        
+        # Update recipient data based on type
+        if recipient_type == 'specific':
+            recipient_emails = request.form.get('recipient_emails')
+            if not recipient_emails:
+                return jsonify({'success': False, 'error': 'Adresy e-mail są wymagane dla konkretnych odbiorców'}), 400
+            
+            # Parse emails and store as JSON
+            emails_list = [email.strip() for email in recipient_emails.split('\n') if email.strip()]
+            campaign.recipient_emails = json.dumps(emails_list)
+            campaign.total_count = len(emails_list)
+            
+        elif recipient_type == 'filtered':
+            recipient_filters = request.form.get('recipient_filters')
+            if recipient_filters:
+                campaign.recipient_filters = recipient_filters
+                # Calculate total count based on filters
+                campaign.total_count = calculate_filtered_recipients_count(recipient_filters)
+            else:
+                campaign.total_count = 0
+                
+        elif recipient_type == 'all':
+            # Count all approved subscribers
+            campaign.total_count = email_service.get_approved_subscribers_count()
+        
+        # Update scheduling if needed
+        if send_type == 'scheduled':
+            scheduled_at = request.form.get('scheduled_at')
+            if scheduled_at:
+                campaign.scheduled_at = datetime.fromisoformat(scheduled_at.replace('T', ' '))
+                campaign.status = 'scheduled'
+            else:
+                campaign.status = 'draft'
+        else:
+            campaign.status = 'draft'
+            campaign.scheduled_at = None
+        
+        campaign.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Kampania "{name}" została zaktualizowana pomyślnie'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/email-campaigns/<int:campaign_id>', methods=['DELETE'])
+@login_required
+def api_delete_email_campaign(campaign_id):
+    """Delete email campaign"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        campaign = CustomEmailCampaign.query.get_or_404(campaign_id)
+        name = campaign.name
+        
+        db.session.delete(campaign)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Kampania "{name}" została usunięta pomyślnie'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/email-campaigns/<int:campaign_id>/send', methods=['POST'])
+@login_required
+def api_send_email_campaign(campaign_id):
+    """Send email campaign"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        campaign = CustomEmailCampaign.query.get_or_404(campaign_id)
+        
+        if campaign.status == 'completed':
+            return jsonify({'success': False, 'error': 'Kampania została już wysłana'}), 400
+        
+        # Get recipients based on type
+        recipients = get_campaign_recipients(campaign)
+        if not recipients:
+            return jsonify({'success': False, 'error': 'Brak odbiorców dla tej kampanii'}), 400
+        
+        # Send emails
+        sent_count = 0
+        for recipient in recipients:
+            try:
+                # Prepare variables for template
+                variables = {
+                    'name': recipient.get('name', 'Użytkowniku'),
+                    'email': recipient['email'],
+                    'unsubscribe_url': url_for('unsubscribe_email', token=recipient.get('unsubscribe_token', ''), _external=True),
+                    'delete_account_url': url_for('delete_account', token=recipient.get('delete_token', ''), _external=True)
+                }
+                
+                # Send email using custom content
+                result = email_service.send_custom_email(
+                    to_email=recipient['email'],
+                    subject=campaign.subject,
+                    html_content=campaign.html_content,
+                    text_content=campaign.text_content,
+                    variables=variables
+                )
+                
+                if result:
+                    sent_count += 1
+                    
+            except Exception as e:
+                print(f"Error sending campaign email to {recipient['email']}: {str(e)}")
+        
+        # Update campaign status
+        campaign.status = 'completed'
+        campaign.sent_count = sent_count
+        campaign.sent_at = datetime.utcnow()
+        campaign.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Kampania "{campaign.name}" została wysłana pomyślnie do {sent_count}/{len(recipients)} odbiorców'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/recipient-groups')
+@login_required
+def admin_recipient_groups():
+    """Admin panel for recipient groups"""
+    if not current_user.is_admin:
+        return redirect(url_for('index'))
+    
+    groups = EmailRecipientGroup.query.order_by(EmailRecipientGroup.created_at.desc()).all()
+    return render_template('admin/recipient_groups.html', groups=groups)
+
+# API endpoints for recipient groups
+@app.route('/admin/api/recipient-groups', methods=['GET'])
+@login_required
+def api_get_recipient_groups():
+    """Get all recipient groups"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        groups = EmailRecipientGroup.query.order_by(EmailRecipientGroup.created_at.desc()).all()
+        groups_data = []
+        
+        for group in groups:
+            group_dict = {
+                'id': group.id,
+                'name': group.name,
+                'description': group.description,
+                'criteria_type': group.criteria_type,
+                'member_count': group.member_count,
+                'is_active': group.is_active,
+                'created_at': group.created_at.isoformat(),
+                'updated_at': group.updated_at.isoformat()
+            }
+            
+            # Add criteria configuration if exists
+            if group.criteria_config:
+                group_dict['criteria_config'] = group.criteria_config
+            
+            groups_data.append(group_dict)
+        
+        return jsonify({'success': True, 'groups': groups_data})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/recipient-groups/<int:group_id>', methods=['DELETE'])
+@login_required
+def api_delete_recipient_group(group_id):
+    """Delete recipient group"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        group = EmailRecipientGroup.query.get_or_404(group_id)
+        name = group.name
+        
+        db.session.delete(group)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Grupa "{name}" została usunięta pomyślnie'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # Admin routes
 @app.route('/admin/login', methods=['GET', 'POST'])
@@ -1891,8 +2650,413 @@ def api_test_email_template():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# Admin API for creating default email templates
+@app.route('/admin/api/create-default-templates', methods=['POST'])
+@login_required
+def api_create_default_templates():
+    """Create default email templates if they don't exist"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        created_templates = []
+        
+        # Create welcome template
+        welcome_template = EmailTemplate.query.filter_by(template_type='welcome').first()
+        if not welcome_template:
+            welcome_template = EmailTemplate(
+                name='Email Powitalny',
+                subject='Witamy w Klubie Lepsze Życie! 🎉',
+                html_content='''
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Witamy w Klubie Lepsze Życie</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #28a745; margin-bottom: 10px;">🎉 Witamy w Klubie Lepsze Życie!</h1>
+        <p style="font-size: 18px; color: #666;">Cieszę się, że dołączyłeś do nas!</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: #007bff; margin-top: 0;">Cześć {{name}}!</h2>
+        <p>Dziękujemy za zarejestrowanie się na naszą darmową prezentację. Twoje miejsce zostało zarezerwowane!</p>
+        
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #155724; margin-top: 0;">📅 Co dalej?</h3>
+            <ul style="text-align: left; margin: 0; padding-left: 20px;">
+                <li>Otrzymasz przypomnienie o wydarzeniu na 24h przed</li>
+                <li>Będziesz informowany o nowych wydarzeniach i webinarach</li>
+                <li>Dostaniesz dostęp do ekskluzywnych materiałów</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #856404; margin-top: 0;">🔒 Twoje dane są bezpieczne</h3>
+        <p style="margin-bottom: 10px;">Możesz w każdej chwili:</p>
+        <p style="margin: 5px 0;"><a href="{{unsubscribe_url}}" style="color: #856404;">📧 Zrezygnować z subskrypcji</a></p>
+        <p style="margin: 5px 0;"><a href="{{delete_account_url}}" style="color: #856404;">🗑️ Usunąć swoje konto</a></p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 14px;">
+            Z poważaniem,<br>
+            <strong>Zespół Klubu Lepsze Życie</strong>
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            Ten email został wysłany na adres {{email}}
+        </p>
+    </div>
+</body>
+</html>
+                ''',
+                text_content='''
+Witamy w Klubie Lepsze Życie! 🎉
+
+Cześć {{name}}!
+
+Dziękujemy za zarejestrowanie się na naszą darmową prezentację. Twoje miejsce zostało zarezerwowane!
+
+Co dalej?
+- Otrzymasz przypomnienie o wydarzeniu na 24h przed
+- Będziesz informowany o nowych wydarzeniach i webinarach
+- Dostaniesz dostęp do ekskluzywnych materiałów
+
+Twoje dane są bezpieczne - możesz w każdej chwili:
+- Zrezygnować z subskrypcji: {{unsubscribe_url}}
+- Usunąć swoje konto: {{delete_account_url}}
+
+Z poważaniem,
+Zespół Klubu Lepsze Życie
+
+Ten email został wysłany na adres {{email}}
+                ''',
+                template_type='welcome',
+                variables='name,email,unsubscribe_url,delete_account_url',
+                is_active=True
+            )
+            db.session.add(welcome_template)
+            created_templates.append('welcome')
+        
+        # Create reminder template
+        reminder_template = EmailTemplate.query.filter_by(template_type='reminder').first()
+        if not reminder_template:
+            reminder_template = EmailTemplate(
+                name='Przypomnienie o Wydarzeniu',
+                subject='🔔 Przypomnienie: {{event_type}} - {{event_date}}',
+                html_content='''
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Przypomnienie o Wydarzeniu</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #dc3545; margin-bottom: 10px;">🔔 Przypomnienie o Wydarzeniu</h1>
+        <p style="font-size: 18px; color: #666;">Nie przegap tego wydarzenia!</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: #007bff; margin-top: 0;">Cześć {{name}}!</h2>
+        <p>Przypominamy o nadchodzącym wydarzeniu:</p>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #856404; margin-top: 0;">📅 {{event_type}}</h3>
+            <p style="margin: 5px 0;"><strong>Data:</strong> {{event_date}}</p>
+            <p style="margin: 5px 0;"><strong>Szczegóły:</strong></p>
+            <div style="background-color: white; padding: 10px; border-radius: 3px; margin-top: 10px;">
+                {{event_details}}
+            </div>
+        </div>
+    </div>
+    
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #856404; margin-top: 0;">🔒 Twoje dane są bezpieczne</h3>
+        <p style="margin-bottom: 10px;">Możesz w każdej chwili:</p>
+        <p style="margin: 5px 0;"><a href="{{unsubscribe_url}}" style="color: #856404;">📧 Zrezygnować z subskrypcji</a></p>
+        <p style="margin: 5px 0;"><a href="{{delete_account_url}}" style="color: #856404;">🗑️ Usunąć swoje konto</a></p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 14px;">
+            Z poważaniem,<br>
+            <strong>Zespół Klubu Lepsze Życie</strong>
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            Ten email został wysłany na adres {{email}}
+        </p>
+    </div>
+</body>
+</html>
+                ''',
+                text_content='''
+Przypomnienie o Wydarzeniu 🔔
+
+Cześć {{name}}!
+
+Przypominamy o nadchodzącym wydarzeniu:
+
+{{event_type}}
+Data: {{event_date}}
+
+Szczegóły:
+{{event_details}}
+
+Twoje dane są bezpieczne - możesz w każdej chwili:
+- Zrezygnować z subskrypcji: {{unsubscribe_url}}
+- Usunąć swoje konto: {{delete_account_url}}
+
+Z poważaniem,
+Zespół Klubu Lepsze Życie
+
+Ten email został wysłany na adres {{email}}
+                ''',
+                template_type='reminder',
+                variables='name,email,event_type,event_date,event_details,unsubscribe_url,delete_account_url',
+                is_active=True
+            )
+            db.session.add(reminder_template)
+            created_templates.append('reminder')
+        
+        # Create admin notification template
+        admin_notification_template = EmailTemplate.query.filter_by(template_type='admin_notification').first()
+        if not admin_notification_template:
+            admin_notification_template = EmailTemplate(
+                name='Powiadomienie dla Administratora',
+                subject='🔔 Nowa rejestracja w Klubie Lepsze Życie',
+                html_content='''
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nowa Rejestracja</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #28a745; margin-bottom: 10px;">🔔 Nowa Rejestracja w Klubie</h1>
+        <p style="font-size: 18px; color: #666;">Pojawił się nowy członek!</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: #007bff; margin-top: 0;">Cześć {{admin_name}}!</h2>
+        <p>W systemie pojawiła się nowa rejestracja:</p>
+        
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #155724; margin-top: 0;">👤 Nowy Członek</h3>
+            <p style="margin: 5px 0;"><strong>Imię:</strong> {{new_member_name}}</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> {{new_member_email}}</p>
+            <p style="margin: 5px 0;"><strong>Data rejestracji:</strong> {{registration_date}}</p>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 14px;">
+            Z poważaniem,<br>
+            <strong>System Klubu Lepsze Życie</strong>
+        </p>
+    </div>
+</body>
+</html>
+                ''',
+                text_content='''
+Nowa Rejestracja w Klubie
+
+Cześć {{admin_name}}!
+
+W systemie pojawiła się nowa rejestracja:
+
+👤 Nowy Członek
+Imię: {{new_member_name}}
+Email: {{new_member_email}}
+Data rejestracji: {{registration_date}}
+
+Z poważaniem,
+System Klubu Lepsze Życie
+                ''',
+                template_type='admin_notification',
+                variables='admin_name,new_member_name,new_member_email,registration_date',
+                is_active=True
+            )
+            db.session.add(admin_notification_template)
+            created_templates.append('admin_notification')
+        
+        # Create newsletter template
+        newsletter_template = EmailTemplate.query.filter_by(template_type='newsletter').first()
+        if not newsletter_template:
+            newsletter_template = EmailTemplate(
+                name='Newsletter Klubu',
+                subject='📰 Newsletter Klubu Lepsze Życie - {{newsletter_title}}',
+                html_content='''
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newsletter Klubu Lepsze Życie</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #28a745; margin-bottom: 10px;">📰 Newsletter Klubu Lepsze Życie</h1>
+        <p style="font-size: 18px; color: #666;">Najnowsze informacje i aktualności</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: #007bff; margin-top: 0;">Cześć {{name}}!</h2>
+        <p>Oto najnowsze informacje z naszego klubu:</p>
+        
+        <div style="background-color: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #0056b3; margin-top: 0;">📋 {{newsletter_title}}</h3>
+            {{newsletter_content}}
+        </div>
+    </div>
+    
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #856404; margin-top: 0;">🔒 Twoje dane są bezpieczne</h3>
+        <p style="margin-bottom: 10px;">Możesz w każdej chwili:</p>
+        <p style="margin: 5px 0;"><a href="{{unsubscribe_url}}" style="color: #856404;">📧 Zrezygnować z subskrypcji</a></p>
+        <p style="margin: 5px 0;"><a href="{{delete_account_url}}" style="color: #856404;">🗑️ Usunąć swoje konto</a></p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 14px;">
+            Z poważaniem,<br>
+            <strong>Zespół Klubu Lepsze Życie</strong>
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            Ten email został wysłany na adres {{email}}
+        </p>
+    </div>
+</body>
+</html>
+                ''',
+                text_content='''
+Newsletter Klubu Lepsze Życie 📰
+
+Cześć {{name}}!
+
+Oto najnowsze informacje z naszego klubu:
+
+{{newsletter_title}}
+
+{{newsletter_content}}
+
+Twoje dane są bezpieczne - możesz w każdej chwili:
+- Zrezygnować z subskrypcji: {{unsubscribe_url}}
+- Usunąć swoje konto: {{delete_account_url}}
+
+Z poważaniem,
+Zespół Klubu Lepsze Życie
+
+Ten email został wysłany na adres {{email}}
+                ''',
+                template_type='newsletter',
+                variables='name,email,newsletter_title,newsletter_content,unsubscribe_url,delete_account_url',
+                is_active=True
+            )
+            db.session.add(newsletter_template)
+            created_templates.append('newsletter')
+        
+        # Create custom template
+        custom_template = EmailTemplate.query.filter_by(template_type='custom').first()
+        if not custom_template:
+            custom_template = EmailTemplate(
+                name='Email Własny',
+                subject='📧 {{custom_subject}}',
+                html_content='''
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Własny</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #6f42c1; margin-bottom: 10px;">📧 Email Własny</h1>
+        <p style="font-size: 18px; color: #666;">Wiadomość od Klubu Lepsze Życie</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: #007bff; margin-top: 0;">Cześć {{name}}!</h2>
+        <p>Mamy dla Ciebie wiadomość:</p>
+        
+        <div style="background-color: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #0056b3; margin-top: 0;">📋 {{custom_subject}}</h3>
+            {{custom_content}}
+        </div>
+    </div>
+    
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #856404; margin-top: 0;">🔒 Twoje dane są bezpieczne</h3>
+        <p style="margin-bottom: 10px;">Możesz w każdej chwili:</p>
+        <p style="margin: 5px 0;"><a href="{{unsubscribe_url}}" style="color: #856404;">📧 Zrezygnować z subskrypcji</a></p>
+        <p style="margin: 5px 0;"><a href="{{delete_account_url}}" style="color: #856404;">🗑️ Usunąć swoje konto</a></p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 14px;">
+            Z poważaniem,<br>
+            <strong>Zespół Klubu Lepsze Życie</strong>
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            Ten email został wysłany na adres {{email}}
+        </p>
+    </div>
+</body>
+</html>
+                ''',
+                text_content='''
+Email Własny 📧
+
+Cześć {{name}}!
+
+Mamy dla Ciebie wiadomość:
+
+{{custom_subject}}
+
+{{custom_content}}
+
+Twoje dane są bezpieczne - możesz w każdej chwili:
+- Zrezygnować z subskrypcji: {{unsubscribe_url}}
+- Usunąć swoje konto: {{delete_account_url}}
+
+Z poważaniem,
+Zespół Klubu Lepsze Życie
+
+Ten email został wysłany na adres {{email}}
+                ''',
+                template_type='custom',
+                variables='name,email,custom_subject,custom_content,unsubscribe_url,delete_account_url',
+                is_active=True
+            )
+            db.session.add(custom_template)
+            created_templates.append('custom')
+        
+        db.session.commit()
+        
+        if created_templates:
+            return jsonify({
+                'success': True, 
+                'message': f'Utworzono domyślne szablony: {", ".join(created_templates)}'
+            })
+        else:
+            return jsonify({
+                'success': True, 
+                'message': 'Wszystkie domyślne szablony już istnieją'
+            })
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
+
 # Admin API for email subscriptions
-@app.route('/admin/api/email-subscriptions', methods=['GET', 'DELETE'])
 @login_required
 def api_email_subscriptions():
     if not current_user.is_admin:
@@ -2176,7 +3340,342 @@ def api_email_stats():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# Helper functions for email schedules
+def calculate_next_run_interval(interval_value, interval_unit):
+    """Calculate next run time for interval-based schedules"""
+    now = datetime.utcnow()
+    
+    if interval_unit == 'minutes':
+        return now + timedelta(minutes=interval_value)
+    elif interval_unit == 'hours':
+        return now + timedelta(hours=interval_value)
+    elif interval_unit == 'days':
+        return now + timedelta(days=interval_value)
+    elif interval_unit == 'weeks':
+        return now + timedelta(weeks=interval_value)
+    elif interval_unit == 'months':
+        # Approximate month as 30 days
+        return now + timedelta(days=interval_value * 30)
+    else:
+        return now + timedelta(days=1)  # Default to 1 day
 
+def calculate_next_run_cron(cron_expression):
+    """Calculate next run time for cron-based schedules"""
+    try:
+        # Simple cron parser for common patterns
+        # Format: minute hour day month day_of_week
+        parts = cron_expression.split()
+        if len(parts) != 5:
+            return datetime.utcnow() + timedelta(days=1)
+        
+        minute, hour, day, month, day_of_week = parts
+        
+        now = datetime.utcnow()
+        next_run = now.replace(second=0, microsecond=0)
+        
+        # Handle minute
+        if minute != '*':
+            next_run = next_run.replace(minute=int(minute))
+            if next_run <= now:
+                next_run = next_run + timedelta(hours=1)
+        
+        # Handle hour
+        if hour != '*':
+            next_run = next_run.replace(hour=int(hour))
+            if next_run <= now:
+                next_run = next_run + timedelta(days=1)
+        
+        # Handle day of week (0=Sunday, 1=Monday, etc.)
+        if day_of_week != '*':
+            target_day = int(day_of_week)
+            current_day = next_run.weekday()
+            days_ahead = (target_day - current_day) % 7
+            if days_ahead == 0 and next_run <= now:
+                days_ahead = 7
+            next_run = next_run + timedelta(days=days_ahead)
+        
+        # Ensure next_run is in the future
+        if next_run <= now:
+            next_run = next_run + timedelta(days=1)
+        
+        return next_run
+        
+    except Exception:
+        # Fallback to next day if cron parsing fails
+        return datetime.utcnow() + timedelta(days=1)
+
+def execute_email_schedule(schedule):
+    """Execute an email schedule based on its type and template"""
+    try:
+        if schedule.template_type == 'newsletter':
+            # Send newsletter to all approved subscribers
+            subscribers = email_service.get_approved_subscribers()
+            if not subscribers:
+                return "Brak aktywnych subskrybentów"
+            
+            sent_count = 0
+            for subscriber in subscribers:
+                try:
+                    result = email_service.send_template_email(
+                        subscriber.email, 
+                        'newsletter',
+                        {
+                            'name': subscriber.name or 'Użytkowniku',
+                            'email': subscriber.email,
+                            'unsubscribe_url': url_for('unsubscribe_email', token=subscriber.unsubscribe_token, _external=True),
+                            'delete_account_url': url_for('delete_account', token=subscriber.delete_token, _external=True)
+                        }
+                    )
+                    if result:
+                        sent_count += 1
+                except Exception as e:
+                    print(f"Error sending newsletter to {subscriber.email}: {str(e)}")
+            
+            return f"Wysłano newsletter do {sent_count}/{len(subscribers)} subskrybentów"
+            
+        elif schedule.template_type == 'notification':
+            # Send notification based on trigger event
+            if schedule.schedule_type == 'event_based':
+                if schedule.trigger_event == 'weekly_summary':
+                    return send_weekly_summary_notification()
+                elif schedule.trigger_event == 'monthly_summary':
+                    return send_monthly_summary_notification()
+                elif schedule.trigger_event == 'new_event':
+                    return "Oczekuje na nowe wydarzenie"
+                elif schedule.trigger_event == 'new_member':
+                    return "Oczekuje na nowego członka"
+                elif schedule.trigger_event == 'event_reminder':
+                    return send_event_reminders()
+                else:
+                    return f"Nieznane zdarzenie: {schedule.trigger_event}"
+            else:
+                # For interval/cron schedules, send general notification
+                subscribers = email_service.get_approved_subscribers()
+                if not subscribers:
+                    return "Brak aktywnych subskrybentów"
+                
+                sent_count = 0
+                for subscriber in subscribers:
+                    try:
+                        result = email_service.send_template_email(
+                            subscriber.email, 
+                            'notification',
+                            {
+                                'name': subscriber.name or 'Użytkowniku',
+                                'email': subscriber.email,
+                                'unsubscribe_url': url_for('unsubscribe_email', token=subscriber.unsubscribe_token, _external=True),
+                                'delete_account_url': url_for('delete_account', token=subscriber.delete_token, _external=True)
+                            }
+                        )
+                        if result:
+                            sent_count += 1
+                    except Exception as e:
+                        print(f"Error sending newsletter to {subscriber.email}: {str(e)}")
+                
+                return f"Wysłano powiadomienie do {sent_count}/{len(subscribers)} subskrybentów"
+        
+        else:
+            return f"Nieznany typ szablonu: {schedule.template_type}"
+            
+    except Exception as e:
+        return f"Błąd podczas wykonywania harmonogramu: {str(e)}"
+
+def send_weekly_summary_notification():
+    """Send weekly summary notification to all subscribers"""
+    try:
+        subscribers = email_service.get_approved_subscribers()
+        if not subscribers:
+            return "Brak aktywnych subskrybentów"
+        
+        # Get weekly statistics
+        week_start = datetime.utcnow() - timedelta(days=7)
+        new_members = Registration.query.filter(
+            Registration.created_at >= week_start,
+            Registration.status == 'approved'
+        ).count()
+        
+        sent_count = 0
+        for subscriber in subscribers:
+            try:
+                result = email_service.send_template_email(
+                    subscriber.email, 
+                    'notification',
+                    {
+                        'name': subscriber.name or 'Użytkowniku',
+                        'email': subscriber.email,
+                        'weekly_stats': f"W tym tygodniu dołączyło {new_members} nowych członków",
+                        'unsubscribe_url': url_for('unsubscribe_email', token=subscriber.unsubscribe_token, _external=True),
+                        'delete_account_url': url_for('delete_account', token=subscriber.delete_token, _external=True)
+                    }
+                )
+                if result:
+                    sent_count += 1
+            except Exception as e:
+                print(f"Error sending weekly summary to {subscriber.email}: {str(e)}")
+        
+        return f"Wysłano podsumowanie tygodnia do {sent_count}/{len(subscribers)} subskrybentów"
+        
+    except Exception as e:
+        return f"Błąd podczas wysyłania podsumowania tygodnia: {str(e)}"
+
+def send_monthly_summary_notification():
+    """Send monthly summary notification to all subscribers"""
+    try:
+        subscribers = email_service.get_approved_subscribers()
+        if not subscribers:
+            return "Brak aktywnych subskrybentów"
+        
+        # Get monthly statistics
+        month_start = datetime.utcnow() - timedelta(days=30)
+        new_members = Registration.query.filter(
+            Registration.created_at >= month_start,
+            Registration.status == 'approved'
+        ).count()
+        
+        total_members = Registration.query.filter_by(status='approved').count()
+        
+        sent_count = 0
+        for subscriber in subscribers:
+            try:
+                result = email_service.send_template_email(
+                    subscriber.email, 
+                    'notification',
+                    {
+                        'name': subscriber.name or 'Użytkowniku',
+                        'email': subscriber.email,
+                        'monthly_stats': f"W tym miesiącu dołączyło {new_members} nowych członków. Łącznie w klubie: {total_members} osób.",
+                        'unsubscribe_url': url_for('unsubscribe_email', token=subscriber.unsubscribe_token, _external=True),
+                        'delete_account_url': url_for('delete_account', token=subscriber.delete_token, _external=True)
+                    }
+                )
+                if result:
+                    sent_count += 1
+            except Exception as e:
+                print(f"Error sending monthly summary to {subscriber.email}: {str(e)}")
+        
+        return f"Wysłano podsumowanie miesiąca do {sent_count}/{len(subscribers)} subskrybentów"
+        
+    except Exception as e:
+        return f"Błąd podczas wysyłania podsumowania miesiąca: {str(e)}"
+
+# Helper functions for email campaigns
+def calculate_filtered_recipients_count(filters_json):
+    """Calculate number of recipients based on filter criteria"""
+    try:
+        filters = json.loads(filters_json) if isinstance(filters_json, str) else filters_json
+        
+        query = Registration.query
+        
+        # Apply status filter
+        if filters.get('status'):
+            query = query.filter_by(status=filters['status'])
+        
+        # Apply date filters
+        if filters.get('date_from'):
+            date_from = datetime.fromisoformat(filters['date_from'])
+            query = query.filter(Registration.created_at >= date_from)
+        
+        if filters.get('date_to'):
+            date_to = datetime.fromisoformat(filters['date_to'])
+            query = query.filter(Registration.created_at <= date_to)
+        
+        return query.count()
+        
+    except Exception as e:
+        print(f"Error calculating filtered recipients count: {str(e)}")
+        return 0
+
+def get_campaign_recipients(campaign):
+    """Get list of recipients for a campaign based on its type"""
+    try:
+        if campaign.recipient_type == 'specific':
+            # Get specific email addresses
+            if not campaign.recipient_emails:
+                return []
+            
+            emails_list = json.loads(campaign.recipient_emails) if isinstance(campaign.recipient_emails, str) else campaign.recipient_emails
+            
+            recipients = []
+            for email in emails_list:
+                # Try to get subscriber info
+                subscription = EmailSubscription.query.filter_by(email=email, is_active=True).first()
+                if subscription:
+                    recipients.append({
+                        'email': email,
+                        'name': subscription.name,
+                        'unsubscribe_token': subscription.unsubscribe_token,
+                        'delete_token': subscription.delete_token
+                    })
+                else:
+                    # Add as anonymous recipient
+                    recipients.append({
+                        'email': email,
+                        'name': None,
+                        'unsubscribe_token': None,
+                        'delete_token': None
+                    })
+            
+            return recipients
+            
+        elif campaign.recipient_type == 'filtered':
+            # Get recipients based on filters
+            if not campaign.recipient_filters:
+                return []
+            
+            filters = json.loads(campaign.recipient_filters) if isinstance(campaign.recipient_filters, str) else campaign.recipient_filters
+            
+            query = Registration.query
+            
+            # Apply status filter
+            if filters.get('status'):
+                query = query.filter_by(status=filters['status'])
+            
+            # Apply date filters
+            if filters.get('date_from'):
+                date_from = datetime.fromisoformat(filters['date_from'])
+                query = query.filter(Registration.created_at >= date_from)
+            
+            if filters.get('date_to'):
+                date_to = datetime.fromisoformat(filters['date_to'])
+                query = query.filter(Registration.created_at <= date_to)
+            
+            registrations = query.all()
+            
+            recipients = []
+            for registration in registrations:
+                # Get subscription info
+                subscription = EmailSubscription.query.filter_by(email=registration.email, is_active=True).first()
+                if subscription:
+                    recipients.append({
+                        'email': registration.email,
+                        'name': registration.name,
+                        'unsubscribe_token': subscription.unsubscribe_token,
+                        'delete_token': subscription.delete_token
+                    })
+            
+            return recipients
+            
+        elif campaign.recipient_type == 'all':
+            # Get all approved subscribers
+            subscribers = email_service.get_approved_subscribers()
+            recipients = []
+            
+            for subscriber in subscribers:
+                recipients.append({
+                    'email': subscriber.email,
+                    'name': subscriber.name,
+                    'unsubscribe_token': subscriber.unsubscribe_token,
+                    'delete_token': subscriber.delete_token
+                })
+            
+            return recipients
+        
+        else:
+            return []
+            
+    except Exception as e:
+        print(f"Error getting campaign recipients: {str(e)}")
+        return []
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
