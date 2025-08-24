@@ -160,15 +160,13 @@ Ten email został wysłany na adres {{email}}
         <h2 style="color: #007bff; margin-top: 0;">Cześć {{name}}!</h2>
         <p>Przypominamy o nadchodzącym wydarzeniu:</p>
         
-        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
-            <h3 style="color: #856404; margin-top: 0;">📅 {{event_type}}</h3>
-            <p style="margin: 5px 0;"><strong>Data:</strong> {{event_date}}</p>
-            <p style="margin: 5px 0;"><strong>Szczegóły:</strong> {{event_details}}</p>
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #155724; margin-top: 0;">📅 {{event_type}}</h3>
+            <p style="margin: 0;"><strong>Data:</strong> {{event_date}}</p>
+            {% if event_details %}
+            <p style="margin: 10px 0 0 0;"><strong>Szczegóły:</strong> {{event_details}}</p>
+            {% endif %}
         </div>
-        
-        <p style="text-align: center;">
-            <a href="#" style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">📋 Sprawdź szczegóły</a>
-        </p>
     </div>
     
     <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
@@ -191,15 +189,17 @@ Ten email został wysłany na adres {{email}}
 </html>
                 ''',
                 text_content='''
-Przypomnienie o Wydarzeniu 🔔
+Przypomnienie o Wydarzeniu
 
 Cześć {{name}}!
 
 Przypominamy o nadchodzącym wydarzeniu:
 
-{{event_type}}
+📅 {{event_type}}
 Data: {{event_date}}
+{% if event_details %}
 Szczegóły: {{event_details}}
+{% endif %}
 
 Twoje dane są bezpieczne - możesz w każdej chwili:
 - Zrezygnować z subskrypcji: {{unsubscribe_url}}
@@ -215,6 +215,70 @@ Ten email został wysłany na adres {{email}}
                 is_active=True
             )
             db.session.add(reminder_template)
+        
+        # Add admin notification template
+        admin_notification_template = EmailTemplate.query.filter_by(template_type='admin_notification').first()
+        if not admin_notification_template:
+            admin_notification_template = EmailTemplate(
+                name='Powiadomienie dla Administratora',
+                subject='🔔 Nowa rejestracja w Klubie Lepsze Życie',
+                html_content='''
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nowa Rejestracja</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #28a745; margin-bottom: 10px;">🔔 Nowa Rejestracja w Klubie</h1>
+        <p style="font-size: 18px; color: #666;">Pojawił się nowy członek!</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: #007bff; margin-top: 0;">Cześć {{admin_name}}!</h2>
+        <p>W systemie pojawiła się nowa rejestracja:</p>
+        
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #155724; margin-top: 0;">👤 Nowy Członek</h3>
+            <p style="margin: 5px 0;"><strong>Imię:</strong> {{new_member_name}}</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> {{new_member_email}}</p>
+            <p style="margin: 5px 0;"><strong>Data rejestracji:</strong> {{registration_date}}</p>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 14px;">
+            Z poważaniem,<br>
+            <strong>System Klubu Lepsze Życie</strong>
+        </p>
+    </div>
+</body>
+</html>
+                ''',
+                text_content='''
+Nowa Rejestracja w Klubie
+
+Cześć {{admin_name}}!
+
+W systemie pojawiła się nowa rejestracja:
+
+👤 Nowy Członek
+Imię: {{new_member_name}}
+Email: {{new_member_email}}
+Data rejestracji: {{registration_date}}
+
+Z poważaniem,
+System Klubu Lepsze Życie
+                ''',
+                template_type='admin_notification',
+                variables='admin_name,new_member_name,new_member_email,registration_date',
+                is_active=True
+            )
+            db.session.add(admin_notification_template)
+        
+        # Usuwamy szablon approval - nie jest potrzebny
         
         # Create default newsletter template
         newsletter_template = EmailTemplate.query.filter_by(template_type='newsletter').first()
@@ -502,22 +566,32 @@ def register():
             name=name,
             email=email,
             phone=phone,
-            status='pending'
+            status='pending'  # Wymaga zatwierdzenia przez administratora
         )
         db.session.add(registration)
         
         # Add user to email subscription for automatic reminders
         email_service.add_subscriber(email, name, subscription_type='all')
         
-        # Send welcome email
-        welcome_sent = email_service.send_welcome_email(email, name)
+        # Email powitalny będzie wysłany dopiero po zatwierdzeniu przez administratora
+        
+        # Send notification to admin about new registration
+        admin_users = User.query.filter_by(is_admin=True).all()
+        for admin in admin_users:
+            email_service.send_template_email(
+                to_email=admin.email,
+                template_name='admin_notification',
+                variables={
+                    'admin_name': admin.username,
+                    'new_member_name': name,
+                    'new_member_email': email,
+                    'registration_date': datetime.now().strftime('%d.%m.%Y %H:%M')
+                }
+            )
         
         db.session.commit()
         
-        if welcome_sent:
-            flash(f'Dziękujemy {name}! Twoje miejsce zostało zarezerwowane. Wysłaliśmy potwierdzenie na adres {email}. Będziesz otrzymywać przypomnienia o wydarzeniach.', 'success')
-        else:
-            flash(f'Dziękujemy {name}! Twoje miejsce zostało zarezerwowane. Wysyłamy potwierdzenie na adres {email}.', 'success')
+        flash(f'Dziękujemy {name}! Twoje miejsce zostało zarezerwowane. Administrator zostanie powiadomiony o Twojej rejestracji i skontaktuje się z Tobą.', 'success')
             
         return redirect(url_for('index'))
         
@@ -706,35 +780,32 @@ def api_menu():
         }})
     
     elif request.method == 'PUT':
-        # Obsługujemy zarówno JSON jak i FormData
-        if request.is_json:
-            data = request.get_json()
-        else:
-            data = request.form.to_dict()
-            # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
-            if 'is_active' in data:
-                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
-            else:
-                data['is_active'] = False
+        data = request.get_json() if request.is_json else request.form.to_dict()
+        item_id = data.get('id')
+        item = MenuItem.query.get(item_id)
         
-        item = MenuItem.query.get(data['id'])
-        if item:
-            item.title = data['title']
-            item.url = data['url']
-            item.order = data['order']
-            item.is_active = data.get('is_active', True)
-            db.session.commit()
-            return jsonify({'success': True})
-        return jsonify({'success': False, 'message': 'Item not found'}), 404
+        if not item:
+            return jsonify({'success': False, 'error': 'Menu item not found'}), 404
+        
+        item.title = data.get('title', item.title)
+        item.url = data.get('url', item.url)
+        item.order = data.get('order', item.order)
+        item.is_active = data.get('is_active', item.is_active)
+        
+        db.session.commit()
+        return jsonify({'success': True})
     
     elif request.method == 'DELETE':
-        item_id = request.args.get('id', type=int)
+        data = request.get_json() if request.is_json else request.form.to_dict()
+        item_id = data.get('id')
         item = MenuItem.query.get(item_id)
-        if item:
-            db.session.delete(item)
-            db.session.commit()
-            return jsonify({'success': True})
-        return jsonify({'success': False, 'message': 'Item not found'}), 404
+        
+        if not item:
+            return jsonify({'success': False, 'error': 'Menu item not found'}), 404
+        
+        db.session.delete(item)
+        db.session.commit()
+        return jsonify({'success': True})
 
 @app.route('/admin/api/sections', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @login_required
@@ -1546,7 +1617,7 @@ def send_event_reminders():
             return False
         
         # Get all active subscribers
-        subscribers = EmailSubscription.query.filter_by(is_active=True).all()
+        subscribers = email_service.get_approved_subscribers()
         
         # Send reminders using email template
         for subscriber in subscribers:
@@ -1906,7 +1977,7 @@ def api_send_newsletter():
             return jsonify({'success': False, 'error': 'Brak tytułu lub treści newslettera'})
         
         # Get all active subscribers
-        subscribers = EmailSubscription.query.filter_by(is_active=True).all()
+        subscribers = email_service.get_approved_subscribers()
         
         if not subscribers:
             return jsonify({'success': False, 'error': 'Brak aktywnych subskrybentów'})
@@ -1954,7 +2025,7 @@ def api_send_notification():
             return jsonify({'success': False, 'error': 'Brak tytułu lub treści powiadomienia'})
         
         # Get all active subscribers
-        subscribers = EmailSubscription.query.filter_by(is_active=True).all()
+        subscribers = email_service.get_approved_subscribers()
         
         if not subscribers:
             return jsonify({'success': False, 'error': 'Brak aktywnych subskrybentów'})
@@ -2003,7 +2074,7 @@ def api_send_custom_email():
             return jsonify({'success': False, 'error': 'Brak tematu lub treści emaila'})
         
         # Get all active subscribers
-        subscribers = EmailSubscription.query.filter_by(is_active=True).all()
+        subscribers = email_service.get_approved_subscribers()
         
         if not subscribers:
             return jsonify({'success': False, 'error': 'Brak aktywnych subskrybentów'})
@@ -2069,6 +2140,104 @@ with app.app_context():
     # Note: In production, you would use a proper task scheduler like Celery or APScheduler
     # For now, this function can be called manually via admin panel or cron job
     print("Email service initialized. Use admin panel to manually send reminders or set up a cron job.")
+
+# API endpoint for registrations management
+@app.route('/admin/api/registrations', methods=['PUT'])
+@app.route('/admin/api/registrations/<int:registration_id>', methods=['DELETE'])
+@login_required
+def api_update_registration_status(registration_id=None):
+    """Update registration status (approve/reject) or delete registration"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    if request.method == 'DELETE':
+        # Delete registration
+        try:
+            if not registration_id:
+                return jsonify({'success': False, 'error': 'Brak ID rejestracji'})
+            
+            registration = Registration.query.get(registration_id)
+            if not registration:
+                return jsonify({'success': False, 'error': 'Rejestracja nie została znaleziona'})
+            
+            # Also remove from email subscriptions if exists
+            subscription = EmailSubscription.query.filter_by(email=registration.email).first()
+            if subscription:
+                db.session.delete(subscription)
+            
+            # Delete registration
+            db.session.delete(registration)
+            db.session.commit()
+            
+            return jsonify({'success': True, 'message': 'Rejestracja została usunięta'})
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)})
+    
+    elif request.method == 'PUT':
+        # Update registration status
+        try:
+            data = request.form.to_dict()
+            registration_id = data.get('id')
+            new_status = data.get('status')
+            
+            if not registration_id or not new_status:
+                return jsonify({'success': False, 'error': 'Brak ID rejestracji lub statusu'})
+            
+            registration = Registration.query.get(registration_id)
+            if not registration:
+                return jsonify({'success': False, 'error': 'Rejestracja nie została znaleziona'})
+            
+            # Update status
+            registration.status = new_status
+            
+            # If approved, send notification to admin about new approved member
+            if new_status == 'approved':
+                # Send welcome email to the newly approved user
+                email_service.send_welcome_email(registration.email, registration.name)
+                
+                # Send notification to admin about new approved member
+                admin_users = User.query.filter_by(is_admin=True).all()
+                for admin in admin_users:
+                    email_service.send_template_email(
+                        to_email=admin.email,
+                        template_name='admin_notification',
+                        variables={
+                            'admin_name': admin.username,
+                            'new_member_name': registration.name,
+                            'new_member_email': registration.email,
+                            'registration_date': registration.created_at.strftime('%d.%m.%Y %H:%M') if registration.created_at else 'Brak'
+                        }
+                    )
+            
+            db.session.commit()
+            return jsonify({'success': True, 'message': f'Status rejestracji został zmieniony na {new_status}'})
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)})
+
+# API endpoint for email statistics
+@app.route('/admin/api/email-stats', methods=['GET'])
+@login_required
+def api_email_stats():
+    """Get email statistics for admin panel"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        total_subscribers = EmailSubscription.query.filter_by(is_active=True).count()
+        total_emails_sent = EmailLog.query.filter_by(status='sent').count()
+        
+        return jsonify({
+            'success': True,
+            'totalSubscribers': total_subscribers,
+            'totalEmailsSent': total_emails_sent
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 
 

@@ -93,6 +93,49 @@ class EmailService:
             self._log_email(to_email, template_id, subject, 'failed', str(e))
             return False
     
+    def _is_user_approved(self, email: str) -> bool:
+        """
+        Check if user has approved registration status
+        
+        Args:
+            email: User email address
+            
+        Returns:
+            bool: True if user is approved, False otherwise
+        """
+        try:
+            from models import Registration
+            registration = Registration.query.filter_by(email=email).first()
+            if registration and registration.status == 'approved':
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Error checking user approval status for {email}: {str(e)}")
+            return False
+    
+    def get_approved_subscribers(self) -> List[EmailSubscription]:
+        """
+        Get only approved subscribers
+        
+        Returns:
+            List[EmailSubscription]: List of approved subscribers
+        """
+        try:
+            from models import Registration
+            # Get all active subscriptions
+            all_subscriptions = EmailSubscription.query.filter_by(is_active=True).all()
+            approved_subscriptions = []
+            
+            for subscription in all_subscriptions:
+                if self._is_user_approved(subscription.email):
+                    approved_subscriptions.append(subscription)
+            
+            return approved_subscriptions
+            
+        except Exception as e:
+            logger.error(f"Error getting approved subscribers: {str(e)}")
+            return []
+    
     def send_template_email(self, to_email: str, template_name: str, 
                            variables: Dict = None) -> bool:
         """
@@ -107,6 +150,11 @@ class EmailService:
             bool: True if email sent successfully, False otherwise
         """
         try:
+            # Check if user is approved (except for admin notifications)
+            if template_name != 'admin_notification' and not self._is_user_approved(to_email):
+                logger.info(f"Email not sent to {to_email} - user not approved")
+                return False
+            
             # Get template by name first, then by type if not found
             template = EmailTemplate.query.filter_by(name=template_name, is_active=True).first()
             if not template:

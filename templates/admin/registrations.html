@@ -102,20 +102,24 @@
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <button <button class="btn btn-sm admin-btn-outline" 
+                                                        <button class="btn btn-sm admin-btn-outline" 
                                                                 onclick="viewRegistration({{ registration.id }}, '{{ registration.name }}', '{{ registration.email }}', '{{ registration.phone }}', '{{ registration.message or '' }}', '{{ registration.status }}')">
                                                             <i class="fas fa-eye"></i>
                                                         </button>
                                                         {% if registration.status == 'pending' %}
-                                                        <button <button class="btn btn-sm admin-btn-success" 
+                                                        <button class="btn btn-sm admin-btn-success" 
                                                                 onclick="updateStatus({{ registration.id }}, 'approved')">
                                                             <i class="fas fa-check"></i>
                                                         </button>
-                                                        <button <button class="btn btn-sm admin-btn-danger" 
+                                                        <button class="btn btn-sm admin-btn-danger" 
                                                                 onclick="updateStatus({{ registration.id }}, 'rejected')">
                                                             <i class="fas fa-times"></i>
                                                         </button>
                                                         {% endif %}
+                                                        <button class="btn btn-sm admin-btn-danger" 
+                                                                onclick="deleteRegistration({{ registration.id }}, '{{ registration.name }}')">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -234,6 +238,26 @@
                 .catch(error => {
                     console.error('Error:', error);
                     alert('Wystąpił błąd podczas aktualizacji statusu');
+                });
+            }
+        }
+        // Delete Registration
+        function deleteRegistration(id, name) {
+            if (confirm(`Czy na pewno chcesz usunąć rejestrację użytkownika "${name}"?`)) {
+                fetch(`/admin/api/registrations/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Błąd: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Wystąpił błąd podczas usuwania rejestracji');
                 });
             }
         }
