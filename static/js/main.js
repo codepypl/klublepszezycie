@@ -109,9 +109,8 @@ function initializeFormHandling() {
     
     if (form) {
         form.addEventListener('submit', function(e) {
-            e.preventDefault();
+            // Usuwam e.preventDefault() żeby formularz mógł się wysłać normalnie
             
-            const formData = new FormData(this);
             const submitButton = this.querySelector('button[type="submit"]');
             const originalText = submitButton.innerHTML;
             
@@ -119,21 +118,15 @@ function initializeFormHandling() {
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
             submitButton.disabled = true;
             
-            // Simulate form submission (replace with actual AJAX call)
-            setTimeout(() => {
-                // Reset form
-                this.reset();
-                
-                // Reset button
-                submitButton.innerHTML = originalText;
-                submitButton.disabled = false;
-                
-                // Show success message
-                showNotification('Dziękujemy! Twoje miejsce zostało zarezerwowane.', 'success');
-                
-                // Scroll to top
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }, 2000);
+            // Formularz wysyła się normalnie - nie blokujemy go
+            // Usuwamy setTimeout i symulację
+        });
+        
+        // Dodajemy event listener na reset formularza żeby przywrócić przycisk
+        form.addEventListener('reset', function() {
+            const submitButton = this.querySelector('button[type="submit"]');
+            submitButton.innerHTML = '<i class="fas fa-ticket-alt me-2"></i>Zarejestruj się na darmową prezentację teraz';
+            submitButton.disabled = false;
         });
         
         // Real-time form validation

@@ -25,9 +25,9 @@ class Config:
     MAIL_PORT = int(os.getenv('MAIL_PORT', 587))
     MAIL_USE_TLS = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
     MAIL_USE_SSL = os.getenv('MAIL_USE_SSL', 'false').lower() == 'true'
-    MAIL_USERNAME = os.getenv('MAIL_USERNAME', 'noreply@lepszezycie.pl')
-    MAIL_PASSWORD = os.getenv('MAIL_PASSWORD', '')
-    MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER', 'noreply@lepszezycie.pl')
+    MAIL_USERNAME = os.getenv('MAIL_USERNAME', 'no.reply@lepszezycie.pl')
+    MAIL_PASSWORD = os.getenv('MAIL_PASSWORD', '3A_8!24A_6qRdnUV4m_Ujzed.fV')
+    MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER', 'no.reply@lepszezycie.pl')
     MAIL_DEFAULT_SENDER_NAME = os.getenv('MAIL_DEFAULT_SENDER_NAME', 'Lepsze Życie Club')
     
     # Email Settings
@@ -39,7 +39,7 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.getenv('DEV_DATABASE_URL', 
-        'postgresql://shadi@localhost:5432/betterlife')
+        'postgresql://shadi:Das5ahec@localhost:5432/klub')
 
 class ProductionConfig(Config):
     DEBUG = False
