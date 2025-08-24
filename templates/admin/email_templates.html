@@ -185,7 +185,7 @@
                             </small>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="is_active" id="template_is_active" checked>
+                            <input class="form-check-input" type="checkbox" name="is_active" id="template_is_active">
                             <label class="form-check-label" for="template_is_active">
                                 Aktywny
                             </label>
@@ -477,10 +477,18 @@
             const htmlContent = tinymce.get('template_html_content').getContent();
             formData.set('html_content', htmlContent);
             
+            // Debug: log form data
+            console.log('Form data being sent:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+            
             // Get template ID to determine if it's edit or create
             const templateId = document.getElementById('template_id').value;
             const method = templateId ? 'PUT' : 'POST';
             const url = '/admin/api/email-templates';
+            
+            console.log('Sending request:', method, 'to', url, 'with template ID:', templateId);
             
             // Show loading state
             const submitBtn = form.querySelector('button[type="submit"]');
@@ -624,6 +632,7 @@
                 // Reset form
                 document.getElementById('templateForm').reset();
                 document.getElementById('template_id').value = '';
+                document.getElementById('template_is_active').checked = true; // Domyślnie aktywny dla nowych szablonów
                 document.getElementById('templateModalTitle').innerHTML = '<i class="fas fa-plus me-2"></i>Dodaj Szablon';
                 
                 // Show modal
@@ -657,7 +666,15 @@
                     document.getElementById('template_type').value = template.template_type;
                     document.getElementById('template_subject').value = template.subject;
                     document.getElementById('template_text_content').value = template.text_content || '';
+                    
+                    // Debug: log checkbox value
+                    console.log('Template is_active from database:', template.is_active);
+                    console.log('Setting checkbox to:', template.is_active);
+                    
                     document.getElementById('template_is_active').checked = template.is_active;
+                    
+                    // Debug: verify checkbox was set
+                    console.log('Checkbox is now checked:', document.getElementById('template_is_active').checked);
                     
                     // Set TinyMCE content
                     tinymce.get('template_html_content').setContent(template.html_content || '');

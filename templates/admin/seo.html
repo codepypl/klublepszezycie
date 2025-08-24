@@ -87,10 +87,10 @@
                                             {% for seo in seo_settings %}
                                             <tr>
                                                 <td>
-                                                    <span class="admin-badge admin-badge-primary">{{ seo.page_name }}</span>
+                                                    <span class="admin-badge admin-badge-primary">{{ seo.page_type }}</span>
                                                 </td>
                                                 <td>
-                                                    <small class="text-muted">{{ seo.meta_title[:50] or 'Brak' }}{% if seo.meta_title and seo.meta_title|length > 50 %}...{% endif %}</small>
+                                                    <small class="text-muted">{{ seo.page_title[:50] or 'Brak' }}{% if seo.page_title and seo.page_title|length > 50 %}...{% endif %}</small>
                                                 </td>
                                                 <td>
                                                     <small class="text-muted">{{ seo.meta_description[:60] or 'Brak' }}{% if seo.meta_description and seo.meta_description|length > 60 %}...{% endif %}</small>
@@ -111,8 +111,8 @@
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <button <button class="btn btn-sm admin-btn-outline" 
-                                                                onclick="editSeo({{ seo.id }}, '{{ seo.page_name }}', '{{ seo.meta_title or '' }}', '{{ seo.meta_description or '' }}', '{{ seo.og_title or '' }}', '{{ seo.og_description or '' }}', '{{ seo.og_image or '' }}', '{{ seo.twitter_card or '' }}', '{{ seo.twitter_title or '' }}', '{{ seo.twitter_description or '' }}', '{{ seo.structured_data or '' }}')">
+                                                        <button class="btn btn-sm admin-btn-outline" 
+                                                                onclick="editSeo({{ seo.id }}, '{{ seo.page_type }}', '{{ seo.page_title or '' }}', '{{ seo.meta_description or '' }}', '{{ seo.og_title or '' }}', '{{ seo.og_description or '' }}', '{{ seo.og_image or '' }}', '{{ seo.twitter_card or '' }}', '{{ seo.twitter_title or '' }}', '{{ seo.twitter_description or '' }}', '{{ seo.structured_data or '' }}')">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
                                                         <button <button class="btn btn-sm admin-btn-danger" 
@@ -163,9 +163,9 @@
                                     Podstawowe SEO
                                 </h6>
                                 <div class="mb-3">
-                                    <label for="page_name" class="form-label">Nazwa Strony</label>
-                                    <select class="form-control" id="page_name" name="page_name" required>
-                                        <option value="">Wybierz stronę</option>
+                                    <label for="page_type" class="form-label">Typ Strony</label>
+                                    <select class="form-control" id="page_type" name="page_type" required>
+                                        <option value="">Wybierz typ strony</option>
                                         <option value="home">Strona Główna</option>
                                         <option value="about">O Nas</option>
                                         <option value="benefits">Korzyści</option>
@@ -174,8 +174,8 @@
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="meta_title" class="form-label">Meta Title</label>
-                                    <input type="text" class="form-control" id="meta_title" name="meta_title" maxlength="60" placeholder="Tytuł strony (max 60 znaków)">
+                                    <label for="page_title" class="form-label">Page Title</label>
+                                    <input type="text" class="form-control" id="page_title" name="page_title" maxlength="60" placeholder="Tytuł strony (max 60 znaków)">
                                     <small class="text-muted">Pozostało: <span id="title_count">60</span> znaków</small>
                                 </div>
                                 <div class="mb-3">
@@ -271,8 +271,8 @@
                                     Podstawowe SEO
                                 </h6>
                                 <div class="mb-3">
-                                    <label for="edit_page_name" class="form-label">Nazwa Strony</label>
-                                    <select class="form-control" id="edit_page_name" name="page_name" required>
+                                    <label for="edit_page_type" class="form-label">Typ Strony</label>
+                                    <select class="form-control" id="edit_page_type" name="page_type" required>
                                         <option value="home">Strona Główna</option>
                                         <option value="about">O Nas</option>
                                         <option value="benefits">Korzyści</option>
@@ -281,8 +281,8 @@
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="edit_meta_title" class="form-label">Meta Title</label>
-                                    <input type="text" class="form-control" id="edit_meta_title" name="meta_title" maxlength="60">
+                                    <label for="edit_page_title" class="form-label">Page Title</label>
+                                    <input type="text" class="form-control" id="edit_page_title" name="page_title" maxlength="60">
                                     <small class="text-muted">Pozostało: <span id="edit_title_count">60</span> znaków</small>
                                 </div>
                                 <div class="mb-3">
@@ -391,10 +391,10 @@
             });
         }
         // Edit SEO
-        function editSeo(id, pageName, metaTitle, metaDescription, ogTitle, ogDescription, ogImage, twitterCard, twitterTitle, twitterDescription, structuredData) {
+        function editSeo(id, pageType, pageTitle, metaDescription, ogTitle, ogDescription, ogImage, twitterCard, twitterTitle, twitterDescription, structuredData) {
             document.getElementById('edit_id').value = id;
-            document.getElementById('edit_page_name').value = pageName;
-            document.getElementById('edit_meta_title').value = metaTitle;
+            document.getElementById('edit_page_type').value = pageType;
+            document.getElementById('edit_page_title').value = pageTitle;
             document.getElementById('edit_meta_description').value = metaDescription;
             document.getElementById('edit_og_title').value = ogTitle;
             document.getElementById('edit_og_description').value = ogDescription;
@@ -404,7 +404,7 @@
             document.getElementById('edit_twitter_description').value = twitterDescription;
             document.getElementById('edit_structured_data').value = structuredData;
             // Update character counts
-            updateCount(document.getElementById('edit_meta_title'), document.getElementById('edit_title_count'), 60);
+            updateCount(document.getElementById('edit_page_title'), document.getElementById('edit_title_count'), 60);
             updateCount(document.getElementById('edit_meta_description'), document.getElementById('edit_desc_count'), 160);
             new bootstrap.Modal(document.getElementById('editSeoModal')).show();
         }
@@ -462,13 +462,13 @@
             saveSeo();
         });
         // Character count listeners
-        document.getElementById('meta_title').addEventListener('input', function() {
+        document.getElementById('page_title').addEventListener('input', function() {
             updateCount(this, document.getElementById('title_count'), 60);
         });
         document.getElementById('meta_description').addEventListener('input', function() {
             updateCount(this, document.getElementById('desc_count'), 160);
         });
-        document.getElementById('edit_meta_title').addEventListener('input', function() {
+        document.getElementById('edit_page_title').addEventListener('input', function() {
             updateCount(this, document.getElementById('edit_title_count'), 60);
         });
         document.getElementById('edit_meta_description').addEventListener('input', function() {
