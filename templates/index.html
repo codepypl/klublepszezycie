@@ -49,7 +49,99 @@
     </nav>
 
     <!-- Hero Section -->
-    {% if hero_section %}
+    {% if next_event %}
+    <!-- Event Banner with Countdown -->
+    <section id="hero" class="hero-section d-flex align-items-center min-vh-100">
+        {% if next_event.hero_background %}
+            {% if next_event.hero_background_type == 'video' %}
+                <video class="hero-bg-video" autoplay muted loop>
+                    <source src="{{ next_event.hero_background }}" type="video/mp4">
+                </video>
+            {% else %}
+                <div class="hero-bg-image" style="background-image: url('{{ next_event.hero_background }}');"></div>
+            {% endif %}
+        {% else %}
+            <div class="hero-bg-image" style="background-image: url('{{ url_for('static', filename='images/hero/hero-bg.jpg') }}');"></div>
+        {% endif %}
+        <div class="container position-relative">
+            <div class="row align-items-center">
+                <div class="col-lg-8" data-aos="fade-right" data-aos-duration="1000">
+                    <h1 class="display-4 fw-bold text-white mb-4">
+                        {{ next_event.title }}
+                    </h1>
+                    <div class="lead text-white mb-4">
+                        {{ next_event.description|safe or 'Dołącz do naszego ekskluzywnego wydarzenia!' }}
+                    </div>
+                    
+                    <!-- Countdown Timer -->
+                    <div class="countdown-timer mb-4" data-event-date="{{ next_event.event_date.isoformat() }}">
+                        <div class="row text-center">
+                            <div class="col-3">
+                                <div class="countdown-item">
+                                    <span class="countdown-number" id="days">00</span>
+                                    <span class="countdown-label">Dni</span>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="countdown-item">
+                                    <span class="countdown-number" id="hours">00</span>
+                                    <span class="countdown-label">Godzin</span>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="countdown-item">
+                                    <span class="countdown-number" id="minutes">00</span>
+                                    <span class="countdown-label">Minut</span>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="countdown-item">
+                                    <span class="countdown-number" id="seconds">00</span>
+                                    <span class="countdown-label">Sekund</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="hero-cta">
+                        <button class="btn btn-primary btn-lg me-3 mb-3" data-bs-toggle="modal" data-bs-target="#eventRegistrationModal">
+                            <i class="fas fa-calendar-check me-2"></i>
+                            Zarezerwuj miejsce
+                        </button>
+                        <p class="text-light small">
+                            <i class="fas fa-clock me-1"></i>
+                            {{ next_event.event_date.strftime('%d.%m.%Y o %H:%M') }}
+                        </p>
+                        <p class="text-white-50 small">
+                            <i class="fas fa-shield-alt me-1"></i>
+                            100% darmowo · Brak zobowiązań · Ograniczona liczba miejsc
+                        </p>
+                    </div>
+                </div>
+                <div class="col-lg-4" data-aos="fade-left" data-aos-duration="1000" data-aos-delay="200">
+                    <div class="hero-image-container text-center">
+                        <div class="event-icon mb-4">
+                            <i class="fas fa-calendar-check fa-5x text-warning"></i>
+                        </div>
+                        <div class="event-details text-white">
+                            <h5>{{ next_event.event_type }}</h5>
+                            {% if next_event.location %}
+                                <p><i class="fas fa-map-marker-alt me-2"></i>{{ next_event.location }}</p>
+                            {% endif %}
+                            {% if next_event.meeting_link %}
+                                <a href="{{ next_event.meeting_link }}" target="_blank" class="btn btn-warning btn-lg">
+                                    <i class="fas fa-video me-2"></i>Dołącz do spotkania
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-bg-animation"></div>
+    </section>
+    {% elif hero_section %}
+    <!-- Default Hero Section -->
     <section id="hero" class="hero-section d-flex align-items-center min-vh-100">
         <div class="hero-bg-image" style="background-image: url('{{ url_for('static', filename='images/hero/hero-bg.jpg') }}');"></div>
         <div class="container position-relative">
@@ -68,11 +160,7 @@
                         </a>
                         <p class="text-light small">
                             <i class="fas fa-check-circle me-1"></i>
-                            {% if next_event %}
-                                {{ next_event.title }}: {{ next_event.event_date.strftime('%d.%m.%Y o %H:%M') }}
-                            {% else %}
                                 Brak zaplanowanych wydarzeń
-                            {% endif %}
                         </p>
                         <p class="text-white-50 small">
                             <i class="fas fa-shield-alt me-1"></i>
@@ -107,65 +195,7 @@
     </section>
     {% endif %}
 
-    <!-- Next Event Section -->
-    {% if next_event %}
-    <section class="py-5 bg-primary text-white">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-8" data-aos="fade-right">
-                    <h2 class="display-6 fw-bold mb-3">
-                        <i class="fas fa-calendar-alt me-2"></i>
-                        {{ next_event.title }}
-                    </h2>
-                    <p class="lead mb-3">{{ next_event.description or 'Zapraszamy na nasze wydarzenie!' }}</p>
-                    <div class="event-details mb-4">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-clock me-2 text-warning"></i>
-                                    <span>{{ next_event.event_date.strftime('%d.%m.%Y o %H:%M') }}</span>
-                                </div>
-                                <div class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-tag me-2 text-info"></i>
-                                    <span>{{ next_event.event_type }}</span>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                {% if next_event.meeting_link %}
-                                <a href="{{ next_event.meeting_link }}" target="_blank" class="btn btn-warning btn-lg mb-3">
-                                    <i class="fas fa-video me-2"></i>
-                                    Dołącz do spotkania
-                                </a>
-                                {% endif %}
-                                
-                                <!-- Calendar Integration Buttons -->
-                                <div class="calendar-integration">
-                                    <h6 class="text-white mb-2">Dodaj do kalendarza:</h6>
-                                    <div class="d-grid gap-2">
-                                        <a href="/api/events/{{ next_event.id }}/calendar/google" target="_blank" class="btn btn-outline-light btn-sm">
-                                            <i class="fab fa-google me-2"></i>Google Calendar
-                                        </a>
-                                        <a href="/api/events/{{ next_event.id }}/calendar/outlook" target="_blank" class="btn btn-outline-light btn-sm">
-                                            <i class="fab fa-microsoft me-2"></i>Outlook
-                                        </a>
-                                        <a href="/api/events/{{ next_event.id }}/calendar/ical" class="btn btn-outline-light btn-sm">
-                                            <i class="fas fa-download me-2"></i>Pobierz iCal
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 text-center" data-aos="fade-left">
-                    <div class="event-icon">
-                        <i class="fas fa-calendar-check fa-5x text-warning"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    {% endif %}
+
 
     <!-- Benefits Section -->
     {% if benefits_section %}
@@ -366,6 +396,70 @@
     </section>
     {% endif %}
 
+    <!-- Monthly Events Timeline Section -->
+    {% if current_month_events and current_month_events|length > 0 %}
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-12 text-center mb-5" data-aos="fade-up">
+                    <h2 class="display-5 fw-bold text-primary mb-3">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Wydarzenia w tym miesiącu
+                    </h2>
+                    <p class="lead text-muted">Pozostałe wydarzenia, które warto odwiedzić</p>
+                </div>
+            </div>
+            
+            <div class="timeline-container" data-aos="fade-up" data-aos-delay="200">
+                <div class="timeline">
+                    {% for event in current_month_events %}
+                    <div class="timeline-item" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
+                        <div class="timeline-marker">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-header">
+                                <h4 class="text-primary mb-2">{{ event.title }}</h4>
+                                <div class="timeline-meta">
+                                    <span class="badge bg-info me-2">{{ event.event_type }}</span>
+                                    <span class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ event.event_date.strftime('%d.%m.%Y o %H:%M') }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="timeline-body">
+                                {% if event.description %}
+                                <p class="mb-3">{{ event.description|striptags|truncate(150) }}</p>
+                                {% endif %}
+                                <div class="timeline-actions">
+                                    <button class="btn btn-primary btn-sm me-2" onclick="openEventRegistration({{ event.id }}, '{{ event.title }}')">
+                                        <i class="fas fa-calendar-check me-1"></i>
+                                        Zarezerwuj miejsce
+                                    </button>
+                                    {% if event.meeting_link %}
+                                    <a href="{{ event.meeting_link }}" target="_blank" class="btn btn-outline-primary btn-sm me-2">
+                                        <i class="fas fa-video me-1"></i>
+                                        Dołącz do spotkania
+                                    </a>
+                                    {% endif %}
+                                    {% if event.location %}
+                                    <span class="text-muted small">
+                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                        {{ event.location }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
     {% if cta_section %}
     <!-- Final CTA Section -->
     <section id="register" class="py-5 bg-primary text-white">
@@ -495,6 +589,80 @@
     </section>
     {% endif %}
 
+    <!-- Event Registration Modal -->
+    {% if next_event %}
+    <div class="modal fade" id="eventRegistrationModal" tabindex="-1" aria-labelledby="eventRegistrationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="eventRegistrationModalLabel">
+                        <i class="fas fa-calendar-check me-2"></i>
+                        Zarezerwuj miejsce na wydarzenie
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="event-info mb-4 p-3 bg-light rounded">
+                        <h6 class="text-primary mb-2">{{ next_event.title }}</h6>
+                        <p class="mb-1">
+                            <i class="fas fa-clock me-2 text-muted"></i>
+                            {{ next_event.event_date.strftime('%d.%m.%Y o %H:%M') }}
+                        </p>
+                        {% if next_event.location %}
+                        <p class="mb-1">
+                            <i class="fas fa-map-marker-alt me-2 text-muted"></i>
+                            {{ next_event.location }}
+                        </p>
+                        {% endif %}
+                        {% if next_event.meeting_link %}
+                        <p class="mb-0">
+                            <i class="fas fa-video me-2 text-muted"></i>
+                            <a href="{{ next_event.meeting_link }}" target="_blank" class="text-decoration-none">Link do spotkania</a>
+                        </p>
+                        {% endif %}
+                    </div>
+                    
+                    <form id="eventRegistrationForm">
+                        <input type="hidden" name="event_id" value="{{ next_event.id }}">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="eventName" class="form-label">Imię i nazwisko *</label>
+                                <input type="text" class="form-control" id="eventName" name="name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="eventEmail" class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="eventEmail" name="email" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="eventPhone" class="form-label">Telefon (opcjonalnie)</label>
+                                <input type="tel" class="form-control" id="eventPhone" name="phone">
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="wantsClubNews" name="wants_club_news">
+                                    <label class="form-check-label" for="wantsClubNews">
+                                        Chcę otrzymywać informacje o klubie i dodatkowych wydarzeniach
+                                    </label>
+                                </div>
+                                <small class="text-muted">
+                                    Możesz zrezygnować w każdej chwili. Twoje dane są bezpieczne.
+                                </small>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" form="eventRegistrationForm" class="btn btn-primary">
+                        <i class="fas fa-calendar-check me-2"></i>
+                        Zarezerwuj miejsce
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Footer -->
     <footer class="bg-primary text-white py-4">
         <div class="container">
@@ -535,5 +703,128 @@
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Countdown Timer Script -->
+    <script>
+        function updateCountdown() {
+            const countdownElement = document.querySelector('.countdown-timer');
+            if (!countdownElement) return;
+            
+            const eventDate = new Date(countdownElement.dataset.eventDate);
+            const now = new Date();
+            const timeLeft = eventDate - now;
+            
+            if (timeLeft <= 0) {
+                // Event has passed
+                document.getElementById('days').textContent = '00';
+                document.getElementById('hours').textContent = '00';
+                document.getElementById('minutes').textContent = '00';
+                document.getElementById('seconds').textContent = '00';
+                return;
+            }
+            
+            const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+            
+            document.getElementById('days').textContent = days.toString().padStart(2, '0');
+            document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+            document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+            document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+        }
+        
+        // Update countdown every second
+        if (document.querySelector('.countdown-timer')) {
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        }
+        
+        // Event Registration Form Handler
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // Function to open event registration modal for specific event
+            window.openEventRegistration = function(eventId, eventTitle) {
+                // Update modal title and event info
+                document.getElementById('eventRegistrationModalLabel').innerHTML = 
+                    `<i class="fas fa-calendar-check me-2"></i>Zarezerwuj miejsce na: ${eventTitle}`;
+                
+                // Update hidden input
+                document.querySelector('input[name="event_id"]').value = eventId;
+                
+                // Update event info in modal
+                const eventInfo = document.querySelector('.event-info h6');
+                if (eventInfo) {
+                    eventInfo.textContent = eventTitle;
+                }
+                
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('eventRegistrationModal'));
+                modal.show();
+            };
+            
+            const eventRegistrationForm = document.getElementById('eventRegistrationForm');
+            if (eventRegistrationForm) {
+                eventRegistrationForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(this);
+                    const eventId = formData.get('event_id');
+                    
+                    // Disable submit button
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
+                    
+                    fetch(`/register-event/${eventId}`, {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show success message
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('eventRegistrationModal'));
+                            modal.hide();
+                            
+                            // Show success alert
+                            const alertDiv = document.createElement('div');
+                            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+                            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                            alertDiv.innerHTML = `
+                                <i class="fas fa-check-circle me-2"></i>
+                                ${data.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            `;
+                            document.body.appendChild(alertDiv);
+                            
+                            // Auto-hide after 5 seconds
+                            setTimeout(() => {
+                                if (alertDiv.parentNode) {
+                                    alertDiv.remove();
+                                }
+                            }, 5000);
+                            
+                            // Reset form
+                            eventRegistrationForm.reset();
+                        } else {
+                            // Show error message
+                            alert('Błąd: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Wystąpił błąd podczas zapisu. Spróbuj ponownie.');
+                    })
+                    .finally(() => {
+                        // Re-enable submit button
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>

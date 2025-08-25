@@ -43,7 +43,6 @@
                                         <th>Lokalizacja</th>
                                         <th>Status</th>
                                         <th>Publikacja</th>
-                                        <th>Kalendarze</th>
                                         <th>Utworzono</th>
                                         <th>Akcje</th>
                                     </tr>
@@ -90,11 +89,17 @@
                                 </div>
                                 <div class="mb-3">
                                     <label for="event_date" class="form-label">Data rozpoczęcia *</label>
-                                    <input type="date" class="form-control" id="event_date" name="event_date" required>
+                                    <input type="date" class="form-control" id="event_date" name="event_date" required min="">
+                                    <div class="invalid-feedback" id="event_date_error">
+                                        Data rozpoczęcia nie może być w przeszłości
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="event_time" class="form-label">Godzina rozpoczęcia *</label>
                                     <input type="time" class="form-control" id="event_time" name="event_time" required step="900">
+                                    <div class="invalid-feedback" id="event_time_error">
+                                        Data i godzina rozpoczęcia nie może być w przeszłości
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="end_date" class="form-label">Data zakończenia</label>
@@ -129,11 +134,26 @@
                                 </div>
                                 <div class="mb-3">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="is_published" name="is_published">
+                                        <input class="form-check-input" type="checkbox" id="is_published" name="is_published" checked>
                                         <label class="form-check-label" for="is_published">
                                             Opublikowane na stronie
                                         </label>
                                     </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="hero_background" class="form-label">Tło bannera (zdjęcie/wideo)</label>
+                                    <input type="file" class="form-control" id="hero_background" name="hero_background" accept="image/*,video/*">
+                                    <small class="text-muted">Obsługiwane formaty: JPG, PNG, MP4, WebM</small>
+                                    <div class="invalid-feedback" id="hero_background_error">
+                                        Dozwolone są tylko pliki graficzne (JPG, PNG) i wideo (MP4, WebM)
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="hero_background_type" class="form-label">Typ tła</label>
+                                    <select class="form-control" id="hero_background_type" name="hero_background_type">
+                                        <option value="image">Zdjęcie</option>
+                                        <option value="video">Wideo</option>
+                                    </select>
                                 </div>
 
                             </div>
@@ -179,11 +199,17 @@
                                 </div>
                                 <div class="mb-3">
                                     <label for="edit_event_date" class="form-label">Data rozpoczęcia *</label>
-                                    <input type="date" class="form-control" id="edit_event_date" name="event_date" required>
+                                    <input type="date" class="form-control" id="edit_event_date" name="event_date" required min="">
+                                    <div class="invalid-feedback" id="edit_event_date_error">
+                                        Data rozpoczęcia nie może być w przeszłości
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="edit_event_time" class="form-label">Godzina rozpoczęcia *</label>
                                     <input type="time" class="form-control" id="edit_event_time" name="event_time" required step="900">
+                                    <div class="invalid-feedback" id="edit_event_time_error">
+                                        Data i godzina rozpoczęcia nie może być w przeszłości
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="edit_end_date" class="form-label">Data zakończenia</label>
@@ -225,13 +251,21 @@
                                     </div>
                                 </div>
                                 <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="edit_calendar_integration" name="calendar_integration">
-                                        <label class="form-check-label" for="edit_calendar_integration">
-                                            Włącz integrację z kalendarzami
-                                        </label>
+                                    <label for="edit_hero_background" class="form-label">Tło bannera (zdjęcie/wideo)</label>
+                                    <input type="file" class="form-control" id="edit_hero_background" name="hero_background" accept="image/*,video/*">
+                                    <small class="text-muted">Obsługiwane formaty: JPG, PNG, MP4, WebM</small>
+                                    <div class="invalid-feedback" id="edit_hero_background_error">
+                                        Dozwolone są tylko pliki graficzne (JPG, PNG) i wideo (MP4, WebM)
                                     </div>
                                 </div>
+                                <div class="mb-3">
+                                    <label for="edit_hero_background_type" class="form-label">Typ tła</label>
+                                    <select class="form-control" id="edit_hero_background_type" name="hero_background_type">
+                                        <option value="image">Zdjęcie</option>
+                                        <option value="video">Wideo</option>
+                                    </select>
+                                </div>
+
                             </div>
                         </div>
                     </div>
@@ -243,58 +277,7 @@
             </div>
         </div>
     </div>
-    <!-- Calendar Integration Modal -->
-    <div class="modal fade admin-modal" id="calendarIntegrationModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-calendar-plus me-2"></i>
-                        Integracja z Kalendarzami
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Dodaj do kalendarza:</h6>
-                            <div class="d-grid gap-2">
-                                <a href="#" class="btn btn-outline-primary" id="googleCalendarBtn">
-                                    <i class="fab fa-google me-2"></i>Google Calendar
-                                </a>
-                                <a href="#" class="btn btn-outline-info" id="outlookCalendarBtn">
-                                    <i class="fab fa-microsoft me-2"></i>Outlook/Office 365
-                                </a>
-                                <a href="#" class="btn btn-outline-secondary" id="yahooCalendarBtn">
-                                    <i class="fas fa-calendar me-2"></i>Yahoo Calendar
-                                </a>
-                                <a href="#" class="btn btn-outline-dark" id="downloadIcalBtn">
-                                    <i class="fas fa-download me-2"></i>Pobierz iCal (.ics)
-                                </a>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Status synchronizacji:</h6>
-                            <div id="syncStatus">
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    Kliknij "Synchronizuj" aby zaktualizować status
-                                </div>
-                            </div>
-                            <div class="d-grid gap-2 mt-3">
-                                <button class="btn btn-success" id="syncCalendarsBtn">
-                                    <i class="fas fa-sync me-2"></i>Synchronizuj z kalendarzami
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
-                </div>
-            </div>
-        </div>
-    </div>
+
     <!-- Delete Confirmation Modal -->
     <div class="modal fade admin-modal" id="deleteEventModal" tabindex="-1">
         <div class="modal-dialog">
@@ -313,160 +296,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
                     <button type="button" class="btn btn-danger" id="confirmDeleteEvent">Usuń</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
-    <!-- Edit Event Modal -->
-    <div class="modal fade admin-modal" id="editEventModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-edit me-2"></i>
-                        Edytuj Wydarzenie
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="editEventForm">
-                    <input type="hidden" id="edit_event_id" name="id">
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="edit_title" class="form-label">Tytuł wydarzenia *</label>
-                                    <input type="text" class="form-control" id="edit_title" name="title" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="edit_event_type" class="form-label">Typ wydarzenia *</label>
-                                    <select class="form-control" id="edit_event_type" name="event_type" required>
-                                        <option value="Prezentacja">Prezentacja</option>
-                                        <option value="Webinar">Webinar</option>
-                                        <option value="Spotkanie">Spotkanie</option>
-                                        <option value="Event">Event</option>
-                                        <option value="Inne">Inne</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="edit_event_date" class="form-label">Data rozpoczęcia *</label>
-                                    <input type="date" class="form-control" id="edit_event_date" name="event_date" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="edit_event_time" class="form-label">Godzina rozpoczęcia *</label>
-                                    <input type="time" class="form-control" id="edit_event_time" name="event_time" required step="900">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="edit_end_date" class="form-label">Data zakończenia</label>
-                                    <input type="date" class="form-control" id="edit_end_date" name="end_date">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="edit_end_time" class="form-label">Godzina zakończenia</label>
-                                    <input type="time" class="form-control" id="edit_end_time" name="end_time" step="900">
-                                    <small class="text-muted">Pozostaw puste, aby automatycznie ustawić +1 godzinę</small>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="edit_location" class="form-label">Lokalizacja</label>
-                                    <input type="text" class="form-control" id="edit_location" name="location" placeholder="np. Online, Warszawa, ul. Przykładowa 1">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="edit_meeting_link" class="form-label">Link do spotkania</label>
-                                    <input type="url" class="form-control" id="edit_meeting_link" name="meeting_link" placeholder="https://...">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="edit_description" class="form-label">Opis wydarzenia</label>
-                                    <textarea class="form-control" id="edit_description" name="description" rows="8" placeholder="Opisz wydarzenie..."></textarea>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
-                                        <label class="form-check-label" for="edit_is_active">
-                                            Aktywne
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="edit_is_published" name="is_published">
-                                        <label class="form-check-label" for="edit_is_published">
-                                            Opublikowane na stronie
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="edit_calendar_integration" name="calendar_integration">
-                                        <label class="form-check-label" for="edit_calendar_integration">
-                                            Włącz integrację z kalendarzami
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn admin-btn">Zapisz Zmiany</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    <!-- Calendar Integration Modal -->
-    <div class="modal fade admin-modal" id="calendarIntegrationModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-calendar-plus me-2"></i>
-                        Integracja z Kalendarzami
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Dodaj do kalendarza:</h6>
-                            <div class="d-grid gap-2">
-                                <a href="#" class="btn btn-outline-primary" id="googleCalendarBtn">
-                                    <i class="fas fa-google me-2"></i>Google Calendar
-                                </a>
-                                <a href="#" class="btn btn-outline-info" id="outlookCalendarBtn">
-                                    <i class="fab fa-microsoft me-2"></i>Outlook/Office 365
-                                </a>
-                                <a href="#" class="btn btn-outline-secondary" id="yahooCalendarBtn">
-                                    <i class="fas fa-calendar me-2"></i>Yahoo Calendar
-                                </a>
-                                <a href="#" class="btn btn-outline-dark" id="downloadIcalBtn">
-                                    <i class="fas fa-download me-2"></i>Pobierz iCal (.ics)
-                                </a>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Status synchronizacji:</h6>
-                            <div id="syncStatus">
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    Kliknij "Synchronizuj" aby zaktualizować status
-                                </div>
-                            </div>
-                            <div class="d-grid gap-2 mt-3">
-                                <button class="btn btn-success" id="syncCalendarsBtn">
-                                    <i class="fas fa-sync me-2"></i>Synchronizuj z kalendarzami
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
-                </div>
-            </div>
-        </div>
-    </div>
+
     <!-- Delete Confirmation Modal -->
     <div class="modal fade admin-modal" id="deleteEventModal" tabindex="-1">
         <div class="modal-dialog">
@@ -492,18 +322,60 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let currentEventId = null;
-        let currentEventData = null;
+        
+        // Sprawdź czy TinyMCE jest dostępny
+        if (typeof tinymce === 'undefined') {
+            console.error('TinyMCE not loaded!');
+        } else {
+            console.log('TinyMCE version:', tinymce.majorVersion);
+        }
         // Initialize TinyMCE for description fields
         tinymce.init({
-            selector: '#description, #edit_description',
+            selector: '#description',
             height: 200,
             plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
             toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
-            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }'
+            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
+            setup: function(editor) {
+                console.log('TinyMCE initialized for:', editor.id);
+            },
+            init_instance_callback: function(editor) {
+                console.log('TinyMCE instance ready for:', editor.id);
+            }
         });
+        
+        // Inicjalizuj TinyMCE dla pola edycji po otwarciu modala
+        function initEditTinyMCE() {
+            if (!tinymce.get('edit_description')) {
+                tinymce.init({
+                    selector: '#edit_description',
+                    height: 200,
+                    plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
+                    toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
+                    content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
+                    setup: function(editor) {
+                        console.log('TinyMCE edit initialized for:', editor.id);
+                    },
+                    init_instance_callback: function(editor) {
+                        console.log('TinyMCE edit instance ready for:', editor.id);
+                    }
+                });
+            }
+        }
         // Load events on page load
         document.addEventListener('DOMContentLoaded', function() {
+            // Poczekaj na gotowość TinyMCE
+            setTimeout(() => {
             loadEvents();
+                setupDateValidation();
+                setupFileValidation();
+                console.log('TinyMCE instances:', tinymce.editors);
+                console.log('Available editors:', tinymce.editors.map(e => e.id));
+                
+                // Sprawdź czy pola istnieją w DOM
+                console.log('Description field exists:', !!document.getElementById('description'));
+                console.log('Edit description field exists:', !!document.getElementById('edit_description'));
+            }, 100);
         });
         // Load events from API
         function loadEvents() {
@@ -526,17 +398,6 @@
                 // Format dates
                 const startDate = new Date(event.event_date).toLocaleString('pl-PL');
                 const endDate = event.end_date ? new Date(event.end_date).toLocaleString('pl-PL') : 'Auto (+1h)';
-                // Calendar integration status
-                let calendarStatus = '';
-                if (event.calendar_integration) {
-                    if (event.google_calendar_id || event.outlook_event_id || event.ical_uid) {
-                        calendarStatus = '<span class="badge bg-success">Zsynchronizowane</span>';
-                    } else {
-                        calendarStatus = '<span class="badge bg-warning">Oczekuje</span>';
-                    }
-                } else {
-                    calendarStatus = '<span class="badge bg-secondary">Wyłączone</span>';
-                }
                 row.innerHTML = `
                     <td>
                         <strong>${event.title}</strong>
@@ -554,15 +415,11 @@
                     <td>
                         ${event.is_published ? '<span class="badge bg-primary">Opublikowane</span>' : '<span class="badge bg-secondary">Szkic</span>'}
                     </td>
-                    <td>${calendarStatus}</td>
                     <td>${new Date(event.created_at).toLocaleDateString('pl-PL')}</td>
                     <td>
                         <div class="btn-group" role="group">
                             <button class="btn btn-sm admin-btn-outline" onclick="editEvent(${event.id})">
                                 <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm admin-btn-info" onclick="showCalendarIntegration(${event.id})">
-                                <i class="fas fa-calendar-plus"></i>
                             </button>
                             <button class="btn btn-sm admin-btn-danger" onclick="deleteEvent(${event.id})">
                                 <i class="fas fa-trash"></i>
@@ -602,9 +459,48 @@
                         document.getElementById('edit_meeting_link').value = event.meeting_link || '';
                         document.getElementById('edit_is_active').checked = event.is_active;
                         document.getElementById('edit_is_published').checked = event.is_published;
+                        if (event.hero_background_type) {
+                            document.getElementById('edit_hero_background_type').value = event.hero_background_type;
+                        }
+                        
+                        // Show current background if exists
+                        if (event.hero_background) {
+                            const currentBgDiv = document.createElement('div');
+                            currentBgDiv.className = 'mb-3';
+                            currentBgDiv.innerHTML = `
+                                <label class="form-label">Aktualne tło:</label>
+                                <div class="current-background">
+                                    ${event.hero_background_type === 'video' ? 
+                                        `<video width="200" height="150" controls><source src="${event.hero_background}" type="video/mp4"></video>` :
+                                        `<img src="${event.hero_background}" alt="Aktualne tło" style="max-width: 200px; max-height: 150px; border-radius: 8px;">`
+                                    }
+                                    <p class="text-muted small mt-2">${event.hero_background}</p>
+                                </div>
+                            `;
+                            document.getElementById('edit_hero_background').parentNode.insertBefore(currentBgDiv, document.getElementById('edit_hero_background'));
+                        }
 
-                        tinymce.get('edit_description').setContent(event.description || '');
+                        // Ustaw zawartość w TinyMCE z obsługą błędów
+                        try {
+                            const editDescriptionEditor = tinymce.get('edit_description');
+                            if (editDescriptionEditor) {
+                                editDescriptionEditor.setContent(event.description || '');
+                            } else {
+                                console.error('TinyMCE editor for edit_description not found');
+                                document.getElementById('edit_description').value = event.description || '';
+                            }
+                        } catch (error) {
+                            console.error('Error setting content in TinyMCE edit_description:', error);
+                            document.getElementById('edit_description').value = event.description || '';
+                        }
+                        
+                        // Inicjalizuj TinyMCE dla pola edycji
+                        initEditTinyMCE();
+                        
+                        // Poczekaj na gotowość TinyMCE przed otwarciem modala
+                        setTimeout(() => {
                         new bootstrap.Modal(document.getElementById('editEventModal')).show();
+                        }, 100);
                     } else {
                         alert('Błąd: ' + data.error);
                     }
@@ -614,142 +510,7 @@
                     alert('Wystąpił błąd podczas ładowania danych wydarzenia');
                 });
         }
-        // Show calendar integration modal
-        function showCalendarIntegration(eventId) {
-            currentEventId = eventId;
-            // Load event data
-            fetch(`/admin/api/event-schedule/${eventId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        currentEventData = data.event;
-                        setupCalendarLinks();
-                        new bootstrap.Modal(document.getElementById('calendarIntegrationModal')).show();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Wystąpił błąd podczas ładowania danych wydarzenia');
-                });
-        }
-        // Setup calendar links
-        function setupCalendarLinks() {
-            if (!currentEventData) return;
-            // Get calendar links
-            fetch(`/api/events/${currentEventId}/calendar-links`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const links = data.calendar_links;
-                        // Setup Google Calendar
-                        document.getElementById('googleCalendarBtn').href = links.google || '#';
-                        document.getElementById('googleCalendarBtn').onclick = () => {
-                            if (links.google) window.open(links.google, '_blank');
-                        };
-                        // Setup Outlook
-                        document.getElementById('outlookCalendarBtn').href = links.outlook || '#';
-                        document.getElementById('outlookCalendarBtn').onclick = () => {
-                            if (links.outlook) window.open(links.outlook, '_blank');
-                        };
-                        // Setup Yahoo
-                        document.getElementById('yahooCalendarBtn').href = links.yahoo || '#';
-                        document.getElementById('yahooCalendarBtn').onclick = () => {
-                            if (links.yahoo) window.open(links.yahoo, '_blank');
-                        };
-                        // Setup iCal download
-                        document.getElementById('downloadIcalBtn').href = `/api/events/${currentEventId}/calendar/ical`;
-                        document.getElementById('downloadIcalBtn').onclick = () => {
-                            window.location.href = `/api/events/${currentEventId}/calendar/ical`;
-                        };
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading calendar links:', error);
-                });
-        }
-        // Sync calendars
-        document.getElementById('syncCalendarsBtn').addEventListener('click', function() {
-            if (!currentEventId) return;
-            const button = this;
-            const originalText = button.innerHTML;
-            button.disabled = true;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Synchronizowanie...';
-            fetch(`/admin/api/events/${currentEventId}/sync-calendars`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showSyncStatus(data.sync_results);
-                    loadEvents(); // Refresh table
-                } else {
-                    showSyncStatus({}, data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showSyncStatus({}, 'Błąd synchronizacji');
-            })
-            .finally(() => {
-                button.disabled = false;
-                button.innerHTML = originalText;
-            });
-        });
-        // Show sync status
-        function showSyncStatus(syncResults, error = null) {
-            const statusDiv = document.getElementById('syncStatus');
-            if (error) {
-                statusDiv.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        ${error}
-                    </div>
-                `;
-                return;
-            }
-            let statusHtml = '<div class="list-group">';
-            if (syncResults.google) {
-                const [success, eventId, errorMsg] = syncResults.google;
-                statusHtml += `
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><i class="fab fa-google me-2"></i>Google Calendar</span>
-                        ${success ? 
-                            '<span class="badge bg-success">OK</span>' : 
-                            '<span class="badge bg-danger">Błąd</span>'
-                        }
-                    </div>
-                `;
-            }
-            if (syncResults.outlook) {
-                const [success, eventId, errorMsg] = syncResults.outlook;
-                statusHtml += `
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><i class="fab fa-microsoft me-2"></i>Outlook</span>
-                        ${success ? 
-                            '<span class="badge bg-success">OK</span>' : 
-                            '<span class="badge bg-danger">Błąd</span>'
-                        }
-                    </div>
-                `;
-            }
-            if (syncResults.ical) {
-                const [success, content, errorMsg] = syncResults.ical;
-                statusHtml += `
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-calendar me-2"></i>iCal</span>
-                        ${success ? 
-                            '<span class="badge bg-success">OK</span>' : 
-                            '<span class="badge bg-danger">Błąd</span>'
-                        }
-                    </div>
-                `;
-            }
-            statusHtml += '</div>';
-            statusDiv.innerHTML = statusHtml;
-        }
+
         // Delete event
         function deleteEvent(eventId) {
             currentEventId = eventId;
@@ -758,6 +519,13 @@
         // Handle add event form submission
         document.getElementById('addEventForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            
+            // Walidacja przed wysłaniem
+            if (!validateAddForm()) {
+                alert('Proszę poprawić błędy w formularzu przed wysłaniem.');
+                return;
+            }
+            
             const formData = new FormData(this);
             
             // Łącz datę i czas w jeden string
@@ -771,11 +539,32 @@
             const endTime = document.getElementById('end_time').value;
             if (endDate && endTime) {
                 formData.set('end_date', `${endDate}T${endTime}`);
+            } else {
+                formData.set('end_date', '');
             }
             
-            formData.set('description', tinymce.get('description').getContent());
-            formData.append('is_active', document.getElementById('is_active').checked.toString());
-            formData.append('is_published', document.getElementById('is_published').checked.toString());
+            // Pobierz zawartość z TinyMCE z obsługą błędów
+            try {
+                const descriptionEditor = tinymce.get('description');
+                if (descriptionEditor) {
+                    formData.set('description', descriptionEditor.getContent());
+                } else {
+                    console.error('TinyMCE editor for description not found');
+                    formData.set('description', document.getElementById('description').value || '');
+                }
+            } catch (error) {
+                console.error('Error getting description from TinyMCE:', error);
+                formData.set('description', document.getElementById('description').value || '');
+            }
+            formData.set('is_active', document.getElementById('is_active').checked.toString());
+            formData.set('is_published', document.getElementById('is_published').checked.toString());
+            
+            // Handle file upload
+            const fileInput = document.getElementById('hero_background');
+            if (fileInput.files.length > 0) {
+                formData.set('hero_background', fileInput.files[0]);
+            }
+            
             fetch('/admin/api/event-schedule', {
                 method: 'POST',
                 body: formData
@@ -798,6 +587,13 @@
         // Handle edit event form submission
         document.getElementById('editEventForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            
+            // Walidacja przed wysłaniem
+            if (!validateEditForm()) {
+                alert('Proszę poprawić błędy w formularzu przed wysłaniem.');
+                return false;
+            }
+            
             const formData = new FormData(this);
             
             // Łącz datę i czas w jeden string
@@ -811,11 +607,32 @@
             const endTime = document.getElementById('edit_end_time').value;
             if (endDate && endTime) {
                 formData.set('end_date', `${endDate}T${endTime}`);
+            } else {
+                formData.set('end_date', '');
             }
             
-            formData.set('description', tinymce.get('edit_description').getContent());
-            formData.append('is_active', document.getElementById('edit_is_active').checked.toString());
-            formData.append('is_published', document.getElementById('edit_is_published').checked.toString());
+            // Pobierz zawartość z TinyMCE z obsługą błędów
+            try {
+                const editDescriptionEditor = tinymce.get('edit_description');
+                if (editDescriptionEditor) {
+                    formData.set('description', editDescriptionEditor.getContent());
+                } else {
+                    console.error('TinyMCE editor for edit_description not found');
+                    formData.set('description', document.getElementById('edit_description').value || '');
+                }
+            } catch (error) {
+                console.error('Error getting description from TinyMCE edit_description:', error);
+                formData.set('description', document.getElementById('edit_description').value || '');
+            }
+            formData.set('is_active', document.getElementById('edit_is_active').checked.toString());
+            formData.set('is_published', document.getElementById('edit_is_published').checked.toString());
+            
+            // Handle file upload
+            const fileInput = document.getElementById('edit_hero_background');
+            if (fileInput.files.length > 0) {
+                formData.set('hero_background', fileInput.files[0]);
+            }
+            
             fetch('/admin/api/event-schedule', {
                 method: 'PUT',
                 body: formData
@@ -857,6 +674,160 @@
                 });
             }
         });
+        
+        // Funkcje walidacji
+        function setupDateValidation() {
+            // Ustaw minimalną datę na dzisiaj
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('event_date').min = today;
+            document.getElementById('edit_event_date').min = today;
+            
+            // Dodaj event listenery do walidacji daty i czasu
+            document.getElementById('event_date').addEventListener('change', validateEventDate);
+            document.getElementById('event_time').addEventListener('change', validateEventDate);
+            document.getElementById('edit_event_date').addEventListener('change', validateEditEventDate);
+            document.getElementById('edit_event_time').addEventListener('change', validateEditEventDate);
+        }
+        
+        function validateEventDate() {
+            const eventDate = document.getElementById('event_date').value;
+            const eventTime = document.getElementById('event_time').value;
+            const dateInput = document.getElementById('event_date');
+            const timeInput = document.getElementById('event_time');
+            
+            if (eventDate && eventTime) {
+                const selectedDateTime = new Date(`${eventDate}T${eventTime}`);
+                // Porównuj z początkiem dzisiejszego dnia, nie z aktualnym momentem
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                if (selectedDateTime < today) {
+                    dateInput.classList.add('is-invalid');
+                    timeInput.classList.add('is-invalid');
+                    return false;
+                } else {
+                    dateInput.classList.remove('is-invalid');
+                    timeInput.classList.remove('is-invalid');
+                    return true;
+                }
+            }
+            return true;
+        }
+        
+        function validateEditEventDate() {
+            const eventDate = document.getElementById('edit_event_date').value;
+            const eventTime = document.getElementById('edit_event_time').value;
+            const dateInput = document.getElementById('edit_event_date');
+            const timeInput = document.getElementById('edit_event_time');
+            
+            if (eventDate && eventTime) {
+                const selectedDateTime = new Date(`${eventDate}T${eventTime}`);
+                // Porównuj z początkiem dzisiejszego dnia, nie z aktualnym momentem
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                if (selectedDateTime < today) {
+                    dateInput.classList.add('is-invalid');
+                    timeInput.classList.add('is-invalid');
+                    return false;
+                } else {
+                    dateInput.classList.remove('is-invalid');
+                    timeInput.classList.remove('is-invalid');
+                    return true;
+                }
+            }
+            return true;
+        }
+        
+        function setupFileValidation() {
+            // Dodaj event listenery do walidacji plików
+            document.getElementById('hero_background').addEventListener('change', validateFile);
+            document.getElementById('edit_hero_background').addEventListener('change', validateEditFile);
+        }
+        
+        function validateFile() {
+            const fileInput = document.getElementById('hero_background');
+            const file = fileInput.files[0];
+            const input = fileInput;
+            
+            if (file) {
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'video/mp4', 'video/webm', 'video/mov'];
+                const maxSize = 50 * 1024 * 1024; // 50MB
+                
+                if (!allowedTypes.includes(file.type)) {
+                    input.classList.add('is-invalid');
+                    return false;
+                } else if (file.size > maxSize) {
+                    input.classList.add('is-invalid');
+                    document.getElementById('hero_background_error').textContent = 'Plik jest za duży. Maksymalny rozmiar: 50MB';
+                    return false;
+                } else {
+                    input.classList.remove('is-invalid');
+                    return true;
+                }
+            }
+            return true;
+        }
+        
+        function validateEditFile() {
+            const fileInput = document.getElementById('edit_hero_background');
+            const file = fileInput.files[0];
+            const input = fileInput;
+            
+            if (file) {
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'video/mp4', 'video/webm', 'video/mov'];
+                const maxSize = 50 * 1024 * 1024; // 50MB
+                
+                if (!allowedTypes.includes(file.type)) {
+                    input.classList.add('is-invalid');
+                    return false;
+                } else if (file.size > maxSize) {
+                    input.classList.add('is-invalid');
+                    document.getElementById('edit_hero_background_error').textContent = 'Plik jest za duży. Maksymalny rozmiar: 50MB';
+                    return false;
+                } else {
+                    input.classList.remove('is-invalid');
+                    return true;
+                }
+            }
+            return true;
+        }
+        
+        // Sprawdź czy TinyMCE jest gotowy
+        function isTinyMCEReady(editorId) {
+            try {
+                const editor = tinymce.get(editorId);
+                return editor && editor.initialized;
+            } catch (error) {
+                console.error('Error checking TinyMCE readiness:', error);
+                return false;
+            }
+        }
+        
+        // Walidacja przed wysłaniem formularza
+        function validateAddForm() {
+            const isDateValid = validateEventDate();
+            const isFileValid = validateFile();
+            
+            // Sprawdź czy TinyMCE jest gotowy
+            if (!isTinyMCEReady('description')) {
+                console.warn('TinyMCE for description not ready, using fallback');
+            }
+            
+            return isDateValid && isFileValid;
+        }
+        
+        function validateEditForm() {
+            const isDateValid = validateEditEventDate();
+            const isFileValid = validateEditFile();
+            
+            // Sprawdź czy TinyMCE jest gotowy
+            if (!isTinyMCEReady('edit_description')) {
+                console.warn('TinyMCE for edit_description not ready, using fallback');
+            }
+            
+            return isDateValid && isFileValid;
+        }
     </script>
 </body>
 </html>

@@ -91,6 +91,10 @@
                                 <i class="fas fa-magic me-2"></i>
                                 Utwórz Domyślne Szablony
                             </button>
+                            <button class="btn admin-btn-info" onclick="createEventSchedules()">
+                                <i class="fas fa-calendar-check me-2"></i>
+                                Utwórz Harmonogramy Wydarzeń
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -820,6 +824,30 @@
         }
         
 
+        
+        // Function to create event notification schedules
+        function createEventSchedules() {
+            if (confirm('Czy na pewno chcesz utworzyć harmonogramy powiadomień o wydarzeniach? To utworzy automatyczne przypomnienia 24h, 1h i 5min przed wydarzeniami.')) {
+                fetch('/admin/api/create-event-schedules', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                    } else {
+                        showNotification('Błąd podczas tworzenia harmonogramów: ' + (data.error || 'Nieznany błąd'), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error creating event schedules:', error);
+                    showNotification('Błąd podczas tworzenia harmonogramów: ' + error.message, 'error');
+                });
+            }
+        }
         
         // Function to create default templates
         function createDefaultTemplates() {

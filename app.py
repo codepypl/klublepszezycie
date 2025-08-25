@@ -12,8 +12,57 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# File upload configuration
+UPLOAD_FOLDER = 'static/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'mov'}
+
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+def allowed_file(filename):
+    """Sprawdza czy plik ma dozwolone rozszerzenie"""
+    if not filename or '.' not in filename:
+        return False
+    
+    extension = filename.rsplit('.', 1)[1].lower()
+    return extension in ALLOWED_EXTENSIONS
+
+def validate_file_type(file):
+    """Waliduje typ pliku na podstawie MIME type"""
+    allowed_mime_types = {
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif',
+        'video/mp4', 'video/webm', 'video/mov'
+    }
+    
+    # Sprawdź MIME type
+    if file.content_type not in allowed_mime_types:
+        return False, f"Niedozwolony typ pliku: {file.content_type}"
+    
+    # Sprawdź rozszerzenie
+    if not allowed_file(file.filename):
+        return False, f"Niedozwolone rozszerzenie pliku: {file.filename}"
+    
+    # Sprawdź rozmiar (max 50MB)
+    max_size = 50 * 1024 * 1024  # 50MB
+    if file.content_length and file.content_length > max_size:
+        return False, "Plik jest za duży. Maksymalny rozmiar: 50MB"
+    
+    return True, None
+
+def validate_event_date(event_date_str):
+    """Waliduje datę wydarzenia - nie może być w przeszłości"""
+    try:
+        event_date = datetime.fromisoformat(event_date_str.replace('Z', '+00:00'))
+        # Porównuj z początkiem dzisiejszego dnia, nie z aktualnym momentem
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        if event_date < today:
+            return False, "Data wydarzenia nie może być w przeszłości"
+        return True, None
+    except ValueError:
+        return False, "Nieprawidłowy format daty"
+
 # Import models and config
-from models import db, User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, Registration, FAQ, SEOSettings, EventSchedule, Page, EmailTemplate, EmailSubscription, EmailLog, EmailSchedule, CustomEmailCampaign, EmailRecipientGroup
+from models import db, User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, Registration, FAQ, SEOSettings, EventSchedule, Page, EmailTemplate, EmailSubscription, EmailLog, EmailSchedule, CustomEmailCampaign, EmailRecipientGroup, EventRegistration, EventNotification, EventRecipientGroup
 from config import config
 from email_service import email_service
 
@@ -459,8 +508,24 @@ def index():
         EventSchedule.event_date > datetime.now()
     ).order_by(EventSchedule.event_date).first()
     
+    # Get all events for current month (excluding the one in hero)
+    current_month_events = []
+    if next_event:
+        current_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        next_month = (current_month.replace(day=28) + timedelta(days=4)).replace(day=1)
+        
+        current_month_events = EventSchedule.query.filter_by(
+            is_active=True, 
+            is_published=True
+        ).filter(
+            EventSchedule.event_date >= current_month,
+            EventSchedule.event_date < next_month,
+            EventSchedule.id != next_event.id  # Exclude hero event
+        ).order_by(EventSchedule.event_date).all()
+    
     return render_template('index.html',
                          next_event=next_event,
+                         current_month_events=current_month_events,
                          testimonials=testimonials,
                          testimonials_section=testimonials_section,
                          cta_section=cta_section,
@@ -525,6 +590,119 @@ def register():
         return jsonify({
             'success': False,
             'error': 'Wystąpił błąd podczas rejestracji. Spróbuj ponownie.'
+        }), 500
+
+
+@app.route('/register-event/<int:event_id>', methods=['POST'])
+def register_event(event_id):
+    """Zapisy na konkretne wydarzenia"""
+    event = EventSchedule.query.get_or_404(event_id)
+    
+    if not event.is_active or not event.is_published:
+        return jsonify({'success': False, 'error': 'Wydarzenie nie jest dostępne'}), 400
+    
+    name = request.form.get('name')
+    email = request.form.get('email')
+    phone = request.form.get('phone', '')
+    wants_club_news = request.form.get('wants_club_news') == 'true'
+    
+    if not name or not email:
+        return jsonify({'success': False, 'error': 'Proszę wypełnić wszystkie wymagane pola.'}), 400
+    
+    try:
+        # Sprawdź czy użytkownik już się zapisał na to wydarzenie
+        existing_registration = EventRegistration.query.filter_by(
+            event_id=event_id, 
+            email=email
+        ).first()
+        
+        if existing_registration:
+            return jsonify({'success': False, 'error': 'Jesteś już zapisany na to wydarzenie.'}), 400
+        
+        # Zapisz na wydarzenie
+        registration = EventRegistration(
+            event_id=event_id,
+            name=name,
+            email=email,
+            phone=phone,
+            wants_club_news=wants_club_news,
+            status='confirmed'
+        )
+        db.session.add(registration)
+        
+        # Jeśli użytkownik chce dołączyć do klubu
+        if wants_club_news:
+            email_service.add_subscriber(email, name, subscription_type='all')
+        
+        # Utwórz grupę odbiorców dla tego wydarzenia (jeśli nie istnieje)
+        recipient_group = EventRecipientGroup.query.filter_by(
+            event_id=event_id,
+            group_type='event_registrations'
+        ).first()
+        
+        if not recipient_group:
+            recipient_group = EventRecipientGroup(
+                event_id=event_id,
+                name=f'Zapisy na {event.title}',
+                description=f'Użytkownicy zapisani na wydarzenie: {event.title}',
+                group_type='event_registrations',
+                criteria_config=json.dumps({'event_id': event_id})
+            )
+            db.session.add(recipient_group)
+        
+        # Utwórz harmonogram powiadomień (jeśli nie istnieje)
+        notification_types = [
+            ('24h_before', timedelta(hours=24)),
+            ('1h_before', timedelta(hours=1)),
+            ('5min_before', timedelta(minutes=5))
+        ]
+        
+        for notif_type, time_offset in notification_types:
+            notification_time = event.event_date - time_offset
+            
+            # Sprawdź czy powiadomienie już istnieje
+            existing_notification = EventNotification.query.filter_by(
+                event_id=event_id,
+                notification_type=notif_type
+            ).first()
+            
+            if not existing_notification and notification_time > datetime.now():
+                notification = EventNotification(
+                    event_id=event_id,
+                    notification_type=notif_type,
+                    scheduled_at=notification_time,
+                    subject=f'Przypomnienie: {event.title}',
+                    template_name=f'event_reminder_{notif_type}'
+                )
+                db.session.add(notification)
+        
+        db.session.commit()
+        
+        # Wyślij email potwierdzający
+        email_service.send_template_email(
+            to_email=email,
+            template_name='event_registration_confirmation',
+            variables={
+                'name': name,
+                'event_title': event.title,
+                'event_date': event.event_date.strftime('%d.%m.%Y o %H:%M'),
+                'event_type': event.event_type,
+                'meeting_link': event.meeting_link,
+                'location': event.location
+            }
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': f'Dziękujemy {name}! Zostałeś zapisany na wydarzenie "{event.title}".'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error during event registration: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Wystąpił błąd podczas zapisu. Spróbuj ponownie.'
         }), 500
 
 # Admin routes for email management
@@ -2280,6 +2458,37 @@ def api_seo():
             return jsonify({'success': True})
         return jsonify({'success': False, 'message': 'SEO settings not found'}), 404
 
+@app.route('/admin/api/upload', methods=['POST'])
+@login_required
+def upload_file():
+    """Upload file for event background"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        # Add timestamp to avoid conflicts
+        name, ext = os.path.splitext(filename)
+        filename = f"{name}_{int(datetime.now().timestamp())}{ext}"
+        
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(file_path)
+        
+        return jsonify({
+            'success': True,
+            'filename': filename,
+            'url': f'/static/uploads/{filename}'
+        })
+    
+    return jsonify({'error': 'File type not allowed'}), 400
+
 @app.route('/admin/api/event-schedule', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @login_required
 def api_event_schedule():
@@ -2299,6 +2508,8 @@ def api_event_schedule():
             'location': event.location,
             'is_active': event.is_active,
             'is_published': event.is_published,
+            'hero_background': event.hero_background,
+            'hero_background_type': event.hero_background_type,
 
             'created_at': event.created_at.isoformat(),
             'updated_at': event.updated_at.isoformat()
@@ -2324,8 +2535,28 @@ def api_event_schedule():
         
         print(f"DEBUG EVENT POST: After conversion - is_active: {data['is_active']}, is_published: {data['is_published']}")
         
+        # Walidacja daty wydarzenia
+        is_date_valid, date_error = validate_event_date(data['event_date'])
+        if not is_date_valid:
+            return jsonify({'success': False, 'error': date_error}), 400
+        
         # Parse datetime
         event_date = datetime.fromisoformat(data['event_date'].replace('Z', '+00:00'))
+        
+        # Handle file upload
+        hero_background = ''
+        if 'hero_background' in request.files and request.files['hero_background'].filename:
+            file = request.files['hero_background']
+            is_file_valid, file_error = validate_file_type(file)
+            if not is_file_valid:
+                return jsonify({'success': False, 'error': file_error}), 400
+            
+            filename = secure_filename(file.filename)
+            name, ext = os.path.splitext(filename)
+            filename = f"{name}_{int(datetime.now().timestamp())}{ext}"
+            file_path = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(file_path)
+            hero_background = f'/static/uploads/{filename}'
         
         new_event = EventSchedule(
             title=data['title'],
@@ -2337,6 +2568,8 @@ def api_event_schedule():
             location=data.get('location', ''),
             is_active=data['is_active'],
             is_published=data['is_published'],
+            hero_background=hero_background,
+            hero_background_type=data.get('hero_background_type', 'image'),
     
         )
         db.session.add(new_event)
@@ -2365,6 +2598,11 @@ def api_event_schedule():
         
         event = EventSchedule.query.get(data['id'])
         if event:
+            # Walidacja daty wydarzenia
+            is_date_valid, date_error = validate_event_date(data['event_date'])
+            if not is_date_valid:
+                return jsonify({'success': False, 'error': date_error}), 400
+            
             # Parse datetime
             event_date = datetime.fromisoformat(data['event_date'].replace('Z', '+00:00'))
             event.title = data['title']
@@ -2376,6 +2614,24 @@ def api_event_schedule():
             event.location = data.get('location', '')
             event.is_active = data['is_active']
             event.is_published = data['is_published']
+            
+            # Handle file upload
+            if 'hero_background' in request.files and request.files['hero_background'].filename:
+                file = request.files['hero_background']
+                is_file_valid, file_error = validate_file_type(file)
+                if not is_file_valid:
+                    return jsonify({'success': False, 'error': file_error}), 400
+                
+                filename = secure_filename(file.filename)
+                name, ext = os.path.splitext(filename)
+                filename = f"{name}_{int(datetime.now().timestamp())}{ext}"
+                file_path = os.path.join(UPLOAD_FOLDER, filename)
+                file.save(file_path)
+                event.hero_background = f'/static/uploads/{filename}'
+            elif data.get('hero_background'):
+                event.hero_background = data.get('hero_background', '')
+            
+            event.hero_background_type = data.get('hero_background_type', 'image')
     
             db.session.commit()
             return jsonify({'success': True})
@@ -2411,6 +2667,8 @@ def api_event_by_id(event_id):
                 'location': event.location,
                 'is_active': event.is_active,
                 'is_published': event.is_published,
+                'hero_background': event.hero_background,
+                'hero_background_type': event.hero_background_type,
                 
                 'created_at': event.created_at.isoformat(),
                 'updated_at': event.updated_at.isoformat()
@@ -3133,17 +3391,510 @@ Ten email został wysłany na adres {{email}}
             db.session.add(custom_template)
             created_templates.append('custom')
         
+        # Create event reminder templates
+        event_reminder_templates = []
+        reminder_types = [
+            ('24h_before', '24h przed wydarzeniem'),
+            ('1h_before', '1h przed wydarzeniem'),
+            ('5min_before', '5min przed wydarzeniem')
+        ]
+        
+        for notif_type, description in reminder_types:
+            template_name = f'event_reminder_{notif_type}'
+            existing_template = EmailTemplate.query.filter_by(name=template_name).first()
+            
+            if not existing_template:
+                if notif_type == '24h_before':
+                    subject = '🔔 Przypomnienie: {{event_title}} - jutro o {{event_time}}'
+                    html_content = '''
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Przypomnienie o Wydarzeniu</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #dc3545; margin-bottom: 10px;">🔔 Przypomnienie o Wydarzeniu</h1>
+        <p style="font-size: 18px; color: #666;">Jutro o {{event_time}} - nie przegap tego!</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: #007bff; margin-top: 0;">Cześć {{name}}!</h2>
+        <p>Przypominamy o jutrzejszym wydarzeniu:</p>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #856404; margin-top: 0;">📅 {{event_title}}</h3>
+            <p style="margin: 5px 0;"><strong>Data:</strong> {{event_date}}</p>
+            <p style="margin: 5px 0;"><strong>Godzina:</strong> {{event_time}}</p>
+            <p style="margin: 5px 0;"><strong>Typ:</strong> {{event_type}}</p>
+            {% if event_location %}
+            <p style="margin: 5px 0;"><strong>Lokalizacja:</strong> {{event_location}}</p>
+            {% endif %}
+            {% if event_meeting_link %}
+            <p style="margin: 5px 0;"><strong>Link do spotkania:</strong> <a href="{{event_meeting_link}}" style="color: #856404;">{{event_meeting_link}}</a></p>
+            {% endif %}
+        </div>
+        
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #155724; margin-top: 0;">📋 Opis wydarzenia</h3>
+            <div style="background-color: white; padding: 15px; border-radius: 5px;">
+                {{event_description}}
+            </div>
+        </div>
+    </div>
+    
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #856404; margin-top: 0;">🔒 Twoje dane są bezpieczne</h3>
+        <p style="margin-bottom: 10px;">Możesz w każdej chwili:</p>
+        <p style="margin: 5px 0;"><a href="{{unsubscribe_url}}" style="color: #856404;">📧 Zrezygnować z subskrypcji</a></p>
+        <p style="margin: 5px 0;"><a href="{{delete_account_url}}" style="color: #856404;">🗑️ Usunąć swoje konto</a></p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 14px;">
+            Z poważaniem,<br>
+            <strong>Zespół Klubu Lepsze Życie</strong>
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            Ten email został wysłany na adres {{email}}
+        </p>
+    </div>
+</body>
+</html>
+                    '''
+                    text_content = '''
+Przypomnienie o Wydarzeniu 🔔
+
+Cześć {{name}}!
+
+Przypominamy o jutrzejszym wydarzeniu:
+
+📅 {{event_title}}
+Data: {{event_date}}
+Godzina: {{event_time}}
+Typ: {{event_type}}
+{% if event_location %}Lokalizacja: {{event_location}}{% endif %}
+{% if event_meeting_link %}Link do spotkania: {{event_meeting_link}}{% endif %}
+
+📋 Opis wydarzenia:
+{{event_description}}
+
+Twoje dane są bezpieczne - możesz w każdej chwili:
+- Zrezygnować z subskrypcji: {{unsubscribe_url}}
+- Usunąć swoje konto: {{delete_account_url}}
+
+Z poważaniem,
+Zespół Klubu Lepsze Życie
+
+Ten email został wysłany na adres {{email}}
+                    '''
+                elif notif_type == '1h_before':
+                    subject = '⏰ Ostatnie przypomnienie: {{event_title}} - za godzinę!'
+                    html_content = '''
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ostatnie Przypomnienie o Wydarzeniu</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #fd7e14; margin-bottom: 10px;">⏰ Ostatnie Przypomnienie</h1>
+        <p style="font-size: 18px; color: #666;">Wydarzenie za godzinę - przygotuj się!</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: #007bff; margin-top: 0;">Cześć {{name}}!</h2>
+        <p>Wydarzenie rozpocznie się za godzinę:</p>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #856404; margin-top: 0;">📅 {{event_title}}</h3>
+            <p style="margin: 5px 0;"><strong>Data:</strong> {{event_date}}</p>
+            <p style="margin: 5px 0;"><strong>Godzina:</strong> {{event_time}}</p>
+            <p style="margin: 5px 0;"><strong>Typ:</strong> {{event_type}}</p>
+            {% if event_location %}
+            <p style="margin: 5px 0;"><strong>Lokalizacja:</strong> {{event_location}}</p>
+            {% endif %}
+            {% if event_meeting_link %}
+            <p style="margin: 5px 0;"><strong>Link do spotkania:</strong> <a href="{{event_meeting_link}}" style="color: #856404;">{{event_meeting_link}}</a></p>
+            {% endif %}
+        </div>
+        
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #155724; margin-top: 0;">📋 Opis wydarzenia</h3>
+            <div style="background-color: white; padding: 15px; border-radius: 5px;">
+                {{event_description}}
+            </div>
+        </div>
+    </div>
+    
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #856404; margin-top: 0;">🔒 Twoje dane są bezpieczne</h3>
+        <p style="margin-bottom: 10px;">Możesz w każdej chwili:</p>
+        <p style="margin: 5px 0;"><a href="{{unsubscribe_url}}" style="color: #856404;">📧 Zrezygnować z subskrypcji</a></p>
+        <p style="margin: 5px 0;"><a href="{{delete_account_url}}" style="color: #856404;">🗑️ Usunąć swoje konto</a></p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 14px;">
+            Z poważaniem,<br>
+            <strong>Zespół Klubu Lepsze Życie</strong>
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            Ten email został wysłany na adres {{email}}
+        </p>
+    </div>
+</body>
+</html>
+                    '''
+                    text_content = '''
+Ostatnie Przypomnienie o Wydarzeniu ⏰
+
+Cześć {{name}}!
+
+Wydarzenie rozpocznie się za godzinę:
+
+📅 {{event_title}}
+Data: {{event_date}}
+Godzina: {{event_time}}
+Typ: {{event_type}}
+{% if event_location %}Lokalizacja: {{event_location}}{% endif %}
+{% if event_meeting_link %}Link do spotkania: {{event_meeting_link}}{% endif %}
+
+📋 Opis wydarzenia:
+{{event_description}}
+
+Twoje dane są bezpieczne - możesz w każdej chwili:
+- Zrezygnować z subskrypcji: {{unsubscribe_url}}
+- Usunąć swoje konto: {{delete_account_url}}
+
+Z poważaniem,
+Zespół Klubu Lepsze Życie
+
+Ten email został wysłany na adres {{email}}
+                    '''
+                else:  # 5min_before
+                    subject = '🚀 Start za 5 minut: {{event_title}} - dołącz teraz!'
+                    html_content = '''
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start Wydarzenia za 5 minut</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: 8px; margin-bottom: 30px;">
+        <h1 style="color: #28a745; margin-bottom: 10px;">🚀 Start za 5 minut!</h1>
+        <p style="font-size: 18px; color: #666;">Wydarzenie rozpocznie się za chwilę</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: #007bff; margin-top: 0;">Cześć {{name}}!</h2>
+        <p>Wydarzenie rozpocznie się za 5 minut:</p>
+        
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #155724; margin-top: 0;">📅 {{event_title}}</h3>
+            <p style="margin: 5px 0;"><strong>Data:</strong> {{event_date}}</p>
+            <p style="margin: 5px 0;"><strong>Godzina:</strong> {{event_time}}</p>
+            <p style="margin: 5px 0;"><strong>Typ:</strong> {{event_type}}</p>
+            {% if event_location %}
+            <p style="margin: 5px 0;"><strong>Lokalizacja:</strong> {{event_location}}</p>
+            {% endif %}
+            {% if event_meeting_link %}
+            <p style="margin: 5px 0;"><strong>Link do spotkania:</strong> <a href="{{event_meeting_link}}" style="color: #856404;">{{event_meeting_link}}</a></p>
+            {% endif %}
+        </div>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #856404; margin-top: 0;">📋 Opis wydarzenia</h3>
+            <div style="background-color: white; padding: 15px; border-radius: 5px;">
+                {{event_description}}
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <a href="{{event_meeting_link}}" style="background-color: #28a745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">
+                🚀 DOŁĄCZ DO SPOTKANIA
+            </a>
+        </div>
+    </div>
+    
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #856404; margin-top: 0;">🔒 Twoje dane są bezpieczne</h3>
+        <p style="margin-bottom: 10px;">Możesz w każdej chwili:</p>
+        <p style="margin: 5px 0;"><a href="{{unsubscribe_url}}" style="color: #856404;">📧 Zrezygnować z subskrypcji</a></p>
+        <p style="margin: 5px 0;"><a href="{{delete_account_url}}" style="color: #856404;">🗑️ Usunąć swoje konto</a></p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 14px;">
+            Z poważaniem,<br>
+            <strong>Zespół Klubu Lepsze Życie</strong>
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            Ten email został wysłany na adres {{email}}
+        </p>
+    </div>
+</body>
+</html>
+                    '''
+                    text_content = '''
+Start za 5 minut! 🚀
+
+Cześć {{name}}!
+
+Wydarzenie rozpocznie się za 5 minut:
+
+📅 {{event_title}}
+Data: {{event_date}}
+Godzina: {{event_time}}
+Typ: {{event_type}}
+{% if event_location %}Lokalizacja: {{event_location}}{% endif %}
+{% if event_meeting_link %}Link do spotkania: {{event_meeting_link}}{% endif %}
+
+📋 Opis wydarzenia:
+{{event_description}}
+
+🚀 DOŁĄCZ DO SPOTKANIA: {{event_meeting_link}}
+
+Twoje dane są bezpieczne - możesz w każdej chwili:
+- Zrezygnować z subskrypcji: {{unsubscribe_url}}
+- Usunąć swoje konto: {{delete_account_url}}
+
+Z poważaniem,
+Zespół Klubu Lepsze Życie
+
+Ten email został wysłany na adres {{email}}
+                    '''
+                
+                template = EmailTemplate(
+                    name=template_name,
+                    subject=subject,
+                    html_content=html_content,
+                    text_content=text_content,
+                    template_type='event_reminder',
+                    variables='name,email,event_title,event_date,event_time,event_type,event_location,event_meeting_link,event_description,unsubscribe_url,delete_account_url',
+                    is_active=True
+                )
+                db.session.add(template)
+                event_reminder_templates.append(template_name)
+        
+        # Create event registration confirmation template
+        event_registration_template = EmailTemplate.query.filter_by(name='event_registration_confirmation').first()
+        if not event_registration_template:
+            event_registration_template = EmailTemplate(
+                name='event_registration_confirmation',
+                subject='✅ Potwierdzenie zapisu: {{event_title}}',
+                html_content='''
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Potwierdzenie Zapisu na Wydarzenie</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #28a745; margin-bottom: 10px;">✅ Potwierdzenie Zapisu</h1>
+        <p style="font-size: 18px; color: #666;">Twoje miejsce zostało zarezerwowane!</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: #007bff; margin-top: 0;">Cześć {{name}}!</h2>
+        <p>Dziękujemy za zapisanie się na wydarzenie:</p>
+        
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #155724; margin-top: 0;">📅 {{event_title}}</h3>
+            <p style="margin: 5px 0;"><strong>Data:</strong> {{event_date}}</p>
+            <p style="margin: 5px 0;"><strong>Typ:</strong> {{event_type}}</p>
+            {% if event_location %}
+            <p style="margin: 5px 0;"><strong>Lokalizacja:</strong> {{event_location}}</p>
+            {% endif %}
+            {% if event_meeting_link %}
+            <p style="margin: 5px 0;"><strong>Link do spotkania:</strong> <a href="{{event_meeting_link}}" style="color: #155724;">{{event_meeting_link}}</a></p>
+            {% endif %}
+        </div>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #856404; margin-top: 0;">📋 Opis wydarzenia</h3>
+            <div style="background-color: white; padding: 15px; border-radius: 5px;">
+                {{event_description}}
+            </div>
+        </div>
+        
+        <div style="background-color: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h3 style="color: #0056b3; margin-top: 0;">🔔 Co dalej?</h3>
+            <ul style="text-align: left; margin: 0; padding-left: 20px;">
+                <li>Otrzymasz przypomnienie 24h przed wydarzeniem</li>
+                <li>Otrzymasz przypomnienie 1h przed wydarzeniem</li>
+                <li>Otrzymasz link do spotkania 5min przed startem</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #856404; margin-top: 0;">🔒 Twoje dane są bezpieczne</h3>
+        <p style="margin-bottom: 10px;">Możesz w każdej chwili:</p>
+        <p style="margin: 5px 0;"><a href="{{unsubscribe_url}}" style="color: #856404;">📧 Zrezygnować z subskrypcji</a></p>
+        <p style="margin: 5px 0;"><a href="{{delete_account_url}}" style="color: #856404;">🗑️ Usunąć swoje konto</a></p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 14px;">
+            Z poważaniem,<br>
+            <strong>Zespół Klubu Lepsze Życie</strong>
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            Ten email został wysłany na adres {{email}}
+        </p>
+    </div>
+</body>
+</html>
+                ''',
+                text_content='''
+Potwierdzenie Zapisu na Wydarzenie ✅
+
+Cześć {{name}}!
+
+Dziękujemy za zapisanie się na wydarzenie:
+
+📅 {{event_title}}
+Data: {{event_date}}
+Typ: {{event_type}}
+{% if event_location %}Lokalizacja: {{event_location}}{% endif %}
+{% if event_meeting_link %}Link do spotkania: {{event_meeting_link}}{% endif %}
+
+📋 Opis wydarzenia:
+{{event_description}}
+
+🔔 Co dalej?
+- Otrzymasz przypomnienie 24h przed wydarzeniem
+- Otrzymasz przypomnienie 1h przed wydarzeniem
+- Otrzymasz link do spotkania 5min przed startem
+
+Twoje dane są bezpieczne - możesz w każdej chwili:
+- Zrezygnować z subskrypcji: {{unsubscribe_url}}
+- Usunąć swoje konto: {{delete_account_url}}
+
+Z poważaniem,
+Zespół Klubu Lepsze Życie
+
+Ten email został wysłany na adres {{email}}
+                ''',
+                template_type='event_registration',
+                variables='name,email,event_title,event_date,event_type,event_location,event_meeting_link,event_description,unsubscribe_url,delete_account_url',
+                is_active=True
+            )
+            db.session.add(event_registration_template)
+            created_templates.append('event_registration_confirmation')
+        
         db.session.commit()
         
-        if created_templates:
+        if created_templates or event_reminder_templates:
+            all_templates = created_templates + event_reminder_templates
             return jsonify({
                 'success': True, 
-                'message': f'Utworzono domyślne szablony: {", ".join(created_templates)}'
+                'message': f'Utworzono domyślne szablony: {", ".join(all_templates)}'
             })
         else:
             return jsonify({
                 'success': True, 
                 'message': 'Wszystkie domyślne szablony już istnieją'
+            })
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
+
+# Admin API for creating event notification schedules
+@app.route('/admin/api/create-event-schedules', methods=['POST'])
+@login_required
+def api_create_event_schedules():
+    """Create default event notification schedules"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        created_schedules = []
+        
+        # Create schedule for 24h before event
+        schedule_24h = EmailSchedule.query.filter_by(
+            name='Przypomnienie 24h przed wydarzeniem',
+            trigger_event='event_reminder'
+        ).first()
+        
+        if not schedule_24h:
+            schedule_24h = EmailSchedule(
+                name='Przypomnienie 24h przed wydarzeniem',
+                template_type='event_reminder',
+                schedule_type='event_based',
+                trigger_event='event_reminder',
+                schedule_config=json.dumps({
+                    'notification_type': '24h_before',
+                    'description': 'Wysyła przypomnienie 24h przed wydarzeniem'
+                }),
+                is_active=True
+            )
+            db.session.add(schedule_24h)
+            created_schedules.append('24h_before')
+        
+        # Create schedule for 1h before event
+        schedule_1h = EmailSchedule.query.filter_by(
+            name='Przypomnienie 1h przed wydarzeniem',
+            trigger_event='event_reminder'
+        ).first()
+        
+        if not schedule_1h:
+            schedule_1h = EmailSchedule(
+                name='Przypomnienie 1h przed wydarzeniem',
+                template_type='event_reminder',
+                schedule_type='event_based',
+                trigger_event='event_reminder',
+                schedule_config=json.dumps({
+                    'notification_type': '1h_before',
+                    'description': 'Wysyła przypomnienie 1h przed wydarzeniem'
+                }),
+                is_active=True
+            )
+            db.session.add(schedule_1h)
+            created_schedules.append('1h_before')
+        
+        # Create schedule for 5min before event
+        schedule_5min = EmailSchedule.query.filter_by(
+            name='Link do spotkania 5min przed wydarzeniem',
+            trigger_event='event_reminder'
+        ).first()
+        
+        if not schedule_5min:
+            schedule_5min = EmailSchedule(
+                name='Link do spotkania 5min przed wydarzeniem',
+                template_type='event_reminder',
+                schedule_type='event_based',
+                trigger_event='event_reminder',
+                schedule_config=json.dumps({
+                    'notification_type': '5min_before',
+                    'description': 'Wysyła link do spotkania 5min przed wydarzeniem'
+                }),
+                is_active=True
+            )
+            db.session.add(schedule_5min)
+            created_schedules.append('5min_before')
+        
+        db.session.commit()
+        
+        if created_schedules:
+            return jsonify({
+                'success': True,
+                'message': f'Utworzono harmonogramy powiadomień: {", ".join(created_schedules)}'
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'message': 'Wszystkie harmonogramy powiadomień już istnieją'
             })
             
     except Exception as e:

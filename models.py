@@ -281,6 +281,8 @@ class EventSchedule(db.Model):
     location = db.Column(db.String(200))  # Lokalizacja wydarzenia
     is_active = db.Column(db.Boolean, default=True)
     is_published = db.Column(db.Boolean, default=False)  # Czy opublikowane na stronie
+    hero_background = db.Column(db.String(500))  # Ścieżka do zdjęcia/wideo jako tło bannera
+    hero_background_type = db.Column(db.String(20), default='image')  # 'image' lub 'video'
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -304,4 +306,90 @@ class PresentationSchedule(db.Model):
     
     def __repr__(self):
         return f'<PresentationSchedule {self.title} - {self.next_presentation_date}>'
+
+
+class EventRegistration(db.Model):
+    """Zapisy na konkretne wydarzenia"""
+    __tablename__ = 'event_registrations'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    phone = db.Column(db.String(20))
+    
+    # Status zapisu
+    status = db.Column(db.String(20), default='confirmed')  # confirmed, attended, cancelled
+    
+    # Preferencje powiadomień
+    wants_club_news = db.Column(db.Boolean, default=False)  # Czy chce dołączyć do klubu
+    notification_preferences = db.Column(db.Text)  # JSON z preferencjami powiadomień
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relacje
+    event = db.relationship('EventSchedule', backref='registrations')
+    
+    def __repr__(self):
+        return f'<EventRegistration {self.name} - {self.email} - Event {self.event_id}>'
+
+
+class EventNotification(db.Model):
+    """Harmonogram powiadomień o wydarzeniach"""
+    __tablename__ = 'event_notifications'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=False)
+    
+    # Typ powiadomienia
+    notification_type = db.Column(db.String(20), nullable=False)  # '24h_before', '1h_before', '5min_before'
+    
+    # Status powiadomienia
+    status = db.Column(db.String(20), default='pending')  # pending, sent, failed
+    
+    # Czas wysłania
+    scheduled_at = db.Column(db.DateTime, nullable=False)
+    sent_at = db.Column(db.DateTime)
+    
+    # Szczegóły
+    subject = db.Column(db.String(200))
+    template_name = db.Column(db.String(100))
+    recipient_count = db.Column(db.Integer, default=0)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relacje
+    event = db.relationship('EventSchedule', backref='notifications')
+    
+    def __repr__(self):
+        return f'<EventNotification {self.event.title} - {self.notification_type} - {self.scheduled_at}>'
+
+
+class EventRecipientGroup(db.Model):
+    """Grupy odbiorców powiadomień o konkretnych wydarzeniach"""
+    __tablename__ = 'event_recipient_groups'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    
+    # Kryteria grupy
+    group_type = db.Column(db.String(20), nullable=False)  # 'event_registrations', 'declined_club', 'custom'
+    criteria_config = db.Column(db.Text)  # JSON z konfiguracją kryteriów
+    
+    # Liczba członków (cache)
+    member_count = db.Column(db.Integer, default=0)
+    
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relacje
+    event = db.relationship('EventSchedule', backref='recipient_groups')
+    
+    def __repr__(self):
+        return f'<EventRecipientGroup {self.name} - Event {self.event_id}>'
 
