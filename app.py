@@ -101,12 +101,17 @@ with app.app_context():
     if not admin_user:
         admin_user = User(
             username='admin',
-            email='admin@lepszezycie.pl',
-            password_hash=generate_password_hash('admin123'),
+            email=app.config['ADMIN_EMAIL'],  # ← Użyj konfiguracji!
+            password_hash=generate_password_hash(app.config['ADMIN_PASSWORD']),
             is_admin=True
         )
         db.session.add(admin_user)
         db.session.commit()
+    else:
+        # Aktualizuj email admina z konfiguracji
+        if admin_user.email != app.config['ADMIN_EMAIL']:
+            admin_user.email = app.config['ADMIN_EMAIL']
+            db.session.commit()
     
     # Create default email templates if they don't exist
     welcome_template = EmailTemplate.query.filter_by(template_type='welcome').first()
