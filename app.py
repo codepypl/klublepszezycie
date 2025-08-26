@@ -505,13 +505,30 @@ def index():
     social_links = SocialLink.query.filter_by(is_active=True).order_by(SocialLink.order).all()
     faqs = FAQ.query.filter_by(is_active=True).order_by(FAQ.order).all() if faq_section else []
     
-    # Get next published and active event from database
-    next_event = EventSchedule.query.filter_by(
+    # Get current or next published and active event from database
+    now = datetime.now()
+    
+    # First check if any event is currently happening
+    current_event = EventSchedule.query.filter_by(
         is_active=True, 
         is_published=True
     ).filter(
-        EventSchedule.event_date > datetime.now()
-    ).order_by(EventSchedule.event_date).first()
+        EventSchedule.event_date <= now,
+        EventSchedule.end_date > now  # Event is currently happening
+    ).first()
+    
+    if current_event:
+        next_event = current_event
+        event_status = 'current'
+    else:
+        # Get next upcoming event
+        next_event = EventSchedule.query.filter_by(
+            is_active=True, 
+            is_published=True
+        ).filter(
+            EventSchedule.event_date > now  # Future event
+        ).order_by(EventSchedule.event_date).first()
+        event_status = 'upcoming' if next_event else 'none'
     
     # Get all events for current month (excluding the one in hero)
     current_month_events = []
@@ -530,6 +547,7 @@ def index():
     
     return render_template('index.html',
                          next_event=next_event,
+                         event_status=event_status,
                          current_month_events=current_month_events,
                          testimonials=testimonials,
                          testimonials_section=testimonials_section,
@@ -597,6 +615,68 @@ def register():
             'error': 'Wystąpił błąd podczas rejestracji. Spróbuj ponownie.'
         }), 500
 
+
+@app.route('/api/event-status', methods=['GET'])
+def api_event_status():
+    """Get current event status for real-time updates"""
+    try:
+        now = datetime.now()
+        
+        # Check if any event is currently happening
+        current_event = EventSchedule.query.filter_by(
+            is_active=True, 
+            is_published=True
+        ).filter(
+            EventSchedule.event_date <= now,
+            EventSchedule.end_date > now
+        ).first()
+        
+        if current_event:
+            return jsonify({
+                'status': 'current',
+                'event': {
+                    'id': current_event.id,
+                    'title': current_event.title,
+                    'event_date': current_event.event_date.isoformat(),
+                    'end_date': current_event.end_date.isoformat() if current_event.end_date else None,
+                    'event_type': current_event.event_type,
+                    'description': current_event.description,
+                    'location': current_event.location,
+                    'meeting_link': current_event.meeting_link,
+                    'hero_background': current_event.hero_background,
+                    'hero_background_type': current_event.hero_background_type
+                }
+            })
+        
+        # Get next upcoming event
+        next_event = EventSchedule.query.filter_by(
+            is_active=True, 
+            is_published=True
+        ).filter(
+            EventSchedule.event_date > now
+        ).order_by(EventSchedule.event_date).first()
+        
+        if next_event:
+            return jsonify({
+                'status': 'upcoming',
+                'event': {
+                    'id': next_event.id,
+                    'title': next_event.title,
+                    'event_date': next_event.event_date.isoformat(),
+                    'end_date': next_event.end_date.isoformat() if next_event.end_date else None,
+                    'event_type': next_event.event_type,
+                    'description': next_event.description,
+                    'location': next_event.location,
+                    'meeting_link': next_event.meeting_link,
+                    'hero_background': next_event.hero_background,
+                    'hero_background_type': next_event.hero_background_type
+                }
+            })
+        
+        return jsonify({'status': 'none', 'event': None})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/register-event/<int:event_id>', methods=['POST'])
 def register_event(event_id):

@@ -51,7 +51,7 @@
     <!-- Hero Section -->
     {% if next_event %}
     <!-- Event Banner with Countdown -->
-    <section id="hero" class="hero-section d-flex align-items-center min-vh-100">
+    <section id="hero" class="hero-section d-flex align-items-center min-vh-100" data-event-id="{{ next_event.id }}" data-event-status="{{ event_status }}">
         {% if next_event.hero_background %}
             {% if next_event.hero_background_type == 'video' %}
                 <video class="hero-bg-video" autoplay muted loop>
@@ -66,15 +66,25 @@
         <div class="container position-relative">
             <div class="row align-items-center">
                 <div class="col-lg-8" data-aos="fade-right" data-aos-duration="1000">
-                    <h1 class="display-4 fw-bold text-white mb-4">
+                    <!-- Event Status Alert -->
+                    {% if event_status == 'current' %}
+                    <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                        <i class="fas fa-play-circle me-2"></i>
+                        <strong>🎉 Wydarzenie trwa teraz!</strong> Dołącz do nas!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+                    
+                    <h1 class="display-4 fw-bold text-white mb-4" id="event-title">
                         {{ next_event.title }}
                     </h1>
-                    <div class="lead text-white mb-4">
+                    <div class="lead text-white mb-4" id="event-description">
                         {{ next_event.description|safe or 'Dołącz do naszego ekskluzywnego wydarzenia!' }}
                     </div>
                     
-                    <!-- Countdown Timer -->
-                    <div class="countdown-timer mb-4" data-event-date="{{ next_event.event_date.isoformat() }}">
+                    <!-- Countdown Timer or Live Status -->
+                    {% if event_status == 'upcoming' %}
+                    <div class="countdown-timer mb-4" data-event-date="{{ next_event.event_date.isoformat() }}" data-event-end="{% if next_event.end_date %}{{ next_event.end_date.isoformat() }}{% endif %}">
                         <div class="row text-center">
                             <div class="col-3">
                                 <div class="countdown-item">
@@ -102,6 +112,24 @@
                             </div>
                         </div>
                     </div>
+                    {% elif event_status == 'current' %}
+                    <div class="live-event-status mb-4">
+                        <div class="row text-center">
+                            <div class="col-12">
+                                <div class="live-indicator">
+                                    <span class="badge bg-success fs-5 px-4 py-2">
+                                        <i class="fas fa-broadcast-tower me-2"></i>
+                                        WYDARZENIE TRWA TERAZ!
+                                    </span>
+                                </div>
+                                <p class="text-white mt-3">
+                                    <i class="fas fa-clock me-2"></i>
+                                    Zakończenie: {{ next_event.end_date.strftime('%d.%m.%Y o %H:%M') if next_event.end_date else 'Nie określono' }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                     
                     <div class="hero-cta">
                         <button class="btn btn-primary btn-lg me-3 mb-3" data-bs-toggle="modal" data-bs-target="#eventRegistrationModal">
@@ -704,41 +732,291 @@
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     
-    <!-- Countdown Timer Script -->
+    <!-- Advanced Event Management Script -->
     <script>
-        function updateCountdown() {
-            const countdownElement = document.querySelector('.countdown-timer');
-            if (!countdownElement) return;
-            
-            const eventDate = new Date(countdownElement.dataset.eventDate);
-            const now = new Date();
-            const timeLeft = eventDate - now;
-            
-            if (timeLeft <= 0) {
-                // Event has passed
-                document.getElementById('days').textContent = '00';
-                document.getElementById('hours').textContent = '00';
-                document.getElementById('minutes').textContent = '00';
-                document.getElementById('seconds').textContent = '00';
-                return;
+        // Global variables for event management
+        let currentEventId = null;
+        let currentEventStatus = null;
+        let eventUpdateInterval = null;
+        let countdownInterval = null;
+        
+        // Event status update function
+        async function updateEventStatus() {
+            try {
+                const response = await fetch('/api/event-status');
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error('❌ Error fetching event status:', data.error);
+                    return;
+                }
+                
+                const newEventId = data.event ? data.event.id : null;
+                const newEventStatus = data.status;
+                
+                // Check if event has changed
+                if (newEventId !== currentEventId || newEventStatus !== currentEventStatus) {
+                    console.log('🔄 Event status changed:', { 
+                        old: { id: currentEventId, status: currentEventStatus },
+                        new: { id: newEventId, status: newEventStatus }
+                    });
+                    
+                    // Update the page content without refresh
+                    updatePageContent(data);
+                    
+                    // Update global variables
+                    currentEventId = newEventId;
+                    currentEventStatus = newEventStatus;
+                }
+                
+            } catch (error) {
+                console.error('❌ Error updating event status:', error);
             }
-            
-            const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-            
-            document.getElementById('days').textContent = days.toString().padStart(2, '0');
-            document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
-            document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
-            document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
         }
         
-        // Update countdown every second
-        if (document.querySelector('.countdown-timer')) {
-            updateCountdown();
-            setInterval(updateCountdown, 1000);
+        // Update page content without refresh
+        function updatePageContent(data) {
+            const heroSection = document.getElementById('hero');
+            if (!heroSection) return;
+            
+            if (data.status === 'none') {
+                // No events - show default hero
+                showDefaultHero();
+            } else if (data.event) {
+                // Show event hero
+                showEventHero(data.event, data.status);
+            }
         }
+        
+        // Show default hero section
+        function showDefaultHero() {
+            const heroSection = document.getElementById('hero');
+            if (!heroSection) return;
+            
+            // Create default hero content
+            const defaultHeroHTML = `
+                <div class="hero-bg-image" style="background-image: url('${window.location.origin}/static/images/hero/hero-bg.jpg');"></div>
+                <div class="container position-relative">
+                    <div class="row align-items-center">
+                        <div class="col-lg-6" data-aos="fade-right" data-aos-duration="1000">
+                            <h1 class="display-4 fw-bold text-white mb-4">
+                                Brak zaplanowanych wydarzeń
+                            </h1>
+                            <p class="lead text-white mb-4">
+                                Sprawdź ponownie później lub skontaktuj się z nami, aby dowiedzieć się o nadchodzących wydarzeniach.
+                            </p>
+                            <div class="hero-cta">
+                                <a href="#register" class="btn btn-primary btn-lg me-3 mb-3">
+                                    <i class="fas fa-calendar-check me-2"></i>
+                                    Zarezerwuj miejsce w darmowej prezentacji
+                                </a>
+                                <p class="text-light small">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    Brak zaplanowanych wydarzeń
+                                </p>
+                                <p class="text-white-50 small">
+                                    <i class="fas fa-shield-alt me-1"></i>
+                                    100% darmowo · Brak zobowiązań · Ograniczona liczba miejsc
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-lg-6" data-aos="fade-left" data-aos-duration="1000" data-aos-delay="200">
+                            <div class="hero-image-container text-center">
+                                <div class="hero-stats">
+                                    <div class="stat-card" data-aos="zoom-in" data-aos-delay="400">
+                                        <i class="fas fa-users fa-2x text-white"></i>
+                                        <h3 class="counter">500+</h3>
+                                        <p>Członków klubu</p>
+                                    </div>
+                                    <div class="stat-card" data-aos="zoom-in" data-aos-delay="600">
+                                        <i class="fas fa-chart-line fa-2x text-white"></i>
+                                        <h3 class="counter">85%</h3>
+                                        <p>Poprawa finansów</p>
+                                    </div>
+                                    <div class="stat-card" data-aos="zoom-in" data-aos-delay="800">
+                                        <i class="fas fa-heart fa-2x text-white"></i>
+                                        <h3 class="counter">92%</h3>
+                                        <p>Zadowolenie</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-bg-animation"></div>
+            `;
+            
+            // Smoothly transition to default hero
+            heroSection.style.opacity = '0';
+            setTimeout(() => {
+                heroSection.innerHTML = defaultHeroHTML;
+                heroSection.style.opacity = '1';
+                
+                // Remove event-specific data attributes
+                heroSection.removeAttribute('data-event-id');
+                heroSection.removeAttribute('data-event-status');
+                
+                console.log('✅ Switched to default hero');
+            }, 300);
+        }
+        
+        // Show event hero section
+        function showEventHero(event, status) {
+            const heroSection = document.getElementById('hero');
+            if (!heroSection) return;
+            
+            // Update event data attributes
+            heroSection.dataset.eventId = event.id;
+            heroSection.dataset.eventStatus = status;
+            
+            // Update title
+            const titleElement = document.getElementById('event-title');
+            if (titleElement) titleElement.textContent = event.title;
+            
+            // Update description
+            const descElement = document.getElementById('event-description');
+            if (descElement) descElement.innerHTML = event.description || 'Dołącz do naszego ekskluzywnego wydarzenia!';
+            
+            // Update countdown or live status
+            updateEventDisplay(event, status);
+            
+            // Update registration modal
+            updateRegistrationModal(event);
+        }
+        
+        // Update event display (countdown or live status)
+        function updateEventDisplay(event, status) {
+            const countdownContainer = document.querySelector('.countdown-timer');
+            const liveStatusContainer = document.querySelector('.live-event-status');
+            
+            if (status === 'upcoming') {
+                // Show countdown
+                if (countdownContainer) {
+                    countdownContainer.style.display = 'block';
+                    countdownContainer.dataset.eventDate = event.event_date;
+                    countdownContainer.dataset.eventEnd = event.end_date || '';
+                    
+                    // Start countdown
+                    startCountdown();
+                }
+                if (liveStatusContainer) liveStatusContainer.style.display = 'none';
+                
+            } else if (status === 'current') {
+                // Show live status
+                if (liveStatusContainer) {
+                    liveStatusContainer.style.display = 'block';
+                    
+                    // Update end time
+                    const endTimeElement = liveStatusContainer.querySelector('p');
+                    if (endTimeElement && event.end_date) {
+                        const endDate = new Date(event.end_date);
+                        endTimeElement.innerHTML = `
+                            <i class="fas fa-clock me-2"></i>
+                            Zakończenie: ${endDate.toLocaleString('pl-PL')}
+                        `;
+                    }
+                }
+                if (countdownContainer) countdownContainer.style.display = 'none';
+                
+                // Stop countdown
+                stopCountdown();
+            }
+        }
+        
+        // Update registration modal
+        function updateRegistrationModal(event) {
+            const modal = document.getElementById('eventRegistrationModal');
+            if (!modal) return;
+            
+            // Update event info in modal
+            const eventInfoTitle = modal.querySelector('.event-info h6');
+            if (eventInfoTitle) eventInfoTitle.textContent = event.title;
+            
+            // Update hidden input
+            const eventIdInput = modal.querySelector('input[name="event_id"]');
+            if (eventIdInput) eventIdInput.value = event.id;
+        }
+        
+        // Countdown functions
+        function startCountdown() {
+            if (countdownInterval) return; // Already running
+            
+            function updateCountdown() {
+                const countdownElement = document.querySelector('.countdown-timer');
+                if (!countdownElement) return;
+                
+                const eventDate = new Date(countdownElement.dataset.eventDate);
+                const now = new Date();
+                const timeLeft = eventDate - now;
+                
+                if (timeLeft <= 0) {
+                    // Event has started - check if we need to switch to live status
+                    console.log('⏰ Event has started, checking status...');
+                    updateEventStatus();
+                    return;
+                }
+                
+                const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                
+                // Update elements safely
+                ['days', 'hours', 'minutes', 'seconds'].forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        const value = id === 'days' ? days : id === 'hours' ? hours : id === 'minutes' ? minutes : seconds;
+                        element.textContent = value.toString().padStart(2, '0');
+                    }
+                });
+            }
+            
+            updateCountdown();
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+        
+        function stopCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
+        
+        // Initialize event management
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Event management system initialized');
+            
+            // Get initial event data
+            const heroSection = document.getElementById('hero');
+            if (heroSection) {
+                currentEventId = heroSection.dataset.eventId;
+                currentEventStatus = heroSection.dataset.eventStatus;
+                
+                console.log('📅 Initial event:', { id: currentEventId, status: currentEventStatus });
+                
+                // Start countdown if event is upcoming
+                if (currentEventStatus === 'upcoming') {
+                    startCountdown();
+                }
+            }
+            
+            // Start periodic event status updates
+            eventUpdateInterval = setInterval(updateEventStatus, 30000); // Check every 30 seconds
+            
+            // Also check when page becomes visible
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    console.log('👁️ Page became visible, updating event status');
+                    updateEventStatus();
+                }
+            });
+        });
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (eventUpdateInterval) clearInterval(eventUpdateInterval);
+            if (countdownInterval) clearInterval(countdownInterval);
+        });
         
         // Event Registration Form Handler
         document.addEventListener('DOMContentLoaded', function() {

@@ -2399,6 +2399,54 @@ html {
     }
 }
 
+/* Live Event Status Styles */
+.live-event-status {
+    background: rgba(25, 135, 84, 0.2);
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(25, 135, 84, 0.4);
+}
+
+.live-indicator {
+    margin-bottom: 15px;
+}
+
+.live-indicator .badge {
+    font-size: 1.1rem;
+    padding: 12px 20px;
+    border-radius: 25px;
+    box-shadow: 0 4px 15px rgba(25, 135, 84, 0.3);
+}
+
+/* Event Status Alert */
+.alert-success {
+    background: rgba(25, 135, 84, 0.9);
+    border: 1px solid rgba(25, 135, 84, 0.3);
+    color: white;
+    backdrop-filter: blur(10px);
+}
+
+.alert-success .btn-close {
+    filter: invert(1);
+}
+
+/* Smooth transitions for dynamic updates */
+.hero-section * {
+    transition: all 0.3s ease;
+}
+
+.countdown-timer,
+.live-event-status {
+    transition: opacity 0.5s ease, transform 0.3s ease;
+}
+
+.countdown-timer.hidden,
+.live-event-status.hidden {
+    opacity: 0;
+    transform: translateY(-10px);
+}
+
 /* Timeline/Roadmap Styles */
 .timeline-container {
     position: relative;
