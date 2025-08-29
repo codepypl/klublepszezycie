@@ -38,11 +38,31 @@
                             {% endif %}
                         {% endfor %}
                     {% endif %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
-                            <i class="fas fa-cog me-1"></i>Admin
-                        </a>
-                    </li>
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.is_admin %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                                <i class="fas fa-cog me-1"></i>Admin
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('user_profile') }}">
+                                <i class="fas fa-user me-1"></i>Mój profil
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('user_logout') }}">
+                                <i class="fas fa-sign-out-alt me-1"></i>Wyloguj
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('user_login') }}">
+                                <i class="fas fa-sign-in-alt me-1"></i>Zaloguj się
+                            </a>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
@@ -650,12 +670,17 @@
                         {% endif %}
                     </div>
                     
-                    <form id="eventRegistrationForm">
-                        <input type="hidden" name="event_id" value="{{ next_event.id }}">
+                    <form id="eventRegistrationForm" method="POST" action="{{ url_for('register_event', event_id=next_event.id) }}">
+                        <input type="hidden" name="event_id" value="{{ next_event.id }}" id="eventIdInput">
+                        <!-- Debug info -->
+                        <div class="d-none">
+                            <p>Debug: Event ID = {{ next_event.id }}</p>
+                            <p>Debug: Event Title = {{ next_event.title }}</p>
+                        </div>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label for="eventName" class="form-label">Imię i nazwisko *</label>
-                                <input type="text" class="form-control" id="eventName" name="name" required>
+                                <label for="eventName" class="form-label">Imię *</label>
+                                <input type="text" class="form-control" id="eventName" name="name" placeholder="Twoje imię" required>
                             </div>
                             <div class="col-md-6">
                                 <label for="eventEmail" class="form-label">Email *</label>
@@ -677,14 +702,18 @@
                                 </small>
                             </div>
                         </div>
+                        
+                        <!-- Submit button inside form -->
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-calendar-check me-2"></i>
+                                Zarezerwuj miejsce
+                            </button>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                    <button type="submit" form="eventRegistrationForm" class="btn btn-primary">
-                        <i class="fas fa-calendar-check me-2"></i>
-                        Zarezerwuj miejsce
-                    </button>
                 </div>
             </div>
         </div>
@@ -734,6 +763,8 @@
     
     <!-- Advanced Event Management Script -->
     <script>
+        console.log('🚀 Advanced Event Management Script loaded!');
+        
         // Global variables for event management
         let currentEventId = null;
         let currentEventStatus = null;
@@ -1020,9 +1051,11 @@
         
         // Event Registration Form Handler
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 DOM loaded, looking for event registration form...');
             
             // Function to open event registration modal for specific event
             window.openEventRegistration = function(eventId, eventTitle) {
+                console.log('🚀 Opening event registration for:', eventId, eventTitle);
                 // Update modal title and event info
                 document.getElementById('eventRegistrationModalLabel').innerHTML = 
                     `<i class="fas fa-calendar-check me-2"></i>Zarezerwuj miejsce na: ${eventTitle}`;
@@ -1042,25 +1075,90 @@
             };
             
             const eventRegistrationForm = document.getElementById('eventRegistrationForm');
+            console.log('📝 Found event registration form:', eventRegistrationForm);
+            console.log('📝 Form HTML:', eventRegistrationForm ? eventRegistrationForm.outerHTML : 'NOT FOUND');
+            
+            // Check if form is in the page
+            const allForms = document.querySelectorAll('form');
+            console.log('📝 All forms on page:', allForms.length);
+            allForms.forEach((form, index) => {
+                console.log(`📝 Form ${index}:`, form.id, form.action);
+            });
+            
+            // Also check if modal exists
+            const modal = document.getElementById('eventRegistrationModal');
+            console.log('📝 Found modal:', modal);
+            console.log('📝 Modal HTML:', modal ? modal.outerHTML.substring(0, 200) + '...' : 'NOT FOUND');
+            
+            // Check if form is inside modal
+            if (modal && eventRegistrationForm) {
+                const formInModal = modal.querySelector('#eventRegistrationForm');
+                console.log('📝 Form in modal:', formInModal);
+            }
+            
+            // Check if form is in modal even if eventRegistrationForm is null
+            if (modal) {
+                const formInModal = modal.querySelector('#eventRegistrationForm');
+                console.log('📝 Form in modal (direct search):', formInModal);
+                if (formInModal) {
+                    console.log('📝 Form in modal HTML:', formInModal.outerHTML.substring(0, 200) + '...');
+                }
+            }
+            
             if (eventRegistrationForm) {
+                console.log('✅ Adding submit event listener to form');
                 eventRegistrationForm.addEventListener('submit', function(e) {
+                    console.log('🚀 Form submitted!');
                     e.preventDefault();
                     
                     const formData = new FormData(this);
                     const eventId = formData.get('event_id');
+                    console.log('📋 Form data:', Object.fromEntries(formData));
+                    console.log('🎯 Event ID from form:', eventId);
+                    
+                    // Also check the hidden input directly
+                    const eventIdInput = document.getElementById('eventIdInput');
+                    console.log('🎯 Event ID from input:', eventIdInput ? eventIdInput.value : 'NOT FOUND');
+                    
+                    if (!eventId) {
+                        console.error('❌ Event ID is missing from form data!');
+                        alert('Błąd: Brak ID wydarzenia. Odśwież stronę i spróbuj ponownie.');
+                        return;
+                    }
                     
                     // Disable submit button
                     const submitBtn = this.querySelector('button[type="submit"]');
+                    console.log('🔘 Submit button found:', submitBtn);
+                    console.log('🔘 Submit button HTML:', submitBtn ? submitBtn.outerHTML : 'NOT FOUND');
+                    
+                    // Also check if button exists in modal footer
+                    const modalFooter = document.querySelector('#eventRegistrationModal .modal-footer');
+                    const submitBtnInFooter = modalFooter ? modalFooter.querySelector('button[type="submit"]') : null;
+                    console.log('🔘 Submit button in footer:', submitBtnInFooter);
+                    
+                    // Check all submit buttons in the form
+                    const allSubmitBtns = this.querySelectorAll('button[type="submit"]');
+                    console.log('🔘 All submit buttons in form:', allSubmitBtns.length);
+                    
+                    if (!submitBtn) {
+                        console.error('❌ Submit button not found in form!');
+                        return;
+                    }
                     const originalText = submitBtn.innerHTML;
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
                     
+                    console.log('📤 Sending request to:', `/register-event/${eventId}`);
                     fetch(`/register-event/${eventId}`, {
                         method: 'POST',
                         body: formData
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('📥 Response status:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('📥 Response data:', data);
                         if (data.success) {
                             // Show success message
                             const modal = bootstrap.Modal.getInstance(document.getElementById('eventRegistrationModal'));
@@ -1092,7 +1190,7 @@
                         }
                     })
                     .catch(error => {
-                        console.error('Error:', error);
+                        console.error('❌ Error:', error);
                         alert('Wystąpił błąd podczas zapisu. Spróbuj ponownie.');
                     })
                     .finally(() => {
@@ -1101,6 +1199,8 @@
                         submitBtn.innerHTML = originalText;
                     });
                 });
+            } else {
+                console.error('❌ Event registration form not found!');
             }
         });
     </script>

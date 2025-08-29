@@ -1,131 +1,108 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administratora - Menu</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
-</head>
-<body class="admin-body">
-        <div class="container-fluid">
-            <div class="row">            <!-- Sidebar -->
-            {% include 'admin/sidebar.html' %}
-                <!-- Main Content -->
-                <main class="col-lg-10 admin-content">
-                                    <div class="admin-header">
-                    <h1><i class="fas fa-bars me-2"></i>Zarządzanie Menu</h1>
-                    <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
-                        <i class="fas fa-sign-out-alt me-2"></i>
-                        Wyloguj
-                    </a>
+{% extends "admin/base.html" %}
+
+{% block title %}Menu{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-bars me-2"></i>Zarządzanie Menu
+{% endblock %}
+
+{% block page_actions %}
+    <button class="btn admin-btn" onclick="showAddMenuItemModal()">
+        <i class="fas fa-plus me-2"></i>
+        Dodaj Element Menu
+    </button>
+{% endblock %}
+
+{% block content %}
+    <!-- Menu Table -->
+    <div class="admin-card">
+        <div class="admin-card-body">
+            {% if menu_items %}
+                <div class="table-responsive">
+                    <table class="table admin-table">
+                        <thead>
+                            <tr>
+                                <th>Kolejność</th>
+                                <th>Nazwa</th>
+                                <th>URL</th>
+                                <th>Status</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in menu_items %}
+                            <tr data-menu-id="{{ item.id }}">
+                                <td>
+                                    <span class="badge admin-badge admin-badge-primary">{{ item.order }}</span>
+                                </td>
+                                <td>
+                                    <strong>{{ item.title }}</strong>
+
+                                </td>
+                                <td>
+                                    <code>{{ item.url or '#' }}</code>
+                                </td>
+
+                                <td>
+                                    {% if item.is_active %}
+                                        <span class="badge admin-badge admin-badge-success">Aktywny</span>
+                                    {% else %}
+                                        <span class="badge admin-badge admin-badge-danger">Nieaktywny</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm admin-btn-outline" onclick="editMenuItem({{ item.id }})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteMenuItem({{ item.id }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                    <!-- Add Menu Item Button -->
-                                    <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div></div>
-                    <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addMenuItemModal">
-                        <i class="fas fa-plus me-2"></i>
-                        Dodaj Element Menu
-                    </button>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-bars fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Brak elementów menu w systemie</p>
                 </div>
-                    <!-- Menu Items Table -->
-                    <div class="admin-card">
-                        <div class="admin-card-body">
-                            {% if menu_items %}
-                                <div class="table-responsive">
-                                    <table class="table admin-table admin-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Kolejność</th>
-                                                <th>Nazwa</th>
-                                                <th>URL</th>
-                                                <th>Status</th>
-                                                <th>Akcje</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for item in menu_items %}
-                                            <tr>
-                                                <td>
-                                                    <span class="admin-badge admin-badge-primary">{{ item.order }}</span>
-                                                </td>
-                                                <td>
-                                                    <strong>{{ item.title }}</strong>
-                                                </td>
-                                                <td>
-                                                    <code>{{ item.url }}</code>
-                                                </td>
-                                                <td>
-                                                    {% if item.is_active %}
-                                                        <span class="badge bg-success">Aktywny</span>
-                                                    {% else %}
-                                                        <span class="badge bg-danger">Nieaktywny</span>
-                                                    {% endif %}
-                                                </td>
-                                                <td>
-                                                    <div class="btn-group" role="group">
-                                                        <button <button class="btn btn-sm admin-btn-outline" 
-                                                                onclick="editMenuItem({{ item.id }}, '{{ item.title }}', '{{ item.url }}', {{ item.order }}, {{ item.is_active|lower }})">
-                                                            <i class="fas fa-edit"></i>
-                                                        </button>
-                                                        <button <button class="btn btn-sm admin-btn-danger" 
-                                                                onclick="deleteMenuItem({{ item.id }})">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            {% else %}
-                                <div class="text-center py-5">
-                                    <i class="fas fa-bars fa-3x text-muted mb-3"></i>
-                                    <h5 class="text-muted">Brak elementów menu</h5>
-                                    <p class="text-muted">Dodaj pierwszy element menu, aby rozpocząć</p>
-                                    <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addMenuItemModal">
-                                        <i class="fas fa-plus me-2"></i>
-                                        Dodaj Element Menu
-                                    </button>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </main>
-            </div>
+            {% endif %}
         </div>
     </div>
+
     <!-- Add Menu Item Modal -->
-    <div class="modal fade admin-modal" id="addMenuItemModal" tabindex="-1">
+    <div class="modal fade" id="addMenuItemModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-plus me-2"></i>
-                        Dodaj Nowy Element Menu
+                        <i class="fas fa-plus me-2"></i>Dodaj Nowy Element Menu
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="addMenuItemForm">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="title" class="form-label">Nazwa</label>
-                            <input type="text" class="form-control" id="title" name="title" required placeholder="np. O nas, Kontakt">
+                            <label for="menuItemName" class="form-label">Nazwa *</label>
+                            <input type="text" class="form-control" id="menuItemName" name="title" required>
                         </div>
                         <div class="mb-3">
-                            <label for="url" class="form-label">URL</label>
-                            <input type="text" class="form-control" id="url" name="url" required placeholder="np. #about, #contact">
+                            <label for="menuItemUrl" class="form-label">URL</label>
+                            <input type="text" class="form-control" id="menuItemUrl" name="url" placeholder="np. /o-nas, #sekcja">
                         </div>
+
                         <div class="mb-3">
-                            <label for="order" class="form-label">Kolejność</label>
-                            <input type="number" class="form-control" id="order" name="order" value="1" min="1" required>
+                            <label for="menuItemOrder" class="form-label">Kolejność</label>
+                            <input type="number" class="form-control" id="menuItemOrder" name="order" value="1" min="1">
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
-                                <label class="form-check-label" for="is_active">
+                                <input class="form-check-input" type="checkbox" id="menuItemActive" name="is_active" checked>
+                                <label class="form-check-label" for="menuItemActive">
                                     Aktywny
                                 </label>
                             </div>
@@ -133,42 +110,43 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn admin-btn">Zapisz Element</button>
+                        <button type="submit" class="btn admin-btn">Dodaj Element</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
     <!-- Edit Menu Item Modal -->
-    <div class="modal fade admin-modal" id="editMenuItemModal" tabindex="-1">
+    <div class="modal fade" id="editMenuItemModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-edit me-2"></i>
-                        Edytuj Element Menu
+                        <i class="fas fa-edit me-2"></i>Edytuj Element Menu
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="editMenuItemForm">
-                    <input type="hidden" id="edit_id" name="id">
+                    <input type="hidden" id="editMenuItemId" name="id">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="edit_title" class="form-label">Nazwa</label>
-                            <input type="text" class="form-control" id="edit_title" name="title" required>
+                            <label for="editMenuItemName" class="form-label">Nazwa *</label>
+                            <input type="text" class="form-control" id="editMenuItemName" name="title" required>
                         </div>
                         <div class="mb-3">
-                            <label for="edit_url" class="form-label">URL</label>
-                            <input type="text" class="form-control" id="edit_url" name="url" required>
+                            <label for="editMenuItemUrl" class="form-label">URL</label>
+                            <input type="text" class="form-control" id="editMenuItemUrl" name="url">
                         </div>
+
                         <div class="mb-3">
-                            <label for="edit_order" class="form-label">Kolejność</label>
-                            <input type="number" class="form-control" id="edit_order" name="order" min="1" required>
+                            <label for="editMenuItemOrder" class="form-label">Kolejność</label>
+                            <input type="number" class="form-control" id="editMenuItemOrder" name="order" min="1">
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
-                                <label class="form-check-label" for="edit_is_active">
+                                <input class="form-check-input" type="checkbox" id="editMenuItemActive" name="is_active">
+                                <label class="form-check-label" for="editMenuItemActive">
                                     Aktywny
                                 </label>
                             </div>
@@ -182,103 +160,125 @@
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Add Menu Item
-        function addMenuItem() {
-            const form = document.getElementById('addMenuItemForm');
-            const formData = new FormData(form);
-            fetch('/admin/api/menu', {
-                method: 'POST',
-                body: formData
-            })
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Show add menu item modal
+    function showAddMenuItemModal() {
+        document.getElementById('addMenuItemForm').reset();
+        const modal = new bootstrap.Modal(document.getElementById('addMenuItemModal'));
+        modal.show();
+    }
+
+    // Edit menu item function
+    function editMenuItem(menuId) {
+        // Pobierz wszystkie elementy menu i znajdź ten o podanym ID
+        fetch('/admin/api/menu')
             .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
+            .then(menuItems => {
+                const menuItem = menuItems.find(item => item.id === menuId);
+                if (menuItem) {
+                    document.getElementById('editMenuItemId').value = menuItem.id;
+                    document.getElementById('editMenuItemName').value = menuItem.title;
+                    document.getElementById('editMenuItemUrl').value = menuItem.url || '';
+
+                    document.getElementById('editMenuItemOrder').value = menuItem.order || 1;
+                    document.getElementById('editMenuItemActive').checked = menuItem.is_active;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('editMenuItemModal'));
+                    modal.show();
                 } else {
-                    alert('Błąd: ' + data.error);
+                    alert('Element menu nie został znaleziony');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Wystąpił błąd podczas dodawania elementu menu');
+                alert('Wystąpił błąd podczas ładowania elementu menu');
             });
-        }
-        // Edit Menu Item
-        function editMenuItem(id, title, url, order, isActive) {
-            document.getElementById('edit_id').value = id;
-            document.getElementById('edit_title').value = title;
-            document.getElementById('edit_url').value = url;
-            document.getElementById('edit_order').value = order;
-            document.getElementById('edit_is_active').checked = isActive;
-            new bootstrap.Modal(document.getElementById('editMenuItemModal')).show();
-        }
-        // Save Menu Item
-        function saveMenuItem() {
-            const form = document.getElementById('editMenuItemForm');
-            const formData = new FormData(form);
-            fetch('/admin/api/menu', {
-                method: 'PUT',
-                body: formData
+    }
+
+    // Delete menu item function
+    function deleteMenuItem(menuId) {
+        if (confirm('Czy na pewno chcesz usunąć ten element menu? Tej operacji nie można cofnąć.')) {
+            fetch(`/admin/api/menu?id=${menuId}`, {
+                method: 'DELETE'
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Błąd: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Wystąpił błąd podczas zapisywania zmian');
-            });
-        }
-        // Delete Menu Item
-        function deleteMenuItem(id) {
-            if (confirm('Czy na pewno chcesz usunąć ten element menu?')) {
-                fetch(`/admin/api/menu?id=${id}`, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Błąd: ' + (data.message || data.error || 'Nieznany błąd'));
+                    alert('Element menu został usunięty pomyślnie!');
+                    // Usuń wiersz z tabeli
+                    const row = document.querySelector(`tr[data-menu-id="${menuId}"]`);
+                    if (row) {
+                        row.remove();
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Wystąpił błąd podczas usuwania elementu menu');
-                });
-            }
+                } else {
+                    alert('Błąd podczas usuwania: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas usuwania elementu menu');
+            });
         }
-        // Form submissions
-        document.getElementById('addMenuItemForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            addMenuItem();
-        });
-        document.getElementById('editMenuItemForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            saveMenuItem();
-        });
-        // Sidebar toggle functionality
-        document.getElementById('sidebarToggle').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('show');
-        });
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', function(event) {
-            const sidebar = document.getElementById('sidebar');
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            if (window.innerWidth < 992 && 
-                !sidebar.contains(event.target) && 
-                !sidebarToggle.contains(event.target)) {
-                sidebar.classList.remove('show');
+    }
+
+    // Form submissions
+    document.getElementById('addMenuItemForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        formData.append('is_active', document.getElementById('menuItemActive').checked);
+        
+        fetch('/admin/api/menu', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Element menu został dodany pomyślnie!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addMenuItemModal'));
+                modal.hide();
+                // Odśwież stronę
+                window.location.reload();
+            } else {
+                alert('Błąd podczas dodawania: ' + data.error);
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Wystąpił błąd podczas dodawania elementu menu');
         });
-    </script>
-</body>
-</html>
+    });
+
+    document.getElementById('editMenuItemForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        formData.append('is_active', document.getElementById('editMenuItemActive').checked);
+        
+        fetch('/admin/api/menu', {
+            method: 'PUT',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Element menu został zaktualizowany pomyślnie!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editMenuItemModal'));
+                modal.hide();
+                // Odśwież stronę
+                window.location.reload();
+            } else {
+                alert('Błąd podczas aktualizacji: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Wystąpił błąd podczas aktualizacji elementu menu');
+        });
+    });
+</script>
+{% endblock %}

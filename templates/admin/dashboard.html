@@ -1,111 +1,98 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administratora - Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
-</head>
-<body class="admin-body">
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            {% include 'admin/sidebar.html' %}
+{% extends "admin/base.html" %}
 
-            <!-- Main Content -->
-            <main class="col-lg-10 admin-content">
-                <div class="admin-header">
-                    <h1><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h1>
-                    <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
-                        <i class="fas fa-sign-out-alt me-2"></i>
-                        Wyloguj
-                    </a>
-                </div>
+{% block title %}Dashboard{% endblock %}
 
-                <!-- Stats Cards -->
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <div class="admin-stats-card">
-                            <i class="fas fa-user-plus"></i>
-                            <h3>{{ stats.total_registrations }}</h3>
-                            <p>Wszystkie Rejestracje</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="admin-stats-card">
-                            <i class="fas fa-clock"></i>
-                            <h3>{{ stats.pending_registrations }}</h3>
-                            <p>Oczekujące</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="admin-stats-card">
-                            <i class="fas fa-comments"></i>
-                            <h3>{{ stats.total_testimonials }}</h3>
-                            <p>Opinie</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="admin-stats-card">
-                            <i class="fas fa-bars"></i>
-                            <h3>{{ stats.active_menu_items }}</h3>
-                            <p>Aktywne Menu</p>
-                        </div>
-                    </div>
-                </div>
+{% block page_title %}
+    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+{% endblock %}
 
-                <!-- Recent Registrations -->
-                <div class="admin-card">
-                    <div class="admin-card-body">
-                        {% if recent_registrations %}
-                            <div class="table-responsive">
-                                <table class="table admin-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Imię</th>
-                                            <th>Email</th>
-                                            <th>Telefon</th>
-                                            <th>Status</th>
-                                            <th>Data</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for registration in recent_registrations %}
-                                        <tr>
-                                            <td>
-                                                <strong>{{ registration.name }}</strong>
-                                            </td>
-                                            <td>{{ registration.email }}</td>
-                                            <td>{{ registration.phone or 'Brak' }}</td>
-                                            <td>
-                                                {% if registration.status == 'pending' %}
-                                                    <span class="admin-badge admin-badge-warning">Oczekująca</span>
-                                                {% elif registration.status == 'approved' %}
-                                                    <span class="admin-badge admin-badge-success">Zatwierdzona</span>
-                                                {% else %}
-                                                    <span class="admin-badge admin-badge-danger">{{ registration.status }}</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>{{ registration.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% else %}
-                            <div class="text-center py-4">
-                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                <p class="admin-text-muted">Brak rejestracji</p>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </main>
+{% block page_actions %}
+    <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
+        <i class="fas fa-sign-out-alt me-2"></i>
+        Wyloguj
+    </a>
+{% endblock %}
+
+{% block content %}
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-user-plus"></i>
+                <h3>{{ stats.total_registrations }}</h3>
+                <p>Wszystkie Rejestracje</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-clock"></i>
+                <h3>{{ stats.pending_registrations }}</h3>
+                <p>Oczekujące</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-comments"></i>
+                <h3>{{ stats.total_testimonials }}</h3>
+                <p>Opinie</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-bars"></i>
+                <h3>{{ stats.active_menu_items }}</h3>
+                <p>Aktywne Menu</p>
+            </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    <!-- Recent Registrations -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h5><i class="fas fa-list me-2"></i>Ostatnie Rejestracje</h5>
+        </div>
+        <div class="admin-card-body">
+            {% if recent_registrations %}
+                <div class="table-responsive">
+                    <table class="table admin-table">
+                        <thead>
+                            <tr>
+                                <th>Imię</th>
+                                <th>Email</th>
+                                <th>Telefon</th>
+                                <th>Status</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for registration in recent_registrations %}
+                            <tr>
+                                <td>
+                                    <strong>{{ registration.name }}</strong>
+                                </td>
+                                <td>{{ registration.email }}</td>
+                                <td>{{ registration.phone or 'Brak' }}</td>
+                                <td>
+                                    {% if registration.status == 'pending' %}
+                                        <span class="badge admin-badge admin-badge-warning">Oczekująca</span>
+                                    {% elif registration.status == 'approved' %}
+                                        <span class="badge admin-badge admin-badge-success">Zatwierdzona</span>
+                                    {% else %}
+                                        <span class="badge admin-badge admin-badge-danger">{{ registration.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ registration.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Brak rejestracji</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

@@ -11,29 +11,116 @@
                 Dashboard
             </a>
         </li>
+        
+        <!-- Grupa: Treść -->
         <li class="nav-item">
-            <a href="{{ url_for('admin_sections') }}" class="nav-link {% if request.endpoint == 'admin_sections' %}active{% endif %}">
-                <i class="fas fa-th-large"></i>
-                Sekcje
+            <a href="#contentSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="false">
+                <i class="fas fa-file-alt me-2"></i>
+                Treść
+                <i class="fas fa-chevron-down ms-auto"></i>
             </a>
+            <div class="collapse" id="contentSubmenu">
+                <ul class="nav flex-column ms-3">
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_menu') }}" class="nav-link {% if request.endpoint == 'admin_menu' %}active{% endif %}">
+                            <i class="fas fa-bars"></i>
+                            Menu
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_sections') }}" class="nav-link {% if request.endpoint == 'admin_sections' %}active{% endif %}">
+                            <i class="fas fa-th-large"></i>
+                            Sekcje
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_pages') }}" class="nav-link {% if request.endpoint == 'admin_pages' %}active{% endif %}">
+                            <i class="fas fa-file-alt"></i>
+                            Podstrony
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_benefits') }}" class="nav-link {% if request.endpoint == 'admin_benefits' %}active{% endif %}">
+                            <i class="fas fa-star"></i>
+                            Korzyści
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_testimonials') }}" class="nav-link {% if request.endpoint == 'admin_testimonials' %}active{% endif %}">
+                            <i class="fas fa-quote-left"></i>
+                            Opinie
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_faq') }}" class="nav-link {% if request.endpoint == 'admin_faq' %}active{% endif %}">
+                            <i class="fas fa-question-circle"></i>
+                            FAQ
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </li>
+        
+        <!-- Grupa: Mailing -->
         <li class="nav-item">
-            <a href="{{ url_for('admin_benefits') }}" class="nav-link {% if request.endpoint == 'admin_benefits' %}active{% endif %}">
-                <i class="fas fa-star"></i>
-                Korzyści
+            <a href="#mailingSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="false">
+                <i class="fas fa-envelope me-2"></i>
+                Mailing
+                <i class="fas fa-chevron-down ms-auto"></i>
             </a>
+            <div class="collapse" id="mailingSubmenu">
+                <ul class="nav flex-column ms-3">
+                    <li class="nav-item">
+                        <a href="{{ url_for('email_templates') }}" class="nav-link {% if request.endpoint == 'email_templates' %}active{% endif %}">
+                            <i class="fas fa-envelope"></i>
+                            Szablony e-mail
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_schedules') }}" class="nav-link {% if request.endpoint == 'admin_schedules' %}active{% endif %}">
+                            <i class="fas fa-clock"></i>
+                            Harmonogramy
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_user_groups') }}" class="nav-link {% if request.endpoint == 'admin_user_groups' %}active{% endif %}">
+                            <i class="fas fa-user-friends"></i>
+                            Grupy użytkowników
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </li>
+        
+        <!-- Grupa: Użytkownicy -->
         <li class="nav-item">
-            <a href="{{ url_for('admin_testimonials') }}" class="nav-link {% if request.endpoint == 'admin_testimonials' %}active{% endif %}">
-                <i class="fas fa-quote-left"></i>
-                Opinie
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ url_for('admin_pages') }}" class="nav-link {% if request.endpoint == 'admin_pages' %}active{% endif %}">
-                <i class="fas fa-file-alt"></i>
-                Podstrony
-            </a>
+                                    <a href="#usersSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="false">
+                            <i class="fas fa-users me-2"></i>
+                            Użytkownicy i Wydarzenia
+                            <i class="fas fa-chevron-down ms-auto"></i>
+                        </a>
+            <div class="collapse" id="usersSubmenu">
+                <ul class="nav flex-column ms-3">
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_event_schedule') }}" class="nav-link {% if request.endpoint == 'admin_event_schedule' %}active{% endif %}">
+                            <i class="fas fa-calendar-alt"></i>
+                            Wydarzenia
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_event_registrations') }}" class="nav-link {% if request.endpoint == 'admin_event_registrations' %}active{% endif %}">
+                            <i class="fas fa-calendar-check"></i>
+                            Rejestracje
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_users') }}" class="nav-link {% if request.endpoint == 'admin_users' %}active{% endif %}">
+                            <i class="fas fa-user-cog"></i>
+                            Konta
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </li>
         <li class="nav-item">
             <a href="{{ url_for('admin_seo') }}" class="nav-link {% if request.endpoint == 'admin_seo' %}active{% endif %}">
@@ -42,59 +129,12 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="{{ url_for('admin_menu') }}" class="nav-link {% if request.endpoint == 'admin_menu' %}active{% endif %}">
-                <i class="fas fa-bars"></i>
-                Menu
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ url_for('admin_event_schedule') }}" class="nav-link {% if request.endpoint == 'admin_event_schedule' %}active{% endif %}">
-                <i class="fas fa-calendar-alt"></i>
-                Harmonogram wydarzeń
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ url_for('email_templates') }}" class="nav-link {% if request.endpoint == 'email_templates' %}active{% endif %}">
-                <i class="fas fa-envelope"></i>
-                Szablony e-mail
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ url_for('admin_email_schedules') }}" class="nav-link {% if request.endpoint == 'admin_email_schedules' %}active{% endif %}">
-                <i class="fas fa-clock"></i>
-                Harmonogram e-maili
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ url_for('admin_email_campaigns') }}" class="nav-link {% if request.endpoint == 'admin_email_campaigns' %}active{% endif %}">
-                <i class="fas fa-bullhorn"></i>
-                Kampanie e-mail
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ url_for('admin_recipient_groups') }}" class="nav-link {% if request.endpoint == 'admin_recipient_groups' %}active{% endif %}">
-                <i class="fas fa-users"></i>
-                Grupy odbiorców
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ url_for('admin_registrations') }}" class="nav-link {% if request.endpoint == 'admin_registrations' %}active{% endif %}">
-                <i class="fas fa-users"></i>
-                Rejestracje
-            </a>
-        </li>
-        <li class="nav-item">
             <a href="{{ url_for('admin_social') }}" class="nav-link {% if request.endpoint == 'admin_social' %}active{% endif %}">
                 <i class="fas fa-share-alt"></i>
                 Media społecznościowe
             </a>
         </li>
-        <li class="nav-item">
-            <a href="{{ url_for('admin_faq') }}" class="nav-link {% if request.endpoint == 'admin_faq' %}active{% endif %}">
-                <i class="fas fa-question-circle"></i>
-                FAQ
-            </a>
-        </li>
+
     </ul>
     
 </nav>

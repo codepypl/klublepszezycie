@@ -18,7 +18,7 @@ from typing import Dict, List, Optional
 import logging
 
 from flask import current_app, render_template_string, url_for
-from models import db, EmailTemplate, EmailSubscription, EmailLog, EmailSchedule, CustomEmailCampaign, EmailRecipientGroup
+from models import db, EmailTemplate, EmailSubscription, EmailLog, EmailSchedule
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -52,6 +52,9 @@ class EmailService:
             bool: True if email sent successfully, False otherwise
         """
         try:
+            print(f"DEBUG: send_email - config keys: {list(self.config.keys()) if hasattr(self, 'config') and self.config else 'No config'}")
+            print(f"DEBUG: send_email - MAIL_SERVER: {self.config.get('MAIL_SERVER') if hasattr(self, 'config') and self.config else 'No config'}")
+            
             # Create message
             msg = MIMEMultipart('alternative')
             msg['From'] = f"{self.config['MAIL_DEFAULT_SENDER_NAME']} <{self.config['MAIL_DEFAULT_SENDER']}>"
@@ -103,37 +106,22 @@ class EmailService:
         Returns:
             bool: True if user is approved, False otherwise
         """
-        try:
-            from models import Registration
-            registration = Registration.query.filter_by(email=email).first()
-            if registration and registration.status == 'approved':
-                return True
-            return False
-        except Exception as e:
-            logger.error(f"Error checking user approval status for {email}: {str(e)}")
-            return False
+        # System nie wymaga już aprobaty - wszystkie użytkowniki są automatycznie zatwierdzeni
+        return True
     
     def get_approved_subscribers(self) -> List[EmailSubscription]:
         """
-        Get only approved subscribers
+        Get all active subscribers (system nie wymaga już aprobaty)
         
         Returns:
-            List[EmailSubscription]: List of approved subscribers
+            List[EmailSubscription]: List of all active subscribers
         """
         try:
-            from models import Registration
-            # Get all active subscriptions
-            all_subscriptions = EmailSubscription.query.filter_by(is_active=True).all()
-            approved_subscriptions = []
-            
-            for subscription in all_subscriptions:
-                if self._is_user_approved(subscription.email):
-                    approved_subscriptions.append(subscription)
-            
-            return approved_subscriptions
+            # Get all active subscriptions - system nie wymaga już aprobaty
+            return EmailSubscription.query.filter_by(is_active=True).all()
             
         except Exception as e:
-            logger.error(f"Error getting approved subscribers: {str(e)}")
+            logger.error(f"Error getting subscribers: {str(e)}")
             return []
     
     def send_template_email(self, to_email: str, template_name: str, 
@@ -151,19 +139,27 @@ class EmailService:
         """
         try:
             # Check if user is approved (except for admin notifications)
+            print(f"DEBUG: send_template_email - template: {template_name}, email: {to_email}")
             if template_name != 'admin_notification' and not self._is_user_approved(to_email):
+                print(f"DEBUG: User not approved: {to_email}")
                 logger.info(f"Email not sent to {to_email} - user not approved")
                 return False
+            print(f"DEBUG: User approved, continuing with email send")
             
             # Get template by template type (since we now use types instead of names)
+            print(f"DEBUG: Looking for template with type: {template_name}")
             template = EmailTemplate.query.filter_by(template_type=template_name, is_active=True).first()
             if not template:
+                print(f"DEBUG: Template not found by type, trying by name")
                 # Fallback: try to find by name for backward compatibility
                 template = EmailTemplate.query.filter_by(name=template_name, is_active=True).first()
             
             if not template:
+                print(f"DEBUG: Template '{template_name}' not found or inactive")
                 logger.error(f"Template '{template_name}' not found or inactive")
                 return False
+            
+            print(f"DEBUG: Found template: {template.name}, subject: {template.subject}")
             
             # Debug: log which template was found
             logger.info(f"Found template: ID={template.id}, name='{template.name}', subject='{template.subject}', type='{template.template_type}'")

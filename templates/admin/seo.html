@@ -1,26 +1,19 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administratora - SEO/SEM</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
-</head>
-<body class="admin-body">
-        <div class="container-fluid">
-            <div class="row">            <!-- Sidebar -->
-            {% include 'admin/sidebar.html' %}
-                <!-- Main Content -->
-                <main class="col-lg-10 admin-content">
-                    <div class="admin-header">
-                        <h1><i class="fas fa-search me-2"></i>Zarządzanie SEO/SEM</h1>
-                        <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
-                            <i class="fas fa-sign-out-alt me-2"></i>
-                            Wyloguj
-                        </a>
-                    </div>
+{% extends "admin/base.html" %}
+
+{% block title %}SEO/SEM - Panel Administratora{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-search me-2"></i>Zarządzanie SEO/SEM
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ url_for('admin_logout') }}" class="btn btn-outline-danger">
+        <i class="fas fa-sign-out-alt me-2"></i>
+        Wyloguj
+    </a>
+{% endblock %}
+
+{% block content %}
                     <!-- Add SEO Settings Button -->
                     <div class="row mb-4">
                         <div class="col-12">
@@ -72,7 +65,7 @@
                         <div class="admin-card-body">
                             {% if seo_settings %}
                                 <div class="table-responsive">
-                                    <table class="table admin-table admin-table">
+                                    <table class="table admin-table">
                                         <thead>
                                             <tr>
                                                 <th>Strona</th>
@@ -97,14 +90,14 @@
                                                 </td>
                                                 <td>
                                                     {% if seo.og_title %}
-                                                        <span class="badge bg-success">Tak</span>
+                                                        <span class="badge admin-badge admin-badge-success">Tak</span>
                                                     {% else %}
                                                         <span class="admin-badge admin-badge-secondary">Nie</span>
                                                     {% endif %}
                                                 </td>
                                                 <td>
                                                     {% if seo.twitter_card %}
-                                                        <span class="badge bg-success">Tak</span>
+                                                        <span class="badge admin-badge admin-badge-success">Tak</span>
                                                     {% else %}
                                                         <span class="admin-badge admin-badge-secondary">Nie</span>
                                                     {% endif %}
@@ -357,8 +350,10 @@
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
         // Character counters
         function updateCount(input, counter, maxLength) {
             const remaining = maxLength - input.value.length;
@@ -490,5 +485,4 @@
             }
         });
     </script>
-</body>
-</html>
+{% endblock %}

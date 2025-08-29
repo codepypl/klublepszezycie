@@ -40,6 +40,13 @@ class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.getenv('DEV_DATABASE_URL', 
         'postgresql://shadi:Das5ahec@localhost:5432/klub')
+    
+    # Database connection parameters for scripts
+    DB_HOST = os.getenv('DB_HOST', 'localhost')
+    DB_PORT = os.getenv('DB_PORT', '5432')
+    DB_NAME = os.getenv('DB_NAME', 'klub')
+    DB_USER = os.getenv('DB_USER', 'shadi')
+    DB_PASSWORD = os.getenv('DB_PASSWORD', 'Das5ahec')
 
 class ProductionConfig(Config):
     DEBUG = False

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mój Profil - Klub Lepsze Życie</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+    <style>
+        .profile-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 0;
+        }
+        .profile-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+            border-radius: 15px;
+            text-align: center;
+        }
+        .profile-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 3rem;
+            color: white;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 25px;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .club-member-badge {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .club-member-badge.active {
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #555;
+        }
+        .info-value {
+            color: #333;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-heart me-2"></i>Klub Lepsze Życie
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('index') }}">
+                    <i class="fas fa-home me-1"></i>Strona główna
+                </a>
+                <a class="nav-link active" href="{{ url_for('user_profile') }}">
+                    <i class="fas fa-user me-1"></i>Mój profil
+                </a>
+                <a class="nav-link" href="{{ url_for('admin_logout') }}">
+                    <i class="fas fa-sign-out-alt me-1"></i>Wyloguj
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container profile-container">
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <div class="profile-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <h1 id="userName">Mój Profil</h1>
+            <p class="mb-0">Zarządzaj swoimi danymi i preferencjami</p>
+        </div>
+
+        <!-- Profile Information -->
+        <div class="profile-card">
+            <h3 class="mb-4">
+                <i class="fas fa-info-circle me-2 text-primary"></i>
+                Informacje o profilu
+            </h3>
+            
+            <div class="info-item">
+                <span class="info-label">Nazwa użytkownika:</span>
+                <span class="info-value" id="username">Ładowanie...</span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Data utworzenia konta:</span>
+                <span class="info-value" id="createdAt">Ładowanie...</span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Ostatnie logowanie:</span>
+                <span class="info-value" id="lastLogin">Ładowanie...</span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Status klubu:</span>
+                <span class="info-value">
+                    <span class="club-member-badge" id="clubMemberBadge">
+                        <i class="fas fa-users me-1"></i>
+                        <span id="clubMemberText">Ładowanie...</span>
+                    </span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Edit Profile Form -->
+        <div class="profile-card">
+            <h3 class="mb-4">
+                <i class="fas fa-edit me-2 text-primary"></i>
+                Edytuj profil
+            </h3>
+            
+            <form id="profileForm">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="name" class="form-label">Imię i nazwisko *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="email" class="form-label">Adres e-mail *</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="phone" class="form-label">Numer telefonu</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" placeholder="+48 123 456 789">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="clubMember" class="form-label">Członkostwo w klubie</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" id="clubMember" name="club_member">
+                            <label class="form-check-label" for="clubMember">
+                                Chcę dołączyć do klubu i otrzymywać powiadomienia o wydarzeniach
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="button" class="btn btn-secondary me-md-2" onclick="resetForm()">
+                        <i class="fas fa-undo me-1"></i>Resetuj
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Zapisz zmiany
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Club Benefits -->
+        <div class="profile-card" id="clubBenefitsCard" style="display: none;">
+            <h3 class="mb-4">
+                <i class="fas fa-star me-2 text-warning"></i>
+                Korzyści z członkostwa w klubie
+            </h3>
+            
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="text-center">
+                        <i class="fas fa-calendar-alt fa-3x text-primary mb-3"></i>
+                        <h5>Wydarzenia</h5>
+                        <p class="text-muted">Otrzymuj powiadomienia o nowych wydarzeniach</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="text-center">
+                        <i class="fas fa-envelope fa-3x text-success mb-3"></i>
+                        <h5>Newsletter</h5>
+                        <p class="text-muted">Dostęp do ekskluzywnych treści i porad</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="text-center">
+                        <i class="fas fa-users fa-3x text-info mb-3"></i>
+                        <h5>Społeczność</h5>
+                        <p class="text-muted">Dołącz do społeczności pasjonatów</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-check-circle me-2"></i>Sukces!
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="successMessage">Profil został zaktualizowany pomyślnie!</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Błąd!
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="errorMessage">Wystąpił błąd podczas aktualizacji profilu.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        let currentUserData = null;
+        
+        // Load user profile data
+        async function loadProfile() {
+            try {
+                const response = await fetch('/api/profile');
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentUserData = data.user;
+                    displayProfile(data.user);
+                } else {
+                    showError('Błąd podczas ładowania profilu');
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                showError('Błąd podczas ładowania profilu');
+            }
+        }
+        
+        // Display profile data
+        function displayProfile(user) {
+            // Profile header
+            document.getElementById('userName').textContent = user.name || user.username;
+            
+            // Profile info
+            document.getElementById('username').textContent = user.username;
+            document.getElementById('createdAt').textContent = formatDate(user.created_at);
+            document.getElementById('lastLogin').textContent = user.last_login ? formatDate(user.last_login) : 'Nigdy';
+            
+            // Club member status
+            const clubMemberBadge = document.getElementById('clubMemberBadge');
+            const clubMemberText = document.getElementById('clubMemberText');
+            
+            if (user.club_member) {
+                clubMemberBadge.classList.add('active');
+                clubMemberText.textContent = 'Członek klubu';
+                document.getElementById('clubBenefitsCard').style.display = 'block';
+            } else {
+                clubMemberBadge.classList.remove('active');
+                clubMemberText.textContent = 'Nie jest członkiem';
+                document.getElementById('clubBenefitsCard').style.display = 'none';
+            }
+            
+            // Form fields
+            document.getElementById('name').value = user.name || '';
+            document.getElementById('email').value = user.email || '';
+            document.getElementById('phone').value = user.phone || '';
+            document.getElementById('clubMember').checked = user.club_member || false;
+        }
+        
+        // Handle form submission
+        document.getElementById('profileForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('name').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                club_member: document.getElementById('clubMember').checked
+            };
+            
+            // Validation
+            if (!formData.name) {
+                showError('Imię i nazwisko jest wymagane');
+                return;
+            }
+            
+            if (!formData.email) {
+                showError('Adres e-mail jest wymagany');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess(data.message);
+                    loadProfile(); // Reload profile data
+                } else {
+                    showError(data.error || 'Błąd podczas aktualizacji profilu');
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                showError('Błąd podczas aktualizacji profilu');
+            }
+        });
+        
+        // Reset form to original values
+        function resetForm() {
+            if (currentUserData) {
+                document.getElementById('name').value = currentUserData.name || '';
+                document.getElementById('email').value = currentUserData.email || '';
+                document.getElementById('phone').value = currentUserData.phone || '';
+                document.getElementById('clubMember').checked = currentUserData.club_member || false;
+            }
+        }
+        
+        // Show success modal
+        function showSuccess(message) {
+            document.getElementById('successMessage').textContent = message;
+            const modal = new bootstrap.Modal(document.getElementById('successModal'));
+            modal.show();
+        }
+        
+        // Show error modal
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            const modal = new bootstrap.Modal(document.getElementById('errorModal'));
+            modal.show();
+        }
+        
+        // Format date
+        function formatDate(dateString) {
+            if (!dateString) return 'Brak';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('pl-PL', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // Load profile when page loads
+        document.addEventListener('DOMContentLoaded', loadProfile);
+    </script>
+</body>
+</html>
+
+
+
+
+

@@ -1,131 +1,107 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administratora - FAQ</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
-</head>
-<body class="admin-body">
-        <div class="container-fluid">
-            <div class="row">            <!-- Sidebar -->
-            {% include 'admin/sidebar.html' %}
-                <!-- Main Content -->
-                                <main class="col-lg-10 admin-content">
-                    <div class="admin-header">
-                        <h1><i class="fas fa-question-circle me-2"></i>Zarządzanie FAQ</h1>
-                        <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
-                            <i class="fas fa-sign-out-alt me-2"></i>
-                            Wyloguj
-                        </a>
-                    </div>
-                    <!-- Add FAQ Button -->
-                                    <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div></div>
-                    <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addFaqModal">
-                        <i class="fas fa-plus me-2"></i>
-                        Dodaj Pytanie
-                    </button>
+{% extends "admin/base.html" %}
+
+{% block title %}FAQ{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-question-circle me-2"></i>Zarządzanie FAQ
+{% endblock %}
+
+{% block page_actions %}
+    <button class="btn admin-btn" onclick="showAddFaqModal()">
+        <i class="fas fa-plus me-2"></i>
+        Dodaj Pytanie
+    </button>
+{% endblock %}
+
+{% block content %}
+    <!-- FAQ Table -->
+    <div class="admin-card">
+        <div class="admin-card-body">
+            {% if faqs %}
+                <div class="table-responsive">
+                    <table class="table admin-table">
+                        <thead>
+                            <tr>
+                                <th>Kolejność</th>
+                                <th>Pytanie</th>
+                                <th>Odpowiedź</th>
+                                <th>Status</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for faq in faqs %}
+                            <tr data-faq-id="{{ faq.id }}">
+                                <td>
+                                    <span class="badge admin-badge admin-badge-primary">{{ faq.order }}</span>
+                                </td>
+                                <td>
+                                    <strong>{{ faq.question }}</strong>
+                                </td>
+                                <td>
+                                    {{ faq.answer[:100] }}{% if faq.answer|length > 100 %}...{% endif %}
+                                </td>
+
+                                <td>
+                                    {% if faq.is_active %}
+                                        <span class="badge admin-badge admin-badge-success">Aktywne</span>
+                                    {% else %}
+                                        <span class="badge admin-badge admin-badge-danger">Nieaktywne</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm admin-btn-outline" onclick="editFaq({{ faq.id }})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteFaq({{ faq.id }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                    <!-- FAQ Table -->
-                    <div class="admin-card">
-                        <div class="admin-card-body">
-                            {% if faqs %}
-                                <div class="table-responsive">
-                                    <table class="table admin-table admin-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Kolejność</th>
-                                                <th>Pytanie</th>
-                                                <th>Odpowiedź</th>
-                                                <th>Status</th>
-                                                <th>Akcje</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for faq in faqs %}
-                                            <tr>
-                                                <td>
-                                                    <span class="admin-badge admin-badge-primary">{{ faq.order }}</span>
-                                                </td>
-                                                <td>
-                                                    <strong>{{ faq.question }}</strong>
-                                                </td>
-                                                <td>
-                                                    <small class="text-muted">{{ faq.answer[:100] }}{% if faq.answer|length > 100 %}...{% endif %}</small>
-                                                </td>
-                                                <td>
-                                                    {% if faq.is_active %}
-                                                        <span class="badge bg-success">Aktywne</span>
-                                                    {% else %}
-                                                        <span class="badge bg-danger">Nieaktywne</span>
-                                                    {% endif %}
-                                                </td>
-                                                <td>
-                                                    <div class="btn-group" role="group">
-                                                        <button <button class="btn btn-sm admin-btn-outline" 
-                                                                onclick="editFaq({{ faq.id }}, '{{ faq.question }}', '{{ faq.answer }}', {{ faq.order }}, {{ faq.is_active|lower }})">
-                                                            <i class="fas fa-edit"></i>
-                                                        </button>
-                                                        <button <button class="btn btn-sm admin-btn-danger" 
-                                                                onclick="deleteFaq({{ faq.id }})">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            {% else %}
-                                <div class="text-center py-5">
-                                    <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
-                                    <h5 class="text-muted">Brak pytań FAQ</h5>
-                                    <p class="text-muted">Dodaj pierwsze pytanie, aby rozpocząć</p>
-                                    <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addFaqModal">
-                                        <i class="fas fa-plus me-2"></i>
-                                        Dodaj Pytanie
-                                    </button>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </main>
-            </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Brak pytań FAQ w systemie</p>
+                </div>
+            {% endif %}
         </div>
     </div>
+
     <!-- Add FAQ Modal -->
-    <div class="modal fade admin-modal" id="addFaqModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+    <div class="modal fade" id="addFaqModal" tabindex="-1">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-plus me-2"></i>
-                        Dodaj Nowe Pytanie FAQ
+                        <i class="fas fa-plus me-2"></i>Dodaj Nowe Pytanie FAQ
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="addFaqForm">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="question" class="form-label">Pytanie</label>
-                            <input type="text" class="form-control" id="question" name="question" required placeholder="np. Jak dołączyć do klubu?">
+                            <label for="faqQuestion" class="form-label">Pytanie *</label>
+                            <input type="text" class="form-control" id="faqQuestion" name="question" required>
                         </div>
                         <div class="mb-3">
-                            <label for="answer" class="form-label">Odpowiedź</label>
-                            <textarea class="form-control" id="answer" name="answer" rows="4" required placeholder="Odpowiedź na pytanie..."></textarea>
+                            <label for="faqAnswer" class="form-label">Odpowiedź *</label>
+                            <textarea class="form-control" id="faqAnswer" name="answer" rows="4" required></textarea>
                         </div>
+
                         <div class="mb-3">
-                            <label for="order" class="form-label">Kolejność</label>
-                            <input type="number" class="form-control" id="order" name="order" value="1" min="1" required>
+                            <label for="faqOrder" class="form-label">Kolejność</label>
+                            <input type="number" class="form-control" id="faqOrder" name="order" value="1" min="1">
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
-                                <label class="form-check-label" for="is_active">
+                                <input class="form-check-input" type="checkbox" id="faqActive" name="is_active" checked>
+                                <label class="form-check-label" for="faqActive">
                                     Aktywne
                                 </label>
                             </div>
@@ -133,42 +109,43 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn admin-btn">Zapisz Pytanie</button>
+                        <button type="submit" class="btn admin-btn">Dodaj Pytanie</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
     <!-- Edit FAQ Modal -->
-    <div class="modal fade admin-modal" id="editFaqModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+    <div class="modal fade" id="editFaqModal" tabindex="-1">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-edit me-2"></i>
-                        Edytuj Pytanie FAQ
+                        <i class="fas fa-edit me-2"></i>Edytuj Pytanie FAQ
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="editFaqForm">
-                    <input type="hidden" id="edit_id" name="id">
+                    <input type="hidden" id="editFaqId" name="id">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="edit_question" class="form-label">Pytanie</label>
-                            <input type="text" class="form-control" id="edit_question" name="question" required>
+                            <label for="editFaqQuestion" class="form-label">Pytanie *</label>
+                            <input type="text" class="form-control" id="editFaqQuestion" name="question" required>
                         </div>
                         <div class="mb-3">
-                            <label for="edit_answer" class="form-label">Odpowiedź</label>
-                            <textarea class="form-control" id="edit_answer" name="answer" rows="4" required></textarea>
+                            <label for="editFaqAnswer" class="form-label">Odpowiedź *</label>
+                            <textarea class="form-control" id="editFaqAnswer" name="answer" rows="4" required></textarea>
                         </div>
+
                         <div class="mb-3">
-                            <label for="edit_order" class="form-label">Kolejność</label>
-                            <input type="number" class="form-control" id="edit_order" name="order" min="1" required>
+                            <label for="editFaqOrder" class="form-label">Kolejność</label>
+                            <input type="number" class="form-control" id="editFaqOrder" name="order" min="1">
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
-                                <label class="form-check-label" for="edit_is_active">
+                                <input class="form-check-input" type="checkbox" id="editFaqActive" name="is_active">
+                                <label class="form-check-label" for="editFaqActive">
                                     Aktywne
                                 </label>
                             </div>
@@ -182,103 +159,126 @@
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Add FAQ
-        function addFaq() {
-            const form = document.getElementById('addFaqForm');
-            const formData = new FormData(form);
-            fetch('/admin/api/faq', {
-                method: 'POST',
-                body: formData
-            })
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Show add FAQ modal
+    function showAddFaqModal() {
+        document.getElementById('addFaqForm').reset();
+        const modal = new bootstrap.Modal(document.getElementById('addFaqModal'));
+        modal.show();
+    }
+
+    // Edit FAQ function
+    function editFaq(faqId) {
+        fetch(`/admin/api/faq/${faqId}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload();
+                    const faq = data.faq;
+                    document.getElementById('editFaqId').value = faq.id;
+                    document.getElementById('editFaqQuestion').value = faq.question;
+                    document.getElementById('editFaqAnswer').value = faq.answer;
+
+                    document.getElementById('editFaqOrder').value = faq.order || 1;
+                    document.getElementById('editFaqActive').checked = faq.is_active;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('editFaqModal'));
+                    modal.show();
                 } else {
-                    alert('Błąd: ' + data.error);
+                    alert('Błąd podczas ładowania pytania: ' + data.error);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Wystąpił błąd podczas dodawania pytania FAQ');
+                alert('Wystąpił błąd podczas ładowania pytania');
             });
-        }
-        // Edit FAQ
-        function editFaq(id, question, answer, order, isActive) {
-            document.getElementById('edit_id').value = id;
-            document.getElementById('edit_question').value = question;
-            document.getElementById('edit_answer').value = answer;
-            document.getElementById('edit_order').value = order;
-            document.getElementById('edit_is_active').checked = isActive;
-            new bootstrap.Modal(document.getElementById('editFaqModal')).show();
-        }
-        // Save FAQ
-        function saveFaq() {
-            const form = document.getElementById('editFaqForm');
-            const formData = new FormData(form);
-            fetch('/admin/api/faq', {
-                method: 'PUT',
-                body: formData
+    }
+
+    // Delete FAQ function
+    function deleteFaq(faqId) {
+        if (confirm('Czy na pewno chcesz usunąć to pytanie? Tej operacji nie można cofnąć.')) {
+            fetch(`/admin/api/faq?id=${faqId}`, {
+                method: 'DELETE'
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Błąd: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Wystąpił błąd podczas zapisywania zmian');
-            });
-        }
-        // Delete FAQ
-        function deleteFaq(id) {
-            if (confirm('Czy na pewno chcesz usunąć to pytanie FAQ?')) {
-                fetch(`/admin/api/faq?id=${id}`, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Błąd: ' + (data.message || data.error || 'Nieznany błąd'));
+                    alert('Pytanie zostało usunięte pomyślnie!');
+                    // Usuń wiersz z tabeli
+                    const row = document.querySelector(`tr[data-faq-id="${faqId}"]`);
+                    if (row) {
+                        row.remove();
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Wystąpił błąd podczas usuwania pytania FAQ');
-                });
-            }
+                } else {
+                    alert('Błąd podczas usuwania: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas usuwania pytania');
+            });
         }
-        // Form submissions
-        document.getElementById('addFaqForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            addFaq();
-        });
-        document.getElementById('editFaqForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            saveFaq();
-        });
-        // Sidebar toggle functionality
-        document.getElementById('sidebarToggle').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('show');
-        });
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', function(event) {
-            const sidebar = document.getElementById('sidebar');
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            if (window.innerWidth < 992 && 
-                !sidebar.contains(event.target) && 
-                !sidebarToggle.contains(event.target)) {
-                sidebar.classList.remove('show');
+    }
+
+    // Form submissions
+    document.getElementById('addFaqForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        // Always send is_active field as string
+        formData.set('is_active', document.getElementById('faqActive').checked ? 'true' : 'false');
+        
+        fetch('/admin/api/faq', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Pytanie zostało dodane pomyślnie!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addFaqModal'));
+                modal.hide();
+                // Odśwież stronę
+                window.location.reload();
+            } else {
+                alert('Błąd podczas dodawania: ' + data.error);
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Wystąpił błąd podczas dodawania pytania');
         });
-    </script>
-</body>
-</html>
+    });
+
+    document.getElementById('editFaqForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        // Always send is_active field as string
+        formData.set('is_active', document.getElementById('editFaqActive').checked ? 'true' : 'false');
+        
+        fetch('/admin/api/faq', {
+            method: 'PUT',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Pytanie zostało zaktualizowane pomyślnie!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editFaqModal'));
+                modal.hide();
+                // Odśwież stronę
+                window.location.reload();
+            } else {
+                alert('Błąd podczas aktualizacji: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Wystąpił błąd podczas aktualizacji pytania');
+        });
+    });
+</script>
+{% endblock %}

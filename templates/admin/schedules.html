@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmonogramy - Panel Administratora</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}?v={{ range(1, 1000) | random }}" rel="stylesheet">
+</head>
+<body class="admin-body">
+    <div class="admin-container">
+        <div class="admin-sidebar" id="sidebar">
+            {% include 'admin/sidebar.html' %}
+        </div>
+        <div class="admin-content">
+            <div class="admin-header">
+                <h1><i class="fas fa-clock me-2"></i>Harmonogramy</h1>
+                <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
+                    <i class="fas fa-sign-out-alt me-2"></i>Wyloguj
+                </a>
+            </div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-clock me-2"></i>Harmonogramy
+                </h1>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addScheduleModal">
+                    <i class="fas fa-plus me-2"></i>Dodaj harmonogram
+                </button>
+            </div>
+
+            <!-- Lista harmonogramów -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="schedulesTable">
+                            <thead>
+                                <tr>
+                                    <th>Nazwa</th>
+                                    <th>Opis</th>
+                                    <th>Szablon</th>
+                                    <th>Typ wyzwalacza</th>
+                                    <th>Odbiorcy</th>
+                                    <th>Status</th>
+                                    <th>Ostatnie wysłanie</th>
+                                    <th>Liczba wysłanych</th>
+                                    <th>Akcje</th>
+                                </tr>
+                            </thead>
+                            <tbody id="schedulesTableBody">
+                                <!-- Dane będą ładowane przez JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal dodawania/edycji harmonogramu -->
+<div class="modal fade" id="addScheduleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scheduleModalTitle">Dodaj harmonogram</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="scheduleForm">
+                    <input type="hidden" id="scheduleId" name="id">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="scheduleName" class="form-label">Nazwa *</label>
+                                <input type="text" class="form-control" id="scheduleName" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="scheduleTemplate" class="form-label">Szablon e-mail *</label>
+                                <select class="form-select" id="scheduleTemplate" name="template_id" required>
+                                    <option value="">Wybierz szablon</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="scheduleDescription" class="form-label">Opis</label>
+                        <textarea class="form-control" id="scheduleDescription" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="scheduleTriggerType" class="form-label">Typ wyzwalacza *</label>
+                                <select class="form-select" id="scheduleTriggerType" name="trigger_type" required>
+                                    <option value="">Wybierz typ</option>
+                                    <option value="user_activation">Aktywacja konta użytkownika</option>
+                                    <option value="event_registration">Rejestracja na wydarzenie</option>
+                                    <option value="event_reminder">Przypomnienie o wydarzeniu</option>
+                                    <option value="manual">Ręczne</option>
+                                    <option value="scheduled">Zaplanowane</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="scheduleRecipientType" class="form-label">Typ odbiorcy *</label>
+                                <select class="form-select" id="scheduleRecipientType" name="recipient_type" required>
+                                    <option value="">Wybierz typ</option>
+                                    <option value="user">Użytkownik</option>
+                                    <option value="admin">Administrator</option>
+                                    <option value="group">Grupa</option>
+                                    <option value="all">Wszyscy</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="scheduleSendType" class="form-label">Typ wysłania</label>
+                                <select class="form-select" id="scheduleSendType" name="send_type">
+                                    <option value="immediate">Natychmiast</option>
+                                    <option value="scheduled">Zaplanowane</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="scheduleScheduledAt" class="form-label">Data wysłania</label>
+                                <input type="datetime-local" class="form-control" id="scheduleScheduledAt" name="scheduled_at">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="scheduleStatus" class="form-label">Status</label>
+                        <select class="form-select" id="scheduleStatus" name="status">
+                            <option value="active">Aktywny</option>
+                            <option value="paused">Wstrzymany</option>
+                            <option value="cancelled">Anulowany</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="button" class="btn btn-primary" onclick="saveSchedule()">Zapisz</button>
+            </div>
+        </div>
+    </div>
+</div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom Admin JS -->
+    <script src="{{ url_for('static', filename='js/admin.js') }}?v={{ range(1, 1000) | random }}"></script>
+<script>
+// Ładowanie danych przy starcie
+document.addEventListener('DOMContentLoaded', function() {
+    loadSchedules();
+});
+
+// Ładowanie harmonogramów
+async function loadSchedules() {
+    try {
+        const response = await fetch('/admin/api/schedules');
+        const data = await response.json();
+        
+        if (data.success) {
+            renderSchedulesTable(data.schedules);
+        } else {
+            console.error('Błąd podczas ładowania harmonogramów:', data.error);
+        }
+    } catch (error) {
+        console.error('Błąd podczas ładowania harmonogramów:', error);
+    }
+}
+
+// Renderowanie tabeli harmonogramów
+function renderSchedulesTable(schedules) {
+    const tbody = document.getElementById('schedulesTableBody');
+    tbody.innerHTML = '';
+    
+    schedules.forEach(schedule => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${schedule.name}</strong></td>
+            <td>${schedule.description || '-'}</td>
+            <td>${schedule.template_id}</td>
+            <td><span class="badge bg-info">${schedule.trigger_type}</span></td>
+            <td><span class="badge bg-secondary">${schedule.recipient_type}</span></td>
+            <td><span class="badge bg-success">${schedule.status}</span></td>
+            <td>${schedule.last_sent ? new Date(schedule.last_sent).toLocaleString('pl-PL') : '-'}</td>
+            <td>${schedule.sent_count || 0}</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="editSchedule(${schedule.id})" title="Edytuj">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="deleteSchedule(${schedule.id})" title="Usuń">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Zapisywanie harmonogramu
+async function saveSchedule() {
+    const form = document.getElementById('scheduleForm');
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('/admin/api/schedules', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Harmonogram został zapisany pomyślnie!');
+            bootstrap.Modal.getInstance(document.getElementById('addScheduleModal')).hide();
+            loadSchedules();
+        } else {
+            alert('Błąd podczas zapisywania: ' + data.error);
+        }
+    } catch (error) {
+        alert('Błąd podczas zapisywania: ' + error.message);
+    }
+    }
+</script>
+</body>
+</html>

@@ -122,12 +122,20 @@ function initializeFormHandling() {
             const formData = new FormData(this);
             
             // Send AJAX request
+            console.log('Sending registration request to:', this.action);
+            console.log('Form data:', Object.fromEntries(formData));
+            
             fetch(this.action, {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                return response.json();
+            })
             .then(data => {
+                console.log('Response data:', data);
                 if (data.success) {
                     // Show success message
                     showNotification(data.message, 'success');
@@ -145,7 +153,7 @@ function initializeFormHandling() {
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
+                console.error('Fetch error:', error);
                 showNotification('Wystąpił błąd podczas rejestracji. Spróbuj ponownie.', 'error');
                 // Reset button
                 submitButton.innerHTML = originalText;

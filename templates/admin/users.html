@@ -1,0 +1,271 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Użytkownicy{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-users me-2"></i>Zarządzanie Użytkownikami
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
+        <i class="fas fa-sign-out-alt me-2"></i>
+        Wyloguj
+    </a>
+{% endblock %}
+
+{% block content %}
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-users"></i>
+                <h3>{{ users|length }}</h3>
+                <p>Wszyscy Użytkownicy</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-user-check"></i>
+                <h3>{{ users|selectattr('is_active', 'equalto', true)|list|length }}</h3>
+                <p>Aktywne Konta</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-user-shield"></i>
+                <h3>{{ users|selectattr('is_admin', 'equalto', true)|list|length }}</h3>
+                <p>Administratorzy</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-user-clock"></i>
+                <h3>{{ users|selectattr('last_login', 'none')|list|length }}</h3>
+                <p>Nigdy Nie Logowali</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Users Table -->
+    <div class="admin-card">
+        <div class="admin-card-body">
+            {% if edit_user %}
+            <!-- Edit User Form -->
+            <div class="admin-card mb-4">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-user-edit me-2"></i>Edytuj użytkownika: {{ edit_user.name }}</h5>
+                </div>
+                <div class="admin-card-body">
+                    <form id="editUserForm">
+                        <input type="hidden" id="editUserId" value="{{ edit_user.id }}">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="editUserName" class="form-label">Imię</label>
+                                <input type="text" class="form-control" id="editUserName" value="{{ edit_user.name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editUserEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="editUserEmail" value="{{ edit_user.email }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editUserPhone" class="form-label">Telefon</label>
+                                <input type="tel" class="form-control" id="editUserPhone" value="{{ edit_user.phone or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editUserClub" class="form-label">Członek klubu</label>
+                                <select class="form-select" id="editUserClub">
+                                    <option value="true" {% if edit_user.club_member %}selected{% endif %}>Tak</option>
+                                    <option value="false" {% if not edit_user.club_member %}selected{% endif %}>Nie</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editUserActive" class="form-label">Status</label>
+                                <select class="form-select" id="editUserActive">
+                                    <option value="true" {% if edit_user.is_active %}selected{% endif %}>Aktywny</option>
+                                    <option value="false" {% if not edit_user.is_active %}selected{% endif %}>Nieaktywny</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editUserAdmin" class="form-label">Rola</label>
+                                <select class="form-select" id="editUserAdmin">
+                                    <option value="false" {% if not edit_user.is_admin %}selected{% endif %}>Użytkownik</option>
+                                    <option value="true" {% if edit_user.is_admin %}selected{% endif %}>Administrator</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button type="submit" class="btn admin-btn">
+                                <i class="fas fa-save me-2"></i>Zapisz zmiany
+                            </button>
+                            <a href="{{ url_for('admin_users') }}" class="btn admin-btn-secondary ms-2">
+                                <i class="fas fa-times me-2"></i>Anuluj
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if users %}
+                <div class="table-responsive">
+                    <table class="table admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Imię</th>
+                                <th>Email</th>
+                                <th>Telefon</th>
+                                <th>Członek klubu</th>
+                                <th>Status</th>
+                                <th>Ostatnie logowanie</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr data-user-id="{{ user.id }}">
+                                <td>{{ user.id }}</td>
+                                <td>
+                                    <strong>{{ user.name }}</strong>
+                                    {% if user.is_admin %}
+                                        <br><small class="text-muted">Administrator</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="mailto:{{ user.email }}" class="text-decoration-none">
+                                        {{ user.email }}
+                                    </a>
+                                </td>
+                                <td>{{ user.phone or 'Brak' }}</td>
+                                <td>
+                                    {% if user.club_member %}
+                                        <span class="badge admin-badge admin-badge-success">Tak</span>
+                                    {% else %}
+                                        <span class="badge admin-badge admin-badge-secondary">Nie</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.is_active %}
+                                        <span class="badge admin-badge admin-badge-success">Aktywny</span>
+                                    {% else %}
+                                        <span class="badge admin-badge admin-badge-danger">Nieaktywny</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.last_login %}
+                                        {{ user.last_login.strftime('%d.%m.%Y %H:%M') }}
+                                    {% else %}
+                                        <span class="text-muted">Nigdy</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm admin-btn-outline" 
+                                                onclick="editUser({{ user.id }})" 
+                                                title="Edytuj użytkownika">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        {% if not user.is_admin %}
+                                        <button type="button" class="btn btn-sm admin-btn-danger" 
+                                                onclick="deleteUser({{ user.id }})" 
+                                                title="Usuń użytkownika">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Brak użytkowników w systemie</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Obsługa formularza edycji użytkownika
+    document.addEventListener('DOMContentLoaded', function() {
+        const editUserForm = document.getElementById('editUserForm');
+        if (editUserForm) {
+            editUserForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const userId = document.getElementById('editUserId').value;
+                const userData = {
+                    name: document.getElementById('editUserName').value,
+                    email: document.getElementById('editUserEmail').value,
+                    phone: document.getElementById('editUserPhone').value,
+                    club_member: document.getElementById('editUserClub').value === 'true',
+                    is_active: document.getElementById('editUserActive').value === 'true',
+                    is_admin: document.getElementById('editUserAdmin').value === 'true'
+                };
+                
+                // Wyślij żądanie aktualizacji
+                fetch(`/admin/api/user/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(userData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Użytkownik został zaktualizowany pomyślnie!');
+                        // Przekieruj z powrotem do listy użytkowników
+                        window.location.href = '{{ url_for("admin_users") }}';
+                    } else {
+                        alert('Błąd podczas aktualizacji: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Wystąpił błąd podczas aktualizacji użytkownika');
+                });
+            });
+        }
+    });
+    
+    function editUser(userId) {
+        // Znajdź użytkownika po ID i przekieruj do edycji
+        const userRow = document.querySelector(`tr[data-user-id="${userId}"]`);
+        if (userRow) {
+            const email = userRow.querySelector('td:nth-child(3) a').textContent.trim();
+            window.location.href = `{{ url_for('admin_users') }}?edit_user=${encodeURIComponent(email)}`;
+        }
+    }
+    
+    function deleteUser(userId) {
+        if (confirm('Czy na pewno chcesz usunąć tego użytkownika? Tej operacji nie można cofnąć.')) {
+            fetch(`/admin/api/user/${userId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Użytkownik został usunięty pomyślnie!');
+                    // Usuń wiersz z tabeli
+                    const row = document.querySelector(`tr[data-user-id="${userId}"]`);
+                    if (row) {
+                        row.remove();
+                    }
+                } else {
+                    alert('Błąd podczas usuwania: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas usuwania użytkownika');
+            });
+        }
+    }
+</script>
+{% endblock %}

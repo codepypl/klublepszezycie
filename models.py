@@ -9,12 +9,22 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
+    username = db.Column(db.String(80), unique=True, nullable=True)  # Made nullable for new system
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(100))  # Full name of the user
+    phone = db.Column(db.String(20))  # Phone number
+    club_member = db.Column(db.Boolean, default=False)  # Whether user wants to join the club
+    is_active = db.Column(db.Boolean, default=True)  # Whether the account is active
     is_admin = db.Column(db.Boolean, default=False)
+    is_temporary_password = db.Column(db.Boolean, default=True)  # Whether user needs to change password
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
+    
+    def check_password(self, password):
+        """Check if provided password matches the hash"""
+        from werkzeug.security import check_password_hash
+        return check_password_hash(self.password_hash, password)
 
 class MenuItem(db.Model):
     __tablename__ = 'menu_items'
@@ -111,6 +121,7 @@ class Page(db.Model):
     meta_keywords = db.Column(db.String(200))
     is_active = db.Column(db.Boolean, default=True)
     is_published = db.Column(db.Boolean, default=False)
+    order = db.Column(db.Integer, default=0)
     published_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -168,72 +179,37 @@ class EmailSchedule(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
-    template_type = db.Column(db.String(50), nullable=False)  # newsletter, notification
-    schedule_type = db.Column(db.String(20), nullable=False)  # interval, cron, event_based
-    schedule_config = db.Column(db.Text)  # JSON string with schedule configuration
-    is_active = db.Column(db.Boolean, default=True)
-    last_run = db.Column(db.DateTime)
-    next_run = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    description = db.Column(db.Text)
+    template_id = db.Column(db.Integer, db.ForeignKey('email_templates.id'), nullable=False)
     
-    # For event-based schedules
-    trigger_event = db.Column(db.String(100))  # new_event, new_member, etc.
+    # Kiedy (kryteria)
+    trigger_type = db.Column(db.String(50), nullable=False)  # 'user_activation', 'event_registration', 'event_reminder', 'manual', 'scheduled'
+    trigger_conditions = db.Column(db.Text)  # JSON z warunkami
     
-    # For interval schedules
-    interval_value = db.Column(db.Integer)  # number of units
-    interval_unit = db.Column(db.String(20))  # minutes, hours, days, weeks, months
+    # Do kogo (odbiorcy)
+    recipient_type = db.Column(db.String(20), nullable=False)  # 'user', 'admin', 'group', 'all'
+    recipient_emails = db.Column(db.Text)  # JSON array z konkretnymi emailami
+    recipient_group_id = db.Column(db.Integer, db.ForeignKey('user_groups.id'))
     
-    # For cron schedules
-    cron_expression = db.Column(db.String(100))  # "0 9 * * 1" (every Monday at 9 AM)
-
-class CustomEmailCampaign(db.Model):
-    __tablename__ = 'custom_email_campaigns'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    subject = db.Column(db.String(200), nullable=False)
-    html_content = db.Column(db.Text)
-    text_content = db.Column(db.Text)
-    
-    # Recipient selection
-    recipient_type = db.Column(db.String(20), nullable=False)  # specific, filtered, all
-    recipient_emails = db.Column(db.Text)  # JSON array of specific emails
-    recipient_filters = db.Column(db.Text)  # JSON with filter criteria
-    
-    # Scheduling
-    send_type = db.Column(db.String(20), default='immediate')  # immediate, scheduled
+    # Data wysłania
+    send_type = db.Column(db.String(20), default='immediate')  # 'immediate', 'scheduled'
     scheduled_at = db.Column(db.DateTime)
     
     # Status
-    status = db.Column(db.String(20), default='draft')  # draft, scheduled, sending, completed, cancelled
+    status = db.Column(db.String(20), default='active')  # 'active', 'paused', 'cancelled'
+    last_sent = db.Column(db.DateTime)
     sent_count = db.Column(db.Integer, default=0)
-    total_count = db.Column(db.Integer, default=0)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    sent_at = db.Column(db.DateTime)
+    
+    # Relationships
+    template = db.relationship('EmailTemplate', backref='schedules')
+    recipient_group = db.relationship('UserGroup', backref='email_schedules')
 
-class EmailRecipientGroup(db.Model):
-    __tablename__ = 'email_recipient_groups'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    
-    # Group criteria
-    criteria_type = db.Column(db.String(20), nullable=False)  # registration_date, status, custom
-    criteria_config = db.Column(db.Text)  # JSON with criteria configuration
-    
-    # Members count (cached)
-    member_count = db.Column(db.Integer, default=0)
-    
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    def __repr__(self):
-        return f'<EmailLog {self.email} - {self.subject}>'
+# Stary model CustomEmailCampaign został usunięty - zastąpiony przez nowy system
+
+# Stary model EmailRecipientGroup został usunięty - zastąpiony przez nowy system
 
 class FAQ(db.Model):
     __tablename__ = 'faqs'
@@ -392,4 +368,207 @@ class EventRecipientGroup(db.Model):
     
     def __repr__(self):
         return f'<EventRecipientGroup {self.name} - Event {self.event_id}>'
+
+
+class UserGroup(db.Model):
+    """Grupy użytkowników - podstawowy model dla grupowania"""
+    __tablename__ = 'user_groups'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    
+    # Typ grupy
+    group_type = db.Column(db.String(50), nullable=False)  # 'manual', 'event_based', 'dynamic'
+    
+    # Kryteria grupy (JSON)
+    criteria = db.Column(db.Text)  # JSON z kryteriami
+    
+    # Status
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Liczba członków (cache)
+    member_count = db.Column(db.Integer, default=0)
+    
+    # Relacje
+    members = db.relationship('UserGroupMember', backref='group', cascade='all, delete-orphan')
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<UserGroup {self.name} ({self.group_type})>'
+    
+    def update_member_count(self):
+        """Aktualizuje liczbę członków grupy"""
+        self.member_count = len([m for m in self.members if m.is_active])
+        return self.member_count
+
+
+class UserGroupMember(db.Model):
+    """Członkowie grup użytkowników"""
+    __tablename__ = 'user_group_members'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('user_groups.id'), nullable=False)
+    
+    # Typ członka
+    member_type = db.Column(db.String(50), nullable=False)  # 'email', 'registration', 'event_registration'
+    
+    # Dane członka
+    email = db.Column(db.String(120), nullable=False)
+    name = db.Column(db.String(100))
+    
+    # Dodatkowe dane (JSON)
+    member_metadata = db.Column(db.Text)  # JSON z dodatkowymi danymi
+    
+    # Status
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<UserGroupMember {self.email} in group {self.group_id}>'
+
+
+class EmailCampaign(db.Model):
+    """Kampanie emailowe - mailing celowany"""
+    __tablename__ = 'email_campaigns'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    subject = db.Column(db.String(200), nullable=False)
+    
+    # Treść emaila
+    html_content = db.Column(db.Text)
+    text_content = db.Column(db.Text)
+    
+    # Odbiorcy
+    recipient_groups = db.Column(db.Text)  # JSON array z ID grup
+    custom_emails = db.Column(db.Text)  # JSON array z dodatkowymi emailami
+    
+    # Status
+    status = db.Column(db.String(20), default='draft')  # draft, scheduled, sending, completed, cancelled
+    
+    # Planowanie
+    send_type = db.Column(db.String(20), default='immediate')  # immediate, scheduled
+    scheduled_at = db.Column(db.DateTime)
+    
+    # Statystyki
+    total_recipients = db.Column(db.Integer, default=0)
+    sent_count = db.Column(db.Integer, default=0)
+    failed_count = db.Column(db.Integer, default=0)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    sent_at = db.Column(db.DateTime)
+    
+    def __repr__(self):
+        return f'<EmailCampaign {self.name} ({self.status})>'
+
+
+class EmailAutomation(db.Model):
+    """Automatyzacje emailowe - mailing automatyczny"""
+    __tablename__ = 'email_automations'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    
+    # Typ automatyzacji
+    automation_type = db.Column(db.String(50), nullable=False)  # 'welcome', 'event_reminder', 'newsletter'
+    
+    # Szablon
+    template_id = db.Column(db.Integer, db.ForeignKey('email_templates.id'))
+    
+    # Warunki uruchomienia
+    trigger_conditions = db.Column(db.Text)  # JSON z warunkami
+    
+    # Status
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relacje
+    template = db.relationship('EmailTemplate', backref='automations')
+    
+    def __repr__(self):
+        return f'<EmailAutomation {self.name} ({self.automation_type})>'
+
+
+class EmailAutomationLog(db.Model):
+    """Logi automatyzacji emailowych"""
+    __tablename__ = 'email_automation_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    automation_id = db.Column(db.Integer, db.ForeignKey('email_automations.id'), nullable=False)
+    
+    # Szczegóły wykonania
+    execution_type = db.Column(db.String(50), nullable=False)  # 'triggered', 'scheduled', 'manual'
+    recipient_count = db.Column(db.Integer, default=0)
+    success_count = db.Column(db.Integer, default=0)
+    error_count = db.Column(db.Integer, default=0)
+    
+    # Status
+    status = db.Column(db.String(20), default='running')  # running, completed, failed
+    
+    # Szczegóły
+    details = db.Column(db.Text)  # JSON z szczegółami
+    
+    # Timestamps
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime)
+    
+    # Relacje
+    automation = db.relationship('EmailAutomation', backref='logs')
+    
+    def __repr__(self):
+        return f'<EmailAutomationLog {self.automation.name} ({self.status})>'
+
+
+class EventEmailSchedule(db.Model):
+    """Harmonogram emaili dla wydarzeń"""
+    __tablename__ = 'event_email_schedules'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=False)
+    
+    # Typ powiadomienia
+    notification_type = db.Column(db.String(50), nullable=False)  # '24h_before', '1h_before', '5min_before'
+    
+    # Status
+    status = db.Column(db.String(20), default='pending')  # pending, sent, failed, cancelled
+    
+    # Planowanie
+    scheduled_at = db.Column(db.DateTime, nullable=False)
+    sent_at = db.Column(db.DateTime)
+    
+    # Odbiorcy
+    recipient_group_id = db.Column(db.Integer, db.ForeignKey('user_groups.id'))
+    
+    # Szablon
+    template_id = db.Column(db.Integer, db.ForeignKey('email_templates.id'))
+    
+    # Statystyki
+    recipient_count = db.Column(db.Integer, default=0)
+    sent_count = db.Column(db.Integer, default=0)
+    failed_count = db.Column(db.Integer, default=0)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relacje
+    event = db.relationship('EventSchedule', backref='email_schedules')
+    recipient_group = db.relationship('UserGroup', backref='event_schedules')
+    template = db.relationship('EmailTemplate', backref='event_schedules')
+    
+    def __repr__(self):
+        return f'<EventEmailSchedule {self.event.title} - {self.notification_type}>'
 

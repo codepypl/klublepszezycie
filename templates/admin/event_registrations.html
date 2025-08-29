@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rejestracje na wydarzenia - Panel Admina</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
+</head>
+<body class="admin-body">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            {% include 'admin/sidebar.html' %}
+
+            <!-- Main Content -->
+            <main class="col-lg-10 admin-content">
+                <div class="admin-header">
+                    <h1><i class="fas fa-calendar-check me-2"></i>Rejestracje na wydarzenia</h1>
+                    <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
+                        <i class="fas fa-sign-out-alt me-2"></i>
+                        Wyloguj
+                    </a>
+                </div>
+
+                <!-- Content -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="h4 mb-0">Lista rejestracji na wydarzenia</h2>
+                    <div>
+                        <button class="btn btn-primary" onclick="exportEventRegistrations()">
+                            <i class="fas fa-download me-2"></i>Eksportuj
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Info about user accounts -->
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Informacja:</strong> Każda rejestracja na wydarzenie automatycznie tworzy konto użytkownika w systemie. 
+                    Użytkownicy otrzymują email z hasłem tymczasowym i mogą się logować na swoje konto.
+                    <br>
+                    <small class="text-muted">Wszystkie konta użytkowników są widoczne w sekcji "Zarządzanie kontami".</small>
+                </div>
+
+    <!-- Filtry -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="eventFilter" class="form-label">Wydarzenie</label>
+                    <select class="form-select" id="eventFilter">
+                        <option value="">Wszystkie wydarzenia</option>
+                        {% for event in events %}
+                        <option value="{{ event.id }}">{{ event.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="dateFilter" class="form-label">Data od</label>
+                    <input type="date" class="form-control" id="dateFilter">
+                </div>
+                <div class="col-md-3">
+                    <label for="searchFilter" class="form-label">Szukaj</label>
+                    <input type="text" class="form-control" id="searchFilter" placeholder="Imię, email...">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela rejestracji -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped" id="eventRegistrationsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Wydarzenie</th>
+                            <th>Imię</th>
+                            <th>Email</th>
+                            <th>Telefon</th>
+                            <th>Klub</th>
+                            <th>Data rejestracji</th>
+                            <th>Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for registration in event_registrations %}
+                        <tr data-event-id="{{ registration.event_id }}" data-registration-id="{{ registration.id }}">
+                            <td>{{ registration.id }}</td>
+                            <td>
+                                <strong>{{ registration.event.title if registration.event else 'Brak wydarzenia' }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    {{ registration.event.event_date.strftime('%d.%m.%Y %H:%M') if registration.event and registration.event.event_date else 'Brak daty' }}
+                                </small>
+                            </td>
+                            <td>
+                                <strong>{{ registration.name }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    <a href="{{ url_for('admin_users') }}?edit_user={{ registration.email }}" class="text-decoration-none">
+                                        <i class="fas fa-user-edit me-1"></i>Edytuj konto
+                                    </a>
+                                </small>
+                            </td>
+                            <td>
+                                <a href="mailto:{{ registration.email }}" class="text-decoration-none">
+                                    {{ registration.email }}
+                                </a>
+                            </td>
+                            <td>{{ registration.phone or 'Brak' }}</td>
+                            <td>
+                                {% if registration.wants_club_news %}
+                                <span class="badge bg-success">Tak</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Nie</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ registration.created_at.strftime('%d.%m.%Y %H:%M') if registration.created_at else 'Brak' }}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        onclick="deleteRegistration({{ registration.id }})"
+                                        title="Usuń rejestrację">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+// Filtrowanie tabeli
+document.addEventListener('DOMContentLoaded', function() {
+            const eventFilter = document.getElementById('eventFilter');
+        const dateFilter = document.getElementById('dateFilter');
+        const searchFilter = document.getElementById('searchFilter');
+        
+        function filterTable() {
+            const eventValue = eventFilter.value;
+            const dateValue = dateFilter.value;
+            const searchValue = searchFilter.value.toLowerCase();
+            
+            const rows = document.querySelectorAll('#eventRegistrationsTable tbody tr');
+            
+            rows.forEach(row => {
+                let show = true;
+                
+                // Filtrowanie po wydarzeniu
+                if (eventValue && row.dataset.eventId !== eventValue) {
+                    show = false;
+                }
+                
+                // Filtrowanie po dacie
+                if (dateValue) {
+                    const registrationDate = row.querySelector('td:nth-child(7)').textContent;
+                    if (!registrationDate.includes(dateValue.split('-')[2])) {
+                        show = false;
+                    }
+                }
+                
+                // Filtrowanie po tekście
+                if (searchValue) {
+                    const name = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+                    const email = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+                    if (!name.includes(searchValue) && !email.includes(searchValue)) {
+                        show = false;
+                    }
+                }
+                
+                row.style.display = show ? '' : 'none';
+            });
+        }
+        
+        eventFilter.addEventListener('change', filterTable);
+        dateFilter.addEventListener('change', filterTable);
+        searchFilter.addEventListener('input', filterTable);
+});
+
+
+
+
+
+// Usuń rejestrację
+function deleteRegistration(registrationId) {
+    if (confirm('Czy na pewno chcesz usunąć tę rejestrację? Tej operacji nie można cofnąć.')) {
+        fetch(`/admin/api/event-registration/${registrationId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Rejestracja została usunięta', 'success');
+                // Usuń wiersz z tabeli
+                const row = document.querySelector(`tr[data-registration-id="${registrationId}"]`);
+                if (row) {
+                    row.remove();
+                }
+            } else {
+                showNotification('Błąd podczas usuwania: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Wystąpił błąd podczas usuwania', 'error');
+        });
+    }
+}
+
+// Eksport rejestracji
+function exportEventRegistrations() {
+    const table = document.getElementById('eventRegistrationsTable');
+    const rows = Array.from(table.querySelectorAll('tbody tr:not([style*="display: none"])'));
+    
+    let csv = 'ID,Wydarzenie,Imię,Email,Telefon,Klub,Data rejestracji\n';
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const eventTitle = cells[1].querySelector('strong') ? cells[1].querySelector('strong').textContent : 'Brak';
+        const eventDate = cells[1].querySelector('small') ? cells[1].querySelector('small').textContent : 'Brak';
+        const name = cells[2].querySelector('strong') ? cells[2].querySelector('strong').textContent : 'Brak';
+        const email = cells[3].textContent;
+        const phone = cells[4].textContent;
+        const club = cells[5].textContent.includes('Tak') ? 'Tak' : 'Nie';
+        const date = cells[6].textContent;
+        
+        csv += `"${eventTitle}","${eventDate}","${name}","${email}","${phone}","${club}","${date}"\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `rejestracje_na_wydarzenia_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Funkcja powiadomień
+function showNotification(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+    </script>
+            </main>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

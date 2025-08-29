@@ -1,147 +1,118 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administratora - Social Media</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
-</head>
-<body class="admin-body">
-        <div class="container-fluid">
-            <div class="row">            <!-- Sidebar -->
-            {% include 'admin/sidebar.html' %}
-                <!-- Main Content -->
-                <main class="col-lg-10 admin-content">
-                                    <div class="admin-header">
-                    <h1><i class="fas fa-share-alt me-2"></i>Zarządzanie Social Media</h1>
-                    <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
-                        <i class="fas fa-sign-out-alt me-2"></i>
-                        Wyloguj
-                    </a>
+{% extends "admin/base.html" %}
+
+{% block title %}Social Media{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-share-alt me-2"></i>Zarządzanie Social Media
+{% endblock %}
+
+{% block page_actions %}
+    <button class="btn admin-btn" onclick="showAddLinkModal()">
+        <i class="fas fa-plus me-2"></i>
+        Dodaj Link
+    </button>
+{% endblock %}
+
+{% block content %}
+    <!-- Social Links Table -->
+    <div class="admin-card">
+        <div class="admin-card-body">
+            {% if social_links %}
+                <div class="table-responsive">
+                    <table class="table admin-table">
+                        <thead>
+                            <tr>
+                                <th>Platforma</th>
+                                <th>URL</th>
+                                <th>Status</th>
+                                <th>Kolejność</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for link in social_links %}
+                            <tr data-link-id="{{ link.id }}">
+                                <td>
+                                    <i class="fab fa-{{ link.platform.lower() }} me-2"></i>
+                                    <strong>{{ link.platform }}</strong>
+                                </td>
+                                <td>
+                                    <a href="{{ link.url }}" target="_blank" class="text-decoration-none">
+                                        {{ link.url }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if link.is_active %}
+                                        <span class="badge admin-badge admin-badge-success">Aktywny</span>
+                                    {% else %}
+                                        <span class="badge admin-badge admin-badge-danger">Nieaktywny</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge admin-badge admin-badge-secondary">{{ link.order }}</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm admin-btn-outline" onclick="editLink({{ link.id }})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteLink({{ link.id }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                    <!-- Add Social Link Button -->
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div></div>
-                        <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addSocialLinkModal">
-                            <i class="fas fa-plus me-2"></i>
-                            Dodaj Link Social Media
-                        </button>
-                    </div>
-                    <!-- Social Links Table -->
-                    <div class="admin-card">
-                        <div class="admin-card-body">
-                            {% if social_links %}
-                                <div class="table-responsive">
-                                    <table class="table admin-table admin-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Platforma</th>
-                                                <th>Nazwa</th>
-                                                <th>URL</th>
-                                                <th>Ikona</th>
-                                                <th>Status</th>
-                                                <th>Akcje</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for link in social_links %}
-                                            <tr>
-                                                <td>
-                                                    <span class="admin-badge admin-badge-primary">{{ link.platform }}</span>
-                                                </td>
-                                                <td>
-                                                    <strong>{{ link.name }}</strong>
-                                                </td>
-                                                <td>
-                                                    <a href="{{ link.url }}" target="_blank" class="text-decoration-none">
-                                                        {{ link.url[:50] }}{% if link.url|length > 50 %}...{% endif %}
-                                                    </a>
-                                                </td>
-                                                <td>
-                                                    <i class="fab fa-{{ link.platform.lower() }} fa-2x text-primary"></i>
-                                                </td>
-                                                <td>
-                                                    {% if link.is_active %}
-                                                        <span class="badge bg-success">Aktywny</span>
-                                                    {% else %}
-                                                        <span class="badge bg-danger">Nieaktywny</span>
-                                                    {% endif %}
-                                                </td>
-                                                <td>
-                                                    <div class="btn-group" role="group">
-                                                        <button <button class="btn btn-sm admin-btn-outline" 
-                                                                onclick="editSocialLink({{ link.id }}, '{{ link.platform }}', '{{ link.name }}', '{{ link.url }}', {{ link.is_active|lower }})">
-                                                            <i class="fas fa-edit"></i>
-                                                        </button>
-                                                        <button <button class="btn btn-sm admin-btn-danger" 
-                                                                onclick="deleteSocialLink({{ link.id }})">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            {% else %}
-                                <div class="text-center py-5">
-                                    <i class="fas fa-share-alt fa-3x text-muted mb-3"></i>
-                                    <h5 class="text-muted">Brak linków social media</h5>
-                                    <p class="text-muted">Dodaj pierwszy link, aby rozpocząć</p>
-                                    <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addSocialLinkModal">
-                                        <i class="fas fa-plus me-2"></i>
-                                        Dodaj Link Social Media
-                                    </button>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </main>
-            </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-share-alt fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Brak linków social media</p>
+                </div>
+            {% endif %}
         </div>
     </div>
-    <!-- Add Social Link Modal -->
-    <div class="modal fade admin-modal" id="addSocialLinkModal" tabindex="-1">
+
+    <!-- Add Link Modal -->
+    <div class="modal fade" id="addLinkModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-plus me-2"></i>
-                        Dodaj Nowy Link Social Media
+                        <i class="fas fa-plus me-2"></i>Dodaj Link Social Media
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="addSocialLinkForm">
+                <form id="addLinkForm">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="platform" class="form-label">Platforma</label>
-                            <select class="form-control" id="platform" name="platform" required>
+                            <label for="linkPlatform" class="form-label">Platforma *</label>
+                            <select class="form-select" id="linkPlatform" name="platform" required>
                                 <option value="">Wybierz platformę</option>
-                                <option value="facebook">Facebook</option>
-                                <option value="instagram">Instagram</option>
-                                <option value="twitter">Twitter</option>
-                                <option value="linkedin">LinkedIn</option>
-                                <option value="youtube">YouTube</option>
-                                <option value="tiktok">TikTok</option>
-                                <option value="snapchat">Snapchat</option>
-                                <option value="pinterest">Pinterest</option>
+                                <option value="Facebook">Facebook</option>
+                                <option value="Instagram">Instagram</option>
+                                <option value="Twitter">Twitter</option>
+                                <option value="LinkedIn">LinkedIn</option>
+                                <option value="YouTube">YouTube</option>
+                                <option value="TikTok">TikTok</option>
+                                <option value="WhatsApp">WhatsApp</option>
+                                <option value="Telegram">Telegram</option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label for="name" class="form-label">Nazwa</label>
-                            <input type="text" class="form-control" id="name" name="name" required placeholder="np. Nasz Facebook, Instagram Klubu">
+                            <label for="linkUrl" class="form-label">URL *</label>
+                            <input type="url" class="form-control" id="linkUrl" name="url" required>
                         </div>
                         <div class="mb-3">
-                            <label for="url" class="form-label">URL</label>
-                            <input type="url" class="form-control" id="url" name="url" required placeholder="https://facebook.com/klub">
+                            <label for="linkOrder" class="form-label">Kolejność</label>
+                            <input type="number" class="form-control" id="linkOrder" name="order" value="1" min="1">
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
-                                <label class="form-check-label" for="is_active">
+                                <input class="form-check-input" type="checkbox" id="linkActive" name="is_active" checked>
+                                <label class="form-check-label" for="linkActive">
                                     Aktywny
                                 </label>
                             </div>
@@ -149,51 +120,51 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn admin-btn">Zapisz Link</button>
+                        <button type="submit" class="btn admin-btn">Dodaj Link</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-    <!-- Edit Social Link Modal -->
-    <div class="modal fade admin-modal" id="editSocialLinkModal" tabindex="-1">
+
+    <!-- Edit Link Modal -->
+    <div class="modal fade" id="editLinkModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-edit me-2"></i>
-                        Edytuj Link Social Media
+                        <i class="fas fa-edit me-2"></i>Edytuj Link Social Media
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="editSocialLinkForm">
-                    <input type="hidden" id="edit_id" name="id">
+                <form id="editLinkForm">
+                    <input type="hidden" id="editLinkId" name="id">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="edit_platform" class="form-label">Platforma</label>
-                            <select class="form-control" id="edit_platform" name="platform" required>
-                                <option value="facebook">Facebook</option>
-                                <option value="instagram">Instagram</option>
-                                <option value="twitter">Twitter</option>
-                                <option value="linkedin">LinkedIn</option>
-                                <option value="youtube">YouTube</option>
-                                <option value="tiktok">TikTok</option>
-                                <option value="snapchat">Snapchat</option>
-                                <option value="pinterest">Pinterest</option>
+                            <label for="editLinkPlatform" class="form-label">Platforma *</label>
+                            <select class="form-select" id="editLinkPlatform" name="platform" required>
+                                <option value="Facebook">Facebook</option>
+                                <option value="Instagram">Instagram</option>
+                                <option value="Twitter">Twitter</option>
+                                <option value="LinkedIn">LinkedIn</option>
+                                <option value="YouTube">YouTube</option>
+                                <option value="TikTok">TikTok</option>
+                                <option value="WhatsApp">WhatsApp</option>
+                                <option value="Telegram">Telegram</option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label for="edit_name" class="form-label">Nazwa</label>
-                            <input type="text" class="form-control" id="edit_name" name="name" required>
+                            <label for="editLinkUrl" class="form-label">URL *</label>
+                            <input type="url" class="form-control" id="editLinkUrl" name="url" required>
                         </div>
                         <div class="mb-3">
-                            <label for="edit_url" class="form-label">URL</label>
-                            <input type="url" class="form-control" id="edit_url" name="url" required>
+                            <label for="editLinkOrder" class="form-label">Kolejność</label>
+                            <input type="number" class="form-control" id="editLinkOrder" name="order" min="1">
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
-                                <label class="form-check-label" for="edit_is_active">
+                                <input class="form-check-input" type="checkbox" id="editLinkActive" name="is_active">
+                                <label class="form-check-label" for="editLinkActive">
                                     Aktywny
                                 </label>
                             </div>
@@ -207,103 +178,125 @@
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Add Social Link
-        function addSocialLink() {
-            const form = document.getElementById('addSocialLinkForm');
-            const formData = new FormData(form);
-            fetch('/admin/api/social', {
-                method: 'POST',
-                body: formData
-            })
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Show add link modal
+    function showAddLinkModal() {
+        document.getElementById('addLinkForm').reset();
+        const modal = new bootstrap.Modal(document.getElementById('addLinkModal'));
+        modal.show();
+    }
+
+    // Edit link function
+    function editLink(linkId) {
+        fetch(`/admin/api/social/${linkId}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload();
+                    const link = data.link;
+                    document.getElementById('editLinkId').value = link.id;
+                    document.getElementById('editLinkPlatform').value = link.platform;
+                    document.getElementById('editLinkUrl').value = link.url;
+                    document.getElementById('editLinkOrder').value = link.order || 1;
+                    document.getElementById('editLinkActive').checked = link.is_active;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('editLinkModal'));
+                    modal.show();
                 } else {
-                    alert('Błąd: ' + data.error);
+                    alert('Błąd podczas ładowania linku: ' + data.error);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Wystąpił błąd podczas dodawania linku social media');
+                alert('Wystąpił błąd podczas ładowania linku');
             });
-        }
-        // Edit Social Link
-        function editSocialLink(id, platform, name, url, isActive) {
-            document.getElementById('edit_id').value = id;
-            document.getElementById('edit_platform').value = platform;
-            document.getElementById('edit_name').value = name;
-            document.getElementById('edit_url').value = url;
-            document.getElementById('edit_is_active').checked = isActive;
-            new bootstrap.Modal(document.getElementById('editSocialLinkModal')).show();
-        }
-        // Save Social Link
-        function saveSocialLink() {
-            const form = document.getElementById('editSocialLinkForm');
-            const formData = new FormData(form);
-            fetch('/admin/api/social', {
-                method: 'PUT',
-                body: formData
+    }
+
+    // Delete link function
+    function deleteLink(linkId) {
+        if (confirm('Czy na pewno chcesz usunąć ten link? Tej operacji nie można cofnąć.')) {
+            fetch(`/admin/api/social?id=${linkId}`, {
+                method: 'DELETE'
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Błąd: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Wystąpił błąd podczas zapisywania zmian');
-            });
-        }
-        // Delete Social Link
-        function deleteSocialLink(id) {
-            if (confirm('Czy na pewno chcesz usunąć ten link social media?')) {
-                fetch(`/admin/api/social?id=${id}`, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Błąd: ' + (data.message || data.error || 'Nieznany błąd'));
+                    alert('Link został usunięty pomyślnie!');
+                    // Usuń wiersz z tabeli
+                    const row = document.querySelector(`tr[data-link-id="${linkId}"]`);
+                    if (row) {
+                        row.remove();
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Wystąpił błąd podczas usuwania linku social media');
-                });
-            }
+                } else {
+                    alert('Błąd podczas usuwania: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas usuwania linku');
+            });
         }
-        // Form submissions
-        document.getElementById('addSocialLinkForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            addSocialLink();
-        });
-        document.getElementById('editSocialLinkForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            saveSocialLink();
-        });
-        // Sidebar toggle functionality
-        document.getElementById('sidebarToggle').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('show');
-        });
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', function(event) {
-            const sidebar = document.getElementById('sidebar');
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            if (window.innerWidth < 992 && 
-                !sidebar.contains(event.target) && 
-                !sidebarToggle.contains(event.target)) {
-                sidebar.classList.remove('show');
+    }
+
+    // Form submissions
+    document.getElementById('addLinkForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        // Always send is_active field as string
+        formData.set('is_active', document.getElementById('linkActive').checked ? 'true' : 'false');
+        
+        fetch('/admin/api/social', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Link został dodany pomyślnie!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addLinkModal'));
+                modal.hide();
+                // Odśwież stronę
+                window.location.reload();
+            } else {
+                alert('Błąd podczas dodawania: ' + data.error);
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Wystąpił błąd podczas dodawania linku');
         });
-    </script>
-</body>
-</html>
+    });
+
+    document.getElementById('editLinkForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        // Always send is_active field as string
+        formData.set('is_active', document.getElementById('editLinkActive').checked ? 'true' : 'false');
+        
+        fetch('/admin/api/social', {
+            method: 'PUT',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Link został zaktualizowany pomyślnie!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editLinkModal'));
+                modal.hide();
+                // Odśwież stronę
+                window.location.reload();
+            } else {
+                alert('Błąd podczas aktualizacji: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Wystąpił błąd podczas aktualizacji linku');
+        });
+    });
+</script>
+{% endblock %}

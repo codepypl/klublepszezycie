@@ -53,18 +53,18 @@ def validate_event_date(event_date_str):
     """Waliduje datę wydarzenia - nie może być w przeszłości"""
     try:
         event_date = datetime.fromisoformat(event_date_str.replace('Z', '+00:00'))
-        # Porównuj z początkiem dzisiejszego dnia, nie z aktualnym momentem
-        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        if event_date < today:
-            return False, "Data wydarzenia nie może być w przeszłości"
+        # Porównuj z aktualnym momentem, pozwalając na wydarzenia w tym samym dniu
+        now = datetime.now()
+        if event_date < now:
+            return False, "Data i godzina wydarzenia nie może być w przeszłości"
         return True, None
     except ValueError:
         return False, "Nieprawidłowy format daty"
 
 # Import models and config
-from models import db, User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, Registration, FAQ, SEOSettings, EventSchedule, Page, EmailTemplate, EmailSubscription, EmailLog, EmailSchedule, CustomEmailCampaign, EmailRecipientGroup, EventRegistration, EventNotification, EventRecipientGroup
+from models import db, User, MenuItem, Section, BenefitItem, Testimonial, SocialLink, Registration, FAQ, SEOSettings, EventSchedule, Page, EmailTemplate, EmailSubscription, EmailLog, EmailSchedule, EventRegistration, EventNotification, UserGroup, UserGroupMember, EmailCampaign, EmailAutomation, EmailAutomationLog, EventEmailSchedule
 from config import config
-from email_service import email_service
+from services.email_service import email_service
 
 
 # Initialize Flask app
@@ -96,6 +96,26 @@ def load_user(user_id):
 # Create database tables
 with app.app_context():
     db.create_all()
+    
+    # Automatycznie dezaktywuj zakończone wydarzenia
+    try:
+        now = datetime.now()
+        ended_events = EventSchedule.query.filter(
+            EventSchedule.end_date < now,
+            EventSchedule.is_active == True
+        ).all()
+        
+        for event in ended_events:
+            event.is_active = False
+            event.is_published = False
+            print(f"Dezaktywowano zakończone wydarzenie: {event.title}")
+        
+        if ended_events:
+            db.session.commit()
+            print(f"Dezaktywowano {len(ended_events)} zakończonych wydarzeń")
+    except Exception as e:
+        print(f"Błąd podczas dezaktywowania wydarzeń: {e}")
+    
     # Create admin user if not exists
     admin_user = User.query.filter_by(username='admin').first()
     if not admin_user:
@@ -147,6 +167,16 @@ with app.app_context():
         </div>
     </div>
     
+    <div style="background-color: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #0056b3; margin-top: 0;">🔑 Twoje dane logowania</h3>
+        <p style="margin-bottom: 15px;"><strong>Email:</strong> {{email}}</p>
+        <p style="margin-bottom: 15px;"><strong>Tymczasowe hasło:</strong> <span style="background-color: #f8f9fa; padding: 5px 10px; border-radius: 5px; font-family: monospace; font-size: 16px;">{{temp_password}}</span></p>
+        <p style="margin-bottom: 10px; color: #0056b3;"><strong>⚠️ WAŻNE:</strong> Przy pierwszym logowaniu musisz zmienić to hasło na własne!</p>
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="{{ url_for('user_login', _external=True) }}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">Zaloguj się teraz</a>
+        </div>
+    </div>
+    
     <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
         <h3 style="color: #856404; margin-top: 0;">🔒 Twoje dane są bezpieczne</h3>
         <p style="margin-bottom: 10px;">Możesz w każdej chwili:</p>
@@ -178,6 +208,12 @@ Co dalej?
 - Będziesz informowany o nowych wydarzeniach i webinarach
 - Dostaniesz dostęp do ekskluzywnych materiałów
 
+🔑 TWOJE DANE LOGOWANIA:
+Email: {{email}}
+Tymczasowe hasło: {{temp_password}}
+
+⚠️ WAŻNE: Przy pierwszym logowaniu musisz zmienić to hasło na własne!
+
 Twoje dane są bezpieczne - możesz w każdej chwili:
 - Zrezygnować z subskrypcji: {{unsubscribe_url}}
 - Usunąć swoje konto: {{delete_account_url}}
@@ -188,7 +224,7 @@ Zespół Klubu Lepsze Życie
 Ten email został wysłany na adres {{email}}
             ''',
             template_type='welcome',
-            variables='name,email,unsubscribe_url,delete_account_url',
+            variables='name,email,temp_password,unsubscribe_url,delete_account_url',
             is_active=True
         )
         db.session.add(welcome_template)
@@ -568,48 +604,87 @@ def register():
     phone = request.form.get('phone', '')
     
     if not name or not email:
-        flash('Proszę wypełnić wszystkie wymagane pola.', 'error')
-        return redirect(url_for('index'))
+        return jsonify({
+            'success': False,
+            'error': 'Proszę wypełnić wszystkie wymagane pola.'
+        }), 400
     
     try:
-        # Save registration to database
+        # Check if user already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({
+                'success': False,
+                'error': 'Użytkownik z tym adresem email już istnieje w systemie.'
+            }), 400
+        
+        # Check if registration already exists
+        existing_registration = Registration.query.filter_by(email=email).first()
+        if existing_registration:
+            return jsonify({
+                'success': False,
+                'error': 'Rejestracja z tym adresem email już istnieje.'
+            }), 400
+        
+        # Generuj tymczasowe hasło
+        import secrets
+        import string
+        temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+        
+        # Utwórz nowe konto użytkownika
+        user = User(
+            email=email,
+            name=name,
+            phone=phone,
+            password_hash=generate_password_hash(temp_password),
+            is_temporary_password=True,
+            club_member=True  # Automatycznie dołącza do klubu
+        )
+        db.session.add(user)
+        
+        # Save registration to database (for tracking purposes)
         registration = Registration(
             name=name,
             email=email,
             phone=phone,
-            status='pending'  # Wymaga zatwierdzenia przez administratora
+            status='confirmed'  # Automatycznie potwierdzone
         )
         db.session.add(registration)
         
         # Add user to email subscription for automatic reminders
-        email_service.add_subscriber(email, name, subscription_type='all')
+        try:
+            email_service.add_subscriber(email, name, subscription_type='all')
+        except Exception as e:
+            print(f"Warning: Could not add email subscriber: {e}")
         
-        # Email powitalny będzie wysłany dopiero po zatwierdzeniu przez administratora
-        
-        # Send notification to admin about new registration
-        admin_users = User.query.filter_by(is_admin=True).all()
-        for admin in admin_users:
-            email_service.send_template_email(
-                to_email=admin.email,
-                template_name='admin_notification',
-                variables={
-                    'admin_name': admin.username,
-                    'new_member_name': name,
-                    'new_member_email': email,
-                    'registration_date': datetime.now().strftime('%d.%m.%Y %H:%M')
-                }
-            )
+        # Wyślij email z tymczasowym hasłem
+        try:
+                email_service.send_template_email(
+                to_email=email,
+                template_name='welcome',
+                    variables={
+                    'name': name,
+                    'email': email,
+                    'temp_password': temp_password,
+                    'unsubscribe_url': url_for('unsubscribe_email', token='temp', _external=True),
+                    'delete_account_url': url_for('delete_account', token='temp', _external=True)
+                    }
+                )
+        except Exception as e:
+            print(f"Warning: Could not send welcome email: {e}")
         
         db.session.commit()
+        
+        print(f"✅ Nowa rejestracja i konto użytkownika: {name} ({email})")
     
         return jsonify({
             'success': True,
-            'message': f'Dziękujemy {name}! Twoje miejsce zostało zarezerwowane.'
+            'message': f'Dziękujemy {name}! Twoje konto zostało utworzone. Sprawdź email z hasłem tymczasowym, aby się zalogować.'
         })
         
     except Exception as e:
         db.session.rollback()
-        print(f"Error during registration: {str(e)}")
+        print(f"❌ Error during registration: {str(e)}")
         return jsonify({
             'success': False,
             'error': 'Wystąpił błąd podczas rejestracji. Spróbuj ponownie.'
@@ -681,20 +756,20 @@ def api_event_status():
 @app.route('/register-event/<int:event_id>', methods=['POST'])
 def register_event(event_id):
     """Zapisy na konkretne wydarzenia"""
-    event = EventSchedule.query.get_or_404(event_id)
-    
-    if not event.is_active or not event.is_published:
-        return jsonify({'success': False, 'error': 'Wydarzenie nie jest dostępne'}), 400
-    
-    name = request.form.get('name')
-    email = request.form.get('email')
-    phone = request.form.get('phone', '')
-    wants_club_news = request.form.get('wants_club_news') == 'true'
-    
-    if not name or not email:
-        return jsonify({'success': False, 'error': 'Proszę wypełnić wszystkie wymagane pola.'}), 400
-    
     try:
+        event = EventSchedule.query.get_or_404(event_id)
+        
+        if not event.is_active or not event.is_published:
+            return jsonify({'success': False, 'error': 'Wydarzenie nie jest dostępne'}), 400
+        
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone', '')
+        wants_club_news = request.form.get('wants_club_news') == 'true'
+        
+        if not name or not email:
+            return jsonify({'success': False, 'error': 'Proszę wypełnić wszystkie wymagane pola.'}), 400
+    
         # Sprawdź czy użytkownik już się zapisał na to wydarzenie
         existing_registration = EventRegistration.query.filter_by(
             event_id=event_id, 
@@ -703,6 +778,70 @@ def register_event(event_id):
         
         if existing_registration:
             return jsonify({'success': False, 'error': 'Jesteś już zapisany na to wydarzenie.'}), 400
+        
+        # Sprawdź czy użytkownik już istnieje
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            # Generuj tymczasowe hasło
+            import secrets
+            import string
+            temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+            
+            # Utwórz nowe konto użytkownika
+            user = User(
+                email=email,
+                name=name,
+                phone=phone,
+                password_hash=generate_password_hash(temp_password),
+                is_temporary_password=True,
+                club_member=wants_club_news
+            )
+            db.session.add(user)
+            
+            # Wyślij email z tymczasowym hasłem
+            print(f"DEBUG: Próba wysłania emaila powitalnego do {email}")
+            
+            # Wybierz odpowiedni template w zależności od tego czy użytkownik chce dołączyć do klubu
+            if wants_club_news:
+                template_name = 'welcome'
+                variables = {
+                    'name': name,
+                    'email': email,
+                    'temp_password': temp_password,
+                    'unsubscribe_url': url_for('unsubscribe_email', token='temp', _external=True),
+                    'delete_account_url': url_for('delete_account', token='temp', _external=True)
+                }
+                print(f"DEBUG: Wysyłam template 'welcome' (dołączenie do klubu)")
+            else:
+                template_name = 'event_confirmation'
+                # Pobierz dane wydarzenia
+                event_start_date = event.event_date.strftime('%d.%m.%Y') if event.event_date else 'nie określono'
+                event_start_hour = event.event_date.strftime('%H:%M') if event.event_date else 'nie określono'
+                user_panel_url = url_for('user_profile', _external=True)
+                
+                variables = {
+                    'name': name,
+                    'email': email,
+                    'event_name': event.title,
+                    'event_start_date': event_start_date,
+                    'event_start_hour': event_start_hour,
+                    'temp_password': temp_password,
+                    'user_panel_url': user_panel_url
+                }
+                print(f"DEBUG: Wysyłam template 'event_confirmation' (tylko zapis na wydarzenie)")
+            
+            try:
+                result = email_service.send_template_email(
+                    to_email=email,
+                    template_name=template_name,
+                    variables=variables
+                )
+                print(f"DEBUG: Wynik wysłania emaila: {result}")
+            except Exception as e:
+                print(f"ERROR: Błąd podczas wysyłania emaila: {e}")
+                import traceback
+                traceback.print_exc()
         
         # Zapisz na wydarzenie
         registration = EventRegistration(
@@ -717,65 +856,13 @@ def register_event(event_id):
         
         # Jeśli użytkownik chce dołączyć do klubu
         if wants_club_news:
-            email_service.add_subscriber(email, name, subscription_type='all')
-        
-        # Utwórz grupę odbiorców dla tego wydarzenia (jeśli nie istnieje)
-        recipient_group = EventRecipientGroup.query.filter_by(
-            event_id=event_id,
-            group_type='event_registrations'
-        ).first()
-        
-        if not recipient_group:
-            recipient_group = EventRecipientGroup(
-                event_id=event_id,
-                name=f'Zapisy na {event.title}',
-                description=f'Użytkownicy zapisani na wydarzenie: {event.title}',
-                group_type='event_registrations',
-                criteria_config=json.dumps({'event_id': event_id})
-            )
-            db.session.add(recipient_group)
-        
-        # Utwórz harmonogram powiadomień (jeśli nie istnieje)
-        notification_types = [
-            ('24h_before', timedelta(hours=24)),
-            ('1h_before', timedelta(hours=1)),
-            ('5min_before', timedelta(minutes=5))
-        ]
-        
-        for notif_type, time_offset in notification_types:
-            notification_time = event.event_date - time_offset
-            
-            # Sprawdź czy powiadomienie już istnieje
-            existing_notification = EventNotification.query.filter_by(
-                event_id=event_id,
-                notification_type=notif_type
-            ).first()
-            
-            if not existing_notification and notification_time > datetime.now():
-                notification = EventNotification(
-                    event_id=event_id,
-                    notification_type=notif_type,
-                    scheduled_at=notification_time,
-                    subject=f'Przypomnienie: {event.title}',
-                    template_name=f'event_reminder_{notif_type}'
-                )
-                db.session.add(notification)
+            try:
+                add_result = email_service.add_subscriber(email, name, subscription_type='all')
+                print(f"DEBUG: add_subscriber result for {email}: {add_result}")
+            except Exception as e:
+                print(f"DEBUG: Error in add_subscriber for {email}: {str(e)}")
         
         db.session.commit()
-        
-        # Wyślij email potwierdzający
-        email_service.send_template_email(
-            to_email=email,
-            template_name='event_registration_confirmation',
-            variables={
-                'name': name,
-                'event_title': event.title,
-                'event_date': event.event_date.strftime('%d.%m.%Y o %H:%M'),
-                'event_type': event.event_type,
-                'meeting_link': event.meeting_link,
-                'location': event.location
-            }
-        )
         
         return jsonify({
             'success': True,
@@ -822,8 +909,8 @@ def api_get_email_schedules():
                 'is_active': schedule.is_active,
                 'last_run': schedule.last_run.isoformat() if schedule.last_run else None,
                 'next_run': schedule.next_run.isoformat() if schedule.next_run else None,
-                'created_at': schedule.created_at.isoformat(),
-                'updated_at': schedule.updated_at.isoformat()
+                'created_at': schedule.created_at.isoformat() if schedule.created_at else None,
+                'updated_at': schedule.updated_at.isoformat() if schedule.updated_at else None
             }
             
             # Add specific fields based on schedule type
@@ -927,8 +1014,8 @@ def api_get_email_schedule(schedule_id):
             'is_active': schedule.is_active,
             'last_run': schedule.last_run.isoformat() if schedule.last_run else None,
             'next_run': schedule.next_run.isoformat() if schedule.next_run else None,
-            'created_at': schedule.created_at.isoformat(),
-            'updated_at': schedule.updated_at.isoformat()
+            'created_at': schedule.created_at.isoformat() if schedule.created_at else None,
+            'updated_at': schedule.updated_at.isoformat() if schedule.updated_at else None
         }
         
         # Add specific fields based on schedule type
@@ -1480,23 +1567,468 @@ def api_send_email_campaign(campaign_id):
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/admin/recipient-groups')
+# Stary panel admina został usunięty - zastąpiony przez nowy system
+
+@app.route('/admin/user-groups')
 @login_required
-def admin_recipient_groups():
-    """Admin panel for recipient groups"""
+def admin_user_groups():
+    """Admin panel for new user groups system"""
     if not current_user.is_admin:
         return redirect(url_for('index'))
     
-    groups = EmailRecipientGroup.query.order_by(EmailRecipientGroup.created_at.desc()).all()
-    return render_template('admin/recipient_groups.html', groups=groups)
+    return render_template('admin/user_groups.html')
 
-# API endpoints for recipient groups
-@app.route('/admin/api/recipient-groups', methods=['GET', 'POST'])
+@app.route('/admin/schedules')
 @login_required
-def api_recipient_groups():
-    """Get all recipient groups or create new one"""
+def admin_schedules():
+    """Admin panel for email schedules"""
+    if not current_user.is_admin:
+        return redirect(url_for('index'))
+    
+    return render_template('admin/schedules.html')
+
+@app.route('/admin/init-automations')
+@login_required
+def admin_init_automations():
+    """Initialize email automations and templates"""
+    if not current_user.is_admin:
+        return redirect(url_for('index'))
+    
+    try:
+        from migrations.init_automations import create_default_templates, create_default_automations
+        
+        # Create default templates
+        templates_created = create_default_templates()
+        
+        # Create default automations
+        automations_created = create_default_automations()
+        
+        flash(f'Inicjalizacja zakończona! Utworzono {templates_created} szablonów i {automations_created} automatyzacji.', 'success')
+        
+    except Exception as e:
+        flash(f'Błąd podczas inicjalizacji: {str(e)}', 'error')
+    
+    return redirect(url_for('admin_user_groups'))
+
+@app.route('/admin/run-automations')
+@login_required
+def admin_run_automations():
+    """Run email automations manually"""
+    if not current_user.is_admin:
+        return redirect(url_for('index'))
+    
+    try:
+        from services.email_automation_service import email_automation_service
+        
+        # Run event email schedules
+        event_results = email_automation_service.process_scheduled_emails()
+        
+        # Get statistics
+        stats = email_automation_service.get_automation_statistics()
+        
+        flash(f'Automatyzacje uruchomione! Przetworzono {event_results} harmonogramów. Statystyki: {stats["total_automations"]} automatyzacji, {stats["total_logs"]} logów.', 'success')
+        
+    except Exception as e:
+        flash(f'Błąd podczas uruchamiania automatyzacji: {str(e)}', 'error')
+    
+    return redirect(url_for('admin_user_groups'))
+
+# Stare endpointy API zostały usunięte - zastąpione przez nowy system
+
+# API endpoints for new user groups system
+@app.route('/admin/api/user-groups', methods=['GET', 'POST'])
+@login_required
+def api_user_groups():
+    """Get all user groups or create new one"""
     if not current_user.is_admin:
         return jsonify({'error': 'Unauthorized'}), 403
+    
+    if request.method == 'GET':
+        try:
+            # Get query parameters
+            search = request.args.get('search', '')
+            group_type = request.args.get('type', '')
+            status = request.args.get('status', '')
+            
+            # Build query
+            query = UserGroup.query
+            
+            if search:
+                query = query.filter(
+                    or_(
+                        UserGroup.name.ilike(f'%{search}%'),
+                        UserGroup.description.ilike(f'%{search}%')
+                    )
+                )
+            
+            if group_type:
+                query = query.filter_by(group_type=group_type)
+            
+            if status:
+                is_active = status == 'true'
+                query = query.filter_by(is_active=is_active)
+            
+            groups = query.order_by(UserGroup.created_at.desc()).all()
+            groups_data = []
+            
+            for group in groups:
+                # Count members for this group
+                member_count = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).count()
+                
+                group_dict = {
+                    'id': group.id,
+                    'name': group.name,
+                    'description': group.description,
+                    'group_type': group.group_type,
+                    'criteria': group.criteria,
+                    'is_active': group.is_active,
+                    'member_count': member_count,
+                    'created_at': group.created_at.isoformat() if group.created_at else None,
+                    'updated_at': group.updated_at.isoformat() if group.updated_at else None
+                }
+                groups_data.append(group_dict)
+            
+            return jsonify({'success': True, 'groups': groups_data})
+            
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    elif request.method == 'POST':
+        try:
+            name = request.form.get('name')
+            description = request.form.get('description')
+            group_type = request.form.get('group_type')
+            criteria = request.form.get('criteria')
+            is_active = request.form.get('is_active') == '1'
+            
+            if not all([name, group_type]):
+                return jsonify({'success': False, 'error': 'Nazwa i typ grupy są wymagane'}), 400
+            
+            # Create new group
+            new_group = UserGroup(
+                name=name,
+                description=description,
+                group_type=group_type,
+                criteria=criteria,
+                is_active=is_active
+            )
+            
+            db.session.add(new_group)
+            db.session.commit()
+            
+            return jsonify({'success': True, 'message': 'Grupa została utworzona pomyślnie', 'id': new_group.id})
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+# API endpoints for email schedules
+@app.route('/admin/api/schedules', methods=['GET'])
+@login_required
+def api_get_schedules():
+    """Get all email schedules"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        schedules = EmailSchedule.query.order_by(EmailSchedule.created_at.desc()).all()
+        schedules_data = []
+        
+        for schedule in schedules:
+            schedule_dict = {
+                'id': schedule.id,
+                'name': schedule.name,
+                'description': schedule.description,
+                'template_id': schedule.template_id,
+                'trigger_type': schedule.trigger_type,
+                'trigger_conditions': schedule.trigger_conditions,
+                'recipient_type': schedule.recipient_type,
+                'recipient_emails': schedule.recipient_emails,
+                'recipient_group_id': schedule.recipient_group_id,
+                'send_type': schedule.send_type,
+                'scheduled_at': schedule.scheduled_at.isoformat() if schedule.scheduled_at else None,
+                'status': schedule.status,
+                'last_sent': schedule.last_sent.isoformat() if schedule.last_sent else None,
+                'sent_count': schedule.sent_count,
+                'created_at': schedule.created_at.isoformat() if schedule.created_at else None,
+                'updated_at': schedule.updated_at.isoformat() if schedule.updated_at else None
+            }
+            schedules_data.append(schedule_dict)
+        
+        return jsonify({'success': True, 'schedules': schedules_data})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+
+@app.route('/admin/api/schedules', methods=['POST'])
+@login_required
+def api_create_schedule():
+    """Create new email schedule"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        name = request.form.get('name')
+        description = request.form.get('description')
+        template_id = request.form.get('template_id')
+        trigger_type = request.form.get('trigger_type')
+        recipient_type = request.form.get('recipient_type')
+        send_type = request.form.get('send_type', 'immediate')
+        scheduled_at = request.form.get('scheduled_at')
+        status = request.form.get('status', 'active')
+        
+        if not all([name, template_id, trigger_type, recipient_type]):
+            return jsonify({'success': False, 'error': 'Wszystkie wymagane pola muszą być wypełnione'}), 400
+        
+        # Create schedule object
+        schedule = EmailSchedule(
+            name=name,
+            description=description,
+            template_id=template_id,
+            trigger_type=trigger_type,
+            recipient_type=recipient_type,
+            send_type=send_type,
+            status=status
+        )
+        
+        # Set scheduled_at if provided
+        if scheduled_at and send_type == 'scheduled':
+            schedule.scheduled_at = datetime.fromisoformat(scheduled_at.replace('Z', '+00:00'))
+        
+        db.session.add(schedule)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Harmonogram został utworzony pomyślnie'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/admin/api/search-users', methods=['GET'])
+@login_required
+def api_search_users():
+    """Search users by name or email"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        query = request.args.get('q', '').strip()
+        filter_type = request.args.get('filter', 'all')
+        
+        if not query:
+            return jsonify({'success': False, 'error': 'Query parameter is required'}), 400
+        
+        # Import User model
+        from models import User
+        
+        # Build query - search by email, username, and name
+        user_query = User.query.filter(
+            or_(
+                User.email.ilike(f'%{query}%'),
+                User.username.ilike(f'%{query}%'),
+                User.name.ilike(f'%{query}%') if User.name else User.username.ilike(f'%{query}%')
+            )
+        )
+        
+        # Apply filter
+        if filter_type == 'active':
+            user_query = user_query.filter_by(is_active=True)
+        
+        # Limit results
+        users = user_query.limit(20).all()
+        
+        users_data = []
+        for user in users:
+            user_dict = {
+                'id': user.id,
+                'email': user.email,
+                'name': user.name if user.name else user.username,  # Use name if available, otherwise username
+                'is_active': user.is_active,
+                'created_at': user.created_at.isoformat() if user.created_at else None
+            }
+            users_data.append(user_dict)
+        
+        return jsonify({'success': True, 'users': users_data})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/user-groups/<int:group_id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
+def api_user_group_by_id(group_id):
+    """Get, update or delete user group by ID"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    group = UserGroup.query.get_or_404(group_id)
+    
+    if request.method == 'GET':
+        try:
+            group_dict = {
+                'id': group.id,
+                'name': group.name,
+                'description': group.description,
+                'group_type': group.group_type,
+                'criteria': group.criteria,
+                'member_count': group.member_count,
+                'is_active': group.is_active,
+                'created_at': group.created_at.isoformat(),
+                'updated_at': group.updated_at.isoformat()
+            }
+            
+            return jsonify({'success': True, 'group': group_dict})
+            
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    elif request.method == 'PUT':
+        try:
+            data = request.get_json()
+            
+            group.name = data['name']
+            group.description = data.get('description', '')
+            group.group_type = data['group_type']
+            group.criteria = json.dumps(data.get('criteria', {}))
+            group.is_active = data.get('is_active', True)
+            group.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True, 
+                'message': f'Grupa "{group.name}" została zaktualizowana pomyślnie'
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    elif request.method == 'DELETE':
+        try:
+            name = group.name
+            
+            db.session.delete(group)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True, 
+                'message': f'Grupa "{name}" została usunięta pomyślnie'
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/user-groups/<int:group_id>/details')
+@login_required
+def api_user_group_details(group_id):
+    """Get detailed information about user group including members and statistics"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        group = UserGroup.query.get_or_404(group_id)
+        
+        # Get group members
+        members = UserGroupMember.query.filter_by(group_id=group_id).all()
+        members_data = []
+        
+        for member in members:
+            member_dict = {
+                'id': member.id,
+                'email': member.email,
+                'name': member.name,
+                'member_type': member.member_type,
+                'metadata': member.metadata,
+                'is_active': member.is_active,
+                'created_at': member.created_at.isoformat(),
+                'updated_at': member.updated_at.isoformat()
+            }
+            members_data.append(member_dict)
+        
+        # Get group statistics
+        from services.user_group_service import user_group_service
+        statistics = user_group_service.get_group_statistics(group_id)
+        
+        return jsonify({
+            'success': True,
+            'group': {
+                'id': group.id,
+                'name': group.name,
+                'description': group.description,
+                'group_type': group.group_type,
+                'criteria': group.criteria,
+                'member_count': group.member_count,
+                'is_active': group.is_active,
+                'created_at': group.created_at.isoformat(),
+                'updated_at': group.updated_at.isoformat()
+            },
+            'members': members_data,
+            'statistics': statistics
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/user-groups/statistics')
+@login_required
+def api_user_groups_statistics():
+    """Get statistics for all user groups"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        total_groups = UserGroup.query.count()
+        total_members = UserGroupMember.query.count()
+        
+        event_groups = UserGroup.query.filter_by(group_type='event_based').count()
+        manual_groups = UserGroup.query.filter_by(group_type='manual').count()
+        
+        stats = {
+            'total_groups': total_groups,
+            'total_members': total_members,
+            'event_groups': event_groups,
+            'manual_groups': manual_groups
+        }
+        
+        return jsonify({
+            'success': True,
+            'stats': stats
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/events')
+@login_required
+def api_events():
+    """Get all events for group creation"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        events = EventSchedule.query.filter_by(is_active=True).order_by(EventSchedule.event_date.desc()).all()
+        events_data = []
+        
+        for event in events:
+            event_dict = {
+                'id': event.id,
+                'title': event.title,
+                'event_date': event.event_date.isoformat(),
+                'event_type': event.event_type
+            }
+            events_data.append(event_dict)
+        
+        return jsonify({
+            'success': True,
+            'events': events_data
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
     
     if request.method == 'GET':
         try:
@@ -1664,6 +2196,76 @@ def admin_logout():
     logout_user()
     return redirect(url_for('admin_login'))
 
+@app.route('/login', methods=['GET', 'POST'])
+def user_login():
+    """User login page"""
+    if current_user.is_authenticated:
+        return redirect(url_for('user_profile'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        user = User.query.filter_by(email=email).first()
+        
+        if user and check_password_hash(user.password_hash, password) and user.is_active:
+            login_user(user)
+            user.last_login = datetime.utcnow()
+            db.session.commit()
+            
+            # Sprawdź czy użytkownik ma tymczasowe hasło
+            if user.is_temporary_password:
+                flash('To Twoje pierwsze logowanie. Musisz zmienić hasło.', 'warning')
+                return redirect(url_for('change_password'))
+            
+            return redirect(url_for('user_profile'))
+        else:
+            flash('Nieprawidłowy email lub hasło, lub konto jest nieaktywne', 'error')
+    
+    return render_template('user/login.html')
+
+@app.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    """Change password page for users with temporary passwords"""
+    if request.method == 'POST':
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # Sprawdź aktualne hasło
+        if not check_password_hash(current_user.password_hash, current_password):
+            flash('Aktualne hasło jest nieprawidłowe', 'error')
+            return render_template('user/change_password.html')
+        
+        # Sprawdź czy nowe hasła są identyczne
+        if new_password != confirm_password:
+            flash('Nowe hasła nie są identyczne', 'error')
+            return render_template('user/change_password.html')
+        
+        # Sprawdź długość hasła
+        if len(new_password) < 6:
+            flash('Nowe hasło musi mieć co najmniej 6 znaków', 'error')
+            return render_template('user/change_password.html')
+        
+        # Zmień hasło
+        current_user.password_hash = generate_password_hash(new_password)
+        current_user.is_temporary_password = False
+        db.session.commit()
+        
+        flash('Hasło zostało zmienione pomyślnie!', 'success')
+        return redirect(url_for('user_profile'))
+    
+    return render_template('user/change_password.html')
+
+@app.route('/logout')
+@login_required
+def user_logout():
+    """User logout"""
+    logout_user()
+    flash('Zostałeś wylogowany pomyślnie', 'success')
+    return redirect(url_for('index'))
+
 @app.route('/admin')
 @login_required
 def admin_dashboard():
@@ -1725,6 +2327,229 @@ def admin_registrations():
     
     registrations = Registration.query.order_by(Registration.created_at.desc()).all()
     return render_template('admin/registrations.html', registrations=registrations)
+
+@app.route('/admin/event-registrations')
+@login_required
+def admin_event_registrations():
+    """Admin panel for event registrations"""
+    if not current_user.is_admin:
+        return redirect(url_for('index'))
+    
+    event_registrations = EventRegistration.query.order_by(EventRegistration.created_at.desc()).all()
+    events = EventSchedule.query.filter_by(is_active=True).all()
+    return render_template('admin/event_registrations.html', event_registrations=event_registrations, events=events)
+
+# API endpoints for event registrations
+@app.route('/admin/api/event-registration/<int:registration_id>', methods=['GET'])
+@login_required
+def api_event_registration(registration_id):
+    """Get event registration details"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    
+    registration = EventRegistration.query.get_or_404(registration_id)
+    return jsonify({
+        'success': True,
+        'registration': {
+            'id': registration.id,
+            'event_id': registration.event_id,
+            'name': registration.name,
+            'email': registration.email,
+            'phone': registration.phone,
+            'wants_club_news': registration.wants_club_news,
+            'status': registration.status,
+            'created_at': registration.created_at.isoformat() if registration.created_at else None,
+            'event': {
+                'id': registration.event.id,
+                'title': registration.event.title,
+                'event_date': registration.event.event_date.isoformat() if registration.event.event_date else None,
+                'location': registration.event.location
+            } if registration.event else None
+        }
+    })
+
+@app.route('/admin/api/event-registration/<int:registration_id>/status', methods=['PUT'])
+@login_required
+def api_event_registration_status(registration_id):
+    """Update event registration status"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    
+    try:
+        data = request.get_json()
+        new_status = data.get('status')
+        
+        if new_status not in ['confirmed', 'pending', 'cancelled']:
+            return jsonify({'success': False, 'error': 'Nieprawidłowy status'}), 400
+        
+        registration = EventRegistration.query.get_or_404(registration_id)
+        registration.status = new_status
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Status został zaktualizowany'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/event-registration/<int:registration_id>', methods=['DELETE'])
+@login_required
+def api_delete_event_registration(registration_id):
+    """Delete event registration"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    
+    try:
+        registration = EventRegistration.query.get_or_404(registration_id)
+        db.session.delete(registration)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Rejestracja została usunięta'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/users')
+@login_required
+def admin_users():
+    """Admin panel for user management"""
+    if not current_user.is_admin:
+        return redirect(url_for('index'))
+    
+    users = User.query.order_by(User.created_at.desc()).all()
+    edit_user_email = request.args.get('edit_user')
+    edit_user = None
+    if edit_user_email:
+        edit_user = User.query.filter_by(email=edit_user_email).first()
+    
+    return render_template('admin/users.html', users=users, edit_user=edit_user)
+
+@app.route('/admin/api/user/<int:user_id>', methods=['PUT'])
+@login_required
+def api_update_user(user_id):
+    """Update user data"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    
+    try:
+        user = User.query.get_or_404(user_id)
+        data = request.get_json()
+        
+        # Update user fields
+        if 'name' in data:
+            user.name = data['name']
+        if 'phone' in data:
+            user.phone = data['phone']
+        if 'email' in data:
+            # Check if email is already taken by another user
+            existing_user = User.query.filter_by(email=data['email']).first()
+            if existing_user and existing_user.id != user.id:
+                return jsonify({'success': False, 'error': 'Ten email jest już używany przez innego użytkownika'}), 400
+            user.email = data['email']
+        if 'club_member' in data:
+            user.club_member = data['club_member']
+        if 'is_active' in data:
+            user.is_active = data['is_active']
+        if 'is_admin' in data:
+            user.is_admin = data['is_admin']
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Użytkownik został zaktualizowany'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/user/<int:user_id>', methods=['DELETE'])
+@login_required
+def api_delete_user(user_id):
+    """Delete user"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    
+    try:
+        user = User.query.get_or_404(user_id)
+        
+        # Nie można usunąć samego siebie
+        if user.id == current_user.id:
+            return jsonify({'success': False, 'error': 'Nie możesz usunąć swojego własnego konta'}), 400
+        
+        # Nie można usunąć administratora
+        if user.is_admin:
+            return jsonify({'success': False, 'error': 'Nie można usunąć administratora'}), 400
+        
+        # Usuń powiązane rejestracje na wydarzenia
+        event_registrations = EventRegistration.query.filter_by(email=user.email).all()
+        for reg in event_registrations:
+            db.session.delete(reg)
+        
+        # Usuń powiązane rejestracje do klubu
+        registrations = Registration.query.filter_by(email=user.email).all()
+        for reg in registrations:
+            db.session.delete(reg)
+        
+        # Usuń użytkownika
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Użytkownik został usunięty'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/profile')
+@login_required
+def user_profile():
+    """User profile page"""
+    return render_template('user/profile.html')
+
+@app.route('/api/profile', methods=['GET', 'PUT'])
+@login_required
+def api_user_profile():
+    """API for user profile management"""
+    if request.method == 'GET':
+        # Get current user profile
+        user_dict = {
+            'id': current_user.id,
+            'username': current_user.username,
+            'email': current_user.email,
+            'name': current_user.name,
+            'phone': current_user.phone,
+            'club_member': current_user.club_member,
+            'is_active': current_user.is_active,
+            'created_at': current_user.created_at.isoformat() if current_user.created_at else None,
+            'last_login': current_user.last_login.isoformat() if current_user.last_login else None
+        }
+        return jsonify({'success': True, 'user': user_dict})
+    
+    elif request.method == 'PUT':
+        try:
+            data = request.get_json()
+            
+            # Update user profile fields
+            if 'name' in data:
+                current_user.name = data['name']
+            if 'phone' in data:
+                current_user.phone = data['phone']
+            if 'email' in data:
+                # Check if email is already taken by another user
+                existing_user = User.query.filter_by(email=data['email']).first()
+                if existing_user and existing_user.id != current_user.id:
+                    return jsonify({'success': False, 'error': 'Ten email jest już używany przez innego użytkownika'}), 400
+                current_user.email = data['email']
+            if 'club_member' in data:
+                current_user.club_member = data['club_member']
+            
+            db.session.commit()
+            
+            return jsonify({'success': True, 'message': 'Profil został zaktualizowany pomyślnie'})
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/admin/social')
 @login_required
@@ -2232,7 +3057,7 @@ def api_social():
             'order': link.order,
             'is_active': link.is_active
         } for link in social_links])
-    
+
     elif request.method == 'POST':
         # Obsługujemy zarówno JSON jak i FormData
         if request.is_json:
@@ -2298,6 +3123,27 @@ def api_social():
             print(f"Error deleting social link: {str(e)}")
             return jsonify({'success': False, 'message': f'Wystąpił błąd podczas usuwania linku społecznościowego: {str(e)}'}), 500
 
+@app.route('/admin/api/social/<int:link_id>', methods=['GET'])
+@login_required
+def api_social_single(link_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    link = SocialLink.query.get(link_id)
+    if link:
+        return jsonify({
+            'success': True,
+            'link': {
+                'id': link.id,
+                'platform': link.platform,
+                'url': link.url,
+                'icon': link.icon,
+                'order': link.order,
+                'is_active': link.is_active
+            }
+        })
+    return jsonify({'success': False, 'error': 'Link not found'}), 404
+
 @app.route('/admin/api/faq', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @login_required
 def api_faq():
@@ -2313,7 +3159,7 @@ def api_faq():
             'order': faq.order,
             'is_active': faq.is_active
         } for faq in faqs])
-    
+
     elif request.method == 'POST':
         # Obsługujemy zarówno JSON jak i FormData
         if request.is_json:
@@ -2342,15 +3188,18 @@ def api_faq():
             data = request.get_json()
         else:
             data = request.form.to_dict()
-            # Konwertujemy checkbox na boolean
-            data['is_active'] = 'is_active' in request.form
+            # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+            if 'is_active' in data:
+                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+            else:
+                data['is_active'] = False
         
         faq = FAQ.query.get(data['id'])
         if faq:
             faq.question = data['question']
             faq.answer = data['answer']
             faq.order = data.get('order', 0)
-            faq.is_active = data.get('is_active', True)
+            faq.is_active = data['is_active']
             db.session.commit()
             return jsonify({'success': True})
         return jsonify({'success': False, 'message': 'FAQ not found'}), 404
@@ -2363,6 +3212,26 @@ def api_faq():
             db.session.commit()
             return jsonify({'success': True})
         return jsonify({'success': False, 'message': 'FAQ not found'}), 404
+
+@app.route('/admin/api/faq/<int:faq_id>', methods=['GET'])
+@login_required
+def api_faq_single(faq_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    faq = FAQ.query.get(faq_id)
+    if faq:
+        return jsonify({
+            'success': True,
+            'faq': {
+                'id': faq.id,
+                'question': faq.question,
+                'answer': faq.answer,
+                'order': faq.order,
+                'is_active': faq.is_active
+            }
+        })
+    return jsonify({'success': False, 'error': 'FAQ not found'}), 404
 
 @app.route('/admin/api/testimonials', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @login_required
@@ -2381,7 +3250,7 @@ def api_testimonials():
             'is_active': testimonial.is_active,
             'created_at': testimonial.created_at.isoformat() if testimonial.created_at else None
         } for testimonial in testimonials])
-    
+
     elif request.method == 'POST':
         # Obsługujemy zarówno JSON jak i FormData
         if request.is_json:
@@ -2399,7 +3268,7 @@ def api_testimonials():
             content=data['content'],
             member_since=data.get('member_since', ''),
             rating=int(data.get('rating', 5)),
-            is_active=data.get('is_active', True)
+            is_active=data['is_active']
         )
         db.session.add(new_testimonial)
         db.session.commit()
@@ -2423,7 +3292,7 @@ def api_testimonials():
             testimonial.content = data['content']
             testimonial.member_since = data.get('member_since', '')
             testimonial.rating = int(data.get('rating', 5))
-            testimonial.is_active = data.get('is_active', True)
+            testimonial.is_active = data['is_active']
             db.session.commit()
             return jsonify({'success': True})
         return jsonify({'success': False, 'message': 'Testimonial not found'}), 404
@@ -2446,6 +3315,28 @@ def api_testimonials():
             db.session.rollback()
             print(f"Error deleting testimonial: {str(e)}")
             return jsonify({'success': False, 'message': f'Wystąpił błąd podczas usuwania opinii: {str(e)}'}), 500
+
+@app.route('/admin/api/testimonials/<int:testimonial_id>', methods=['GET'])
+@login_required
+def api_testimonials_single(testimonial_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    testimonial = Testimonial.query.get(testimonial_id)
+    if testimonial:
+        return jsonify({
+            'success': True,
+            'testimonial': {
+                'id': testimonial.id,
+                'author_name': testimonial.author_name,
+                'content': testimonial.content,
+                'member_since': testimonial.member_since,
+                'rating': testimonial.rating,
+                'is_active': testimonial.is_active,
+                'created_at': testimonial.created_at.isoformat() if testimonial.created_at else None
+            }
+        })
+    return jsonify({'success': False, 'error': 'Testimonial not found'}), 404
 
 @app.route('/admin/api/seo', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @login_required
@@ -2596,8 +3487,8 @@ def api_event_schedule():
             'hero_background': event.hero_background,
             'hero_background_type': event.hero_background_type,
 
-            'created_at': event.created_at.isoformat(),
-            'updated_at': event.updated_at.isoformat()
+            'created_at': event.created_at.isoformat() if event.created_at else None,
+            'updated_at': event.updated_at.isoformat() if event.updated_at else None
         } for event in events])
     
     elif request.method == 'POST':
@@ -2755,8 +3646,8 @@ def api_event_by_id(event_id):
                 'hero_background': event.hero_background,
                 'hero_background_type': event.hero_background_type,
                 
-                'created_at': event.created_at.isoformat(),
-                'updated_at': event.updated_at.isoformat()
+                'created_at': event.created_at.isoformat() if event.created_at else None,
+                'updated_at': event.updated_at.isoformat() if event.updated_at else None
             }
         })
     return jsonify({'success': False, 'error': 'Event not found'}), 404
@@ -2834,20 +3725,25 @@ def api_pages():
         return jsonify({'error': 'Unauthorized'}), 403
     
     if request.method == 'GET':
-        pages = Page.query.order_by(Page.created_at.desc()).all()
-        return jsonify([{
-            'id': page.id,
-            'title': page.title,
-            'slug': page.slug,
-            'content': page.content,
-            'meta_description': page.meta_description,
-            'meta_keywords': page.meta_keywords,
-            'is_active': page.is_active,
-            'is_published': page.is_published,
-            'published_at': page.published_at.isoformat() if page.published_at else None,
-            'created_at': page.created_at.isoformat(),
-            'updated_at': page.updated_at.isoformat()
-        } for page in pages])
+        pages = Page.query.order_by(Page.order, Page.created_at.desc()).all()
+        return jsonify({
+            'success': True,
+            'pages': [{
+                'id': page.id,
+                'title': page.title,
+                'slug': page.slug,
+                'content': page.content,
+                'meta_description': page.meta_description,
+                'meta_keywords': page.meta_keywords,
+                'is_active': page.is_active,
+                'is_published': page.is_published,
+                'order': page.order,
+                'status': 'published' if page.is_published else 'draft',
+                'published_at': page.published_at.isoformat() if page.published_at else None,
+                'created_at': page.created_at.isoformat() if page.created_at else None,
+                'updated_at': page.updated_at.isoformat() if page.updated_at else None
+            } for page in pages]
+        })
     
     elif request.method == 'POST':
         data = request.form.to_dict()
@@ -2876,6 +3772,7 @@ def api_pages():
             meta_keywords=data.get('meta_keywords', ''),
             is_active=data['is_active'],
             is_published=data['is_published'],
+            order=data.get('order', 0),
             published_at=published_at
         )
         db.session.add(new_page)
@@ -2905,6 +3802,7 @@ def api_pages():
             page.meta_keywords = data.get('meta_keywords', '')
             page.is_active = data['is_active']
             page.is_published = data['is_published']
+            page.order = data.get('order', 0)
             
             # Update published_at if publishing
             if data['is_published'] and not page.published_at:
@@ -2944,9 +3842,11 @@ def api_page_by_id(page_id):
                 'meta_keywords': page.meta_keywords,
                 'is_active': page.is_active,
                 'is_published': page.is_published,
+                'order': page.order,
+                'status': 'published' if page.is_published else 'draft',
                 'published_at': page.published_at.isoformat() if page.published_at else None,
-                'created_at': page.created_at.isoformat(),
-                'updated_at': page.updated_at.isoformat()
+                'created_at': page.created_at.isoformat() if page.created_at else None,
+                'updated_at': page.updated_at.isoformat() if page.updated_at else None
             }
         })
     return jsonify({'success': False, 'error': 'Page not found'}), 404
@@ -2969,8 +3869,8 @@ def api_email_templates():
             'template_type': template.template_type,
             'variables': template.variables,
             'is_active': template.is_active,
-            'created_at': template.created_at.isoformat(),
-            'updated_at': template.updated_at.isoformat()
+            'created_at': template.created_at.isoformat() if template.created_at else None,
+            'updated_at': template.updated_at.isoformat() if template.updated_at else None
         } for template in templates])
     
     elif request.method == 'POST':
@@ -3023,9 +3923,20 @@ def api_email_templates():
         template_id = request.args.get('id', type=int)
         template = EmailTemplate.query.get(template_id)
         if template:
+            # Sprawdź, czy szablon jest używany w harmonogramach
+            from models import EmailSchedule
+            schedules_using_template = EmailSchedule.query.filter_by(template_id=template_id).count()
+            
+            if schedules_using_template > 0:
+                return jsonify({
+                    'success': False, 
+                    'error': f'Nie można usunąć szablonu "{template.name}". Jest używany w {schedules_using_template} harmonogramach. Usuń najpierw harmonogramy lub zmień ich szablon.'
+                }), 400
+            
+            # Usuń szablon, jeśli nie jest używany
             db.session.delete(template)
             db.session.commit()
-            return jsonify({'success': True})
+            return jsonify({'success': True, 'message': f'Szablon "{template.name}" został usunięty pomyślnie'})
         return jsonify({'success': False, 'message': 'Template not found'}), 404
 
 @app.route('/admin/api/email-templates/<int:template_id>', methods=['GET'])
@@ -3047,8 +3958,8 @@ def api_email_template_by_id(template_id):
                 'template_type': template.template_type,
                 'variables': template.variables,
                 'is_active': template.is_active,
-                'created_at': template.created_at.isoformat(),
-                'updated_at': template.updated_at.isoformat()
+                'created_at': template.created_at.isoformat() if template.created_at else None,
+                'updated_at': template.updated_at.isoformat() if template.updated_at else None
             }
         })
     return jsonify({'success': False, 'error': 'Template not found'}), 404
@@ -4000,8 +4911,8 @@ def api_email_subscriptions():
             'name': sub.name,
             'subscription_type': sub.subscription_type,
             'is_active': sub.is_active,
-            'created_at': sub.created_at.isoformat(),
-            'updated_at': sub.updated_at.isoformat()
+            'created_at': sub.created_at.isoformat() if sub.created_at else None,
+            'updated_at': sub.updated_at.isoformat() if sub.updated_at else None
         } for sub in subscriptions])
     
     elif request.method == 'DELETE':
@@ -4162,6 +5073,45 @@ with app.app_context():
     # For now, this function can be called manually via admin panel or cron job
     print("Email service initialized. Use admin panel to manually send reminders or set up a cron job.")
 
+def create_user_from_registration(registration):
+    """Create user account from approved registration"""
+    try:
+        # Check if user already exists
+        existing_user = User.query.filter_by(email=registration.email).first()
+        if existing_user:
+            print(f"ℹ️ Użytkownik {registration.email} już istnieje")
+            return existing_user
+        
+        # Generate username from email
+        username = registration.email.split('@')[0]
+        base_username = username
+        
+        # Ensure username uniqueness
+        counter = 1
+        while User.query.filter_by(username=username).first():
+            username = f"{base_username}{counter}"
+            counter += 1
+        
+        # Create new user
+        new_user = User(
+            username=username,
+            email=registration.email,
+            password_hash=generate_password_hash('temporary123'),  # Temporary password
+            is_admin=False,
+            is_active=True
+        )
+        
+        db.session.add(new_user)
+        db.session.commit()
+        
+        print(f"✅ Utworzono konto użytkownika: {new_user.email} (username: {new_user.username})")
+        return new_user
+        
+    except Exception as e:
+        print(f"❌ Błąd podczas tworzenia konta użytkownika: {e}")
+        db.session.rollback()
+        return None
+
 # API endpoint for registrations management
 @app.route('/admin/api/registrations', methods=['PUT'])
 @app.route('/admin/api/registrations/<int:registration_id>', methods=['DELETE'])
@@ -4213,9 +5163,16 @@ def api_update_registration_status(registration_id=None):
             # Update status
             registration.status = new_status
             
-            # If approved, send notification to admin about new approved member
+            # If approved, create user account and send notifications
             if new_status == 'approved':
-                print(f"DEBUG: Sending welcome email to {registration.email} for {registration.name}")
+                print(f"DEBUG: Creating user account for {registration.email} ({registration.name})")
+                
+                # Create user account from approved registration
+                new_user = create_user_from_registration(registration)
+                if new_user:
+                    print(f"✅ Utworzono konto użytkownika: {new_user.email}")
+                else:
+                    print(f"❌ Błąd podczas tworzenia konta użytkownika dla {registration.email}")
                 
                 # Send welcome email to the newly approved user
                 try:
@@ -4782,4 +5739,4 @@ def get_campaign_recipients(campaign):
         return []
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000) 

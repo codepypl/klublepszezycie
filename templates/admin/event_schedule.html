@@ -677,7 +677,7 @@
         
         // Funkcje walidacji
         function setupDateValidation() {
-            // Ustaw minimalną datę na dzisiaj
+            // Ustaw minimalną datę na dzisiaj, ale pozwalaj na wydarzenia w tym samym dniu
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('event_date').min = today;
             document.getElementById('edit_event_date').min = today;
@@ -697,11 +697,10 @@
             
             if (eventDate && eventTime) {
                 const selectedDateTime = new Date(`${eventDate}T${eventTime}`);
-                // Porównuj z początkiem dzisiejszego dnia, nie z aktualnym momentem
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                // Porównuj z aktualnym momentem, pozwalając na wydarzenia w tym samym dniu
+                const now = new Date();
                 
-                if (selectedDateTime < today) {
+                if (selectedDateTime < now) {
                     dateInput.classList.add('is-invalid');
                     timeInput.classList.add('is-invalid');
                     return false;
@@ -722,11 +721,10 @@
             
             if (eventDate && eventTime) {
                 const selectedDateTime = new Date(`${eventDate}T${eventTime}`);
-                // Porównuj z początkiem dzisiejszego dnia, nie z aktualnym momentem
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                // Porównuj z aktualnym momentem, pozwalając na wydarzenia w tym samym dniu
+                const now = new Date();
                 
-                if (selectedDateTime < today) {
+                if (selectedDateTime < now) {
                     dateInput.classList.add('is-invalid');
                     timeInput.classList.add('is-invalid');
                     return false;
