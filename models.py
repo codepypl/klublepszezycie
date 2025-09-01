@@ -83,13 +83,12 @@ class Testimonial(db.Model):
     __tablename__ = 'testimonials'
     
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
+    author_name = db.Column(db.String(100), nullable=False)
     content = db.Column(db.Text, nullable=False)
+    member_since = db.Column(db.String(20))
     rating = db.Column(db.Integer, default=5)
     is_active = db.Column(db.Boolean, default=True)
-    order = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
         return f'<Testimonial {self.name}>'
@@ -104,7 +103,6 @@ class SocialLink(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     order = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
         return f'<SocialLink {self.platform}>'
@@ -128,9 +126,8 @@ class FAQ(db.Model):
     __tablename__ = 'faqs'
     
     id = db.Column(db.Integer, primary_key=True)
-    question = db.Column(db.Text, nullable=False)
+    question = db.Column(db.String(500), nullable=False)
     answer = db.Column(db.Text, nullable=False)
-    category = db.Column(db.String(100))
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -143,11 +140,21 @@ class SEOSettings(db.Model):
     __tablename__ = 'seo_settings'
     
     id = db.Column(db.Integer, primary_key=True)
-    page = db.Column(db.String(100), nullable=False, unique=True)
-    title = db.Column(db.String(200))
-    description = db.Column(db.Text)
-    keywords = db.Column(db.Text)
+    page_type = db.Column(db.String(50), nullable=False)
+    page_title = db.Column(db.String(60), nullable=False)
+    meta_description = db.Column(db.String(160), nullable=False)
+    meta_keywords = db.Column(db.String(200))
+    og_title = db.Column(db.String(60))
+    og_description = db.Column(db.String(160))
     og_image = db.Column(db.String(200))
+    og_type = db.Column(db.String(20))
+    twitter_card = db.Column(db.String(20))
+    twitter_title = db.Column(db.String(60))
+    twitter_description = db.Column(db.String(160))
+    twitter_image = db.Column(db.String(200))
+    canonical_url = db.Column(db.String(200))
+    structured_data = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -371,7 +378,10 @@ class UserGroupMember(db.Model):
     email = db.Column(db.String(120), nullable=False)
     name = db.Column(db.String(100))
     member_type = db.Column(db.String(50), default='user')
-    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    member_metadata = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relacje
     group = db.relationship('UserGroup', backref='members')
