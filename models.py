@@ -114,8 +114,8 @@ class Registration(db.Model):
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), nullable=False)
     phone = db.Column(db.String(20))
-    message = db.Column(db.Text)
-    status = db.Column(db.String(20), default='pending')
+    presentation_date = db.Column(db.DateTime)
+    status = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -231,8 +231,14 @@ class EventRecipientGroup(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=False)
-    group_name = db.Column(db.String(200), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    group_type = db.Column(db.String(20), nullable=False)
+    criteria_config = db.Column(db.Text)
+    member_count = db.Column(db.Integer)
+    is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relacje
     event = db.relationship('EventSchedule', backref='recipient_groups')
@@ -271,14 +277,15 @@ class Page(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
-    slug = db.Column(db.String(200), unique=True, nullable=False)
+    slug = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text)
-    meta_title = db.Column(db.String(200))
-    meta_description = db.Column(db.Text)
+    meta_description = db.Column(db.String(300))
+    meta_keywords = db.Column(db.String(200))
     is_active = db.Column(db.Boolean, default=True)
     is_published = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    order = db.Column(db.Integer, default=0)
     
     def __repr__(self):
         return f'<Page {self.title}>'
@@ -304,10 +311,11 @@ class EmailSubscription(db.Model):
     __tablename__ = 'email_subscriptions'
     
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    email = db.Column(db.String(120), nullable=False)
     name = db.Column(db.String(100))
     is_active = db.Column(db.Boolean, default=True)
-    subscription_type = db.Column(db.String(50), default='newsletter')
+    subscription_type = db.Column(db.String(50))
+    unsubscribe_token = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -318,15 +326,15 @@ class EmailLog(db.Model):
     __tablename__ = 'email_logs'
     
     id = db.Column(db.Integer, primary_key=True)
-    recipient_email = db.Column(db.String(120), nullable=False)
-    subject = db.Column(db.String(200))
-    template_name = db.Column(db.String(100))
-    status = db.Column(db.String(20), default='sent')
+    email = db.Column(db.String(120), nullable=False)
+    template_id = db.Column(db.Integer, db.ForeignKey('email_templates.id'))
+    subject = db.Column(db.String(200), nullable=False)
+    status = db.Column(db.String(20))
     error_message = db.Column(db.Text)
-    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sent_at = db.Column(db.DateTime)
     
     def __repr__(self):
-        return f'<EmailLog {self.recipient_email} - {self.status}>'
+        return f'<EmailLog {self.email} - {self.status}>'
 
 class EmailSchedule(db.Model):
     __tablename__ = 'email_schedules'
@@ -337,7 +345,7 @@ class EmailSchedule(db.Model):
     template_id = db.Column(db.Integer, db.ForeignKey('email_templates.id'))
     trigger_type = db.Column(db.String(50), nullable=False)
     trigger_conditions = db.Column(db.Text)
-    recipient_type = db.Column(db.String(50), nullable=False)
+    recipient_type = db.Column(db.String(20), nullable=False)
     recipient_emails = db.Column(db.Text)
     recipient_group_id = db.Column(db.Integer, db.ForeignKey('user_groups.id'))
     send_type = db.Column(db.String(50), nullable=False)
@@ -395,26 +403,22 @@ class EmailCampaign(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     subject = db.Column(db.String(200), nullable=False)
-    content = db.Column(db.Text)
-    template_id = db.Column(db.Integer, db.ForeignKey('email_templates.id'))
-    recipient_group_id = db.Column(db.Integer, db.ForeignKey('user_groups.id'))
-    status = db.Column(db.String(20), default='draft')
+    html_content = db.Column(db.Text)
+    text_content = db.Column(db.Text)
+    recipient_groups = db.Column(db.Text)
+    custom_emails = db.Column(db.Text)
+    status = db.Column(db.String(20))
+    send_type = db.Column(db.String(20))
     scheduled_at = db.Column(db.DateTime)
-    sent_at = db.Column(db.DateTime)
-    recipient_count = db.Column(db.Integer, default=0)
-    sent_count = db.Column(db.Integer, default=0)
-    opened_count = db.Column(db.Integer, default=0)
-    clicked_count = db.Column(db.Integer, default=0)
-    
+    total_recipients = db.Column(db.Integer)
+    sent_count = db.Column(db.Integer)
+    failed_count = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relacje
-    template = db.relationship('EmailTemplate', backref='campaigns')
-    recipient_group = db.relationship('UserGroup', backref='campaigns')
+    sent_at = db.Column(db.DateTime)
     
     def __repr__(self):
-        return f'<EmailCampaign {self.name}>'
+        return f'<EmailCampaign {self.name} - {self.status}>'
 
 class EmailAutomation(db.Model):
     __tablename__ = 'email_automations'
@@ -447,7 +451,7 @@ class EmailAutomationLog(db.Model):
     error_count = db.Column(db.Integer, default=0)
     status = db.Column(db.String(20), default='running')
     details = db.Column(db.Text)
-    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    started_at = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
     
     # Relacje
@@ -455,3 +459,17 @@ class EmailAutomationLog(db.Model):
     
     def __repr__(self):
         return f'<EmailAutomationLog {self.automation.name} ({self.status})>'
+
+class PresentationSchedule(db.Model):
+    __tablename__ = 'presentation_schedule'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200))
+    next_presentation_date = db.Column(db.DateTime, nullable=False)
+    custom_text = db.Column(db.String(500))
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<PresentationSchedule {self.title}>'
