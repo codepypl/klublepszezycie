@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ak zm<!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
@@ -85,6 +85,10 @@
                                 <i class="fas fa-calendar-check me-2"></i>
                                 Utwórz Harmonogramy Wydarzeń
                             </button>
+                            <button class="btn admin-btn-success" onclick="getDefaultSchedules()">
+                                <i class="fas fa-download me-2"></i>
+                                Pobierz Domyślne Harmonogramy
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -101,6 +105,7 @@
                                     <th>Typ</th>
                                     <th>Harmonogram</th>
                                     <th>Status</th>
+                                    <th>Wysłane</th>
                                     <th>Ostatnie Uruchomienie</th>
                                     <th>Następne Uruchomienie</th>
                                     <th>Akcje</th>
@@ -361,19 +366,19 @@
                         document.getElementById('scheduleModalTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Edytuj Harmonogram';
                         document.getElementById('schedule_id').value = schedule.id;
                         document.getElementById('schedule_name').value = schedule.name;
-                        document.getElementById('schedule_template_type').value = schedule.template_type;
-                        document.getElementById('schedule_type').value = schedule.schedule_type;
+                        document.getElementById('schedule_template_type').value = schedule.template_type || 'newsletter';
+                        document.getElementById('schedule_type').value = schedule.schedule_type || 'interval';
                         document.getElementById('schedule_is_active').checked = schedule.is_active;
                         document.querySelector('input[name="is_active_hidden"]').value = schedule.is_active ? '1' : '0';
                         
                         // Set specific fields based on schedule type
                         if (schedule.schedule_type === 'interval') {
-                            document.getElementById('schedule_interval_value').value = schedule.interval_value;
-                            document.getElementById('schedule_interval_unit').value = schedule.interval_unit;
+                            document.getElementById('schedule_interval_value').value = schedule.interval_value || 1;
+                            document.getElementById('schedule_interval_unit').value = schedule.interval_unit || 'days';
                         } else if (schedule.schedule_type === 'cron') {
-                            document.getElementById('schedule_cron_expression').value = schedule.cron_expression;
+                            document.getElementById('schedule_cron_expression').value = schedule.cron_expression || '0 9 * * 1';
                         } else if (schedule.schedule_type === 'event_based') {
-                            document.getElementById('schedule_trigger_event').value = schedule.trigger_event;
+                            document.getElementById('schedule_trigger_event').value = schedule.trigger_event || 'event_reminder';
                         }
                         
                         toggleScheduleFields();
@@ -401,6 +406,10 @@
             // Add is_active value
             const isActive = document.getElementById('schedule_is_active').checked;
             formData.set('is_active', isActive ? '1' : '0');
+            
+            // Add description
+            const name = document.getElementById('schedule_name').value;
+            formData.set('description', `Harmonogram: ${name}`);
             
             const scheduleId = document.getElementById('schedule_id').value;
             const url = scheduleId ? `/admin/api/email-schedules/${scheduleId}` : '/admin/api/email-schedules';
@@ -453,8 +462,7 @@
         
         // Function to toggle schedule status
         function toggleScheduleStatus(id, currentStatus) {
-            const newStatus = !currentStatus;
-            const action = newStatus ? 'aktywować' : 'deaktywować';
+            const action = currentStatus ? 'deaktywować' : 'aktywować';
             
             if (confirm(`Czy na pewno chcesz ${action} ten harmonogram?`)) {
                 fetch(`/admin/api/email-schedules/${id}/toggle`, {
@@ -569,7 +577,7 @@
             tbody.innerHTML = '';
             
             if (schedules.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Brak harmonogramów</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Brak harmonogramów</td></tr>';
                 return;
             }
             
@@ -579,26 +587,33 @@
                 // Format schedule description
                 let scheduleDesc = '';
                 if (schedule.schedule_type === 'interval') {
-                    scheduleDesc = `Co ${schedule.interval_value} ${getIntervalUnitText(schedule.interval_unit)}`;
+                    scheduleDesc = `Co ${schedule.interval_value || 1} ${getIntervalUnitText(schedule.interval_unit || 'days')}`;
                 } else if (schedule.schedule_type === 'cron') {
-                    scheduleDesc = `Cron: ${schedule.cron_expression}`;
+                    scheduleDesc = `Cron: ${schedule.cron_expression || '0 9 * * 1'}`;
                 } else if (schedule.schedule_type === 'event_based') {
-                    scheduleDesc = `Zdarzenie: ${getEventText(schedule.trigger_event)}`;
+                    scheduleDesc = `Zdarzenie: ${getEventText(schedule.trigger_event || 'event_reminder')}`;
                 }
                 
                 // Format dates
-                const lastRun = schedule.last_run ? new Date(schedule.last_run).toLocaleString('pl-PL') : 'Brak';
-                const nextRun = schedule.next_run ? new Date(schedule.next_run).toLocaleString('pl-PL') : 'Brak';
+                const lastRun = schedule.last_sent ? new Date(schedule.last_sent).toLocaleString('pl-PL') : 'Brak';
+                const nextRun = schedule.scheduled_at ? new Date(schedule.scheduled_at).toLocaleString('pl-PL') : 'Brak';
+                
+                // Format sent count
+                const sentCount = schedule.sent_count || 0;
+                const sentCountBadge = sentCount > 0 ? 
+                    `<span class="badge bg-success">${sentCount}</span>` : 
+                    `<span class="badge bg-secondary">0</span>`;
                 
                 row.innerHTML = `
                     <td><strong>${schedule.name}</strong></td>
-                    <td><span class="badge bg-primary">${getTemplateTypeText(schedule.template_type)}</span></td>
+                    <td><span class="badge bg-primary">${getTemplateTypeText(schedule.template_type || 'newsletter')}</span></td>
                     <td>${scheduleDesc}</td>
                     <td>
                         <span class="badge ${schedule.is_active ? 'bg-success' : 'bg-secondary'}">
                             ${schedule.is_active ? 'Aktywny' : 'Nieaktywny'}
                         </span>
                     </td>
+                    <td>${sentCountBadge}</td>
                     <td>${lastRun}</td>
                     <td>${nextRun}</td>
                     <td>
@@ -627,12 +642,12 @@
         function updateStats(schedules) {
             document.getElementById('totalSchedules').textContent = schedules.length;
             document.getElementById('activeSchedules').textContent = schedules.filter(s => s.is_active).length;
-            document.getElementById('runningSchedules').textContent = schedules.filter(s => s.is_active && s.next_run && new Date(s.next_run) > new Date()).length;
+            document.getElementById('runningSchedules').textContent = schedules.filter(s => s.is_active && s.scheduled_at && new Date(s.scheduled_at) > new Date()).length;
             
             // Find next run
-            const activeSchedules = schedules.filter(s => s.is_active && s.next_run);
+            const activeSchedules = schedules.filter(s => s.is_active && s.scheduled_at);
             if (activeSchedules.length > 0) {
-                const nextRun = new Date(Math.min(...activeSchedules.map(s => new Date(s.next_run))));
+                const nextRun = new Date(Math.min(...activeSchedules.map(s => new Date(s.scheduled_at))));
                 document.getElementById('nextRun').textContent = nextRun.toLocaleString('pl-PL');
             } else {
                 document.getElementById('nextRun').textContent = '-';
@@ -657,7 +672,11 @@
                 'new_member': 'Nowy członek',
                 'event_reminder': 'Przypomnienie o wydarzeniu',
                 'weekly_summary': 'Podsumowanie tygodnia',
-                'monthly_summary': 'Podsumowanie miesiąca'
+                'monthly_summary': 'Podsumowanie miesiąca',
+                '24h_before': '24h przed wydarzeniem',
+                '1h_before': '1h przed wydarzeniem',
+                '5min_before': '5min przed wydarzeniem',
+                'user_activation': 'Aktywacja użytkownika'
             };
             return events[event] || event;
         }
@@ -666,7 +685,9 @@
             const types = {
                 'newsletter': 'Newsletter',
                 'notification': 'Powiadomienie',
-                'reminder': 'Przypomnienie'
+                'reminder': 'Przypomnienie',
+                'event_reminder': 'Przypomnienie o wydarzeniu',
+                'user_activation': 'Aktywacja użytkownika'
             };
             return types[type] || type;
         }
@@ -693,6 +714,32 @@
                 .catch(error => {
                     console.error('Error creating event schedules:', error);
                     showNotification('Błąd podczas tworzenia harmonogramów: ' + error.message, 'error');
+                });
+            }
+        }
+        
+        // Function to get default schedules
+        function getDefaultSchedules() {
+            if (confirm('Czy na pewno chcesz pobrać domyślne harmonogramy? To utworzy podstawowe harmonogramy dla newslettera, powiadomień i przypomnień.')) {
+                fetch('/admin/api/get-default-schedules', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        // Reload schedules list
+                        loadSchedules();
+                    } else {
+                        showNotification('Błąd podczas pobierania domyślnych harmonogramów: ' + (data.error || 'Nieznany błąd'), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error getting default schedules:', error);
+                    showNotification('Błąd podczas pobierania domyślnych harmonogramów: ' + error.message, 'error');
                 });
             }
         }

@@ -11,14 +11,14 @@ class Config:
         'postgresql://shadi@localhost:5432/betterlife')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
+    # Timezone Configuration
+    TIMEZONE = os.getenv('TIMEZONE', 'Europe/Warsaw')  # Domyślnie polski czas
+    USE_LOCAL_TIME = os.getenv('USE_LOCAL_TIME', 'true').lower() == 'true'
+    
     # File Upload Settings
     UPLOAD_FOLDER = 'static/uploads'
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
     
-    # Admin Settings
-    ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
-    ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
-    ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@lepszezycie.pl')
     
     # Email Configuration (Zoho Mail)
     MAIL_SERVER = os.getenv('MAIL_SERVER', 'smtp.zoho.com')
@@ -52,14 +52,9 @@ class ProductionConfig(Config):
     DEBUG = False
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
 
-class TestingConfig(Config):
-    TESTING = True
-    SQLALCHEMY_DATABASE_URI = os.getenv('TEST_DATABASE_URL', 
-        'postgresql://postgresql://shadi@localhost:5432/betterlife')
 
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
-    'testing': TestingConfig,
     'default': DevelopmentConfig
 }

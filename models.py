@@ -565,7 +565,7 @@ class EventEmailSchedule(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relacje
-    event = db.relationship('EventSchedule', backref='email_schedules')
+    event = db.relationship('EventSchedule', backref=db.backref('email_schedules', cascade='all, delete-orphan'))
     recipient_group = db.relationship('UserGroup', backref='event_schedules')
     template = db.relationship('EmailTemplate', backref='event_schedules')
     

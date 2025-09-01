@@ -6,6 +6,7 @@ Handles automatic email sending based on triggers and schedules
 
 import json
 import logging
+import pytz
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from sqlalchemy import and_, or_
@@ -130,10 +131,18 @@ class EmailAutomationService:
                     continue
                 
                 # Calculate scheduled time
-                scheduled_time = event.event_date - time_offset
+                # Treat event.event_date as local time (since SQLAlchemy strips timezone)
+                from app import get_local_now, get_local_timezone
+                if event.event_date.tzinfo is None:
+                    # event_date is already in local time, just add timezone info
+                    tz = get_local_timezone()
+                    event_date_local = tz.localize(event.event_date)
+                else:
+                    event_date_local = event.event_date
                 
-                # Only schedule if it's in the future
-                if scheduled_time > datetime.utcnow():
+                scheduled_time = event_date_local - time_offset
+                
+                if scheduled_time > get_local_now():
                     # Get template
                     template_name = f'event_reminder_{reminder_type}'
                     template = EmailTemplate.query.filter_by(template_type=template_name).first()
@@ -168,15 +177,22 @@ class EmailAutomationService:
             Dict: Processing results
         """
         try:
-            now = datetime.utcnow()
+            # Use local time instead of UTC
+            from app import get_local_now
+            now = get_local_now()
             
             # Get due schedules
+            from app import convert_to_local
             due_schedules = EventEmailSchedule.query.filter(
-                and_(
-                    EventEmailSchedule.status == 'pending',
-                    EventEmailSchedule.scheduled_at <= now
-                )
+                EventEmailSchedule.status == 'pending'
             ).all()
+            
+            # Filter schedules that are due, handling timezone conversion
+            due_schedules = [
+                schedule for schedule in due_schedules
+                if (schedule.scheduled_at.tzinfo is None and schedule.scheduled_at <= now.replace(tzinfo=None)) or
+                   (schedule.scheduled_at.tzinfo is not None and schedule.scheduled_at <= now)
+            ]
             
             results = {
                 'total': len(due_schedules),

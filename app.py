@@ -8,9 +8,48 @@ import os
 import uuid
 import json
 from dotenv import load_dotenv
+import pytz
 
 # Load environment variables
 load_dotenv()
+
+# Timezone helper functions
+def get_local_timezone():
+    """Get the configured timezone from config"""
+    try:
+        from config import config
+        timezone_name = getattr(config['development'], 'TIMEZONE', 'Europe/Warsaw')
+        return pytz.timezone(timezone_name)
+    except:
+        # Fallback to Central European Time
+        return pytz.timezone('Europe/Warsaw')
+
+def get_local_now():
+    """Get current time in local timezone"""
+    try:
+        from config import config
+        if getattr(config['development'], 'USE_LOCAL_TIME', True):
+            tz = get_local_timezone()
+            return datetime.now(tz)
+        else:
+            return datetime.utcnow()
+    except:
+        # Fallback to local time if config fails
+        return datetime.now()
+
+def convert_to_local(dt):
+    """Convert UTC datetime to local timezone"""
+    if dt.tzinfo is None:
+        dt = pytz.UTC.localize(dt)
+    tz = get_local_timezone()
+    return dt.astimezone(tz)
+
+def convert_to_utc(dt):
+    """Convert local datetime to UTC"""
+    if dt.tzinfo is None:
+        tz = get_local_timezone()
+        dt = tz.localize(dt)
+    return dt.astimezone(pytz.UTC)
 
 # File upload configuration
 UPLOAD_FOLDER = 'static/uploads'
@@ -99,7 +138,7 @@ with app.app_context():
     
     # Automatycznie dezaktywuj zakończone wydarzenia
     try:
-        now = datetime.now()
+        now = get_local_now()
         ended_events = EventSchedule.query.filter(
             EventSchedule.end_date < now,
             EventSchedule.is_active == True
@@ -121,17 +160,12 @@ with app.app_context():
     if not admin_user:
         admin_user = User(
             username='admin',
-            email=app.config['ADMIN_EMAIL'],  # ← Użyj konfiguracji!
-            password_hash=generate_password_hash(app.config['ADMIN_PASSWORD']),
+            email='admin@lepszezycie.pl',  # Domyślny email admina
+            password_hash=generate_password_hash('admin123'),
             is_admin=True
         )
         db.session.add(admin_user)
         db.session.commit()
-    else:
-        # Aktualizuj email admina z konfiguracji
-        if admin_user.email != app.config['ADMIN_EMAIL']:
-            admin_user.email = app.config['ADMIN_EMAIL']
-            db.session.commit()
     
     # Create default email templates if they don't exist
     welcome_template = EmailTemplate.query.filter_by(template_type='welcome').first()
@@ -281,7 +315,7 @@ Ten email został wysłany na adres {{email}}
 </html>
                 ''',
                 text_content='''
-Przypomnienie o Wydarzeniu
+Przypomnienie o Wydarzeniu 🔔
 
 Cześć {{name}}!
 
@@ -675,6 +709,24 @@ def register():
         
         db.session.commit()
         
+        # Wyślij powiadomienie do administratora o nowym członku klubu
+        try:
+            admin_users = User.query.filter_by(is_admin=True).all()
+            for admin in admin_users:
+                email_service.send_template_email(
+                    to_email=admin.email,
+                    template_name='admin_notification',
+                                            variables={
+                            'admin_name': admin.username or admin.name,
+                            'new_member_name': name,
+                            'new_member_email': email,
+                            'registration_date': datetime.utcnow().strftime('%d.%m.%Y %H:%M')
+                        }
+                )
+                print(f"✅ Powiadomienie wysłane do administratora: {admin.email}")
+        except Exception as e:
+            print(f"⚠️ Błąd podczas wysyłania powiadomienia administratora: {str(e)}")
+        
         print(f"✅ Nowa rejestracja i konto użytkownika: {name} ({email})")
     
         return jsonify({
@@ -859,6 +911,21 @@ def register_event(event_id):
             try:
                 add_result = email_service.add_subscriber(email, name, subscription_type='all')
                 print(f"DEBUG: add_subscriber result for {email}: {add_result}")
+                
+                # Wyślij powiadomienie do administratora o nowym członku klubu
+                admin_users = User.query.filter_by(is_admin=True).all()
+                for admin in admin_users:
+                    email_service.send_template_email(
+                        to_email=admin.email,
+                        template_name='admin_notification',
+                        variables={
+                            'admin_name': admin.username or admin.name,
+                            'new_member_name': name,
+                            'new_member_email': email,
+                            'registration_date': datetime.utcnow().strftime('%d.%m.%Y %H:%M')
+                        }
+                    )
+                    print(f"✅ Powiadomienie wysłane do administratora: {admin.email}")
             except Exception as e:
                 print(f"DEBUG: Error in add_subscriber for {email}: {str(e)}")
         
@@ -2541,7 +2608,29 @@ def api_user_profile():
                     return jsonify({'success': False, 'error': 'Ten email jest już używany przez innego użytkownika'}), 400
                 current_user.email = data['email']
             if 'club_member' in data:
+                # Sprawdź czy użytkownik włącza opcję dołączenia do klubu
+                was_club_member = current_user.club_member
                 current_user.club_member = data['club_member']
+                
+                # Jeśli użytkownik włącza opcję dołączenia do klubu (był false, teraz true)
+                if not was_club_member and data['club_member']:
+                    # Wyślij powiadomienie do administratora o nowym członku klubu
+                    try:
+                        admin_users = User.query.filter_by(is_admin=True).all()
+                        for admin in admin_users:
+                            email_service.send_template_email(
+                                to_email=admin.email,
+                                template_name='admin_notification',
+                                                            variables={
+                                'admin_name': admin.username or admin.name,
+                                'new_member_name': current_user.name or current_user.username,
+                                'new_member_email': current_user.email,
+                                'registration_date': datetime.utcnow().strftime('%d.%m.%Y %H:%M')
+                            }
+                            )
+                            print(f"✅ Powiadomienie wysłane do administratora: {admin.email}")
+                    except Exception as e:
+                        print(f"⚠️ Błąd podczas wysyłania powiadomienia administratora: {str(e)}")
             
             db.session.commit()
             
@@ -3516,8 +3605,10 @@ def api_event_schedule():
         if not is_date_valid:
             return jsonify({'success': False, 'error': date_error}), 400
         
-        # Parse datetime
-        event_date = datetime.fromisoformat(data['event_date'].replace('Z', '+00:00'))
+        # Parse datetime - treat as local time
+        from app import convert_to_utc
+        event_date_local = datetime.fromisoformat(data['event_date'].replace('Z', ''))
+        event_date = convert_to_utc(event_date_local)
         
         # Handle file upload
         hero_background = ''
@@ -3538,7 +3629,7 @@ def api_event_schedule():
             title=data['title'],
             event_type=data['event_type'],
             event_date=event_date,
-            end_date=datetime.fromisoformat(data['end_date'].replace('Z', '+00:00')) if data.get('end_date') else None,
+            end_date=convert_to_utc(datetime.fromisoformat(data['end_date'].replace('Z', ''))) if data.get('end_date') else None,
             description=data.get('description', ''),
             meeting_link=data.get('meeting_link', ''),
             location=data.get('location', ''),
@@ -3550,6 +3641,15 @@ def api_event_schedule():
         )
         db.session.add(new_event)
         db.session.commit()
+        
+        # Automatycznie utwórz harmonogramy e-mail dla nowego wydarzenia
+        try:
+            from services.email_automation_service import email_automation_service
+            email_automation_service.schedule_event_emails(new_event.id)
+            print(f"Automatically created email schedules for event {new_event.id}")
+        except Exception as e:
+            print(f"Failed to create email schedules for event {new_event.id}: {e}")
+        
         return jsonify({'success': True, 'id': new_event.id})
     
     elif request.method == 'PUT':
@@ -3579,12 +3679,14 @@ def api_event_schedule():
             if not is_date_valid:
                 return jsonify({'success': False, 'error': date_error}), 400
             
-            # Parse datetime
-            event_date = datetime.fromisoformat(data['event_date'].replace('Z', '+00:00'))
+            # Parse datetime - treat as local time
+            from app import convert_to_utc
+            event_date_local = datetime.fromisoformat(data['event_date'].replace('Z', ''))
+            event_date = convert_to_utc(event_date_local)
             event.title = data['title']
             event.event_type = data['event_type']
             event.event_date = event_date
-            event.end_date = datetime.fromisoformat(data['end_date'].replace('Z', '+00:00')) if data.get('end_date') else None
+            event.end_date = convert_to_utc(datetime.fromisoformat(data['end_date'].replace('Z', ''))) if data.get('end_date') else None
             event.description = data.get('description', '')
             event.meeting_link = data.get('meeting_link', '')
             event.location = data.get('location', '')
@@ -3617,6 +3719,13 @@ def api_event_schedule():
         event_id = request.args.get('id', type=int)
         event = EventSchedule.query.get(event_id)
         if event:
+            # Usuń harmonogramy e-mail przed usunięciem wydarzenia
+            from models import EventEmailSchedule
+            email_schedules = EventEmailSchedule.query.filter_by(event_id=event_id).all()
+            for schedule in email_schedules:
+                db.session.delete(schedule)
+            
+            # Usuń wydarzenie
             db.session.delete(event)
             db.session.commit()
             return jsonify({'success': True})
@@ -3656,7 +3765,7 @@ def send_event_reminders():
     """Send reminders about upcoming events to all subscribers"""
     try:
         # Get next published and active event
-        now = datetime.now()
+        now = get_local_now()
         next_event = EventSchedule.query.filter_by(
             is_active=True, 
             is_published=True
@@ -4150,11 +4259,11 @@ Cześć {{name}}!
 
 Przypominamy o nadchodzącym wydarzeniu:
 
-{{event_type}}
+📅 {{event_type}}
 Data: {{event_date}}
-
-Szczegóły:
-{{event_details}}
+{% if event_details %}
+Szczegóły: {{event_details}}
+{% endif %}
 
 Twoje dane są bezpieczne - możesz w każdej chwili:
 - Zrezygnować z subskrypcji: {{unsubscribe_url}}
@@ -5230,7 +5339,7 @@ def api_email_stats():
 # Helper functions for email schedules
 def calculate_next_run_interval(interval_value, interval_unit):
     """Calculate next run time for interval-based schedules"""
-    now = datetime.utcnow()
+    now = get_local_now()
     
     if interval_unit == 'minutes':
         return now + timedelta(minutes=interval_value)
@@ -5257,7 +5366,7 @@ def calculate_next_run_cron(cron_expression):
         
         minute, hour, day, month, day_of_week = parts
         
-        now = datetime.utcnow()
+        now = get_local_now()
         next_run = now.replace(second=0, microsecond=0)
         
         # Handle minute
@@ -5289,7 +5398,7 @@ def calculate_next_run_cron(cron_expression):
         
     except Exception:
         # Fallback to next day if cron parsing fails
-        return datetime.utcnow() + timedelta(days=1)
+        return get_local_now() + timedelta(days=1)
 
 def execute_email_schedule(schedule):
     """Execute an email schedule based on its type and template"""
@@ -5571,10 +5680,10 @@ def send_monthly_summary_reminder():
 def check_and_run_schedules():
     """Check and run due email schedules - to be called by cron job"""
     try:
-        print(f"Checking schedules at {datetime.utcnow()}")
+        print(f"Checking schedules at {get_local_now()}")
         
         # Find schedules that are due to run
-        now = datetime.utcnow()
+        now = get_local_now()
         due_schedules = EmailSchedule.query.filter(
             EmailSchedule.is_active == True,
             EmailSchedule.next_run <= now

@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Mój Profil - Klub Lepsze Życie</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -158,7 +161,7 @@
             <form id="profileForm">
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label for="name" class="form-label">Imię i nazwisko *</label>
+                        <label for="name" class="form-label">Imię *</label>
                         <input type="text" class="form-control" id="name" name="name" required>
                     </div>
                     <div class="col-md-6 mb-3">
@@ -177,8 +180,7 @@
                         <div class="form-check form-switch mt-2">
                             <input class="form-check-input" type="checkbox" id="clubMember" name="club_member">
                             <label class="form-check-label" for="clubMember">
-                                Chcę dołączyć do klubu i otrzymywać powiadomienia o wydarzeniach
-                            </label>
+                                Chcę dołączyć do klubu.
                         </div>
                     </div>
                 </div>
@@ -275,50 +277,128 @@
         // Load user profile data
         async function loadProfile() {
             try {
-                const response = await fetch('/api/profile');
+                console.log('🔄 Ładowanie profilu użytkownika...');
+                console.log('🔄 URL:', '/api/profile');
+                console.log('🔄 Metoda:', 'GET');
+                console.log('🔄 Nagłówki:', {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                });
+                const response = await fetch('/api/profile', {
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                console.log('📡 Status odpowiedzi:', response.status);
+                console.log('📡 Status tekst:', response.statusText);
+                console.log('📡 Nagłówki odpowiedzi:', response.headers);
+                
                 const data = await response.json();
+                
+                console.log('📊 Otrzymane dane profilu:', data);
+                console.log('📊 Status sukcesu:', data.success);
+                console.log('📊 Dane użytkownika:', data.user);
+                console.log('📊 Typ danych:', typeof data);
+                console.log('📊 Klucze danych:', Object.keys(data));
                 
                 if (data.success) {
                     currentUserData = data.user;
+                    console.log('✅ Profil załadowany pomyślnie, dane użytkownika:', data.user);
+                    console.log('✅ Status członkostwa w klubie:', data.user.club_member);
+                    console.log('✅ Typ statusu członkostwa:', typeof data.user.club_member);
                     displayProfile(data.user);
                 } else {
-                    showError('Błąd podczas ładowania profilu');
+                    console.error('❌ Błąd podczas ładowania profilu:', data.error);
+                    showError('Błąd podczas ładowania profilu: ' + (data.error || 'Nieznany błąd'));
                 }
             } catch (error) {
-                console.error('Error loading profile:', error);
-                showError('Błąd podczas ładowania profilu');
+                console.error('❌ Błąd podczas ładowania profilu:', error);
+                showError('Błąd podczas ładowania profilu: ' + error.message);
             }
         }
         
         // Display profile data
         function displayProfile(user) {
+            console.log('🎯 Wyświetlanie profilu dla użytkownika:', user);
+            console.log('🎯 Typ użytkownika:', typeof user);
+            console.log('🎯 Klucze użytkownika:', Object.keys(user));
+            
             // Profile header
             document.getElementById('userName').textContent = user.name || user.username;
+            
+            console.log('📊 Nagłówek profilu:');
+            console.log('📊 Name:', user.name);
+            console.log('📊 Username:', user.username);
+            console.log('📊 Final name:', user.name || user.username);
             
             // Profile info
             document.getElementById('username').textContent = user.username;
             document.getElementById('createdAt').textContent = formatDate(user.created_at);
             document.getElementById('lastLogin').textContent = user.last_login ? formatDate(user.last_login) : 'Nigdy';
             
+            console.log('📊 Informacje o profilu:');
+            console.log('📊 Username:', user.username);
+            console.log('📊 Created at:', user.created_at);
+            console.log('📊 Last login:', user.last_login);
+            
             // Club member status
             const clubMemberBadge = document.getElementById('clubMemberBadge');
             const clubMemberText = document.getElementById('clubMemberText');
+            
+            console.log('🏆 Status członkostwa w klubie:', user.club_member);
+            console.log('🏆 Typ statusu członkostwa:', typeof user.club_member);
+            console.log('🏆 Wartość statusu członkostwa:', user.club_member);
+            console.log('🏆 Element clubMemberBadge:', clubMemberBadge);
+            console.log('🏆 Element clubMemberText:', clubMemberText);
             
             if (user.club_member) {
                 clubMemberBadge.classList.add('active');
                 clubMemberText.textContent = 'Członek klubu';
                 document.getElementById('clubBenefitsCard').style.display = 'block';
+                console.log('✅ Użytkownik jest członkiem klubu');
+                console.log('✅ Dodano klasę active do badge');
+                console.log('✅ Ustawiono tekst: Członek klubu');
+                console.log('✅ Pokazano korzyści klubu');
             } else {
                 clubMemberBadge.classList.remove('active');
                 clubMemberText.textContent = 'Nie jest członkiem';
                 document.getElementById('clubBenefitsCard').style.display = 'none';
+                console.log('❌ Użytkownik nie jest członkiem klubu');
+                console.log('❌ Usunięto klasę active z badge');
+                console.log('❌ Ustawiono tekst: Nie jest członkiem');
+                console.log('❌ Ukryto korzyści klubu');
             }
             
             // Form fields
             document.getElementById('name').value = user.name || '';
-            document.getElementById('email').value = user.email || '';
             document.getElementById('phone').value = user.phone || '';
             document.getElementById('clubMember').checked = user.club_member || false;
+            
+            console.log('📝 Formularz wypełniony danymi użytkownika');
+            console.log('📝 Wartość pola name:', user.name);
+            console.log('📝 Wartość pola phone:', user.phone);
+            console.log('📝 Wartość pola clubMember:', user.club_member);
+            console.log('📝 Typ pola clubMember:', typeof user.club_member);
+            console.log('📝 Element name:', document.getElementById('name'));
+            console.log('📝 Element phone:', document.getElementById('phone'));
+            console.log('📝 Element clubMember:', document.getElementById('clubMember'));
+            console.log('📝 Wartość elementu name:', document.getElementById('name')?.value);
+            console.log('📝 Wartość elementu phone:', document.getElementById('phone')?.value);
+            console.log('📝 Wartość elementu clubMember:', document.getElementById('clubMember')?.checked);
+            console.log('📝 Typ elementu name:', typeof document.getElementById('name')?.value);
+            console.log('📝 Typ elementu phone:', typeof document.getElementById('phone')?.value);
+            console.log('📝 Typ elementu clubMember:', typeof document.getElementById('clubMember')?.checked);
+            console.log('📝 Wartość elementu name po ustawieniu:', document.getElementById('name').value);
+            console.log('📝 Wartość elementu phone po ustawieniu:', document.getElementById('phone').value);
+            console.log('📝 Wartość elementu clubMember po ustawieniu:', document.getElementById('clubMember').checked);
+            console.log('📝 Typ elementu name po ustawieniu:', typeof document.getElementById('name').value);
+            console.log('📝 Typ elementu phone po ustawieniu:', typeof document.getElementById('phone').value);
+            console.log('📝 Typ elementu clubMember po ustawieniu:', typeof document.getElementById('clubMember').checked);
+            console.log('📝 Wartość elementu name po ustawieniu (string):', String(document.getElementById('name').value));
+            console.log('📝 Wartość elementu phone po ustawieniu (string):', String(document.getElementById('phone').value));
+            console.log('📝 Wartość elementu clubMember po ustawieniu (string):', String(document.getElementById('clubMember').checked));
         }
         
         // Handle form submission
@@ -344,24 +424,31 @@
             }
             
             try {
+                console.log('📤 Wysyłanie aktualizacji profilu:', formData);
+                
                 const response = await fetch('/api/profile', {
                     method: 'PUT',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
                     },
                     body: JSON.stringify(formData)
                 });
                 
                 const data = await response.json();
+                console.log('📥 Odpowiedź z serwera:', data);
                 
                 if (data.success) {
                     showSuccess(data.message);
+                    console.log('🔄 Przeładowanie profilu po aktualizacji...');
                     loadProfile(); // Reload profile data
                 } else {
+                    console.error('❌ Błąd podczas aktualizacji profilu:', data.error);
                     showError(data.error || 'Błąd podczas aktualizacji profilu');
                 }
             } catch (error) {
-                console.error('Error updating profile:', error);
+                console.error('❌ Błąd podczas aktualizacji profilu:', error);
                 showError('Błąd podczas aktualizacji profilu');
             }
         });
@@ -369,6 +456,7 @@
         // Reset form to original values
         function resetForm() {
             if (currentUserData) {
+                console.log('🔄 Resetowanie formularza do oryginalnych wartości:', currentUserData);
                 document.getElementById('name').value = currentUserData.name || '';
                 document.getElementById('email').value = currentUserData.email || '';
                 document.getElementById('phone').value = currentUserData.phone || '';
@@ -378,6 +466,7 @@
         
         // Show success modal
         function showSuccess(message) {
+            console.log('✅ Sukces:', message);
             document.getElementById('successMessage').textContent = message;
             const modal = new bootstrap.Modal(document.getElementById('successModal'));
             modal.show();
@@ -385,6 +474,7 @@
         
         // Show error modal
         function showError(message) {
+            console.error('❌ Błąd:', message);
             document.getElementById('errorMessage').textContent = message;
             const modal = new bootstrap.Modal(document.getElementById('errorModal'));
             modal.show();
@@ -394,17 +484,29 @@
         function formatDate(dateString) {
             if (!dateString) return 'Brak';
             const date = new Date(dateString);
-            return date.toLocaleDateString('pl-PL', {
+            const formatted = date.toLocaleDateString('pl-PL', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
             });
+            console.log('📅 Formatowanie daty:', dateString, '->', formatted);
+            return formatted;
         }
         
         // Load profile when page loads
         document.addEventListener('DOMContentLoaded', loadProfile);
+        
+        // Force refresh on page focus (to handle cache issues)
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                loadProfile();
+            }
+        });
+        
+        // Force refresh every 30 seconds to keep data current
+        setInterval(loadProfile, 30000);
     </script>
 </body>
 </html>
