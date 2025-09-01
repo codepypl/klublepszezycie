@@ -3130,6 +3130,28 @@ def api_benefits():
             print(f"Error deleting benefit: {str(e)}")
             return jsonify({'success': False, 'message': f'Wystąpił błąd podczas usuwania korzyści: {str(e)}'}), 500
 
+@app.route('/admin/api/benefits/<int:benefit_id>', methods=['GET'])
+@login_required
+def api_benefit_by_id(benefit_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    benefit = BenefitItem.query.get(benefit_id)
+    if benefit:
+        return jsonify({
+            'success': True,
+            'benefit': {
+                'id': benefit.id,
+                'title': benefit.title,
+                'description': benefit.description,
+                'icon': benefit.icon,
+                'image': benefit.image,
+                'order': benefit.order,
+                'is_active': benefit.is_active
+            }
+        })
+    return jsonify({'success': False, 'error': 'Benefit not found'}), 404
+
 @app.route('/admin/api/social', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @login_required
 def api_social():
