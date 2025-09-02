@@ -198,9 +198,9 @@
                     <h1 class="display-4 fw-bold text-white mb-4">
                         {{ hero_section.title }}
                     </h1>
-                    <p class="lead text-white mb-4">
-                        {{ hero_section.subtitle }}
-                    </p>
+                    <div class="lead text-white mb-4">
+                        {{ hero_section.subtitle|safe }}
+                    </div>
                     <div class="hero-cta">
                         <a href="#register" class="btn btn-primary btn-lg me-3 mb-3">
                             <i class="fas fa-calendar-check me-2"></i>
@@ -300,9 +300,16 @@
                     <h2 class="display-5 fw-bold text-primary mb-4">
                         {{ about_section.title }}
                     </h2>
+                    {% if about_section.subtitle %}
                     <p class="lead mb-4">
-                        {{ about_section.content }}
+                        {{ about_section.subtitle|safe }}
                     </p>
+                    {% endif %}
+                    {% if about_section.content %}
+                    <div class="mb-4">
+                        {{ about_section.content|safe }}
+                    </div>
+                    {% endif %}
                     {% if about_section.enable_pillars and about_section.pillars_data %}
                     <div class="pillars-grid">
                         {% set pillars = about_section.pillars_data|from_json %}
@@ -315,15 +322,15 @@
                             pillars: {{ pillars }}
                         </div> -->
                         {% for pillar in pillars %}
-                        {% if pillar.link %}
-                        <a href="{{ pillar.link }}" class="pillar-item-link">
+                        {% if pillar.page_link %}
+                        <a href="/{{ pillar.page_link }}" class="pillar-item-link">
                         {% endif %}
                         <div class="pillar-item">
-                            <i class="{{ pillar.icon }} fa-2x {{ pillar.color }}"></i>
+                            <i class="fas fa-{{ pillar.icon }} fa-2x" style="color: {{ pillar.icon_color }};"></i>
                             <h5>{{ pillar.title }}</h5>
                             <p>{{ pillar.description }}</p>
                         </div>
-                        {% if pillar.link %}
+                        {% if pillar.page_link %}
                         </a>
                         {% endif %}
                         {% endfor %}
@@ -339,9 +346,10 @@
                     {% endif %}
                     {% if about_section.final_text %}
                     <p class="mt-4">
-                        <strong>{{ about_section.final_text }}</strong>
+                        <strong>{{ about_section.final_text|safe }}</strong>
                     </p>
                     {% endif %}
+
                 </div>
                 <div class="col-lg-6" data-aos="fade-left" data-aos-delay="200">
                     <div class="about-visual">
@@ -356,17 +364,26 @@
                                 floating_cards count: {{ floating_cards|length }}
                             </div> -->
                             {% for card in floating_cards %}
-                            {% if card.link %}
-                            <a href="{{ card.link }}" class="floating-card-link">
+                            {% if card.page_link %}
+                            <a href="/{{ card.page_link }}" class="floating-card-link">
                             {% endif %}
-                            <div class="floating-card" data-aos="zoom-in" data-aos-delay="{{ card.delay }}">
-                                <i class="{{ card.icon }} fa-4x {{ card.color }}"></i>
+                            <div class="floating-card" data-aos="zoom-in" data-aos-delay="{{ card.delay }}" style="top: {{ card.position or 300 }}px;">
+                                <i class="fas fa-{{ card.icon }} fa-4x" style="color: {{ card.icon_color }};"></i>
                                 <h4>{{ card.title }}</h4>
                             </div>
-                            {% if card.link %}
+                            {% if card.page_link %}
                             </a>
                             {% endif %}
                             {% endfor %}
+                            
+                            <!-- Final text after floating cards -->
+                            {% if about_section.final_text %}
+                            <div class="floating-cards-final-text mt-4">
+                                <p class="text-center">
+                                    <strong>{{ about_section.final_text|safe }}</strong>
+                                </p>
+                            </div>
+                            {% endif %}
                         {% else %}
                         <!-- DEBUG: Why floating cards are not showing -->
                         <div style="background: #fff3cd; padding: 10px; margin: 10px 0; border: 1px solid #ffc107; border-radius: 5px;">
@@ -592,42 +609,9 @@
                             </div>
                             {% endfor %}
                         {% else %}
-                            <!-- Fallback FAQ items -->
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                                        Czy ta prezentacja jest darmowa?
-                                    </button>
-                                </h2>
-                                <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-                                    <div class="accordion-body">
-                                        Tak, 100% darmowo. Nie ma żadnych kosztów i żadnych zobowiązań do dołączenia.
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                                        Czy potrzebuję doświadczenia z AI lub rozwojem osobistym?
-                                    </button>
-                                </h2>
-                                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                    <div class="accordion-body">
-                                        Nie! Witamy ludzi ze wszystkich środowisk. Prezentacja jest dostosowana do początkujących.
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                                        Co jeśli nie mogę uczestniczyć na żywo?
-                                    </button>
-                                </h2>
-                                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                    <div class="accordion-body">
-                                        Zarejestruj się i tak, a wyślemy Ci nagranie (jeśli będzie dostępne).
-                                    </div>
-                                </div>
+                            <div class="text-center py-4">
+                                <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Brak pytań FAQ w systemie</p>
                             </div>
                         {% endif %}
                     </div>

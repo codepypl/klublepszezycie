@@ -695,7 +695,7 @@ def register():
         try:
                 email_service.send_template_email(
                 to_email=email,
-                template_name='welcome',
+                template_name='Email Powitalny',
                     variables={
                     'name': name,
                     'email': email,
@@ -2697,58 +2697,105 @@ def api_menu():
         return jsonify({'error': 'Unauthorized'}), 403
     
     if request.method == 'GET':
-        menu_items = MenuItem.query.order_by(MenuItem.order).all()
-        return jsonify([{
-            'id': item.id,
-            'title': item.title,
-            'url': item.url,
-            'order': item.order,
-            'is_active': item.is_active
-        } for item in menu_items])
+        try:
+            menu_items = MenuItem.query.order_by(MenuItem.order).all()
+            return jsonify([{
+                'id': item.id,
+                'title': item.title,
+                'url': item.url,
+                'order': item.order,
+                'is_active': item.is_active
+            } for item in menu_items])
+        except Exception as e:
+            print(f"Error fetching menu items: {str(e)}")
+            return jsonify({'error': f'Wystąpił błąd podczas pobierania elementów menu: {str(e)}'}), 500
     
     elif request.method == 'POST':
-        # Obsługujemy zarówno JSON jak i FormData
-        if request.is_json:
-            data = request.get_json()
-        else:
-            data = request.form.to_dict()
-            # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
-            if 'is_active' in data:
-                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+        try:
+            # Obsługujemy zarówno JSON jak i FormData
+            if request.is_json:
+                data = request.get_json()
             else:
-                data['is_active'] = False
-        
-        new_item = MenuItem(
-            title=data['title'],
-            url=data['url'],
-            order=data['order'],
-            is_active=data.get('is_active', True)
-        )
-        db.session.add(new_item)
-        db.session.commit()
-        return jsonify({'success': True, 'item': {
-            'id': new_item.id,
-            'title': new_item.title,
-            'url': new_item.url,
-            'order': new_item.order,
-            'is_active': new_item.is_active
-        }})
+                data = request.form.to_dict()
+                # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+                if 'is_active' in data:
+                    data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1, 'on']
+                else:
+                    data['is_active'] = False
+            
+            # Sprawdź czy wymagane pola są obecne
+            if not data.get('title'):
+                return jsonify({'success': False, 'error': 'Pole "Nazwa" jest wymagane'}), 400
+            
+            if not data.get('url'):
+                return jsonify({'success': False, 'error': 'Pole "URL" jest wymagane'}), 400
+            
+            # Sprawdź czy order jest liczbą
+            order = data.get('order', 1)
+            try:
+                order = int(order) if order else 1
+            except (ValueError, TypeError):
+                order = 1
+            
+            new_item = MenuItem(
+                title=data['title'],
+                url=data['url'],
+                order=order,
+                is_active=data.get('is_active', True)
+            )
+            db.session.add(new_item)
+            db.session.commit()
+            return jsonify({'success': True, 'item': {
+                'id': new_item.id,
+                'title': new_item.title,
+                'url': new_item.url,
+                'order': new_item.order,
+                'is_active': new_item.is_active
+            }})
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating menu item: {str(e)}")
+            return jsonify({'success': False, 'error': f'Wystąpił błąd podczas tworzenia elementu menu: {str(e)}'}), 500
     
     elif request.method == 'PUT':
-        data = request.get_json() if request.is_json else request.form.to_dict()
-        item_id = data.get('id')
-        item = MenuItem.query.get(item_id)
-        
-        if not item:
-            return jsonify({'success': False, 'error': 'Menu item not found'}), 404
-        
-        item.title = data.get('title', item.title)
-        item.url = data.get('url', item.url)
-        item.order = data.get('order', item.order)
-        item.is_active = data.get('is_active', item.is_active)
-        
-        db.session.commit()
-        return jsonify({'success': True})
+        try:
+            data = request.get_json() if request.is_json else request.form.to_dict()
+            item_id = data.get('id')
+            
+            if not item_id:
+                return jsonify({'success': False, 'error': 'Brak ID elementu menu'}), 400
+            
+            item = MenuItem.query.get(item_id)
+            if not item:
+                return jsonify({'success': False, 'error': 'Element menu nie został znaleziony'}), 404
+            
+            # Sprawdź czy wymagane pola są obecne
+            if 'title' in data and not data['title']:
+                return jsonify({'success': False, 'error': 'Pole "Nazwa" nie może być puste'}), 400
+            
+            if 'url' in data and not data['url']:
+                return jsonify({'success': False, 'error': 'Pole "URL" nie może być puste'}), 400
+            
+            # Aktualizuj pola
+            if 'title' in data:
+                item.title = data['title']
+            if 'url' in data:
+                item.url = data['url']
+            if 'order' in data:
+                try:
+                    item.order = int(data['order']) if data['order'] else 1
+                except (ValueError, TypeError):
+                    item.order = 1
+            if 'is_active' in data:
+                # Konwertuj checkbox na boolean - 'on' = True, brak pola = False
+                item.is_active = data['is_active'] in [True, 'true', 'True', '1', 1, 'on']
+            
+            db.session.commit()
+            return jsonify({'success': True})
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error updating menu item: {str(e)}")
+            return jsonify({'success': False, 'error': f'Wystąpił błąd podczas aktualizacji elementu menu: {str(e)}'}), 500
     
     elif request.method == 'DELETE':
         try:
@@ -2804,16 +2851,16 @@ def api_sections():
             data = request.form.to_dict()
             # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
             if 'is_active' in data:
-                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1, 'on']
             else:
                 data['is_active'] = False
             # Konwertujemy boolean na prawdziwe boolean
             if 'enable_pillars' in data:
-                data['enable_pillars'] = data['enable_pillars'] in [True, 'true', 'True', '1', 1]
+                data['enable_pillars'] = data['enable_pillars'] in [True, 'true', 'True', '1', 1, 'on']
             else:
                 data['enable_pillars'] = False
             if 'enable_floating_cards' in data:
-                data['enable_floating_cards'] = data['enable_floating_cards'] in [True, 'true', 'True', '1', 1]
+                data['enable_floating_cards'] = data['enable_floating_cards'] in [True, 'true', 'True', '1', 1, 'on']
             else:
                 data['enable_floating_cards'] = False
         
@@ -2853,7 +2900,7 @@ def api_sections():
             print(f"DEBUG: is_active raw value: {data.get('is_active')} (type: {type(data.get('is_active'))})")
             if 'is_active' in data:
                 original_value = data['is_active']
-                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1, 'on']
                 print(f"DEBUG: is_active converted from '{original_value}' to {data['is_active']}")
             else:
                 data['is_active'] = False
@@ -2864,13 +2911,13 @@ def api_sections():
             # Konwertujemy boolean na prawdziwe boolean
             if 'enable_pillars' in data:
                 # Jeśli wartość to 'true' (string) lub true (boolean), ustaw na True
-                data['enable_pillars'] = data['enable_pillars'] in [True, 'true', 'True', '1', 1]
+                data['enable_pillars'] = data['enable_pillars'] in [True, 'true', 'True', '1', 1, 'on']
             else:
                 data['enable_pillars'] = False  # Jeśli pole nie jest wysłane, ustaw na False
                 
             if 'enable_floating_cards' in data:
                 # Jeśli wartość to 'true' (string) lub true (boolean), ustaw na True
-                data['enable_floating_cards'] = data['enable_floating_cards'] in [True, 'true', 'True', '1', 1]
+                data['enable_floating_cards'] = data['enable_floating_cards'] in [True, 'true', 'True', '1', 1, 'on']
             else:
                 data['enable_floating_cards'] = False  # Jeśli pole nie jest wysłane, ustaw na False
             
@@ -2971,6 +3018,60 @@ def api_section_by_id(section_id):
         })
     return jsonify({'success': False, 'error': 'Section not found'}), 404
 
+@app.route('/admin/api/sections/<int:section_id>/pillars', methods=['PUT'])
+@login_required
+def api_update_section_pillars(section_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        data = request.get_json()
+        section = Section.query.get(section_id)
+        
+        if not section:
+            return jsonify({'success': False, 'error': 'Section not found'}), 404
+        
+        section.pillars_data = data.get('pillars_data')
+        
+        # Update final_text if provided
+        if 'final_text' in data:
+            section.final_text = data.get('final_text')
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Pillars updated successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/sections/<int:section_id>/floating-cards', methods=['PUT'])
+@login_required
+def api_update_section_floating_cards(section_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        data = request.get_json()
+        section = Section.query.get(section_id)
+        
+        if not section:
+            return jsonify({'success': False, 'error': 'Section not found'}), 404
+        
+        section.floating_cards_data = data.get('floating_cards_data')
+        
+        # Update final_text if provided
+        if 'final_text' in data:
+            section.final_text = data.get('final_text')
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Floating cards updated successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/admin/api/sections/bulk-update', methods=['POST'])
 @login_required
 def api_sections_bulk_update():
@@ -3025,7 +3126,11 @@ def api_benefits():
     elif request.method == 'POST':
         # Obsługujemy FormData z plikami
         data = request.form.to_dict()
-        data['is_active'] = 'is_active' in request.form
+        # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+        if 'is_active' in data:
+            data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1, 'on']
+        else:
+            data['is_active'] = False
         
         # Obsługa uploadu pliku
         image_path = ''
@@ -3042,7 +3147,7 @@ def api_benefits():
                     # Zapisz plik
                     try:
                         file.save(filepath)
-                        image_path = filepath
+                        image_path = f"images/benefits/{filename}"
                     except Exception as e:
                         return jsonify({'success': False, 'error': f'Błąd podczas zapisywania pliku: {str(e)}'}), 500
                 else:
@@ -3063,7 +3168,11 @@ def api_benefits():
     elif request.method == 'PUT':
         # Obsługujemy FormData z plikami
         data = request.form.to_dict()
-        data['is_active'] = 'is_active' in request.form
+        # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
+        if 'is_active' in data:
+            data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1, 'on']
+        else:
+            data['is_active'] = False
         
         benefit = BenefitItem.query.get(data['id'])
         if benefit:
@@ -3081,14 +3190,16 @@ def api_benefits():
                         # Usuń stary plik jeśli istnieje
                         if benefit.image and os.path.exists(benefit.image):
                             try:
-                                os.remove(benefit.image)
+                                old_filepath = os.path.join('static', benefit.image)
+                                if os.path.exists(old_filepath):
+                                    os.remove(old_filepath)
                             except:
                                 pass  # Ignoruj błędy usuwania
                         
                         # Zapisz nowy plik
                         try:
                             file.save(filepath)
-                            benefit.image = filepath
+                            benefit.image = f"images/benefits/{filename}"
                         except Exception as e:
                             return jsonify({'success': False, 'error': f'Błąd podczas zapisywania pliku: {str(e)}'}), 500
                     else:
@@ -3114,11 +3225,13 @@ def api_benefits():
                 return jsonify({'success': False, 'message': 'Korzyść nie została znaleziona'}), 404
             
             # Usuń plik obrazu jeśli istnieje
-            if benefit.image and os.path.exists(benefit.image):
+            if benefit.image:
                 try:
-                    os.remove(benefit.image)
+                    old_filepath = os.path.join('static', benefit.image)
+                    if os.path.exists(old_filepath):
+                        os.remove(old_filepath)
                 except Exception as e:
-                    print(f"Warning: Could not remove image file {benefit.image}: {str(e)}")
+                    print(f"Warning: Could not remove image file {old_filepath}: {str(e)}")
                     pass  # Ignoruj błędy usuwania pliku
             
             db.session.delete(benefit)
@@ -3279,7 +3392,7 @@ def api_faq():
             data = request.form.to_dict()
             # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
             if 'is_active' in data:
-                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1, 'on']
             else:
                 data['is_active'] = False
         
@@ -3301,7 +3414,7 @@ def api_faq():
             data = request.form.to_dict()
             # Konwertujemy checkbox na boolean - sprawdzamy wartość pola
             if 'is_active' in data:
-                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1]
+                data['is_active'] = data['is_active'] in [True, 'true', 'True', '1', 1, 'on']
             else:
                 data['is_active'] = False
         

@@ -26,6 +26,7 @@
                                 <th>Tytuł</th>
                                 <th>Opis</th>
                                 <th>Ikona</th>
+                                <th>Obraz</th>
                                 <th>Status</th>
                                 <th>Akcje</th>
                             </tr>
@@ -46,6 +47,13 @@
                                     <i class="fas fa-{{ benefit.icon }} text-primary"></i>
                                 </td>
                                 <td>
+                                    {% if benefit.image %}
+                                        <img src="{{ url_for('static', filename=benefit.image) }}" alt="{{ benefit.title }}" class="img-thumbnail" style="max-width: 50px; max-height: 50px;">
+                                    {% else %}
+                                        <span class="text-muted">Brak obrazu</span>
+                                    {% endif %}
+                                </td>
+                                <td>
                                     {% if benefit.is_active %}
                                         <span class="badge admin-badge admin-badge-success">Aktywna</span>
                                     {% else %}
@@ -54,10 +62,10 @@
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
-                                        <button class="btn btn-sm admin-btn-outline" onclick="editBenefit({{ benefit.id }})">
+                                        <button class="btn btn-sm admin-btn-outline" onclick="editBenefit({{ benefit.id }})" title="Edytuj korzyść">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteBenefit({{ benefit.id }})">
+                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteBenefit({{ benefit.id }})" title="Usuń korzyść">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -93,12 +101,17 @@
                             <input type="text" class="form-control" id="benefitTitle" name="title" required>
                         </div>
                         <div class="mb-3">
-                            <label for="benefitDescription" class="form-label">Opis *</label>
-                            <textarea class="form-control" id="benefitDescription" name="description" rows="3" required></textarea>
+                            <label for="benefitDescription" class="form-label">Opis</label>
+                            <textarea class="form-control" id="benefitDescription" name="description" rows="3"></textarea>
                         </div>
                         <div class="mb-3">
                             <label for="benefitIcon" class="form-label">Ikona (FontAwesome)</label>
                             <input type="text" class="form-control" id="benefitIcon" name="icon" placeholder="np. star, heart, check">
+                        </div>
+                        <div class="mb-3">
+                            <label for="benefitImage" class="form-label">Obraz</label>
+                            <input type="file" class="form-control" id="benefitImage" name="image" accept="image/*">
+                            <div class="form-text">Dozwolone formaty: PNG, JPG, JPEG, GIF, WEBP (max 50MB)</div>
                         </div>
                         <div class="mb-3">
                             <label for="benefitOrder" class="form-label">Kolejność</label>
@@ -140,12 +153,23 @@
                             <input type="text" class="form-control" id="editBenefitTitle" name="title" required>
                         </div>
                         <div class="mb-3">
-                            <label for="editBenefitDescription" class="form-label">Opis *</label>
-                            <textarea class="form-control" id="editBenefitDescription" name="description" rows="3" required></textarea>
+                            <label for="editBenefitDescription" class="form-label">Opis</label>
+                            <textarea class="form-control" id="editBenefitDescription" name="description" rows="3"></textarea>
                         </div>
                         <div class="mb-3">
                             <label for="editBenefitIcon" class="form-label">Ikona (FontAwesome)</label>
                             <input type="text" class="form-control" id="editBenefitIcon" name="icon">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editBenefitImage" class="form-label">Obraz</label>
+                            <input type="file" class="form-control" id="editBenefitImage" name="image" accept="image/*">
+                            <div class="form-text">Dozwolone formaty: PNG, JPG, JPEG, GIF, WEBP (max 50MB)</div>
+                            <div id="currentImagePreview" class="mt-2" style="display: none;">
+                                <small class="text-muted">Aktualny obraz:</small>
+                                <div class="mt-1">
+                                    <img id="currentImage" src="" alt="Aktualny obraz" class="img-thumbnail" style="max-width: 100px; max-height: 100px;">
+                                </div>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label for="editBenefitOrder" class="form-label">Kolejność</label>
@@ -171,121 +195,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    // Show add benefit modal
-    function showAddBenefitModal() {
-        document.getElementById('addBenefitForm').reset();
-        const modal = new bootstrap.Modal(document.getElementById('addBenefitModal'));
-        modal.show();
-    }
-
-    // Edit benefit function
-    function editBenefit(benefitId) {
-        fetch(`/admin/api/benefits/${benefitId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const benefit = data.benefit;
-                    document.getElementById('editBenefitId').value = benefit.id;
-                    document.getElementById('editBenefitTitle').value = benefit.title;
-                    document.getElementById('editBenefitDescription').value = benefit.description;
-                    document.getElementById('editBenefitIcon').value = benefit.icon || '';
-                    document.getElementById('editBenefitOrder').value = benefit.order || 1;
-                    document.getElementById('editBenefitActive').checked = benefit.is_active;
-                    
-                    const modal = new bootstrap.Modal(document.getElementById('editBenefitModal'));
-                    modal.show();
-                } else {
-                    alert('Błąd podczas ładowania korzyści: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Wystąpił błąd podczas ładowania korzyści');
-            });
-    }
-
-    // Delete benefit function
-    function deleteBenefit(benefitId) {
-        if (confirm('Czy na pewno chcesz usunąć tę korzyść? Tej operacji nie można cofnąć.')) {
-            fetch(`/admin/api/benefits?id=${benefitId}`, {
-                method: 'DELETE'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Korzyść została usunięta pomyślnie!');
-                    // Usuń wiersz z tabeli
-                    const row = document.querySelector(`tr[data-benefit-id="${benefitId}"]`);
-                    if (row) {
-                        row.remove();
-                    }
-                } else {
-                    alert('Błąd podczas usuwania: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Wystąpił błąd podczas usuwania korzyści');
-            });
-        }
-    }
-
-    // Form submissions
-    document.getElementById('addBenefitForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        formData.append('is_active', document.getElementById('benefitActive').checked);
-        
-        fetch('/admin/api/benefits', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Korzyść została dodana pomyślnie!');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addBenefitModal'));
-                modal.hide();
-                // Odśwież stronę
-                window.location.reload();
-            } else {
-                alert('Błąd podczas dodawania: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Wystąpił błąd podczas dodawania korzyści');
-        });
-    });
-
-    document.getElementById('editBenefitForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        formData.append('is_active', document.getElementById('editBenefitActive').checked);
-        
-        fetch('/admin/api/benefits', {
-            method: 'PUT',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Korzyść została zaktualizowana pomyślnie!');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('editBenefitModal'));
-                modal.hide();
-                // Odśwież stronę
-                window.location.reload();
-            } else {
-                alert('Błąd podczas aktualizacji: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Wystąpił błąd podczas aktualizacji korzyści');
-        });
-    });
-</script>
+<script src="{{ url_for('static', filename='js/admin/benefits.js') }}"></script>
 {% endblock %}

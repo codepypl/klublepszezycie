@@ -55,10 +55,20 @@
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
-                                        <button class="btn btn-sm admin-btn-outline" onclick="editSection({{ section.id }})">
+                                        <button class="btn btn-sm admin-btn-outline" onclick="editSection({{ section.id }})" title="Edytuj sekcję">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteSection({{ section.id }})">
+                                        {% if section.enable_pillars %}
+                                        <button class="btn btn-sm admin-btn-outline" onclick="editPillars({{ section.id }})" title="Edytuj filary">
+                                            <i class="fas fa-columns"></i>
+                                        </button>
+                                        {% endif %}
+                                        {% if section.enable_floating_cards %}
+                                        <button class="btn btn-sm admin-btn-outline" onclick="editFloatingCards({{ section.id }})" title="Edytuj karty unoszące się">
+                                            <i class="fas fa-layer-group"></i>
+                                        </button>
+                                        {% endif %}
+                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteSection({{ section.id }})" title="Usuń sekcję">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -101,6 +111,10 @@
                             <label for="sectionSubtitle" class="form-label">Podtytuł</label>
                             <textarea class="form-control" id="sectionSubtitle" name="subtitle" rows="3"></textarea>
                         </div>
+                        <div class="mb-3">
+                            <label for="sectionContent" class="form-label">Treść</label>
+                            <textarea class="form-control" id="sectionContent" name="content" rows="10"></textarea>
+                        </div>
 
                         <div class="mb-3">
                             <label for="sectionOrder" class="form-label">Kolejność</label>
@@ -113,6 +127,38 @@
                                     Aktywna
                                 </label>
                             </div>
+                        </div>
+                        
+                        <!-- Pillars Configuration -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="sectionEnablePillars" name="enable_pillars">
+                                <input type="hidden" name="enable_pillars" value="false">
+                                <label class="form-check-label" for="sectionEnablePillars">
+                                    Włącz filary (pillars)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="pillarsConfig" style="display: none;">
+                            <label for="sectionPillarsCount" class="form-label">Liczba filarów</label>
+                            <input type="number" class="form-control" id="sectionPillarsCount" name="pillars_count" value="4" min="1" max="6">
+                        </div>
+                        
+                        <!-- Floating Cards Configuration -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="sectionEnableFloatingCards" name="enable_floating_cards">
+                                <input type="hidden" name="enable_floating_cards" value="false">
+                                <label class="form-check-label" for="sectionEnableFloatingCards">
+                                    Włącz karty unoszące się (floating cards)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="floatingCardsConfig" style="display: none;">
+                            <label for="sectionFloatingCardsCount" class="form-label">Liczba kart unoszących się</label>
+                            <input type="number" class="form-control" id="sectionFloatingCardsCount" name="floating_cards_count" value="3" min="1" max="5">
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -149,6 +195,10 @@
                             <label for="editSectionSubtitle" class="form-label">Podtytuł</label>
                             <textarea class="form-control" id="editSectionSubtitle" name="subtitle" rows="3"></textarea>
                         </div>
+                        <div class="mb-3">
+                            <label for="editSectionContent" class="form-label">Treść</label>
+                            <textarea class="form-control" id="editSectionContent" name="content" rows="10"></textarea>
+                        </div>
 
                         <div class="mb-3">
                             <label for="editSectionOrder" class="form-label">Kolejność</label>
@@ -162,6 +212,40 @@
                                 </label>
                             </div>
                         </div>
+                        
+                        <!-- Pillars Configuration -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editSectionEnablePillars" name="enable_pillars">
+                                <input type="hidden" name="enable_pillars" value="false">
+                                <label class="form-check-label" for="editSectionEnablePillars">
+                                    Włącz filary (pillars)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="editPillarsConfig" style="display: none;">
+                            <label for="editSectionPillarsCount" class="form-label">Liczba filarów</label>
+                            <input type="number" class="form-control" id="editSectionPillarsCount" name="pillars_count" value="4" min="1" max="6">
+                            <div class="form-text">Każdy filar może mieć tytuł, opis, ikonę, link do podstrony oraz kolor ikony</div>
+                        </div>
+                        
+                        <!-- Floating Cards Configuration -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editSectionEnableFloatingCards" name="enable_floating_cards">
+                                <input type="hidden" name="enable_floating_cards" value="false">
+                                <label class="form-check-label" for="editSectionEnableFloatingCards">
+                                    Włącz karty unoszące się (floating cards)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="editFloatingCardsConfig" style="display: none;">
+                            <label for="editSectionFloatingCardsCount" class="form-label">Liczba kart unoszących się</label>
+                            <input type="number" class="form-control" id="editSectionFloatingCardsCount" name="floating_cards_count" value="3" min="1" max="5">
+                            <div class="form-text">Każda karta może mieć tytuł, opis, ikonę, link do podstrony oraz kolor ikony</div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
@@ -171,127 +255,86 @@
             </div>
         </div>
     </div>
+
+    <!-- Edit Pillars Modal -->
+    <div class="modal fade" id="editPillarsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-columns me-2"></i>Edytuj Filary
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editPillarsForm">
+                    <input type="hidden" id="editPillarsSectionId" name="section_id">
+                    <div class="modal-body">
+                        <div id="pillarsContainer">
+                            <!-- Pillars will be dynamically added here -->
+                        </div>
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn admin-btn-outline" onclick="addPillar()">
+                                <i class="fas fa-plus me-2"></i>Dodaj Filar
+                            </button>
+                        </div>
+                        
+                        <!-- Final Text Field -->
+                        <div class="mt-4 pt-3 border-top">
+                            <label for="editPillarsFinalText" class="form-label">Tekst końcowy pod filarami</label>
+                            <textarea class="form-control" id="editPillarsFinalText" name="final_text" rows="3" placeholder="Niezależnie od tego, czy zaczynasz od nowa, czy chcesz pójść dalej — nie jesteś sam. Ten klub został zbudowany dla ludzi takich jak Ty."></textarea>
+                            <div class="form-text">Ten tekst będzie wyświetlany pod filarami na stronie głównej</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">Zapisz Filary</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Floating Cards Modal -->
+    <div class="modal fade" id="editFloatingCardsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-layer-group me-2"></i>Edytuj Karty Unoszące się
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editFloatingCardsForm">
+                    <input type="hidden" id="editFloatingCardsSectionId" name="section_id">
+                    <div class="modal-body">
+                        <div id="floatingCardsContainer">
+                            <!-- Floating cards will be dynamically added here -->
+                        </div>
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn admin-btn-outline" onclick="addFloatingCard()">
+                                <i class="fas fa-plus me-2"></i>Dodaj Kartę
+                            </button>
+                        </div>
+                        
+                        <!-- Final Text Field -->
+                        <div class="mt-4 pt-3 border-top">
+                            <label for="editFloatingCardsFinalText" class="form-label">Tekst końcowy pod kartami</label>
+                            <textarea class="form-control" id="editFloatingCardsFinalText" name="final_text" rows="3" placeholder="Niezależnie od tego, czy zaczynasz od nowa, czy chcesz pójść dalej — nie jesteś sam. Ten klub został zbudowany dla ludzi takich jak Ty."></textarea>
+                            <div class="form-text">Ten tekst będzie wyświetlany pod kartami unoszącymi się na stronie głównej</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">Zapisz Karty</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    // Show add section modal
-    function showAddSectionModal() {
-        document.getElementById('addSectionForm').reset();
-        const modal = new bootstrap.Modal(document.getElementById('addSectionModal'));
-        modal.show();
-    }
-
-    // Edit section function
-    function editSection(sectionId) {
-        fetch(`/admin/api/sections/${sectionId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const section = data.section;
-                    document.getElementById('editSectionId').value = section.id;
-                    document.getElementById('editSectionName').value = section.name;
-                    document.getElementById('editSectionTitle').value = section.title || '';
-                    document.getElementById('editSectionSubtitle').value = section.subtitle || '';
-
-                    document.getElementById('editSectionOrder').value = section.order || 1;
-                    document.getElementById('editSectionActive').checked = section.is_active;
-                    
-                    const modal = new bootstrap.Modal(document.getElementById('editSectionModal'));
-                    modal.show();
-                } else {
-                    alert('Błąd podczas ładowania sekcji: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Wystąpił błąd podczas ładowania sekcji');
-            });
-    }
-
-    // Delete section function
-    function deleteSection(sectionId) {
-        if (confirm('Czy na pewno chcesz usunąć tę sekcję? Tej operacji nie można cofnąć.')) {
-            fetch(`/admin/api/sections?id=${sectionId}`, {
-                method: 'DELETE'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Sekcja została usunięta pomyślnie!');
-                    // Usuń wiersz z tabeli
-                    const row = document.querySelector(`tr[data-section-id="${sectionId}"]`);
-                    if (row) {
-                        row.remove();
-                    }
-                } else {
-                    alert('Błąd podczas usuwania: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Wystąpił błąd podczas usuwania sekcji');
-            });
-        }
-    }
-
-    // Form submissions
-    document.getElementById('addSectionForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        // Always send is_active field as string
-        formData.set('is_active', document.getElementById('sectionActive').checked ? 'true' : 'false');
-        
-        fetch('/admin/api/sections', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Sekcja została dodana pomyślnie!');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addSectionModal'));
-                modal.hide();
-                // Odśwież stronę
-                window.location.reload();
-            } else {
-                alert('Błąd podczas dodawania: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Wystąpił błąd podczas dodawania sekcji');
-        });
-    });
-
-    document.getElementById('editSectionForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        // Always send is_active field as string
-        formData.set('is_active', document.getElementById('editSectionActive').checked ? 'true' : 'false');
-        
-        fetch('/admin/api/sections', {
-            method: 'PUT',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Sekcja została zaktualizowana pomyślnie!');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('editSectionModal'));
-                modal.hide();
-                // Odśwież stronę
-                window.location.reload();
-            } else {
-                alert('Błąd podczas aktualizacji: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Wystąpił błąd podczas aktualizacji sekcji');
-        });
-    });
-</script>
+<!-- TinyMCE WYSIWYG Editor -->
+<script src="https://cdn.tiny.cloud/1/nzk6x47f5uoxs3thrhw5hjtjhrby1u3skrpld6z2z032z7tv/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script src="{{ url_for('static', filename='js/admin/sections.js') }}"></script>
 {% endblock %}
