@@ -709,3 +709,36 @@ INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:00:53] "GET /admin/api/email-stats H
 INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:00:53] "GET /admin/api/email-stats HTTP/1.1" 200 -
 INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:01:56] "GET /api/event-status HTTP/1.1" 200 -
 INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:02:03] "GET / HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+/Volumes/Dane/Projekty/devs/klublepszezycie/app.py:133: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+  return User.query.get(int(user_id))
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:02:56] "GET /admin/email-templates HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:02:56] "GET /static/css/admin.css?v=843 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:02:56] "GET /admin/api/email-templates HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:02:56] "GET /admin/api/email-stats HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:02:56] "GET /admin/api/email-stats HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:02:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:03:57] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:04:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:05:23] "GET / HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/app.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/app.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:05:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:06:04] "GET / HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/app.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
