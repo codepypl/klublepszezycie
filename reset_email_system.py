@@ -33,19 +33,19 @@ def reset_email_system():
                 db.session.delete(schedule)
             print(f"   ✅ Usunięto {len(event_schedules)} harmonogramów wydarzeń")
             
-            # 2. Usuń wszystkie szablony emaili
-            print("2. Usuwanie szablonów emaili...")
-            templates = EmailTemplate.query.all()
-            for template in templates:
-                db.session.delete(template)
-            print(f"   ✅ Usunięto {len(templates)} szablonów emaili")
-            
-            # 3. Usuń wszystkie harmonogramy emaili (EmailSchedule)
-            print("3. Usuwanie harmonogramów emaili...")
+            # 2. Usuń wszystkie harmonogramy emaili (EmailSchedule) PRZED usunięciem szablonów
+            print("2. Usuwanie harmonogramów emaili...")
             schedules = EmailSchedule.query.all()
             for schedule in schedules:
                 db.session.delete(schedule)
             print(f"   ✅ Usunięto {len(schedules)} harmonogramów emaili")
+            
+            # 3. Usuń wszystkie szablony emaili
+            print("3. Usuwanie szablonów emaili...")
+            templates = EmailTemplate.query.all()
+            for template in templates:
+                db.session.delete(template)
+            print(f"   ✅ Usunięto {len(templates)} szablonów emaili")
             
             # 4. Usuń wszystkie automatyzacje emaili
             print("4. Usuwanie automatyzacji emaili...")
