@@ -170,6 +170,7 @@
 // Ładowanie danych przy starcie
 document.addEventListener('DOMContentLoaded', function() {
     loadSchedules();
+    loadTemplates();
 });
 
 // Ładowanie harmonogramów
@@ -185,6 +186,32 @@ async function loadSchedules() {
         }
     } catch (error) {
         console.error('Błąd podczas ładowania harmonogramów:', error);
+    }
+}
+
+// Ładowanie szablonów emaili
+async function loadTemplates() {
+    try {
+        const response = await fetch('/admin/api/email-templates');
+        const templates = await response.json();
+        
+        const select = document.getElementById('scheduleTemplate');
+        if (select) {
+            // Wyczyść istniejące opcje (zachowaj pierwszą opcję "Wybierz szablon")
+            select.innerHTML = '<option value="">Wybierz szablon</option>';
+            
+            // Dodaj szablony
+            templates.forEach(template => {
+                if (template.is_active) {
+                    const option = document.createElement('option');
+                    option.value = template.id;
+                    option.textContent = `${template.name} (${template.template_type})`;
+                    select.appendChild(option);
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Błąd podczas ładowania szablonów:', error);
     }
 }
 
@@ -242,7 +269,60 @@ async function saveSchedule() {
     } catch (error) {
         alert('Błąd podczas zapisywania: ' + error.message);
     }
+}
+
+// Edycja harmonogramu
+async function editSchedule(id) {
+    try {
+        const response = await fetch(`/admin/api/schedules/${id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const schedule = data.schedule;
+            
+            // Wypełnij formularz
+            document.getElementById('scheduleId').value = schedule.id;
+            document.getElementById('scheduleName').value = schedule.name;
+            document.getElementById('scheduleDescription').value = schedule.description || '';
+            document.getElementById('scheduleTriggerType').value = schedule.trigger_type;
+            document.getElementById('scheduleRecipientType').value = schedule.recipient_type;
+            
+            // Załaduj szablony i ustaw wybrany
+            await loadTemplates();
+            document.getElementById('scheduleTemplate').value = schedule.template_id;
+            
+            // Pokaż modal
+            const modal = new bootstrap.Modal(document.getElementById('addScheduleModal'));
+            modal.show();
+        } else {
+            alert('Błąd podczas ładowania harmonogramu: ' + data.error);
+        }
+    } catch (error) {
+        alert('Błąd podczas ładowania harmonogramu: ' + error.message);
     }
+}
+
+// Usuwanie harmonogramu
+async function deleteSchedule(id) {
+    if (confirm('Czy na pewno chcesz usunąć ten harmonogram?')) {
+        try {
+            const response = await fetch(`/admin/api/schedules/${id}`, {
+                method: 'DELETE'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('Harmonogram został usunięty pomyślnie!');
+                loadSchedules();
+            } else {
+                alert('Błąd podczas usuwania: ' + data.error);
+            }
+        } catch (error) {
+            alert('Błąd podczas usuwania: ' + error.message);
+        }
+    }
+}
 </script>
 </body>
 </html>

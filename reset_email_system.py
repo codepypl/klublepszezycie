@@ -85,8 +85,7 @@ def reset_email_system():
             
             for event in events:
                 try:
-                    from services.email_automation_service import EmailAutomationService
-                    email_automation_service = EmailAutomationService()
+                    from services.email_automation_service import email_automation_service
                     schedules = email_automation_service.schedule_event_emails(event.id)
                     total_schedules += len(schedules)
                     print(f"   📅 Wydarzenie '{event.title}': {len(schedules)} harmonogramów")
@@ -94,6 +93,11 @@ def reset_email_system():
                     print(f"   ❌ Błąd dla wydarzenia '{event.title}': {e}")
             
             print(f"   ✅ Utworzono łącznie {total_schedules} harmonogramów wydarzeń")
+            
+            # 9. Utwórz domyślne harmonogramy EmailSchedule
+            print("9. Tworzenie domyślnych harmonogramów EmailSchedule...")
+            created_schedules = create_default_schedules()
+            print(f"   ✅ Utworzono {len(created_schedules)} harmonogramów EmailSchedule")
             
             print("\n🎉 Reset systemu emaili zakończony pomyślnie!")
             print("=" * 50)
@@ -191,6 +195,60 @@ def create_default_templates():
     db.session.commit()
     
     return templates
+
+def create_default_schedules():
+    """Tworzy domyślne harmonogramy EmailSchedule"""
+    schedules = []
+    
+    # Konfiguracja harmonogramów
+    schedule_configs = [
+        {
+            'name': 'Email Powitalny',
+            'description': 'Automatyczny email powitalny wysyłany gdy konto użytkownika zostanie utworzone',
+            'template_type': 'user_activation',
+            'trigger_type': 'user_activation',
+            'trigger_conditions': '{"event": "user_activation"}',
+            'recipient_type': 'user',
+            'send_type': 'immediate',
+            'status': 'active'
+        },
+        {
+            'name': 'Przypomnienie o Wydarzeniu',
+            'description': 'Automatyczne przypomnienie o nadchodzącym wydarzeniu',
+            'template_type': 'reminder',
+            'trigger_type': 'event_reminder',
+            'trigger_conditions': '{"event": "event_reminder"}',
+            'recipient_type': 'event_registrations',
+            'send_type': 'scheduled',
+            'status': 'active'
+        }
+    ]
+    
+    # Utwórz harmonogramy
+    for config in schedule_configs:
+        # Sprawdź, czy harmonogram już istnieje
+        existing_schedule = EmailSchedule.query.filter_by(name=config['name']).first()
+        if not existing_schedule:
+            # Znajdź odpowiedni szablon
+            template = EmailTemplate.query.filter_by(template_type=config['template_type']).first()
+            if template:
+                schedule = EmailSchedule(
+                    name=config['name'],
+                    description=config['description'],
+                    template_id=template.id,
+                    trigger_type=config['trigger_type'],
+                    trigger_conditions=config['trigger_conditions'],
+                    recipient_type=config['recipient_type'],
+                    send_type=config['send_type'],
+                    status=config['status']
+                )
+                db.session.add(schedule)
+                schedules.append(config['name'])
+    
+    # Zatwierdź wszystkie harmonogramy
+    db.session.commit()
+    
+    return schedules
 
 if __name__ == "__main__":
     print("🚀 Uruchamianie skryptu resetu systemu emaili...")

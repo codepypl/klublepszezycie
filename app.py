@@ -1877,6 +1877,101 @@ def api_create_schedule():
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/admin/api/schedules/<int:schedule_id>', methods=['GET'])
+@login_required
+def api_get_schedule(schedule_id):
+    """Get single email schedule"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        schedule = EmailSchedule.query.get_or_404(schedule_id)
+        schedule_data = {
+            'id': schedule.id,
+            'name': schedule.name,
+            'description': schedule.description,
+            'template_id': schedule.template_id,
+            'trigger_type': schedule.trigger_type,
+            'trigger_conditions': schedule.trigger_conditions,
+            'recipient_type': schedule.recipient_type,
+            'recipient_emails': schedule.recipient_emails,
+            'recipient_group_id': schedule.recipient_group_id,
+            'send_type': schedule.send_type,
+            'scheduled_at': schedule.scheduled_at.isoformat() if schedule.scheduled_at else None,
+            'status': schedule.status,
+            'last_sent': schedule.last_sent.isoformat() if schedule.last_sent else None,
+            'sent_count': schedule.sent_count,
+            'created_at': schedule.created_at.isoformat() if schedule.created_at else None,
+            'updated_at': schedule.updated_at.isoformat() if schedule.updated_at else None
+        }
+        return jsonify({'success': True, 'schedule': schedule_data})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/schedules/<int:schedule_id>', methods=['PUT'])
+@login_required
+def api_update_schedule(schedule_id):
+    """Update email schedule"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        schedule = EmailSchedule.query.get_or_404(schedule_id)
+        
+        name = request.form.get('name')
+        description = request.form.get('description')
+        template_id = request.form.get('template_id')
+        trigger_type = request.form.get('trigger_type')
+        recipient_type = request.form.get('recipient_type')
+        send_type = request.form.get('send_type', 'immediate')
+        scheduled_at = request.form.get('scheduled_at')
+        status = request.form.get('status', 'active')
+        
+        if not all([name, template_id, trigger_type, recipient_type]):
+            return jsonify({'success': False, 'error': 'Wszystkie wymagane pola muszą być wypełnione'}), 400
+        
+        # Update schedule
+        schedule.name = name
+        schedule.description = description
+        schedule.template_id = template_id
+        schedule.trigger_type = trigger_type
+        schedule.recipient_type = recipient_type
+        schedule.send_type = send_type
+        schedule.status = status
+        
+        # Set scheduled_at if provided
+        if scheduled_at and send_type == 'scheduled':
+            schedule.scheduled_at = datetime.fromisoformat(scheduled_at.replace('Z', '+00:00'))
+        elif send_type == 'immediate':
+            schedule.scheduled_at = None
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Harmonogram został zaktualizowany pomyślnie'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/schedules/<int:schedule_id>', methods=['DELETE'])
+@login_required
+def api_delete_schedule(schedule_id):
+    """Delete email schedule"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        schedule = EmailSchedule.query.get_or_404(schedule_id)
+        db.session.delete(schedule)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Harmonogram został usunięty pomyślnie'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 @app.route('/admin/api/search-users', methods=['GET'])
 @login_required
