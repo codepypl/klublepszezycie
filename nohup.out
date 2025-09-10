@@ -1,0 +1,381 @@
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+ * Serving Flask app 'app'
+ * Debug mode: on
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.11:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+/Volumes/Dane/Projekty/devs/klublepszezycie/app.py:133: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+  return User.query.get(int(user_id))
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:38] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:38] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:38] "[36mGET /static/images/benefits/8bd365d81c634e358b8ba1687ce13816.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:38] "[36mGET /static/images/benefits/f98be49252bd482f8e63d9a2c0101376.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:38] "[36mGET /static/images/benefits/d02b24e478e74634b1cf75b4be0ca541.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:38] "[36mGET /static/images/benefits/7175c6443167489d944cba004730589c.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:38] "[36mGET /static/images/about/community.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:38] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:38] "[36mGET /static/images/hero/hero-bg.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:50] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:50] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:50] "[36mGET /static/images/benefits/d02b24e478e74634b1cf75b4be0ca541.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:50] "[36mGET /static/images/benefits/f98be49252bd482f8e63d9a2c0101376.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:50] "[36mGET /static/images/benefits/8bd365d81c634e358b8ba1687ce13816.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:50] "[36mGET /static/images/benefits/7175c6443167489d944cba004730589c.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:50] "[36mGET /static/images/about/community.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:50] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:50] "[36mGET /static/images/hero/hero-bg.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:54] "GET /admin HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:54] "[36mGET /static/css/admin.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:54] "[36mGET /static/js/admin.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:59] "GET /admin/event-schedule HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:59] "[36mGET /static/css/admin.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:58:59] "GET /admin/api/event-schedule HTTP/1.1" 200 -
+/Volumes/Dane/Projekty/devs/klublepszezycie/app.py:3883: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+  event = EventSchedule.query.get(event_id)
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:59:04] "[35m[1mDELETE /admin/api/event-schedule?id=3 HTTP/1.1[0m" 500 -
+Traceback (most recent call last):
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.NotNullViolation: null value in column "event_id" of relation "event_registrations" violates not-null constraint
+DETAIL:  Failing row contains (3, null, powiado, sysadmin@klublepszezycie.pl, , confirmed, f, null, 2025-09-10 01:12:42.061722, 2025-09-10 01:59:03.948422).
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/flask/app.py", line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/flask/app.py", line 1514, in wsgi_app
+    response = self.handle_exception(e)
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/app.py", line 3893, in api_event_schedule
+    db.session.commit()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/scoping.py", line 599, in commit
+    return self._proxied.commit()
+           ~~~~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    trans.commit(_to_root=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<string>", line 2, in commit
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 2, in _prepare_impl
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    self.session.flush()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/persistence.py", line 85, in save_obj
+    _emit_update_statements(
+    ^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/persistence.py", line 912, in _emit_update_statements
+    c = connection.execute(
+    
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+    
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+    
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+    
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+    
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.NotNullViolation) null value in column "event_id" of relation "event_registrations" violates not-null constraint
+DETAIL:  Failing row contains (3, null, powiado, sysadmin@klublepszezycie.pl, , confirmed, f, null, 2025-09-10 01:12:42.061722, 2025-09-10 01:59:03.948422).
+
+[SQL: UPDATE event_registrations SET event_id=%(event_id)s, updated_at=%(updated_at)s WHERE event_registrations.id = %(event_registrations_id)s]
+[parameters: {'event_id': None, 'updated_at': datetime.datetime(2025, 9, 10, 1, 59, 3, 948422), 'event_registrations_id': 3}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:59:11] "GET /api/event-status HTTP/1.1" 200 -
+/Volumes/Dane/Projekty/devs/klublepszezycie/app.py:3903: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+  event = EventSchedule.query.get(event_id)
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:59:11] "GET /admin/api/event-schedule/3 HTTP/1.1" 200 -
+/Volumes/Dane/Projekty/devs/klublepszezycie/app.py:3838: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+  event = EventSchedule.query.get(data['id'])
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:59:16] "PUT /admin/api/event-schedule HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:59:16] "GET /admin/api/event-schedule HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:59:20] "[35m[1mDELETE /admin/api/event-schedule?id=3 HTTP/1.1[0m" 500 -
+Traceback (most recent call last):
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.NotNullViolation: null value in column "event_id" of relation "event_registrations" violates not-null constraint
+DETAIL:  Failing row contains (3, null, powiado, sysadmin@klublepszezycie.pl, , confirmed, f, null, 2025-09-10 01:12:42.061722, 2025-09-10 01:59:20.788939).
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/flask/app.py", line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/flask/app.py", line 1514, in wsgi_app
+    response = self.handle_exception(e)
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/app.py", line 3893, in api_event_schedule
+    db.session.commit()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/scoping.py", line 599, in commit
+    return self._proxied.commit()
+           ~~~~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    trans.commit(_to_root=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<string>", line 2, in commit
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 2, in _prepare_impl
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    self.session.flush()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/persistence.py", line 85, in save_obj
+    _emit_update_statements(
+    ^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/orm/persistence.py", line 912, in _emit_update_statements
+    c = connection.execute(
+    
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+    
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+    
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+    
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+    
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ^
+  File "/Volumes/Dane/Projekty/devs/klublepszezycie/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.NotNullViolation) null value in column "event_id" of relation "event_registrations" violates not-null constraint
+DETAIL:  Failing row contains (3, null, powiado, sysadmin@klublepszezycie.pl, , confirmed, f, null, 2025-09-10 01:12:42.061722, 2025-09-10 01:59:20.788939).
+
+[SQL: UPDATE event_registrations SET event_id=%(event_id)s, updated_at=%(updated_at)s WHERE event_registrations.id = %(event_registrations_id)s]
+[parameters: {'event_id': None, 'updated_at': datetime.datetime(2025, 9, 10, 1, 59, 20, 788939), 'event_registrations_id': 3}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 03:59:40] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:00:15] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/app.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+DEBUG EVENT PUT: Received form data: {'id': '3', 'title': 'testowe wydarzenie', 'event_type': 'Prezentacja', 'event_date': '2025-09-10T04:00', 'event_time': '04:00', 'end_date': '2025-09-10T19:00', 'end_time': '19:00', 'location': 'online', 'meeting_link': 'https://test.pl', 'description': '', 'hero_background_type': 'image', 'is_active': 'false', 'is_published': 'false'}
+DEBUG EVENT PUT: request.form keys: ['id', 'title', 'event_type', 'event_date', 'event_time', 'end_date', 'end_time', 'location', 'meeting_link', 'description', 'hero_background_type', 'is_active', 'is_published']
+DEBUG EVENT PUT: is_active raw value: false (type: <class 'str'>)
+DEBUG EVENT PUT: is_published raw value: false (type: <class 'str'>)
+DEBUG EVENT PUT: After conversion - is_active: False, is_published: False
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/app.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:00:45] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/app.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:01:17] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:01:39] "GET /api/event-status HTTP/1.1" 200 -
+/Volumes/Dane/Projekty/devs/klublepszezycie/app.py:133: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+  return User.query.get(int(user_id))
+/Volumes/Dane/Projekty/devs/klublepszezycie/app.py:3883: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+  event = EventSchedule.query.get(event_id)
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:01:52] "DELETE /admin/api/event-schedule?id=3 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:01:52] "GET /admin/api/event-schedule HTTP/1.1" 200 -
+INFO:services.user_group_service:Created user group: Uczestnicy: test
+INFO:services.email_automation_service:Scheduled 5min_before email for event 5 at 2025-09-10 04:55:00+02:00
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:02:56] "POST /admin/api/event-schedule HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:02:56] "GET /admin/api/event-schedule HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:02:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:03:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:04:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:05:57] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:06:19] "GET /admin/schedules HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:06:19] "GET /static/css/admin.css?v=89 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:06:19] "GET /static/js/admin.js?v=739 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:06:19] "GET /admin/api/schedules HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:06:30] "GET /admin/email-templates HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:06:30] "GET /static/css/admin.css?v=495 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:06:31] "GET /admin/api/email-templates HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:06:31] "GET /admin/api/email-stats HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:06:31] "GET /admin/api/email-stats HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:06:57] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:07:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:08:57] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:09:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:10:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:11:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+DEBUG EVENT POST: Received form data: {'title': 'test', 'event_type': 'Prezentacja', 'event_date': '2025-09-10T05:00', 'event_time': '05:00', 'end_date': '2025-09-10T06:00', 'end_time': '06:00', 'location': '', 'meeting_link': 'https://test.pl', 'description': '', 'is_active': 'true', 'is_published': 'true', 'hero_background_type': 'image'}
+DEBUG EVENT POST: request.form keys: ['title', 'event_type', 'event_date', 'event_time', 'end_date', 'end_time', 'location', 'meeting_link', 'description', 'is_active', 'is_published', 'hero_background_type']
+DEBUG EVENT POST: is_active raw value: true (type: <class 'str'>)
+DEBUG EVENT POST: is_published raw value: true (type: <class 'str'>)
+DEBUG EVENT POST: After conversion - is_active: True, is_published: True
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+Automatically created email schedules for event 5
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:12:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:13:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:14:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:15:30] "[36mGET /static/images/hero/hero-bg.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:15:30] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:15:30] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:15:39] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523

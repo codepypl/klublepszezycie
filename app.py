@@ -3882,6 +3882,24 @@ def api_event_schedule():
         event_id = request.args.get('id', type=int)
         event = EventSchedule.query.get(event_id)
         if event:
+            # Usuń powiązane rejestracje na wydarzenie przed usunięciem wydarzenia
+            from models import EventRegistration
+            event_registrations = EventRegistration.query.filter_by(event_id=event_id).all()
+            for registration in event_registrations:
+                db.session.delete(registration)
+            
+            # Usuń powiadomienia o wydarzeniu
+            from models import EventNotification
+            event_notifications = EventNotification.query.filter_by(event_id=event_id).all()
+            for notification in event_notifications:
+                db.session.delete(notification)
+            
+            # Usuń grupy odbiorców wydarzenia
+            from models import EventRecipientGroup
+            event_recipient_groups = EventRecipientGroup.query.filter_by(event_id=event_id).all()
+            for group in event_recipient_groups:
+                db.session.delete(group)
+            
             # Usuń harmonogramy e-mail przed usunięciem wydarzenia
             from models import EventEmailSchedule
             email_schedules = EventEmailSchedule.query.filter_by(event_id=event_id).all()
