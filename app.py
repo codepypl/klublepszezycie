@@ -901,6 +901,37 @@ def register_event(event_id):
                 print(f"ERROR: Błąd podczas wysyłania emaila: {e}")
                 import traceback
                 traceback.print_exc()
+        else:
+            # Użytkownik już istnieje - wyślij email potwierdzający rejestrację
+            event_date = event.event_date.strftime('%d.%m.%Y o %H:%M') if event.event_date else 'nie określono'
+            unsubscribe_url = url_for('unsubscribe_email', token='temp', _external=True)
+            delete_account_url = url_for('delete_account', token='temp', _external=True)
+            
+            variables = {
+                'name': name,
+                'email': email,
+                'event_title': event.title,
+                'event_date': event_date,
+                'event_type': event.event_type or 'Wydarzenie',
+                'event_location': event.location or '',
+                'event_meeting_link': event.meeting_link or '',
+                'event_description': event.description or 'Brak opisu',
+                'unsubscribe_url': unsubscribe_url,
+                'delete_account_url': delete_account_url
+            }
+            print(f"DEBUG: Wysyłam template 'event_registration' dla istniejącego użytkownika")
+            
+            try:
+                result = email_service.send_template_email(
+                    to_email=email,
+                    template_name='event_registration',
+                    variables=variables
+                )
+                print(f"DEBUG: Wynik wysłania emaila dla istniejącego użytkownika: {result}")
+            except Exception as e:
+                print(f"ERROR: Błąd podczas wysłania emaila dla istniejącego użytkownika: {e}")
+                import traceback
+                traceback.print_exc()
         
         # Zapisz na wydarzenie
         registration = EventRegistration(
