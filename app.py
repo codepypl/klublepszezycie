@@ -10,6 +10,9 @@ import json
 from dotenv import load_dotenv
 import pytz
 
+# Celery integration
+from celery_config import celery_app
+
 # Load environment variables
 load_dotenv()
 
@@ -6122,6 +6125,35 @@ def get_campaign_recipients(campaign):
     except Exception as e:
         print(f"Error getting campaign recipients: {str(e)}")
         return []
+
+# Celery integration functions
+def make_celery(app):
+    """Create Celery instance with Flask app context"""
+    celery_app.conf.update(app.config)
+    
+    class ContextTask(celery_app.Task):
+        """Make celery tasks run with Flask app context"""
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+    
+    celery_app.Task = ContextTask
+    return celery_app
+
+def schedule_immediate_email(template_name, recipient_email, variables=None):
+    """Schedule immediate email sending via Celery"""
+    from tasks.email_tasks import send_immediate_email
+    return send_immediate_email.delay(template_name, recipient_email, variables)
+
+def schedule_bulk_email(template_name, recipient_emails, variables=None):
+    """Schedule bulk email sending via Celery"""
+    from tasks.email_tasks import send_bulk_email
+    return send_bulk_email.delay(template_name, recipient_emails, variables)
+
+def test_celery_connection():
+    """Test Celery connection"""
+    from tasks.email_tasks import test_connection
+    return test_connection.delay()
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000) 
