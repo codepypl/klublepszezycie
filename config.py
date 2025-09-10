@@ -21,14 +21,14 @@ class Config:
     
     
     # Email Configuration (Zoho Mail)
-    MAIL_SERVER = os.getenv('MAIL_SERVER', 'smtp.zoho.com')
+    MAIL_SERVER = os.getenv('MAIL_SERVER')
     MAIL_PORT = int(os.getenv('MAIL_PORT', 587))
     MAIL_USE_TLS = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
     MAIL_USE_SSL = os.getenv('MAIL_USE_SSL', 'false').lower() == 'true'
-    MAIL_USERNAME = os.getenv('MAIL_USERNAME', 'no.reply@lepszezycie.pl')
-    MAIL_PASSWORD = os.getenv('MAIL_PASSWORD', '3A_8!24A_6qRdnUV4m_Ujzed.fV')
-    MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER', 'no.reply@lepszezycie.pl')
-    MAIL_DEFAULT_SENDER_NAME = os.getenv('MAIL_DEFAULT_SENDER_NAME', 'Lepsze Życie Club')
+    MAIL_USERNAME = os.getenv('MAIL_USERNAME')
+    MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
+    MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER')
+    MAIL_DEFAULT_SENDER_NAME = os.getenv('MAIL_DEFAULT_SENDER_NAME')
     
     # Email Settings
     EMAIL_BATCH_SIZE = int(os.getenv('EMAIL_BATCH_SIZE', 50))  # Max emails per batch
@@ -38,15 +38,14 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.getenv('DEV_DATABASE_URL', 
-        'postgresql://shadi:Das5ahec@localhost:5432/klub')
+    SQLALCHEMY_DATABASE_URI = os.getenv('DEV_DATABASE_URL')
     
     # Database connection parameters for scripts
-    DB_HOST = os.getenv('DB_HOST', 'localhost')
-    DB_PORT = os.getenv('DB_PORT', '5432')
-    DB_NAME = os.getenv('DB_NAME', 'klub')
-    DB_USER = os.getenv('DB_USER', 'shadi')
-    DB_PASSWORD = os.getenv('DB_PASSWORD', 'Das5ahec')
+    DB_HOST = os.getenv('DB_HOST')
+    DB_PORT = os.getenv('DB_PORT')
+    DB_NAME = os.getenv('DB_NAME')
+    DB_USER = os.getenv('DB_USER')
+    DB_PASSWORD = os.getenv('DB_PASSWORD')
 
 class ProductionConfig(Config):
     DEBUG = False

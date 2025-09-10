@@ -57,7 +57,7 @@ class EmailService:
             
             # Create message
             msg = MIMEMultipart('alternative')
-            msg['From'] = f"{self.config['MAIL_DEFAULT_SENDER_NAME']} <{self.config['MAIL_DEFAULT_SENDER']}>"
+            msg['From'] = self.config['MAIL_USERNAME']
             msg['To'] = to_email
             msg['Subject'] = subject
             

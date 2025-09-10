@@ -676,7 +676,7 @@
                             </div>
                             <div class="col-12">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="wantsClubNews" name="wants_club_news">
+                                    <input class="form-check-input" type="checkbox" id="wantsClubNews" name="wants_club_news" value="true">
                                     <label class="form-check-label" for="wantsClubNews">
                                         Chcę otrzymywać informacje o klubie i dodatkowych wydarzeniach
                                     </label>
@@ -721,7 +721,29 @@
                             {% for link in social_links %}
                                 {% if link.is_active %}
                                 <a href="{{ link.url }}" class="text-white me-3" title="{{ link.platform }}">
-                                    <i class="{{ link.icon }} fa-lg"></i>
+                                    {% if link.icon %}
+                                        <i class="{{ link.icon }} fa-lg"></i>
+                                    {% else %}
+                                        {% if link.platform == 'Facebook' %}
+                                            <i class="fab fa-facebook fa-lg"></i>
+                                        {% elif link.platform == 'Instagram' %}
+                                            <i class="fab fa-instagram fa-lg"></i>
+                                        {% elif link.platform == 'Twitter' %}
+                                            <i class="fab fa-twitter fa-lg"></i>
+                                        {% elif link.platform == 'LinkedIn' %}
+                                            <i class="fab fa-linkedin fa-lg"></i>
+                                        {% elif link.platform == 'YouTube' %}
+                                            <i class="fab fa-youtube fa-lg"></i>
+                                        {% elif link.platform == 'TikTok' %}
+                                            <i class="fab fa-tiktok fa-lg"></i>
+                                        {% elif link.platform == 'WhatsApp' %}
+                                            <i class="fab fa-whatsapp fa-lg"></i>
+                                        {% elif link.platform == 'Telegram' %}
+                                            <i class="fab fa-telegram fa-lg"></i>
+                                        {% else %}
+                                            <i class="fas fa-link fa-lg"></i>
+                                        {% endif %}
+                                    {% endif %}
                                 </a>
                                 {% endif %}
                             {% endfor %}
