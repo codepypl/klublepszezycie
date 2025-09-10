@@ -5961,47 +5961,12 @@ def check_and_run_schedules():
     try:
         print(f"Checking schedules at {get_local_now()}")
         
-        # Find schedules that are due to run
-        now = get_local_now()
-        due_schedules = EmailSchedule.query.filter(
-            EmailSchedule.is_active == True,
-            EmailSchedule.next_run <= now
-        ).all()
+        # EmailSchedule nie ma harmonogramów czasowych - tylko EventEmailSchedule
+        # Ta funkcja jest używana głównie dla starych harmonogramów
+        # Nowe harmonogramy są przetwarzane przez email_automation_service.process_scheduled_emails()
         
-        if not due_schedules:
-            print("No schedules due to run")
-            return
-        
-        print(f"Found {len(due_schedules)} schedules to run")
-        
-        for schedule in due_schedules:
-            try:
-                print(f"Executing schedule: {schedule.name} (ID: {schedule.id})")
-                
-                # Execute the schedule
-                result = execute_email_schedule(schedule)
-                print(f"Schedule {schedule.name} result: {result}")
-                
-                # Update last_run and next_run
-                schedule.last_run = now
-                if schedule.schedule_type in ['interval', 'cron']:
-                    if schedule.schedule_type == 'interval':
-                        schedule.next_run = calculate_next_run_interval(
-                            schedule.interval_value, schedule.interval_unit
-                        )
-                    elif schedule.schedule_type == 'cron':
-                        schedule.next_run = calculate_next_run_cron(
-                            schedule.cron_expression
-                        )
-                
-                schedule.updated_at = now
-                
-            except Exception as e:
-                print(f"Error executing schedule {schedule.name}: {str(e)}")
-        
-        # Commit all changes
-        db.session.commit()
-        print(f"Successfully processed {len(due_schedules)} schedules")
+        print("No EmailSchedule schedules to process (using EventEmailSchedule instead)")
+        return
         
     except Exception as e:
         print(f"Error in check_and_run_schedules: {str(e)}")

@@ -794,3 +794,79 @@ INFO:werkzeug: * Debugger PIN: 214-614-523
 INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:15:57] "GET /api/event-status HTTP/1.1" 200 -
 INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:16:58] "GET /api/event-status HTTP/1.1" 200 -
 INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:17:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/cron_email_sender.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:18:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:19:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:20:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:21:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:22:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:23:29] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:23:29] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:23:41] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:24:13] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:24:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:25:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:26:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:27:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:28:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:29:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:30:57] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:31:57] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:32:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:33:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:34:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:35:57] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:36:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:37:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:38:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:39:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:40:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:41:58] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:42:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:43:57] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:44:15] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:44:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:45:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:46:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:47:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:48:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:49:00] "GET /api/event-status HTTP/1.1" 200 -
+/Volumes/Dane/Projekty/devs/klublepszezycie/app.py:136: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+  return User.query.get(int(user_id))
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:49:02] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:49:02] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:49:03] "[36mGET /static/images/benefits/8bd365d81c634e358b8ba1687ce13816.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:49:03] "[36mGET /static/images/benefits/d02b24e478e74634b1cf75b4be0ca541.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:49:03] "[36mGET /static/images/benefits/f98be49252bd482f8e63d9a2c0101376.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:49:03] "[36mGET /static/images/about/community.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:49:03] "[36mGET /static/images/benefits/7175c6443167489d944cba004730589c.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:49:03] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:49:03] "[36mGET /static/images/hero/hero-bg.jpg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:49:33] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:49:33] "POST /register-event/5 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:50:03] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:50:33] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:51:03] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/app.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+DEBUG: wants_club_news from form: None, processed: False
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:51:33] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/app.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:52:03] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 05:52:33] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/app.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
