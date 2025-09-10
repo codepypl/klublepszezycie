@@ -125,14 +125,6 @@ def create_default_templates():
             'variables': 'name,email'
         },
         {
-            'template_type': 'reminder',
-            'name': 'Przypomnienie o Wydarzeniu',
-            'subject': '🔔 Przypomnienie: {{event_type}} - {{event_date}}',
-            'html_content': '<h1>Przypomnienie o Wydarzeniu</h1><p>Cześć {{name}}! Przypominamy o wydarzeniu: {{event_type}} - {{event_date}}</p>',
-            'text_content': 'Przypomnienie o Wydarzeniu\n\nCześć {{name}}! Przypominamy o wydarzeniu: {{event_type}} - {{event_date}}',
-            'variables': 'name,email,event_type,event_date'
-        },
-        {
             'template_type': 'admin_notification',
             'name': 'Nowa osoba dołączyła do klubu',
             'subject': '🔔 Nowa rejestracja: {{name}}',
@@ -212,16 +204,6 @@ def create_default_schedules():
             'send_type': 'immediate',
             'status': 'active'
         },
-        {
-            'name': 'Przypomnienie o Wydarzeniu',
-            'description': 'Automatyczne przypomnienie o nadchodzącym wydarzeniu',
-            'template_type': 'reminder',
-            'trigger_type': 'event_reminder',
-            'trigger_conditions': '{"event": "event_reminder"}',
-            'recipient_type': 'event_registrations',
-            'send_type': 'scheduled',
-            'status': 'active'
-        }
     ]
     
     # Utwórz harmonogramy

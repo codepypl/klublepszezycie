@@ -505,3 +505,24 @@ Email service initialized. Use admin panel to manually send reminders or set up 
 INFO:werkzeug: * Restarting with stat
 WARNING:werkzeug: * Debugger is active!
 INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug:127.0.0.1 - - [10/Sep/2025 04:40:56] "GET /api/event-status HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
+INFO:werkzeug: * Detected change in '/Volumes/Dane/Projekty/devs/klublepszezycie/reset_email_system.py', reloading
+Email service initialized. Use admin panel to manually send reminders or set up a cron job.
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 214-614-523
