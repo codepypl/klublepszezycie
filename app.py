@@ -1831,7 +1831,44 @@ def api_get_schedules():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-
+@app.route('/admin/api/event-schedules', methods=['GET'])
+@login_required
+def api_get_event_schedules():
+    """Get all event email schedules"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        schedules = EventEmailSchedule.query.order_by(EventEmailSchedule.created_at.desc()).all()
+        schedules_data = []
+        
+        for schedule in schedules:
+            event = EventSchedule.query.get(schedule.event_id)
+            template = EmailTemplate.query.get(schedule.template_id)
+            
+            schedule_dict = {
+                'id': schedule.id,
+                'event_id': schedule.event_id,
+                'event_title': event.title if event else 'Nieznane wydarzenie',
+                'notification_type': schedule.notification_type,
+                'status': schedule.status,
+                'scheduled_at': schedule.scheduled_at.isoformat() if schedule.scheduled_at else None,
+                'sent_at': schedule.sent_at.isoformat() if schedule.sent_at else None,
+                'template_id': schedule.template_id,
+                'template_name': template.name if template else 'Nieznany szablon',
+                'recipient_count': schedule.recipient_count,
+                'sent_count': schedule.sent_count,
+                'failed_count': schedule.failed_count,
+                'created_at': schedule.created_at.isoformat() if schedule.created_at else None,
+                'updated_at': schedule.updated_at.isoformat() if schedule.updated_at else None
+            }
+            
+            schedules_data.append(schedule_dict)
+        
+        return jsonify({'success': True, 'schedules': schedules_data})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/admin/api/schedules', methods=['POST'])
 @login_required
@@ -2773,6 +2810,15 @@ def admin_event_schedule():
     
     events = EventSchedule.query.order_by(EventSchedule.event_date.desc()).all()
     return render_template('admin/event_schedule.html', events=events)
+
+@app.route('/admin/event-email-schedules')
+@login_required
+def admin_event_email_schedules():
+    """Admin panel for event email schedules"""
+    if not current_user.is_admin:
+        return redirect(url_for('admin_login'))
+    
+    return render_template('admin/event_email_schedules.html')
 
 @app.route('/admin/pages')
 @login_required

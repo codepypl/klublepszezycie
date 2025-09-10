@@ -85,8 +85,8 @@ def reset_email_system():
             
             for event in events:
                 try:
-                    from services.email_automation_service import email_automation_service
-                    schedules = email_automation_service.schedule_event_emails(event.id)
+                    # Utwórz harmonogramy bezpośrednio, niezależnie od daty
+                    schedules = create_event_schedules(event.id)
                     total_schedules += len(schedules)
                     print(f"   📅 Wydarzenie '{event.title}': {len(schedules)} harmonogramów")
                 except Exception as e:
@@ -123,6 +123,14 @@ def create_default_templates():
             'html_content': '<h1>Witamy w Klubie Lepsze Życie!</h1><p>Cześć {{name}}! Dziękujemy za dołączenie.</p>',
             'text_content': 'Witamy w Klubie Lepsze Życie!\n\nCześć {{name}}! Dziękujemy za dołączenie.',
             'variables': 'name,email'
+        },
+        {
+            'template_type': 'user_activation',
+            'name': 'Aktywacja Konta',
+            'subject': 'Witamy w Klubie Lepsze Życie! 🎉 - Twoje hasło',
+            'html_content': '<h1>Witamy w Klubie Lepsze Życie!</h1><p>Cześć {{name}}! Twoje konto zostało utworzone.</p><p><strong>Twoje tymczasowe hasło:</strong> {{temporary_password}}</p><p>Zaloguj się i zmień hasło w swoim profilu.</p>',
+            'text_content': 'Witamy w Klubie Lepsze Życie!\n\nCześć {{name}}! Twoje konto zostało utworzone.\n\nTwoje tymczasowe hasło: {{temporary_password}}\n\nZaloguj się i zmień hasło w swoim profilu.',
+            'variables': 'name,email,temporary_password'
         },
         {
             'template_type': 'admin_notification',
@@ -204,6 +212,56 @@ def create_default_schedules():
             'send_type': 'immediate',
             'status': 'active'
         },
+        {
+            'name': 'Potwierdzenie Zapisu na Wydarzenie',
+            'description': 'Automatyczny email potwierdzający zapis na wydarzenie',
+            'template_type': 'event_registration',
+            'trigger_type': 'event_registration',
+            'trigger_conditions': '{"event": "event_registration"}',
+            'recipient_type': 'user',
+            'send_type': 'immediate',
+            'status': 'active'
+        },
+        {
+            'name': 'Powiadomienie Admina o Nowej Rejestracji',
+            'description': 'Powiadomienie administratora o nowej rejestracji w klubie',
+            'template_type': 'admin_notification',
+            'trigger_type': 'admin_notification',
+            'trigger_conditions': '{"event": "admin_notification"}',
+            'recipient_type': 'admin',
+            'send_type': 'immediate',
+            'status': 'active'
+        },
+        {
+            'name': 'Przypomnienie 24h przed wydarzeniem',
+            'description': 'Automatyczne przypomnienie 24 godzin przed wydarzeniem',
+            'template_type': 'event_reminder_24h_before',
+            'trigger_type': 'event_reminder',
+            'trigger_conditions': '{"event": "event_reminder", "type": "24h_before"}',
+            'recipient_type': 'event_registrations',
+            'send_type': 'scheduled',
+            'status': 'active'
+        },
+        {
+            'name': 'Przypomnienie 1h przed wydarzeniem',
+            'description': 'Automatyczne przypomnienie 1 godzinę przed wydarzeniem',
+            'template_type': 'event_reminder_1h_before',
+            'trigger_type': 'event_reminder',
+            'trigger_conditions': '{"event": "event_reminder", "type": "1h_before"}',
+            'recipient_type': 'event_registrations',
+            'send_type': 'scheduled',
+            'status': 'active'
+        },
+        {
+            'name': 'Link do spotkania 5min przed wydarzeniem',
+            'description': 'Automatyczne wysłanie linku do spotkania 5 minut przed wydarzeniem',
+            'template_type': 'event_reminder_5min_before',
+            'trigger_type': 'event_reminder',
+            'trigger_conditions': '{"event": "event_reminder", "type": "5min_before"}',
+            'recipient_type': 'event_registrations',
+            'send_type': 'scheduled',
+            'status': 'active'
+        }
     ]
     
     # Utwórz harmonogramy
@@ -228,6 +286,59 @@ def create_default_schedules():
                 schedules.append(config['name'])
     
     # Zatwierdź wszystkie harmonogramy
+    db.session.commit()
+    
+    return schedules
+
+def create_event_schedules(event_id):
+    """Tworzy harmonogramy EventEmailSchedule dla wydarzenia, niezależnie od daty"""
+    from models import EventEmailSchedule, EventSchedule
+    from datetime import timedelta
+    
+    schedules = []
+    
+    # Pobierz wydarzenie
+    event = EventSchedule.query.get(event_id)
+    if not event:
+        return schedules
+    
+    # Typy przypomnień
+    reminder_types = [
+        ('24h_before', timedelta(hours=24)),
+        ('1h_before', timedelta(hours=1)),
+        ('5min_before', timedelta(minutes=5))
+    ]
+    
+    for reminder_type, time_offset in reminder_types:
+        # Sprawdź, czy harmonogram już istnieje
+        existing_schedule = EventEmailSchedule.query.filter_by(
+            event_id=event_id,
+            notification_type=reminder_type
+        ).first()
+        
+        if existing_schedule:
+            continue
+        
+        # Znajdź szablon
+        template_name = f'event_reminder_{reminder_type}'
+        template = EmailTemplate.query.filter_by(template_type=template_name).first()
+        
+        if template:
+            # Oblicz zaplanowany czas (nawet jeśli w przeszłości)
+            scheduled_time = event.event_date - time_offset
+            
+            schedule = EventEmailSchedule(
+                event_id=event_id,
+                notification_type=reminder_type,
+                scheduled_at=scheduled_time,
+                template_id=template.id,
+                status='pending'
+            )
+            
+            db.session.add(schedule)
+            schedules.append(schedule)
+    
+    # Zatwierdź harmonogramy
     db.session.commit()
     
     return schedules

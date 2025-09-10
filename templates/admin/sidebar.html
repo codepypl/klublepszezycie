@@ -83,6 +83,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="{{ url_for('admin_event_email_schedules') }}" class="nav-link {% if request.endpoint == 'admin_event_email_schedules' %}active{% endif %}">
+                            <i class="fas fa-calendar-check"></i>
+                            Harmonogramy Wydarzeń
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="{{ url_for('admin_user_groups') }}" class="nav-link {% if request.endpoint == 'admin_user_groups' %}active{% endif %}">
                             <i class="fas fa-user-friends"></i>
                             Grupy użytkowników
