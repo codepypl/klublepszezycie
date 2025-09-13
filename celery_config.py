@@ -46,7 +46,21 @@ celery_app.conf.update(
 )
 
 # Konfiguracja logowania
+import logging
+from datetime import datetime
+
+# Create logs directory if it doesn't exist
+logs_dir = os.path.join(os.getcwd(), 'logs')
+os.makedirs(logs_dir, exist_ok=True)
+
+# Setup Celery logging
 celery_app.conf.update(
     worker_log_format='[%(asctime)s: %(levelname)s/%(processName)s] %(message)s',
     worker_task_log_format='[%(asctime)s: %(levelname)s/%(processName)s][%(task_name)s(%(task_id)s)] %(message)s',
+    worker_log_file=os.path.join(logs_dir, 'celery_worker.log'),
+    beat_log_file=os.path.join(logs_dir, 'celery_beat.log'),
+    flower_log_file=os.path.join(logs_dir, 'celery_flower.log'),
+    worker_log_level='INFO',
+    beat_log_level='INFO',
+    flower_log_level='INFO',
 )

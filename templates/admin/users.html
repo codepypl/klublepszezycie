@@ -7,10 +7,12 @@
 {% endblock %}
 
 {% block page_actions %}
-    <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
-        <i class="fas fa-sign-out-alt me-2"></i>
-        Wyloguj
-    </a>
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <a href="{{ url_for('auth.logout') }}" class="btn admin-btn-logout">
+            <i class="fas fa-sign-out-alt me-2"></i>
+            Wyloguj
+        </a>
+    </div>
 {% endblock %}
 
 {% block content %}
@@ -97,7 +99,7 @@
                             <button type="submit" class="btn admin-btn">
                                 <i class="fas fa-save me-2"></i>Zapisz zmiany
                             </button>
-                            <a href="{{ url_for('admin_users') }}" class="btn admin-btn-secondary ms-2">
+                            <a href="{{ url_for('users.index') }}" class="btn admin-btn-secondary ms-2">
                                 <i class="fas fa-times me-2"></i>Anuluj
                             </a>
                         </div>
@@ -107,10 +109,28 @@
             {% endif %}
             
             {% if users %}
+                <!-- Bulk Actions Bar -->
+                <div class="bulk-actions-bar mb-3" id="bulkActionsBar" style="display: none;">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="text-muted">
+                            <span id="selectedCount">0</span> użytkowników wybranych
+                        </span>
+                        <button type="button" class="btn admin-btn-danger btn-sm" id="bulkDeleteBtn">
+                            <i class="fas fa-trash me-2"></i>Usuń wybrane
+                        </button>
+                        <button type="button" class="btn admin-btn-secondary btn-sm" onclick="clearSelection()">
+                            <i class="fas fa-times me-2"></i>Anuluj
+                        </button>
+                    </div>
+                </div>
+                
                 <div class="table-responsive">
-                    <table class="table admin-table">
+                    <table class="table admin-table bulk-delete-table" id="usersTable" data-delete-endpoint="/api/bulk-delete/users">
                         <thead>
                             <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll" class="form-check-input">
+                                </th>
                                 <th>ID</th>
                                 <th>Imię</th>
                                 <th>Email</th>
@@ -124,6 +144,11 @@
                         <tbody>
                             {% for user in users %}
                             <tr data-user-id="{{ user.id }}">
+                                <td>
+                                    {% if not user.is_admin %}
+                                    <input type="checkbox" class="form-check-input" name="itemIds" value="{{ user.id }}">
+                                    {% endif %}
+                                </td>
                                 <td>{{ user.id }}</td>
                                 <td>
                                     <strong>{{ user.name }}</strong>
@@ -179,6 +204,19 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Users Info -->
+                {% if pagination %}
+                <div class="text-center text-muted mt-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Wyświetlane {{ users|length }} z {{ pagination.total }} użytkowników
+                </div>
+                {% endif %}
+                
+                <!-- Pagination -->
+                {% if pagination and pagination.pages > 1 %}
+                <div id="pagination" class="mt-4"></div>
+                {% endif %}
             {% else %}
                 <div class="text-center py-4">
                     <i class="fas fa-users fa-3x text-muted mb-3"></i>
@@ -190,6 +228,93 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/utils/paginate.js') }}"></script>
+<script>
+    // Rozszerzona funkcjonalność bulk delete dla użytkowników
+    class UsersBulkDelete extends BulkDelete {
+        constructor(tableId, deleteEndpoint, options = {}) {
+            super(tableId, deleteEndpoint, {
+                ...options,
+                confirmMessage: 'Czy na pewno chcesz usunąć wybranych użytkowników? Tej operacji nie można cofnąć.',
+                successMessage: 'Użytkownicy zostali usunięci pomyślnie'
+            });
+        }
+        
+        updateDeleteButton() {
+            const deleteBtn = document.getElementById(this.options.deleteButtonId);
+            const bulkActionsBar = document.getElementById('bulkActionsBar');
+            const selectedCountSpan = document.getElementById('selectedCount');
+            
+            if (!deleteBtn || !bulkActionsBar || !selectedCountSpan) return;
+            
+            if (this.selectedIds.size === 0) {
+                bulkActionsBar.style.display = 'none';
+                deleteBtn.disabled = true;
+            } else {
+                bulkActionsBar.style.display = 'block';
+                deleteBtn.disabled = false;
+                selectedCountSpan.textContent = this.selectedIds.size;
+                deleteBtn.innerHTML = `<i class="fas fa-trash me-2"></i>Usuń wybrane (${this.selectedIds.size})`;
+            }
+        }
+    }
+    
+    // Funkcja do czyszczenia zaznaczenia
+    function clearSelection() {
+        document.querySelectorAll('input[name="itemIds"]').forEach(cb => cb.checked = false);
+        document.getElementById('selectAll').checked = false;
+        
+        // Wywołaj update dla wszystkich instancji BulkDelete
+        if (window.usersBulkDelete) {
+            window.usersBulkDelete.selectedIds.clear();
+            window.usersBulkDelete.updateDeleteButton();
+        }
+    }
+    
+    // Inicjalizacja po załadowaniu strony
+    document.addEventListener('DOMContentLoaded', function() {
+        // Zastąp standardową klasę BulkDelete naszą rozszerzoną wersją
+        const table = document.getElementById('usersTable');
+        if (table) {
+            window.usersBulkDelete = new UsersBulkDelete('usersTable', '/api/bulk-delete/users');
+        }
+        
+        // Inicjalizacja paginacji
+        {% if pagination and pagination.pages > 1 %}
+        const pagination = createPaginationFromFlask(
+            {
+                page: {{ pagination.page }},
+                pages: {{ pagination.pages }},
+                total: {{ pagination.total }},
+                per_page: {{ pagination.per_page }}
+            },
+            'pagination',
+            {
+                infoText: 'Strona {page} z {pages}',
+                perPageOptions: [5, 10, 25, 50],
+                defaultPerPage: {{ pagination.per_page }},
+                showPerPage: true // Włącz selektor w funkcji pomocniczej
+            }
+        );
+        
+        // Obsługa zmiany strony
+        pagination.setPageChangeCallback(function(page, perPage) {
+            const url = new URL(window.location);
+            url.searchParams.set('page', page);
+            url.searchParams.set('per_page', perPage);
+            window.location.href = url.toString();
+        });
+        
+        // Obsługa zmiany liczby elementów na stronę
+        pagination.setPerPageChangeCallback(function(page, perPage) {
+            const url = new URL(window.location);
+            url.searchParams.set('page', 1); // Reset to first page
+            url.searchParams.set('per_page', perPage);
+            window.location.href = url.toString();
+        });
+        {% endif %}
+    });
+</script>
 <script>
     // Obsługa formularza edycji użytkownika
     document.addEventListener('DOMContentLoaded', function() {
@@ -209,7 +334,7 @@
                 };
                 
                 // Wyślij żądanie aktualizacji
-                fetch(`/admin/api/user/${userId}`, {
+                fetch(`/api/user/${userId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -219,16 +344,16 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('Użytkownik został zaktualizowany pomyślnie!');
+                        window.toastManager.success('Użytkownik został zaktualizowany pomyślnie!');
                         // Przekieruj z powrotem do listy użytkowników
-                        window.location.href = '{{ url_for("admin_users") }}';
+                        window.location.href = '{{ url_for("users.index") }}';
                     } else {
-                        alert('Błąd podczas aktualizacji: ' + data.error);
+                        window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Wystąpił błąd podczas aktualizacji użytkownika');
+                    window.toastManager.error('Wystąpił błąd podczas aktualizacji użytkownika');
                 });
             });
         }
@@ -238,34 +363,36 @@
         // Znajdź użytkownika po ID i przekieruj do edycji
         const userRow = document.querySelector(`tr[data-user-id="${userId}"]`);
         if (userRow) {
-            const email = userRow.querySelector('td:nth-child(3) a').textContent.trim();
-            window.location.href = `{{ url_for('admin_users') }}?edit_user=${encodeURIComponent(email)}`;
+            // Email jest w 4. kolumnie (po checkbox, ID, imię)
+            const email = userRow.querySelector('td:nth-child(4) a').textContent.trim();
+            window.location.href = `{{ url_for('users.index') }}?edit_user=${encodeURIComponent(email)}`;
         }
     }
     
     function deleteUser(userId) {
         if (confirm('Czy na pewno chcesz usunąć tego użytkownika? Tej operacji nie można cofnąć.')) {
-            fetch(`/admin/api/user/${userId}`, {
+            fetch(`/api/user/${userId}`, {
                 method: 'DELETE'
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('Użytkownik został usunięty pomyślnie!');
+                    window.toastManager.success('Użytkownik został usunięty pomyślnie!');
                     // Usuń wiersz z tabeli
                     const row = document.querySelector(`tr[data-user-id="${userId}"]`);
                     if (row) {
                         row.remove();
                     }
                 } else {
-                    alert('Błąd podczas usuwania: ' + data.error);
+                    window.toastManager.error('Błąd podczas usuwania: ' + data.error);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Wystąpił błąd podczas usuwania użytkownika');
+                window.toastManager.error('Wystąpił błąd podczas usuwania użytkownika');
             });
         }
     }
+    
 </script>
 {% endblock %}

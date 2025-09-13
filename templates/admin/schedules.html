@@ -1,26 +1,34 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harmonogramy - Panel Administratora</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+{% extends "admin/base.html" %}
+
+{% block title %}Harmonogramy{% endblock %}
+
+{% block extra_css %}
     <link href="{{ url_for('static', filename='css/admin.css') }}?v={{ range(1, 1000) | random }}" rel="stylesheet">
-</head>
-<body class="admin-body">
-    <div class="admin-container">
-        <div class="admin-sidebar" id="sidebar">
-            {% include 'admin/sidebar.html' %}
-        </div>
-        <div class="admin-content">
-            <div class="admin-header">
-                <h1><i class="fas fa-clock me-2"></i>Harmonogramy</h1>
-                <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
-                    <i class="fas fa-sign-out-alt me-2"></i>Wyloguj
-                </a>
-            </div>
-<div class="container-fluid">
+    <style>
+        .bulk-actions {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .table th {
+            background-color: #f8f9fa;
+            border-top: none;
+        }
+        
+        .btn-group-sm > .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+    </style>
+{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-calendar me-2"></i>Harmonogramy
+{% endblock %}
+
+{% block content %}
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -35,10 +43,34 @@
             <!-- Lista harmonogramów -->
             <div class="card">
                 <div class="card-body">
+                    <!-- Bulk actions -->
+                    <div class="bulk-actions mb-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selectAll" name="selectAll">
+                                    <label class="form-check-label" for="selectAll">
+                                        Zaznacz wszystkie
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button type="button" class="btn btn-danger" id="bulkDeleteBtn" disabled>
+                                    <i class="fas fa-trash me-2"></i>Usuń wybrane (0)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="table-responsive">
-                        <table class="table table-hover" id="schedulesTable">
+                        <table class="table table-hover bulk-delete-table" 
+                               id="schedulesTable" 
+                               data-delete-endpoint="/admin/api/bulk-delete/schedules">
                             <thead>
                                 <tr>
+                                    <th width="50">
+                                        <input type="checkbox" id="selectAll" name="selectAll">
+                                    </th>
                                     <th>Nazwa</th>
                                     <th>Opis</th>
                                     <th>Szablon</th>
@@ -47,7 +79,7 @@
                                     <th>Status</th>
                                     <th>Ostatnie wysłanie</th>
                                     <th>Liczba wysłanych</th>
-                                    <th>Akcje</th>
+                                    <th width="150">Akcje</th>
                                 </tr>
                             </thead>
                             <tbody id="schedulesTableBody">
@@ -161,11 +193,7 @@
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Custom Admin JS -->
-    <script src="{{ url_for('static', filename='js/admin.js') }}?v={{ range(1, 1000) | random }}"></script>
+    <!-- Scripts are loaded in admin/base.html -->
 <script>
 // Ładowanie danych przy starcie
 document.addEventListener('DOMContentLoaded', function() {
@@ -223,6 +251,9 @@ function renderSchedulesTable(schedules) {
     schedules.forEach(schedule => {
         const row = document.createElement('tr');
         row.innerHTML = `
+            <td>
+                <input type="checkbox" name="itemIds" value="${schedule.id}" onchange="toggleSchedule(${schedule.id}, this.checked)">
+            </td>
             <td><strong>${schedule.name}</strong></td>
             <td>${schedule.description || '-'}</td>
             <td>${schedule.template_id}</td>
@@ -260,14 +291,14 @@ async function saveSchedule() {
         const data = await response.json();
         
         if (data.success) {
-            alert('Harmonogram został zapisany pomyślnie!');
+            window.toastManager.success('Harmonogram został zapisany pomyślnie!');
             bootstrap.Modal.getInstance(document.getElementById('addScheduleModal')).hide();
             loadSchedules();
         } else {
-            alert('Błąd podczas zapisywania: ' + data.error);
+            window.toastManager.error('Błąd podczas zapisywania: ' + data.error);
         }
     } catch (error) {
-        alert('Błąd podczas zapisywania: ' + error.message);
+        window.toastManager.error('Błąd podczas zapisywania: ' + error.message);
     }
 }
 
@@ -295,10 +326,10 @@ async function editSchedule(id) {
             const modal = new bootstrap.Modal(document.getElementById('addScheduleModal'));
             modal.show();
         } else {
-            alert('Błąd podczas ładowania harmonogramu: ' + data.error);
+            window.toastManager.error('Błąd podczas ładowania harmonogramu: ' + data.error);
         }
     } catch (error) {
-        alert('Błąd podczas ładowania harmonogramu: ' + error.message);
+        window.toastManager.error('Błąd podczas ładowania harmonogramu: ' + error.message);
     }
 }
 
@@ -313,16 +344,96 @@ async function deleteSchedule(id) {
             const data = await response.json();
             
             if (data.success) {
-                alert('Harmonogram został usunięty pomyślnie!');
+                window.toastManager.success('Harmonogram został usunięty pomyślnie!');
                 loadSchedules();
             } else {
-                alert('Błąd podczas usuwania: ' + data.error);
+                window.toastManager.error('Błąd podczas usuwania: ' + data.error);
             }
         } catch (error) {
-            alert('Błąd podczas usuwania: ' + error.message);
+            window.toastManager.error('Błąd podczas usuwania: ' + error.message);
         }
     }
 }
+
+// Bulk delete functionality
+let selectedSchedules = new Set();
+
+function toggleSelectAll(checked) {
+    const checkboxes = document.querySelectorAll('#schedulesTableBody input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = checked;
+        toggleSchedule(checkbox.value, checked);
+    });
+}
+
+function toggleSchedule(id, checked) {
+    if (checked) {
+        selectedSchedules.add(id);
+    } else {
+        selectedSchedules.delete(id);
+    }
+    updateBulkDeleteButton();
+}
+
+function updateBulkDeleteButton() {
+    const button = document.getElementById('bulkDeleteBtn');
+    if (selectedSchedules.size === 0) {
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-trash me-2"></i>Usuń wybrane (0)';
+    } else {
+        button.disabled = false;
+        button.innerHTML = `<i class="fas fa-trash me-2"></i>Usuń wybrane (${selectedSchedules.size})`;
+    }
+}
+
+async function bulkDeleteSchedules() {
+    if (selectedSchedules.size === 0) {
+        window.toastManager.error('Nie wybrano żadnych harmonogramów do usunięcia');
+        return;
+    }
+    
+    if (!confirm(`Czy na pewno chcesz usunąć ${selectedSchedules.size} harmonogramów?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/admin/api/bulk-delete/schedules', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ids: Array.from(selectedSchedules)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            alert(data.message);
+            selectedSchedules.clear();
+            loadSchedules();
+        } else {
+            window.toastManager.error('Błąd: ' + data.error);
+        }
+    } catch (error) {
+        window.toastManager.error('Błąd podczas usuwania: ' + error.message);
+    }
+}
+
+// Bind bulk delete button
+document.addEventListener('DOMContentLoaded', function() {
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    if (bulkDeleteBtn) {
+        bulkDeleteBtn.addEventListener('click', bulkDeleteSchedules);
+    }
+    
+    const selectAllCheckbox = document.getElementById('selectAll');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', (e) => {
+            toggleSelectAll(e.target.checked);
+        });
+    }
+});
 </script>
-</body>
-</html>
+{% endblock %}

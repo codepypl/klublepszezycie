@@ -7,10 +7,12 @@
 {% endblock %}
 
 {% block page_actions %}
-    <a href="{{ url_for('admin_logout') }}" class="btn btn-outline-danger">
-        <i class="fas fa-sign-out-alt me-2"></i>
-        Wyloguj
-    </a>
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">
+            <i class="fas fa-sign-out-alt me-2"></i>
+            Wyloguj
+        </a>
+    </div>
 {% endblock %}
 
 {% block content %}
@@ -108,7 +110,7 @@
                                                                 onclick="editSeo({{ seo.id }}, '{{ seo.page_type }}', '{{ seo.page_title or '' }}', '{{ seo.meta_description or '' }}', '{{ seo.og_title or '' }}', '{{ seo.og_description or '' }}', '{{ seo.og_image or '' }}', '{{ seo.twitter_card or '' }}', '{{ seo.twitter_title or '' }}', '{{ seo.twitter_description or '' }}', '{{ seo.structured_data or '' }}')">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
-                                                        <button <button class="btn btn-sm admin-btn-danger" 
+                                                        <button class="btn btn-sm admin-btn-danger" 
                                                                 onclick="deleteSeo({{ seo.id }})">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
@@ -164,6 +166,14 @@
                                         <option value="benefits">Korzyści</option>
                                         <option value="testimonials">Opinie</option>
                                         <option value="contact">Kontakt</option>
+                                        <option value="blog_home">Strona Główna Blogu</option>
+                                        <option value="blog_search">Wyszukiwanie w Blogu</option>
+                                        <option value="blog_category">Kategoria Blogu</option>
+                                        <option value="blog_tag">Tag Blogu</option>
+                                        <option value="blog_post">Wpis Blogu</option>
+                                        <option value="event">Wydarzenie</option>
+                                        <option value="section">Sekcja</option>
+                                        <option value="menu_item">Element Menu</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
@@ -175,6 +185,10 @@
                                     <label for="meta_description" class="form-label">Meta Description</label>
                                     <textarea class="form-control" id="meta_description" name="meta_description" rows="3" maxlength="160" placeholder="Opis strony (max 160 znaków)"></textarea>
                                     <small class="text-muted">Pozostało: <span id="desc_count">160</span> znaków</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="meta_keywords" class="form-label">Meta Keywords</label>
+                                    <input type="text" class="form-control" id="meta_keywords" name="meta_keywords" placeholder="słowa kluczowe, oddzielone, przecinkami">
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -193,6 +207,15 @@
                                 <div class="mb-3">
                                     <label for="og_image" class="form-label">OG Image URL</label>
                                     <input type="url" class="form-control" id="og_image" name="og_image" placeholder="https://example.com/image.jpg">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="og_type" class="form-label">OG Type</label>
+                                    <select class="form-control" id="og_type" name="og_type">
+                                        <option value="website">Website</option>
+                                        <option value="article">Article</option>
+                                        <option value="profile">Profile</option>
+                                        <option value="video">Video</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -227,6 +250,10 @@
                                     <i class="fas fa-code me-2"></i>
                                     Structured Data
                                 </h6>
+                                <div class="mb-3">
+                                    <label for="canonical_url" class="form-label">Canonical URL</label>
+                                    <input type="url" class="form-control" id="canonical_url" name="canonical_url" placeholder="https://example.com/page">
+                                </div>
                                 <div class="mb-3">
                                     <label for="structured_data" class="form-label">JSON-LD Schema</label>
                                     <textarea class="form-control" id="structured_data" name="structured_data" rows="8" placeholder='{"@context": "https://schema.org", "@type": "Organization", "name": "Klub Lepsze Życie"}'></textarea>
@@ -271,6 +298,14 @@
                                         <option value="benefits">Korzyści</option>
                                         <option value="testimonials">Opinie</option>
                                         <option value="contact">Kontakt</option>
+                                        <option value="blog_home">Strona Główna Blogu</option>
+                                        <option value="blog_search">Wyszukiwanie w Blogu</option>
+                                        <option value="blog_category">Kategoria Blogu</option>
+                                        <option value="blog_tag">Tag Blogu</option>
+                                        <option value="blog_post">Wpis Blogu</option>
+                                        <option value="event">Wydarzenie</option>
+                                        <option value="section">Sekcja</option>
+                                        <option value="menu_item">Element Menu</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
@@ -282,6 +317,10 @@
                                     <label for="edit_meta_description" class="form-label">Meta Description</label>
                                     <textarea class="form-control" id="edit_meta_description" name="meta_description" rows="3" maxlength="160"></textarea>
                                     <small class="text-muted">Pozostało: <span id="edit_desc_count">160</span> znaków</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_meta_keywords" class="form-label">Meta Keywords</label>
+                                    <input type="text" class="form-control" id="edit_meta_keywords" name="meta_keywords">
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -300,6 +339,15 @@
                                 <div class="mb-3">
                                     <label for="edit_og_image" class="form-label">OG Image URL</label>
                                     <input type="url" class="form-control" id="edit_og_image" name="og_image">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_og_type" class="form-label">OG Type</label>
+                                    <select class="form-control" id="edit_og_type" name="og_type">
+                                        <option value="website">Website</option>
+                                        <option value="article">Article</option>
+                                        <option value="profile">Profile</option>
+                                        <option value="video">Video</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -335,6 +383,10 @@
                                     Structured Data
                                 </h6>
                                 <div class="mb-3">
+                                    <label for="edit_canonical_url" class="form-label">Canonical URL</label>
+                                    <input type="url" class="form-control" id="edit_canonical_url" name="canonical_url">
+                                </div>
+                                <div class="mb-3">
                                     <label for="edit_structured_data" class="form-label">JSON-LD Schema</label>
                                     <textarea class="form-control" id="edit_structured_data" name="structured_data" rows="8"></textarea>
                                     <small class="text-muted">Wklej kod JSON-LD lub zostaw puste</small>
@@ -368,21 +420,48 @@
         function addSeo() {
             const form = document.getElementById('addSeoForm');
             const formData = new FormData(form);
-            fetch('/admin/api/seo', {
+            
+            // Convert FormData to JSON
+            const jsonData = {
+                page_type: formData.get('page_type'),
+                page_title: formData.get('page_title'),
+                meta_description: formData.get('meta_description'),
+                meta_keywords: formData.get('meta_keywords'),
+                og_title: formData.get('og_title'),
+                og_description: formData.get('og_description'),
+                og_image: formData.get('og_image'),
+                og_type: formData.get('og_type') || 'website',
+                twitter_card: formData.get('twitter_card'),
+                twitter_title: formData.get('twitter_title'),
+                twitter_description: formData.get('twitter_description'),
+                twitter_image: formData.get('twitter_image'),
+                canonical_url: formData.get('canonical_url'),
+                structured_data: formData.get('structured_data'),
+                is_active: formData.get('is_active') === 'on'
+            };
+            
+            fetch('/api/seo', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(jsonData)
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    window.toastManager.success('Ustawienia SEO zostały dodane pomyślnie!');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addSeoModal'));
+                    modal.hide();
                     location.reload();
                 } else {
-                    alert('Błąd: ' + data.error);
+                    window.toastManager.error('Błąd podczas dodawania: ' + data.error);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Wystąpił błąd podczas dodawania ustawień SEO');
+                window.toastManager.error('Wystąpił błąd podczas dodawania ustawień SEO');
             });
         }
         // Edit SEO
@@ -391,12 +470,15 @@
             document.getElementById('edit_page_type').value = pageType;
             document.getElementById('edit_page_title').value = pageTitle;
             document.getElementById('edit_meta_description').value = metaDescription;
+            document.getElementById('edit_meta_keywords').value = ''; // Will be filled from API
             document.getElementById('edit_og_title').value = ogTitle;
             document.getElementById('edit_og_description').value = ogDescription;
             document.getElementById('edit_og_image').value = ogImage;
+            document.getElementById('edit_og_type').value = 'website'; // Default value
             document.getElementById('edit_twitter_card').value = twitterCard;
             document.getElementById('edit_twitter_title').value = twitterTitle;
             document.getElementById('edit_twitter_description').value = twitterDescription;
+            document.getElementById('edit_canonical_url').value = ''; // Will be filled from API
             document.getElementById('edit_structured_data').value = structuredData;
             // Update character counts
             updateCount(document.getElementById('edit_page_title'), document.getElementById('edit_title_count'), 60);
@@ -407,43 +489,73 @@
         function saveSeo() {
             const form = document.getElementById('editSeoForm');
             const formData = new FormData(form);
-            fetch('/admin/api/seo', {
+            
+            // Convert FormData to JSON
+            const jsonData = {
+                page_title: formData.get('page_title'),
+                meta_description: formData.get('meta_description'),
+                meta_keywords: formData.get('meta_keywords'),
+                og_title: formData.get('og_title'),
+                og_description: formData.get('og_description'),
+                og_image: formData.get('og_image'),
+                og_type: formData.get('og_type') || 'website',
+                twitter_card: formData.get('twitter_card'),
+                twitter_title: formData.get('twitter_title'),
+                twitter_description: formData.get('twitter_description'),
+                twitter_image: formData.get('twitter_image'),
+                canonical_url: formData.get('canonical_url'),
+                structured_data: formData.get('structured_data'),
+                is_active: formData.get('is_active') === 'on'
+            };
+            
+            const seoId = formData.get('id');
+            
+            fetch(`/api/seo/${seoId}`, {
                 method: 'PUT',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(jsonData)
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    window.toastManager.success('Ustawienia SEO zostały zaktualizowane pomyślnie!');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editSeoModal'));
+                    modal.hide();
                     location.reload();
                 } else {
-                    alert('Błąd: ' + data.error);
+                    window.toastManager.error('Błąd podczas zapisywania: ' + data.error);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Wystąpił błąd podczas zapisywania zmian');
+                window.toastManager.error('Wystąpił błąd podczas zapisywania zmian');
             });
         }
         // Delete SEO
         function deleteSeo(id) {
             if (confirm('Czy na pewno chcesz usunąć te ustawienia SEO?')) {
-                const formData = new FormData();
-                formData.append('id', id);
-                fetch('/admin/api/seo', {
+                fetch(`/api/seo/${id}`, {
                     method: 'DELETE',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        window.toastManager.success('Ustawienia SEO zostały usunięte pomyślnie!');
                         location.reload();
                     } else {
-                        alert('Błąd: ' + data.error);
+                        window.toastManager.error('Błąd podczas usuwania: ' + data.error);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Wystąpił błąd podczas usuwania ustawień SEO');
+                    window.toastManager.error('Wystąpił błąd podczas usuwania ustawień SEO');
                 });
             }
         }

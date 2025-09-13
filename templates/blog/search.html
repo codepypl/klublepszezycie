@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    {% set seo_data = get_seo_settings('blog_search') %}
+    {% include 'seo/meta_tags.html' %}
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="{{ url_for('public.index') }}">
+                <i class="fas fa-leaf me-2"></i>Lepsze Życie
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if menu_items %}
+                        {% for item in menu_items %}
+                            {% if item.is_active %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ item.url }}">{{ item.title }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.is_admin %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
+                                <i class="fas fa-cog me-1"></i>Admin
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.profile') }}">
+                                <i class="fas fa-user me-1"></i>Profil
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.logout') }}">
+                                <i class="fas fa-sign-out-alt me-1"></i>Wyloguj
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">
+                                <i class="fas fa-sign-in-alt me-1"></i>Zaloguj
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main style="padding-top: 80px;">
+<div class="container py-5">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <div class="blog-header mb-5">
+                <!-- Breadcrumb -->
+                <nav aria-label="breadcrumb" class="mb-4">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('public.index') }}">Strona główna</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('blog.index') }}">Blog</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Wyszukiwanie</li>
+                    </ol>
+                </nav>
+
+                <h1 class="display-4 fw-bold text-primary mb-3">
+                    <i class="fas fa-search me-2"></i>
+                    Wyniki wyszukiwania
+                </h1>
+                
+                <!-- Search Query -->
+                <div class="search-info mb-4">
+                    <p class="lead text-muted">
+                        Wyszukiwana fraza: <strong>"{{ query }}"</strong>
+                    </p>
+                    <p class="text-muted">
+                        Znaleziono <strong>{{ posts.total }}</strong> artykułów
+                    </p>
+                </div>
+
+                <!-- Search Form -->
+                <div class="search-form mb-4">
+                    <form method="GET" action="{{ url_for('blog.search') }}" class="d-flex">
+                        <input type="text" name="q" class="form-control me-2" placeholder="Szukaj artykułów..." value="{{ query }}">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Posts List -->
+            {% if posts.items %}
+                <div class="row">
+                    {% for post in posts.items %}
+                    <div class="col-md-6 mb-4">
+                        <article class="card h-100 blog-card">
+                            {% if post.featured_image %}
+                            <img src="{{ post.featured_image }}" class="card-img-top" alt="{{ post.title }}" style="height: 200px; object-fit: cover;">
+                            {% endif %}
+                            <div class="card-body d-flex flex-column">
+                                <div class="mb-2">
+                                    {% for category in post.categories %}
+                                    <span class="badge bg-primary me-1">{{ category.title }}</span>
+                                    {% endfor %}
+                                </div>
+                                <h5 class="card-title">
+                                    <a href="{{ url_for('blog.post_detail', slug=post.slug) }}" class="text-decoration-none">
+                                        {{ post.title }}
+                                    </a>
+                                </h5>
+                                <p class="card-text text-muted">{{ (post.excerpt or post.content[:150] + '...' if post.content|length > 150 else post.content)|safe }}</p>
+                                <div class="mt-auto">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            <i class="fas fa-user me-1"></i>
+                                            {{ post.author.name or post.author.email }}
+                                        </small>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            {{ post.published_at.strftime('%d.%m.%Y') if post.published_at else post.created_at.strftime('%d.%m.%Y') }}
+                                        </small>
+                                    </div>
+                                    {% if post.tags %}
+                                    <div class="mt-2">
+                                        {% for tag in post.tags %}
+                                        <span class="badge bg-light text-dark me-1">{{ tag.name }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if posts.pages > 1 %}
+                <nav aria-label="Search pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if posts.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('blog.search', q=query, page=posts.prev_num) }}">Poprzednia</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in posts.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != posts.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('blog.search', q=query, page=page_num) }}">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if posts.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('blog.search', q=query, page=posts.next_num) }}">Następna</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h3 class="text-muted">Brak wyników wyszukiwania</h3>
+                    <p class="text-muted">Nie znaleziono artykułów dla frazy "{{ query }}".</p>
+                    <div class="mt-4">
+                        <a href="{{ url_for('blog.index') }}" class="btn btn-primary me-2">Wróć do bloga</a>
+                        <button onclick="document.querySelector('input[name=q]').focus()" class="btn btn-outline-primary">Spróbuj ponownie</button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="blog-sidebar">
+                <!-- Search Form -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-search me-2"></i>
+                            Wyszukiwanie
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="GET" action="{{ url_for('blog.search') }}">
+                            <div class="input-group">
+                                <input type="text" name="q" class="form-control" placeholder="Szukaj artykułów..." value="{{ query }}">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Categories -->
+                {% if categories %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-folder me-2"></i>
+                            Kategorie
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            {% for category in categories %}
+                            <li class="mb-2">
+                                <a href="{{ url_for('blog.category_detail', slug=category.slug) }}" class="text-decoration-none">
+                                    {{ category.title }}
+                                    <span class="badge bg-secondary ms-2">{{ category.posts_count }}</span>
+                                </a>
+                                {% if category.children %}
+                                <ul class="list-unstyled ms-3 mt-1">
+                                    {% for child in category.children %}
+                                    {% if child.is_active %}
+                                    <li class="mb-1">
+                                        <a href="{{ url_for('blog.category_detail', slug=child.slug) }}" class="text-decoration-none text-muted small">
+                                            {{ child.title }}
+                                            <span class="badge bg-light text-dark ms-1">{{ child.posts_count }}</span>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Popular Tags -->
+                {% if popular_tags %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-tags me-2"></i>
+                            Popularne tagi
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for tag in popular_tags %}
+                            <a href="{{ url_for('blog.tag_detail', slug=tag.slug) }}" class="badge bg-light text-dark text-decoration-none">
+                                {{ tag.name }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Search Tips -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            Wskazówki wyszukiwania
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0 small">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-1"></i>
+                                Użyj prostych słów kluczowych
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-1"></i>
+                                Sprawdź pisownię
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-1"></i>
+                                Spróbuj synonimów
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-1"></i>
+                                Użyj mniej słów
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <h5 class="fw-bold mb-3">{{ footer_settings.company_title or 'Klub Lepsze Życie' }}</h5>
+                    <p class="text-light">{{ footer_settings.company_description or 'Dołącz do nas i zmień swoje życie na lepsze. Osiągnij sukces finansowy, zdrowie i szczęście w relacjach.' }}</p>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <h5 class="fw-bold mb-3">{{ footer_settings.contact_title or 'Kontakt' }}</h5>
+                    <p class="text-light mb-2">
+                        <i class="fas fa-envelope me-2"></i>
+                        {{ footer_settings.contact_email or 'kontakt@klublepszezycie.pl' }}
+                    </p>
+                    <p class="text-light mb-2">
+                        <i class="fas fa-phone me-2"></i>
+                        {{ footer_settings.contact_phone or '+48 123 456 789' }}
+                    </p>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <h5 class="fw-bold mb-3">{{ footer_settings.social_title or 'Śledź nas' }}</h5>
+                    <div class="d-flex gap-3">
+                        {% for social_link in active_social_links %}
+                            <a href="{{ social_link.url }}" target="{{ social_link.target or '_blank' }}" rel="noopener noreferrer" class="text-white" title="{{ social_link.platform }}">
+                                <i class="fab fa-{{ social_link.platform.lower() }} fa-2x"></i>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="mb-0 text-light">&copy; 2024 {{ footer_settings.company_name or 'Klub Lepsze Życie' }}. Wszystkie prawa zastrzeżone.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    {% if footer_settings.show_privacy_policy %}
+                        <a href="{{ url_for('public.privacy_policy') }}" class="text-light me-3">Polityka prywatności</a>
+                    {% endif %}
+                    {% if footer_settings.show_terms %}
+                        <a href="{{ url_for('public.terms') }}" class="text-light">Regulamin</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- AOS Animation -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init();
+    </script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Artykuły{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-newspaper me-2"></i>Zarządzanie Artykułami
+{% endblock %}
+
+{% block page_actions %}
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addPostModal">
+            <i class="fas fa-plus me-2"></i>
+            Dodaj Artykuł
+        </button>
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+            <i class="fas fa-trash me-2"></i>
+            Usuń Zaznaczone
+        </button>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <!-- Posts Table -->
+    <div class="admin-card">
+        <div class="admin-card-body">
+            {% if posts.items %}
+                <div class="table-responsive">
+                    <table class="table admin-table blog-posts-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll()">
+                                </th>
+                                <th>Tytuł</th>
+                                <th>Slug</th>
+                                <th>Kategorie</th>
+                                <th>Status</th>
+                                <th>Data publikacji</th>
+                                <th>Komentarze</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for post in posts.items %}
+                            <tr data-post-id="{{ post.id }}" data-item-id="{{ post.id }}">
+                                <td>
+                                    <input type="checkbox" class="post-checkbox" value="{{ post.id }}" onchange="bulkDeleteManager.updateBulkDeleteButton()">
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if post.featured_image %}
+                                            <img src="{{ post.featured_image }}" alt="{{ post.title }}" class="img-thumbnail me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                        {% endif %}
+                                        <div>
+                                            <strong>{{ post.title }}</strong>
+                                            {% if post.excerpt %}
+                                                <br><small class="text-muted">{{ post.excerpt[:100] }}{% if post.excerpt|length > 100 %}...{% endif %}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><code>{{ post.slug }}</code></td>
+                                <td>
+                                    {% for category in post.categories %}
+                                        <span class="badge admin-badge admin-badge-secondary me-1">{{ category.title }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {% if post.status == 'published' %}
+                                        <span class="badge admin-badge admin-badge-success">Opublikowany</span>
+                                    {% elif post.status == 'draft' %}
+                                        <span class="badge admin-badge admin-badge-warning">Szkic</span>
+                                    {% else %}
+                                        <span class="badge admin-badge admin-badge-secondary">{{ post.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ post.published_at.strftime('%d.%m.%Y %H:%M') if post.published_at else 'Brak daty' }}</td>
+                                <td>
+                                    <span class="badge admin-badge admin-badge-info">{{ post.comments_count }}</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm admin-btn-outline" onclick="editPost({{ post.id }})" title="Edytuj">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm admin-btn-danger" onclick="deletePost({{ post.id }})" title="Usuń">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if posts.pages > 1 %}
+                <div class="d-flex justify-content-center mt-4">
+                    <nav aria-label="Paginacja artykułów">
+                        <ul class="pagination pagination-sm">
+                            {% if posts.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('blog.admin_posts', page=posts.prev_num) }}" aria-label="Poprzednia">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in posts.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != posts.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('blog.admin_posts', page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">…</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if posts.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('blog.admin_posts', page=posts.next_num) }}" aria-label="Następna">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Brak artykułów</h5>
+                    <p class="text-muted">Dodaj pierwszy artykuł, aby rozpocząć blogowanie</p>
+                    <button type="button" class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addPostModal">
+                        <i class="fas fa-plus me-2"></i>
+                        Dodaj Artykuł
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Add Post Modal -->
+    <div class="modal fade" id="addPostModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus me-2"></i>Dodaj Nowy Artykuł
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addPostForm" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="postTitle" class="form-label">Tytuł artykułu *</label>
+                                    <input type="text" class="form-control" id="postTitle" name="title" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="postSlug" class="form-label">Slug *</label>
+                                    <input type="text" class="form-control" id="postSlug" name="slug" required>
+                                    <div class="form-text">URL-friendly wersja tytułu</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="postExcerpt" class="form-label">Krótki opis</label>
+                                    <textarea class="form-control" id="postExcerpt" name="excerpt" rows="3"></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="postStatus" class="form-label">Status</label>
+                                    <select class="form-select" id="postStatus" name="status">
+                                        <option value="draft">Szkic</option>
+                                        <option value="published">Opublikowany</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="postFeaturedImage" class="form-label">Zdjęcie główne</label>
+                                    <input type="file" class="form-control" id="postFeaturedImage" name="featured_image" accept="image/*">
+                                    <div class="form-text">Opcjonalnie</div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="postAllowComments" name="allow_comments" checked>
+                                        <label class="form-check-label" for="postAllowComments">
+                                            Zezwól na komentarze
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="postContent" class="form-label">Treść artykułu *</label>
+                            <textarea class="form-control" id="postContent" name="content" rows="10" data-tinymce></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Kategorie</label>
+                            <div id="postCategories" class="form-check-container">
+                                <!-- Checkboxes will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="postTags" class="form-label">Tagi (oddzielone spacjami)</label>
+                            <input type="text" class="form-control" id="postTags" name="tags" placeholder="tag1 tag2 tag3">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">Dodaj Artykuł</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Post Modal -->
+    <div class="modal fade" id="editPostModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit me-2"></i>Edytuj Artykuł
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editPostForm" enctype="multipart/form-data">
+                    <input type="hidden" id="editPostId" name="id">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editPostTitle" class="form-label">Tytuł artykułu *</label>
+                                    <input type="text" class="form-control" id="editPostTitle" name="title" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editPostSlug" class="form-label">Slug *</label>
+                                    <input type="text" class="form-control" id="editPostSlug" name="slug" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editPostExcerpt" class="form-label">Krótki opis</label>
+                                    <textarea class="form-control" id="editPostExcerpt" name="excerpt" rows="3"></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editPostStatus" class="form-label">Status</label>
+                                    <select class="form-select" id="editPostStatus" name="status">
+                                        <option value="draft">Szkic</option>
+                                        <option value="published">Opublikowany</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editPostFeaturedImage" class="form-label">Zdjęcie główne</label>
+                                    <input type="file" class="form-control" id="editPostFeaturedImage" name="featured_image" accept="image/*">
+                                    <div class="form-text">Wybierz nowe zdjęcie (opcjonalnie)</div>
+                                    <div id="currentFeaturedImage" class="mt-2" style="display: none;">
+                                        <small class="text-muted">Aktualne zdjęcie:</small>
+                                        <img id="currentFeaturedImagePreview" src="" alt="Aktualne zdjęcie" class="img-thumbnail mt-1" style="max-width: 200px; max-height: 150px;">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="editPostAllowComments" name="allow_comments">
+                                        <label class="form-check-label" for="editPostAllowComments">
+                                            Zezwól na komentarze
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPostContent" class="form-label">Treść artykułu *</label>
+                            <textarea class="form-control" id="editPostContent" name="content" rows="10" data-tinymce></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Kategorie</label>
+                            <div id="editPostCategories" class="form-check-container">
+                                <!-- Checkboxes will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        
+                        <!-- Images Section -->
+                        <div class="mb-3">
+                            <label class="form-label">Obrazy w artykule</label>
+                            <div id="editPostImages" class="images-container">
+                                <!-- Images will be populated by JavaScript -->
+                            </div>
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm admin-btn-outline" id="addImageBtn">
+                                    <i class="fas fa-plus me-1"></i>Dodaj Obraz
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="editPostTags" class="form-label">Tagi (oddzielone spacjami)</label>
+                            <input type="text" class="form-control" id="editPostTags" name="tags" placeholder="tag1 tag2 tag3">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">Zapisz Zmiany</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Image Modal -->
+<div class="modal fade admin-modal" id="imageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-image me-2"></i>
+                    <span id="imageModalTitle">Dodaj Obraz</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="imageForm">
+                    <input type="hidden" id="imageId" name="image_id">
+                    <input type="hidden" id="postId" name="post_id">
+                    
+                    <div class="mb-3">
+                        <label for="imageFile" class="form-label">Upload Obrazu</label>
+                        <input type="file" class="form-control" id="imageFile" name="image_file" accept="image/*">
+                        <div class="form-text">Lub wklej URL poniżej</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="imageUrl" class="form-label">URL Obrazu</label>
+                        <input type="url" class="form-control" id="imageUrl" name="image_url" placeholder="https://example.com/image.jpg">
+                        <div class="form-text">Wklej URL obrazu (opcjonalne jeśli uploadujesz plik)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="imageAltText" class="form-label">Alt Text</label>
+                        <input type="text" class="form-control" id="imageAltText" name="alt_text" placeholder="Opis obrazu dla czytników ekranu">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="imageCaption" class="form-label">Podpis</label>
+                        <textarea class="form-control" id="imageCaption" name="caption" rows="2" placeholder="Opcjonalny podpis pod obrazem"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="imageOrder" class="form-label">Kolejność</label>
+                        <input type="number" class="form-control" id="imageOrder" name="order" min="0" value="0">
+                        <div class="form-text">Niższa liczba = wyższa pozycja</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                <button type="button" class="btn admin-btn" id="saveImageBtn">Zapisz Obraz</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/utils/paginate.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/blog_posts.js') }}"></script>
+
+<script>
+// Global functions for compatibility
+function editPost(postId) {
+    if (window.blogPostsManager) {
+        window.blogPostsManager.editPost(postId);
+    }
+}
+
+function deletePost(postId) {
+    if (window.blogPostsManager) {
+        window.blogPostsManager.deletePost(postId);
+    }
+}
+
+// Initialize bulk delete manager
+let bulkDeleteManager;
+document.addEventListener('DOMContentLoaded', function() {
+    bulkDeleteManager = new BulkDeleteManager('post-checkbox', 'selectAll', 'bulkDeleteBtn', '/api/blog/admin/posts/bulk-delete');
+});
+</script>
+{% endblock %}

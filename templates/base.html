@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ config.get('SITE_NAME', 'Klub Lepsze Życie') }}{% endblock %}</title>
+    <meta name="description" content="{% block description %}{{ config.get('SITE_DESCRIPTION', 'Dołącz do Klubu Lepsze Życie i popraw swoją sytuację finansową, zdrowie, relacje oraz naucz się korzystać z AI.') }}{% endblock %}">
+    {% block meta %}{% endblock %}
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- AOS Animation -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    <!-- TinyMCE for frontend -->
+    <script src="https://cdn.tiny.cloud/1/nzk6x47f5uoxs3thrhw5hjtjhrby1u3skrpld6z2z032z7tv/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{{ url_for('public.index') }}">
+                <i class="fas fa-heart me-2"></i>
+                {{ config.get('SITE_NAME', 'Klub Lepsze Życie') }}
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('public.index') }}">Strona główna</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('blog.index') }}">Blog</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">O nas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#benefits">Korzyści</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#faq">FAQ</a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user me-1"></i>
+                                {{ current_user.name or current_user.email }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">Profil</a></li>
+                                {% if current_user.is_admin %}
+                                <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">Panel Admin</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Wyloguj</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">Zaloguj</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-5 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>{{ config.get('SITE_NAME', 'Klub Lepsze Życie') }}</h5>
+                    <p class="text-muted">Dołącz do nas i zmień swoje życie na lepsze!</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="text-muted">&copy; 2025 {{ config.get('SITE_NAME', 'Klub Lepsze Życie') }}. Wszystkie prawa zastrzeżone.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- AOS Animation -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init();
+    </script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- TinyMCE Initialization for frontend -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize TinyMCE for frontend forms
+        tinymce.init({
+            selector: 'textarea[data-tinymce]',
+            height: 300,
+            plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
+            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
+            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
+            setup: function (editor) {
+                editor.on('init', function () {
+                    console.log('TinyMCE initialized for:', editor.id);
+                });
+                editor.on('ready', function () {
+                    console.log('TinyMCE ready for:', editor.id);
+                });
+            }
+        });
+    });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+

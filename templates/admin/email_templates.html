@@ -1,879 +1,132 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Szablony E-mail - Panel Administratora</title>
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/admin.css') }}?v={{ range(1, 1000) | random }}" rel="stylesheet">
-    <script src="https://cdn.tiny.cloud/1/nzk6x47f5uoxs3thrhw5hjtjhrby1u3skrpld6z2z032z7tv/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
-</head>
-<body class="admin-body">
-    <div class="admin-container">
-        <div class="admin-sidebar" id="sidebar">
-            {% include 'admin/sidebar.html' %}
-        </div>
-        <div class="admin-content">
-            <div class="admin-header">
-                <h1>
-                    <i class="fas fa-envelope me-2"></i>
-                    Szablony E-mail
-                </h1>
-                <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
-                    <i class="fas fa-sign-out-alt me-2"></i>
-                    Wyloguj
-                </a>
-            </div>
+{% extends "admin/base.html" %}
+
+{% block title %}Szablony Emaili - Panel Admin{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-envelope me-2"></i>Szablony Emaili
+{% endblock %}
+
+{% block page_actions %}
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn-warning" onclick="resetTemplates()">
+            <i class="fas fa-undo me-2"></i>Resetuj do domyślnych
+        </button>
+        <button class="btn admin-btn" onclick="showTemplateModal()">
+            <i class="fas fa-plus me-2"></i>Nowy szablon
+        </button>
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+            <i class="fas fa-trash me-2"></i>Usuń Zaznaczone
+        </button>
+    </div>
+{% endblock %}
             
-            <!-- Stats Cards -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="admin-stats-card">
-                        <i class="fas fa-envelope"></i>
-                        <h3 id="totalTemplates">0</h3>
-                        <p>Wszystkie Szablony</p>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="admin-stats-card">
-                        <i class="fas fa-check-circle"></i>
-                        <h3 id="activeTemplates">0</h3>
-                        <p>Aktywne Szablony</p>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="admin-stats-card">
-                        <i class="fas fa-users"></i>
-                        <h3 id="totalSubscribers">0</h3>
-                        <p>Subskrybenci</p>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="admin-stats-card">
-                        <i class="fas fa-paper-plane"></i>
-                        <h3 id="totalEmailsSent">0</h3>
-                        <p>Wysłane E-maile</p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Add Template Button -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="mb-2"></h5>
-                            <p class="text-muted mb-0"></p>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn admin-btn" onclick="showAddTemplateModal()">
-                                <i class="fas fa-plus me-2"></i>
-                                Dodaj Szablon
-                            </button>
-                            <button class="btn admin-btn-secondary" onclick="createDefaultTemplates()">
-                                <i class="fas fa-magic me-2"></i>
-                                Utwórz Domyślne Szablony
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
+{% block content %}
             <!-- Templates Table -->
             <div class="admin-card">
                 <div class="admin-card-body">
                     <div class="table-responsive">
-                        <table class="table admin-table admin-table">
+                        <table class="table admin-table">
                             <thead>
                                 <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll()">
+                                    </th>
                                     <th>Nazwa</th>
-                                    <th>Typ</th>
                                     <th>Temat</th>
+                                    <th>Typ</th>
                                     <th>Status</th>
-                                    <th>Zmienne</th>
                                     <th>Utworzono</th>
                                     <th>Akcje</th>
                                 </tr>
                             </thead>
                             <tbody id="templatesTableBody">
-                                <!-- Templates will be loaded here -->
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">
+                                        <i class="fas fa-spinner fa-spin me-2"></i>Ładowanie...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
+                    
+            <!-- Pagination -->
+            <div id="pagination" class="mt-3"></div>
         </div>
     </div>
     
-    <!-- Add/Edit Template Modal -->
-    <div class="modal fade admin-modal" id="templateModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
+<!-- Template Modal -->
+<div class="modal fade" id="templateModal" tabindex="-1" aria-labelledby="templateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="templateModalTitle">
-                        <i class="fas fa-plus me-2"></i>
-                        Dodaj Szablon
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="templateModalLabel">Szablon Emaila</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="templateForm">
-                    <input type="hidden" id="template_id" name="id">
                     <div class="modal-body">
+                    <input type="hidden" id="template_id" name="template_id">
+                    
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="admin-form-label">Nazwa szablonu</label>
-                                    <input type="text" class="admin-form-control" name="name" id="template_name" required>
+                                <label for="template_name" class="form-label">Nazwa szablonu *</label>
+                                <input type="text" class="form-control" id="template_name" name="template_name" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="admin-form-label">Typ szablonu</label>
-                                    <select class="admin-form-control" name="template_type" id="template_type" required>
+                                <label for="template_type" class="form-label">Typ szablonu *</label>
+                                <select class="form-select" id="template_type" name="template_type" required>
                                         <option value="">Wybierz typ</option>
                                         <option value="welcome">Powitanie</option>
-                                        <option value="reminder">Przypomnienie</option>
-                                        <option value="newsletter">Newsletter</option>
-                                        <option value="admin_notification">Powiadomienie Administratora</option>
-                                        <option value="custom">Własny typ</option>
+                                    <option value="registration_confirmation">Potwierdzenie rejestracji</option>
+                                    <option value="event_reminder">Przypomnienie o wydarzeniu</option>
+                                    <option value="club_welcome">Powitanie w klubie</option>
+                                    <option value="admin_notification">Powiadomienie admin</option>
+                                    <option value="custom">Niestandardowy</option>
                                     </select>
-                                </div>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="admin-form-label">Temat e-maila</label>
-                            <input type="text" class="admin-form-control" name="subject" id="template_subject" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="admin-form-label">Treść HTML</label>
-                            <textarea id="template_html_content" name="html_content"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="admin-form-label">Treść tekstowa (opcjonalnie)</label>
-                            <textarea class="admin-form-control admin-form-textarea" name="text_content" id="template_text_content" rows="3"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="admin-form-label">Dostępne zmienne</label>
-                            <div id="availableVariables" class="admin-text-muted p-3 bg-light rounded border">
-                                <strong>Wybierz typ szablonu, aby zobaczyć dostępne zmienne</strong>
-                            </div>
-                            <small class="admin-text-muted">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Wszystkie zmienne są automatycznie zastępowane podczas wysyłania e-maili
-                            </small>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="is_active" id="template_is_active" value="1">
-                            <input type="hidden" name="is_active_hidden" value="0">
-                            <label class="form-check-label" for="template_is_active">
-                                Aktywny
-                            </label>
-                        </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn admin-btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn admin-btn">
-                            <i class="fas fa-save me-2"></i>
-                            Zapisz Szablon
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                    
+                    <div class="mb-3">
+                        <label for="template_subject" class="form-label">Temat emaila *</label>
+                        <input type="text" class="form-control" id="template_subject" name="template_subject" required>
     </div>
     
-    <!-- Newsletter Modal -->
-    <div class="modal fade admin-modal" id="newsletterModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-newspaper me-2"></i>
-                        Wyślij Newsletter
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="newsletterForm">
-                    <div class="modal-body">
                         <div class="mb-3">
-                            <label class="admin-form-label">Tytuł newslettera</label>
-                            <input type="text" class="admin-form-control" name="newsletter_title" required>
-                        </div>
+                        <label for="template_html_content" class="form-label">Treść HTML *</label>
+                        <textarea class="form-control" id="template_html_content" name="template_html_content" rows="8" required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="template_text_content" class="form-label">Treść tekstowa</label>
+                        <textarea class="form-control" id="template_text_content" name="template_text_content" rows="4"></textarea>
+                    </div>
+                    
                         <div class="mb-3">
-                            <label class="admin-form-label">Treść newslettera</label>
-                            <textarea class="admin-form-control admin-form-textarea" name="newsletter_content" rows="8" required></textarea>
+                        <label for="template_variables" class="form-label">Dostępne zmienne (oddzielone przecinkami)</label>
+                        <input type="text" class="form-control" id="template_variables" name="template_variables" placeholder="np. {{user_name}}, {{event_title}}, {{club_name}}">
                         </div>
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Newsletter zostanie wysłany do wszystkich aktywnych subskrybentów.
-                        </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="template_is_active" name="template_is_active" checked>
+                        <label class="form-check-label" for="template_is_active">
+                            Szablon aktywny
+                        </label>
+                    </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn admin-btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn admin-btn">
-                            <i class="fas fa-paper-plane me-2"></i>
-                            Wyślij Newsletter
-                        </button>
+                    <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="button" class="btn admin-btn" onclick="saveTemplate()">Zapisz szablon</button>
                     </div>
                 </form>
-            </div>
         </div>
     </div>
-    
 
-    
-    <!-- Custom Email Modal -->
-    <div class="modal fade admin-modal" id="customEmailModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-envelope me-2"></i>
-                        Wyślij Email Własny
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="customEmailForm">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="admin-form-label">Temat emaila</label>
-                            <input type="text" class="admin-form-control" name="custom_subject" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="admin-form-label">Treść emaila</label>
-                            <textarea class="admin-form-control admin-form-textarea" name="custom_content" rows="8" required></textarea>
-                        </div>
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Email zostanie wysłany do wszystkich aktywnych subskrybentów.
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn admin-btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn admin-btn">
-                            <i class="fas fa-paper-plane me-2"></i>
-                            Wyślij Email
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Cache busting - force reload of JavaScript
-        console.log('Email templates page loaded at:', new Date().toISOString());
-        
-        // Initialize TinyMCE
-        tinymce.init({
-            selector: '#template_html_content',
-            height: 500,
-            plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
-            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat'
-        });
-        
-        // Wait for DOM to be ready
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle form submission
-            document.getElementById('templateForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                saveTemplate();
-            });
+{% endblock %}
 
-            // Handle template type change to show available variables
-            document.getElementById('template_type').addEventListener('change', function() {
-                updateAvailableVariables();
-            });
-            
-            // Initialize available variables display
-            updateAvailableVariables();
-            
-            // Load existing templates and stats
-            loadTemplates();
-            loadEmailStats();
-            
-            // Handle newsletter form submission
-            document.getElementById('newsletterForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                sendNewsletter();
-            });
-            
-            // Handle notification form submission
-            document.getElementById('notificationForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                sendNotification();
-            });
-            
-            // Handle custom email form submission
-            document.getElementById('customEmailForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                sendCustomEmail();
-            });
-            
-            // Add event listener for checkbox
-            const checkbox = document.getElementById('template_is_active');
-            if (checkbox) {
-                checkbox.addEventListener('change', syncCheckboxValue);
-            }
-        });
-
-        // Function to update available variables based on template type
-        function updateAvailableVariables() {
-            console.log('updateAvailableVariables called at:', new Date().toISOString());
-            const templateType = document.getElementById('template_type').value;
-            const variablesDiv = document.getElementById('availableVariables');
-            
-            console.log('Template type selected:', templateType);
-            
-            let variables = [];
-            let typeName = '';
-            
-            switch(templateType) {
-                case 'welcome':
-                    typeName = 'Powitanie';
-                    variables = [
-                        '&lbrace;&lbrace;name&rbrace;&rbrace; : imię użytkownika',
-                        '&lbrace;&lbrace;email&rbrace;&rbrace; : adres e-mail użytkownika',
-                        '&lbrace;&lbrace;unsubscribe_url&rbrace;&rbrace; : link do rezygnacji z subskrypcji',
-                        '&lbrace;&lbrace;delete_account_url&rbrace;&rbrace; : link do usunięcia konta'
-                    ];
-                    break;
-                case 'reminder':
-                    typeName = 'Przypomnienie';
-                    variables = [
-                        '&lbrace;&lbrace;name&rbrace;&rbrace; : imię użytkownika',
-                        '&lbrace;&lbrace;email&rbrace;&rbrace; : adres e-mail użytkownika',
-                        '&lbrace;&lbrace;event_type&rbrace;&rbrace; : typ wydarzenia (np. "Prezentacja", "Webinar")',
-                        '&lbrace;&lbrace;event_date&rbrace;&rbrace; : data wydarzenia (DD.MM.YYYY HH:MM)',
-                        '&lbrace;&lbrace;event_time&rbrace;&rbrace; : godzina wydarzenia',
-                        '&lbrace;&lbrace;event_location&rbrace;&rbrace; : lokalizacja wydarzenia',
-                        '&lbrace;&lbrace;event_details&rbrace;&rbrace; : szczegóły wydarzenia',
-                        '&lbrace;&lbrace;unsubscribe_url&rbrace;&rbrace; : link do rezygnacji z subskrypcji',
-                        '&lbrace;&lbrace;delete_account_url&rbrace;&rbrace; : link do usunięcia konta'
-                    ];
-                    break;
-                case 'newsletter':
-                    typeName = 'Newsletter';
-                    variables = [
-                        '&lbrace;&lbrace;name&rbrace;&rbrace; : imię użytkownika',
-                        '&lbrace;&lbrace;email&rbrace;&rbrace; : adres e-mail użytkownika',
-                        '&lbrace;&lbrace;newsletter_content&rbrace;&rbrace; : treść newslettera',
-                        '&lbrace;&lbrace;unsubscribe_url&rbrace;&rbrace; : link do rezygnacji z subskrypcji',
-                        '&lbrace;&lbrace;delete_account_url&rbrace;&rbrace; : link do usunięcia konta'
-                    ];
-                    break;
-                case 'admin_notification':
-                    typeName = 'Powiadomienie Administratora';
-                    variables = [
-                        '&lbrace;&lbrace;admin_name&rbrace;&rbrace; : nazwa administratora',
-                        '&lbrace;&lbrace;new_member_name&rbrace;&rbrace; : imię nowego członka',
-                        '&lbrace;&lbrace;new_member_email&rbrace;&rbrace; : e-mail nowego członka',
-                        '&lbrace;&lbrace;registration_date&rbrace;&rbrace; : data rejestracji'
-                    ];
-                    break;
-                case 'admin_notification':
-                    typeName = 'Powiadomienie Administratora';
-                    variables = [
-                        '&lbrace;&lbrace;admin_name&rbrace;&rbrace; : nazwa administratora',
-                        '&lbrace;&lbrace;new_member_name&rbrace;&rbrace; : imię nowego członka',
-                        '&lbrace;&lbrace;new_member_email&rbrace;&rbrace; : e-mail nowego członka',
-                        '&lbrace;&lbrace;registration_date&rbrace;&rbrace; : data rejestracji'
-                    ];
-                    break;
-                case 'custom':
-                    typeName = 'Własny typ';
-                    variables = [
-                        '&lbrace;&lbrace;name&rbrace;&rbrace; : imię użytkownika',
-                        '&lbrace;&lbrace;email&rbrace;&rbrace; : adres e-mail użytkownika',
-                        '&lbrace;&lbrace;unsubscribe_url&rbrace;&rbrace; : link do rezygnacji z subskrypcji',
-                        '&lbrace;&lbrace;delete_account_url&rbrace;&rbrace; : link do usunięcia konta',
-                        'Dodaj własne zmienne w formacie &lbrace;&lbrace;nazwa_zmiennej&rbrace;&rbrace;'
-                    ];
-                    break;
-                default:
-                    variables = ['Wybierz typ szablonu, aby zobaczyć dostępne zmienne'];
-            }
-            
-            if (templateType && templateType !== '') {
-                // Clear and rebuild content safely
-                variablesDiv.innerHTML = '';
-                
-                // Add title
-                const title = document.createElement('strong');
-                title.textContent = 'Dostępne zmienne dla typu "' + typeName + '":';
-                variablesDiv.appendChild(title);
-                variablesDiv.appendChild(document.createElement('br'));
-                variablesDiv.appendChild(document.createElement('br'));
-                
-                // Add variables
-                variables.forEach(variable => {
-                    const div = document.createElement('div');
-                    div.className = 'mb-2';
-                    
-                    const code = document.createElement('code');
-                    code.className = 'bg-light px-2 py-1 rounded border';
-                    code.innerHTML = variable;
-                    
-                    div.appendChild(code);
-                    variablesDiv.appendChild(div);
-                });
-            } else {
-                variablesDiv.innerHTML = '<strong>Wybierz typ szablonu, aby zobaczyć dostępne zmienne</strong>';
-            }
-        }
-        
-        // Function to save template
-        function saveTemplate() {
-            const form = document.getElementById('templateForm');
-            const formData = new FormData(form);
-            
-            // Get TinyMCE content
-            const htmlContent = tinymce.get('template_html_content').getContent();
-            formData.set('html_content', htmlContent);
-            
-            // Debug: log form data
-            console.log('Form data being sent:');
-            for (let [key, value] of formData.entries()) {
-                console.log(`${key}: ${value}`);
-            }
-            
-            // Get template ID to determine if it's edit or create
-            const templateId = document.getElementById('template_id').value;
-            const method = templateId ? 'PUT' : 'POST';
-            const url = '/admin/api/email-templates';
-            
-            console.log('Sending request:', method, 'to', url, 'with template ID:', templateId);
-            
-            // Show loading state
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Zapisywanie...';
-            submitBtn.disabled = true;
-            
-            fetch(url, {
-                method: method,
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Show success message
-                    showNotification('Szablon został zapisany pomyślnie!', 'success');
-                    
-                    // Close modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('templateModal'));
-                    modal.hide();
-                    
-                    // Reset form
-                    form.reset();
-                    document.getElementById('template_id').value = '';
-                    
-                    // Reload templates list
-                    loadTemplates();
-                    
-                    // Reset TinyMCE
-                    tinymce.get('template_html_content').setContent('');
-                } else {
-                    showNotification('Błąd podczas zapisywania szablonu: ' + (data.message || 'Nieznany błąd'), 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error saving template:', error);
-                showNotification('Błąd podczas zapisywania szablonu: ' + error.message, 'error');
-            })
-            .finally(() => {
-                // Restore button state
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            });
-        }
-        
-        // Function to sync checkbox value with hidden field
-        function syncCheckboxValue() {
-            const checkbox = document.getElementById('template_is_active');
-            const hiddenField = document.querySelector('input[name="is_active_hidden"]');
-            if (checkbox && hiddenField) {
-                hiddenField.value = checkbox.checked ? '1' : '0';
-            }
-        }
-        
-        // Function to load email statistics
-        function loadEmailStats() {
-            fetch('/admin/api/email-stats')
-            .then(response => response.json())
-            .then(stats => {
-                document.getElementById('totalSubscribers').textContent = stats.total_subscribers;
-                document.getElementById('totalEmailsSent').textContent = stats.total_emails_sent;
-            })
-            .catch(error => {
-                console.error('Error loading email stats:', error);
-                document.getElementById('totalSubscribers').textContent = '0';
-                document.getElementById('totalEmailsSent').textContent = '0';
-            });
-        }
-        
-        // Function to load templates
-        function loadTemplates() {
-            fetch('/admin/api/email-templates')
-            .then(response => response.json())
-            .then(templates => {
-                const tbody = document.getElementById('templatesTableBody');
-                tbody.innerHTML = '';
-                
-                templates.forEach(template => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${template.name}</td>
-                        <td>${template.template_type}</td>
-                        <td>${template.subject}</td>
-                        <td>
-                            <span class="badge ${template.is_active ? 'bg-success' : 'bg-secondary'}">
-                                ${template.is_active ? 'Aktywny' : 'Nieaktywny'}
-                            </span>
-                        </td>
-                        <td>
-                            <small class="text-muted">
-                                ${template.variables ? template.variables.split(',').length : 0} zmiennych
-                            </small>
-                        </td>
-                        <td>${new Date(template.created_at).toLocaleDateString('pl-PL')}</td>
-                        <td>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <button class="btn btn-outline-primary btn-sm" onclick="editTemplate(${template.id})" title="Edytuj">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-outline-info btn-sm" onclick="testTemplate(${template.id})" title="Test">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="deleteTemplate(${template.id})" title="Usuń">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-                
-                // Update stats
-                document.getElementById('totalTemplates').textContent = templates.length;
-                document.getElementById('activeTemplates').textContent = templates.filter(t => t.is_active).length;
-                
-                // Load email stats
-                loadEmailStats();
-            })
-            .catch(error => {
-                console.error('Error loading templates:', error);
-                showNotification('Błąd podczas ładowania szablonów', 'error');
-            });
-        }
-        
-        // Function to show notifications
-        function showNotification(message, type = 'info') {
-            // Create notification element
-            const notification = document.createElement('div');
-            notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
-            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-            notification.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Auto-remove after 5 seconds
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 5000);
-        }
-        
-        // Global functions - dostępne globalnie
-        function showAddTemplateModal() {
-            console.log('showAddTemplateModal called at:', new Date().toISOString());
-            try {
-                // Reset form
-                document.getElementById('templateForm').reset();
-                document.getElementById('template_id').value = '';
-                document.getElementById('template_is_active').checked = true; // Domyślnie aktywny dla nowych szablonów
-                document.getElementById('templateModalTitle').innerHTML = '<i class="fas fa-plus me-2"></i>Dodaj Szablon';
-                
-                // Synchronize hidden field with checkbox
-                syncCheckboxValue();
-                
-                // Show modal
-                const modal = new bootstrap.Modal(document.getElementById('templateModal'));
-                modal.show();
-                
-                // Update available variables after modal is shown
-                setTimeout(() => {
-                    console.log('Updating variables after modal show');
-                    updateAvailableVariables();
-                }, 100);
-            } catch (error) {
-                console.error('Error in showAddTemplateModal:', error);
-                alert('Błąd podczas otwierania modala: ' + error.message);
-            }
-        }
-        
-        function editTemplate(templateId) {
-            console.log('editTemplate called with ID:', templateId, 'at:', new Date().toISOString());
-            
-            // Fetch template data
-            fetch(`/admin/api/email-templates/${templateId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const template = data.template;
-                    
-                    // Fill form with template data
-                    document.getElementById('template_id').value = template.id;
-                    document.getElementById('template_name').value = template.name;
-                    document.getElementById('template_type').value = template.template_type;
-                    document.getElementById('template_subject').value = template.subject;
-                    document.getElementById('template_text_content').value = template.text_content || '';
-                    
-                    // Debug: log checkbox value
-                    console.log('Template is_active from database:', template.is_active);
-                    console.log('Setting checkbox to:', template.is_active);
-                    
-                    document.getElementById('template_is_active').checked = template.is_active;
-                    
-                    // Debug: verify checkbox was set
-                    console.log('Checkbox is now checked:', document.getElementById('template_is_active').checked);
-                    
-                    // Set TinyMCE content
-                    tinymce.get('template_html_content').setContent(template.html_content || '');
-                    
-                    // Update modal title
-                    document.getElementById('templateModalTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Edytuj Szablon';
-                    
-                    // Show modal
-                    const modal = new bootstrap.Modal(document.getElementById('templateModal'));
-                    modal.show();
-                    
-                    // Update available variables
-                updateAvailableVariables();
-                } else {
-                    showNotification('Błąd podczas ładowania szablonu: ' + (data.error || 'Nieznany błąd'), 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error loading template:', error);
-                showNotification('Błąd podczas ładowania szablonu: ' + error.message, 'error');
-            });
-        }
-        
-        function testTemplate(templateId) {
-            console.log('testTemplate called with ID:', templateId);
-            
-            // Show test email modal or prompt for test email
-            const testEmail = prompt('Podaj adres e-mail do wysłania testu szablonu:');
-            if (testEmail && testEmail.trim()) {
-                // Send test email using FormData
-                const formData = new FormData();
-                formData.append('template_id', templateId);
-                formData.append('test_email', testEmail.trim());
-                
-                fetch('/admin/api/email-templates/test', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showNotification('Test e-mail został wysłany pomyślnie!', 'success');
-                    } else {
-                        showNotification('Błąd podczas wysyłania testu: ' + (data.message || 'Nieznany błąd'), 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error sending test email:', error);
-                    showNotification('Błąd podczas wysylania testu: ' + error.message, 'error');
-                });
-            }
-        }
-        
-        function deleteTemplate(templateId) {
-            console.log('deleteTemplate called with ID:', templateId);
-            if (confirm('Czy na pewno chcesz usunąć ten szablon? Ta operacja nie może być cofnięta.')) {
-                fetch(`/admin/api/email-templates?id=${templateId}`, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showNotification(data.message || 'Szablon został usunięty pomyślnie!', 'success');
-                        loadTemplates(); // Reload list
-                    } else {
-                        showNotification('Błąd podczas usuwania szablonu: ' + (data.error || data.message || 'Nieznany błąd'), 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error deleting template:', error);
-                    showNotification('Błąd podczas usuwania szablonu: ' + error.message, 'error');
-                });
-            }
-        }
-        
-        function sendReminders() {
-            console.log('sendReminders called');
-            if (confirm('Czy na pewno chcesz wysłać przypomnienia o nadchodzących wydarzeniach?')) {
-                // Show loading state
-                const btn = event.target;
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
-                btn.disabled = true;
-                
-                fetch('/admin/api/send-reminders', {
-                    method: 'POST'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showNotification('Przypomnienia zostały wysłane pomyślnie!', 'success');
-                    } else {
-                        showNotification('Błąd podczas wysyłania przypomnień: ' + (data.message || 'Nieznany błąd'), 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error sending reminders:', error);
-                    showNotification('Błąd podczas wysyłania przypomnień: ' + error.message, 'error');
-                })
-                .finally(() => {
-                    // Restore button state
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                });
-            }
-        }
-        
-        // Function to show newsletter modal
-        function showNewsletterModal() {
-            const modal = new bootstrap.Modal(document.getElementById('newsletterModal'));
-            modal.show();
-        }
-        
-
-        
-        // Function to show custom email modal
-        function showCustomEmailModal() {
-            const modal = new bootstrap.Modal(document.getElementById('customEmailModal'));
-            modal.show();
-        }
-        
-        // Function to send newsletter
-        function sendNewsletter() {
-            const form = document.getElementById('newsletterForm');
-            const formData = new FormData(form);
-            
-            // Show loading state
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
-            submitBtn.disabled = true;
-            
-            fetch('/admin/api/send-newsletter', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification(data.message, 'success');
-                    
-                    // Close modal and reset form
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('newsletterModal'));
-                    modal.hide();
-                    form.reset();
-                } else {
-                    showNotification('Błąd podczas wysyłania newslettera: ' + (data.error || 'Nieznany błąd'), 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error sending newsletter:', error);
-                showNotification('Błąd podczas wysyłania newslettera: ' + error.message, 'error');
-            })
-            .finally(() => {
-                // Restore button state
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            });
-        }
-        
-
-        
-
-        
-        // Function to create default templates
-        function createDefaultTemplates() {
-            if (confirm('Czy na pewno chcesz utworzyć domyślne szablony e-mail? To może nadpisać istniejące szablony.')) {
-                fetch('/admin/api/create-default-templates', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showNotification(data.message, 'success');
-                        // Reload templates list
-                        loadTemplates();
-                    } else {
-                        showNotification('Błąd podczas tworzenia szablonów: ' + (data.error || 'Nieznany błąd'), 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error creating default templates:', error);
-                    showNotification('Błąd podczas tworzenia szablonów: ' + error.message, 'error');
-                });
-            }
-        }
-        
-        // Function to send custom email
-        function sendCustomEmail() {
-            const form = document.getElementById('customEmailForm');
-            const formData = new FormData(form);
-            
-            // Show loading state
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
-            submitBtn.disabled = true;
-            
-            fetch('/admin/api/send-custom-email', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification(data.message, 'success');
-                    
-                    // Close modal and reset form
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('customEmailModal'));
-                    modal.hide();
-                    form.reset();
-                } else {
-                    showNotification('Błąd podczas wysyłania emaila: ' + (data.error || 'Nieznany błąd'), 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error sending custom email:', error);
-                showNotification('Błąd podczas wysyłania emaila: ' + error.message, 'error');
-            })
-            .finally(() => {
-                // Restore button state
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            });
-        }
-    </script>
-</body>
-</html>
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/utils/paginate.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/email_templates.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
+{% endblock %}

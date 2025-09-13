@@ -1,81 +1,9 @@
 // Menu Management JavaScript
-class ToastManager {
-    constructor() {
-        this.createToastContainer();
-    }
-
-    createToastContainer() {
-        if (!document.getElementById('toast-container')) {
-            const container = document.createElement('div');
-            container.id = 'toast-container';
-            container.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                left: 20px;
-                z-index: 9999;
-                max-width: 350px;
-            `;
-            document.body.appendChild(container);
-        }
-    }
-
-    show(message, type = 'info', duration = 5000) {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        
-        const iconMap = {
-            success: 'fas fa-check-circle',
-            error: 'fas fa-exclamation-circle',
-            warning: 'fas fa-exclamation-triangle',
-            info: 'fas fa-info-circle'
-        };
-
-        const colorMap = {
-            success: 'success',
-            error: 'danger',
-            warning: 'warning',
-            info: 'info'
-        };
-
-        toast.className = `alert alert-${colorMap[type]} alert-dismissible fade show`;
-        toast.innerHTML = `
-            <i class="${iconMap[type]} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-
-        container.appendChild(toast);
-
-        // Auto-hide after duration
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.remove();
-            }
-        }, duration);
-
-        return toast;
-    }
-
-    success(message) {
-        return this.show(message, 'success');
-    }
-
-    error(message) {
-        return this.show(message, 'error');
-    }
-
-    warning(message) {
-        return this.show(message, 'warning');
-    }
-
-    info(message) {
-        return this.show(message, 'info');
-    }
-}
+// Toast manager is loaded globally from utils/toast.js
 
 class MenuManager {
     constructor() {
-        this.toastManager = new ToastManager();
+        // Toast manager is available globally
         this.initializeEventListeners();
     }
 
@@ -91,6 +19,27 @@ class MenuManager {
         if (editForm) {
             editForm.addEventListener('submit', (e) => this.handleEditMenuItem(e));
         }
+
+        // Setup auto-slug generation for menu URLs
+        this.setupSlugGeneration();
+    }
+
+    setupSlugGeneration() {
+        // Use centralized slug generator - always generate URL from name
+        SlugGenerator.setupMultipleAutoSlug([
+            { 
+                titleSelector: '#menuItemName', 
+                slugSelector: '#menuItemUrl', 
+                alwaysGenerate: true,
+                maxLength: 100
+            },
+            { 
+                titleSelector: '#editMenuItemName', 
+                slugSelector: '#editMenuItemUrl', 
+                alwaysGenerate: true,
+                maxLength: 100
+            }
+        ]);
     }
 
     showAddMenuItemModal() {
@@ -100,7 +49,7 @@ class MenuManager {
     }
 
     editMenuItem(menuId) {
-        fetch('/admin/api/menu')
+        fetch('/api/menu')
             .then(response => {
                 if (!response.ok) {
                     if (response.status === 401 || response.status === 403) {
@@ -116,74 +65,90 @@ class MenuManager {
                     document.getElementById('editMenuItemId').value = menuItem.id;
                     document.getElementById('editMenuItemName').value = menuItem.title;
                     document.getElementById('editMenuItemUrl').value = menuItem.url || '';
+                    document.getElementById('editMenuItemBlogUrl').value = menuItem.blog_url || '';
                     document.getElementById('editMenuItemOrder').value = menuItem.order || 1;
                     document.getElementById('editMenuItemActive').checked = menuItem.is_active;
+                    document.getElementById('editMenuItemBlog').checked = menuItem.blog || false;
                     
                     const modal = new bootstrap.Modal(document.getElementById('editMenuItemModal'));
                     modal.show();
                 } else {
-                    this.toastManager.error('Element menu nie został znaleziony');
+                    window.toastManager.error('Element menu nie został znaleziony');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
                 if (error.message.includes('Brak autoryzacji')) {
-                    this.toastManager.error('Sesja wygasła. Zaloguj się ponownie.');
+                    window.toastManager.error('Sesja wygasła. Zaloguj się ponownie.');
                     // Przekieruj do logowania
                     window.location.href = '/admin/login';
                 } else {
-                    this.toastManager.error('Wystąpił błąd podczas ładowania elementu menu: ' + error.message);
+                    window.toastManager.error('Wystąpił błąd podczas ładowania elementu menu: ' + error.message);
                 }
             });
     }
 
     deleteMenuItem(menuId) {
-        if (confirm('Czy na pewno chcesz usunąć ten element menu? Tej operacji nie można cofnąć.')) {
-            fetch(`/admin/api/menu?id=${menuId}`, {
-                method: 'DELETE'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    if (response.status === 401 || response.status === 403) {
-                        throw new Error('Brak autoryzacji. Zaloguj się ponownie.');
-                    }
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // Use Bootstrap modal instead of confirm()
+        const modal = document.getElementById('bulkDeleteModal');
+        const messageElement = document.getElementById('bulkDeleteMessage');
+        const confirmButton = document.getElementById('confirmBulkDelete');
+        const cancelButton = modal.querySelector('button[data-bs-dismiss="modal"]');
+        
+        if (modal && messageElement && confirmButton) {
+            // Update message
+            messageElement.textContent = 'Czy na pewno chcesz usunąć ten element menu? Tej operacji nie można cofnąć.';
+            
+            // Remove existing event listeners
+            const newConfirmButton = confirmButton.cloneNode(true);
+            confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+            
+            // Add new event listener for confirm button
+            newConfirmButton.addEventListener('click', () => {
+                // Hide modal first
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
                 }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    this.toastManager.success('Element menu został usunięty pomyślnie!');
-                    // Usuń wiersz z tabeli
-                    const row = document.querySelector(`tr[data-menu-id="${menuId}"]`);
-                    if (row) {
-                        row.remove();
-                    }
-                } else {
-                    this.toastManager.error('Błąd podczas usuwania: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                if (error.message.includes('Brak autoryzacji')) {
-                    this.toastManager.error('Sesja wygasła. Zaloguj się ponownie.');
-                    window.location.href = '/admin/login';
-                } else {
-                    this.toastManager.error('Wystąpił błąd podczas usuwania elementu menu: ' + error.message);
-                }
+                
+                // Then perform delete
+                this.performDeleteMenuItem(menuId);
             });
+            
+            // Add event listener for cancel button to properly clean up
+            if (cancelButton) {
+                const newCancelButton = cancelButton.cloneNode(true);
+                cancelButton.parentNode.replaceChild(newCancelButton, cancelButton);
+                
+                newCancelButton.addEventListener('click', () => {
+                    // Hide modal
+                    modal.classList.remove('show');
+                    modal.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                });
+            }
+            
+            // Show modal
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+        } else {
+            // Fallback to confirm() if modal not available
+            if (confirm('Czy na pewno chcesz usunąć ten element menu? Tej operacji nie można cofnąć.')) {
+                this.performDeleteMenuItem(menuId);
+            }
         }
     }
 
-    handleAddMenuItem(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(e.target);
-        formData.append('is_active', document.getElementById('menuItemActive').checked);
-        
-        fetch('/admin/api/menu', {
-            method: 'POST',
-            body: formData
+    performDeleteMenuItem(menuId) {
+        fetch(`/api/menu/${menuId}`, {
+            method: 'DELETE'
         })
         .then(response => {
             if (!response.ok) {
@@ -196,22 +161,73 @@ class MenuManager {
         })
         .then(data => {
             if (data.success) {
-                this.toastManager.success('Element menu został dodany pomyślnie!');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addMenuItemModal'));
-                modal.hide();
-                // Odśwież stronę
-                window.location.reload();
+                window.toastManager.success('Element menu został usunięty pomyślnie!');
+                // Usuń wiersz z tabeli
+                const row = document.querySelector(`tr[data-menu-id="${menuId}"]`);
+                if (row) {
+                    row.remove();
+                }
             } else {
-                this.toastManager.error('Błąd podczas dodawania: ' + data.error);
+                window.toastManager.error('Błąd podczas usuwania: ' + data.error);
             }
         })
         .catch(error => {
             console.error('Error:', error);
             if (error.message.includes('Brak autoryzacji')) {
-                this.toastManager.error('Sesja wygasła. Zaloguj się ponownie.');
+                window.toastManager.error('Sesja wygasła. Zaloguj się ponownie.');
                 window.location.href = '/admin/login';
             } else {
-                this.toastManager.error('Wystąpił błąd podczas dodawania elementu menu: ' + error.message);
+                window.toastManager.error('Wystąpił błąd podczas usuwania elementu menu: ' + error.message);
+            }
+        });
+    }
+
+    handleAddMenuItem(e) {
+        e.preventDefault();
+        
+        const data = {
+            title: document.getElementById('menuItemName').value,
+            url: document.getElementById('menuItemUrl').value,
+            blog_url: document.getElementById('menuItemBlogUrl').value,
+            order: parseInt(document.getElementById('menuItemOrder').value) || 1,
+            is_active: document.getElementById('menuItemActive').checked,
+            blog: document.getElementById('menuItemBlog').checked
+        };
+        
+        fetch('/api/menu', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error('Brak autoryzacji. Zaloguj się ponownie.');
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                window.toastManager.success('Element menu został dodany pomyślnie!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addMenuItemModal'));
+                modal.hide();
+                // Odśwież stronę
+                window.location.reload();
+            } else {
+                window.toastManager.error('Błąd podczas dodawania: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (error.message.includes('Brak autoryzacji')) {
+                window.toastManager.error('Sesja wygasła. Zaloguj się ponownie.');
+                window.location.href = '/admin/login';
+            } else {
+                window.toastManager.error('Wystąpił błąd podczas dodawania elementu menu: ' + error.message);
             }
         });
     }
@@ -219,12 +235,22 @@ class MenuManager {
     handleEditMenuItem(e) {
         e.preventDefault();
         
-        const formData = new FormData(e.target);
-        formData.append('is_active', document.getElementById('editMenuItemActive').checked);
+        const data = {
+            title: document.getElementById('editMenuItemName').value,
+            url: document.getElementById('editMenuItemUrl').value,
+            blog_url: document.getElementById('editMenuItemBlogUrl').value,
+            order: parseInt(document.getElementById('editMenuItemOrder').value) || 1,
+            is_active: document.getElementById('editMenuItemActive').checked,
+            blog: document.getElementById('editMenuItemBlog').checked
+        };
         
-        fetch('/admin/api/menu', {
+        const menuId = document.getElementById('editMenuItemId').value;
+        fetch(`/api/menu/${menuId}`, {
             method: 'PUT',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
         })
         .then(response => {
             if (!response.ok) {
@@ -237,22 +263,22 @@ class MenuManager {
         })
         .then(data => {
             if (data.success) {
-                this.toastManager.success('Element menu został zaktualizowany pomyślnie!');
+                window.toastManager.success('Element menu został zaktualizowany pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editMenuItemModal'));
                 modal.hide();
                 // Odśwież stronę
                 window.location.reload();
             } else {
-                this.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
+                window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
             }
         })
         .catch(error => {
             console.error('Error:', error);
             if (error.message.includes('Brak autoryzacji')) {
-                this.toastManager.error('Sesja wygasła. Zaloguj się ponownie.');
+                window.toastManager.error('Sesja wygasła. Zaloguj się ponownie.');
                 window.location.href = '/admin/login';
             } else {
-                this.toastManager.error('Wystąpił błąd podczas aktualizacji elementu menu: ' + error.message);
+                window.toastManager.error('Wystąpił błąd podczas aktualizacji elementu menu: ' + error.message);
             }
         });
     }

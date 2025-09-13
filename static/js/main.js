@@ -118,16 +118,25 @@ function initializeFormHandling() {
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
             submitButton.disabled = true;
             
-            // Collect form data
-            const formData = new FormData(this);
+            // Get form data as JSON
+            const jsonData = {
+                name: this.querySelector('input[name="name"]').value,
+                email: this.querySelector('input[name="email"]').value,
+                phone: this.querySelector('input[name="phone"]').value || '',
+                wants_club_news: this.querySelector('input[name="wants_club_news"]').checked
+            };
             
             // Send AJAX request
-            console.log('Sending registration request to:', this.action);
-            console.log('Form data:', Object.fromEntries(formData));
+            console.log('Sending registration request to: /register');
+            console.log('Form data:', jsonData);
             
-            fetch(this.action, {
+            fetch('/register', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(jsonData)
             })
             .then(response => {
                 console.log('Response status:', response.status);

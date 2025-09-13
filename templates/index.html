@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Klub Lepsze Życie - Dołącz do nas i zmień swoje życie!</title>
-    <meta name="description" content="Dołącz do Klubu Lepsze Życie i popraw swoją sytuację finansową, zdrowie, relacje oraz naucz się korzystać z AI. Darmowa prezentacja!">
+    
+    {% set seo_data = get_seo_settings('home') %}
+    {% include 'seo/meta_tags.html' %}
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -41,24 +42,24 @@
                     {% if current_user.is_authenticated %}
                         {% if current_user.is_admin %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                            <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
                                 <i class="fas fa-cog me-1"></i>Admin
                             </a>
                         </li>
                         {% endif %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('user_profile') }}">
-                                <i class="fas fa-user me-1"></i>Mój profil
+                            <a class="nav-link" href="{{ url_for('auth.profile') }}">
+                                <i class="fas fa-user me-1"></i>Profil
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('user_logout') }}">
+                            <a class="nav-link" href="{{ url_for('auth.logout') }}">
                                 <i class="fas fa-sign-out-alt me-1"></i>Wyloguj
                             </a>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('user_login') }}">
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">
                                 <i class="fas fa-sign-in-alt me-1"></i>Zaloguj się
                             </a>
                         </li>
@@ -68,8 +69,12 @@
         </div>
     </nav>
 
+    <!-- Dynamic Sections Display -->
+    {% if sections %}
+        {% for section in sections %}
+            {% if section.name == 'hero' %}
     <!-- Hero Section -->
-    {% if next_event %}
+    {% if next_event and next_event.is_active and next_event.is_published and not next_event.is_archived %}
     <!-- Event Banner with Countdown -->
     <section id="hero" class="hero-section d-flex align-items-center min-vh-100" data-event-id="{{ next_event.id }}" data-event-status="{{ event_status }}">
         {% if next_event.hero_background %}
@@ -152,6 +157,10 @@
                     {% endif %}
                     
                     <div class="hero-cta">
+                        {% if event_status == 'current' %}
+
+                        {% else %}
+                        <!-- Wydarzenie przyszłe - możliwość rejestracji -->
                         <button class="btn btn-primary btn-lg me-3 mb-3" data-bs-toggle="modal" data-bs-target="#eventRegistrationModal">
                             <i class="fas fa-calendar-check me-2"></i>
                             Zarezerwuj miejsce
@@ -160,10 +169,7 @@
                             <i class="fas fa-clock me-1"></i>
                             {{ next_event.event_date.strftime('%d.%m.%Y o %H:%M') }}
                         </p>
-                        <p class="text-white-50 small">
-                            <i class="fas fa-shield-alt me-1"></i>
-                            100% darmowo · Brak zobowiązań · Ograniczona liczba miejsc
-                        </p>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="col-lg-4" data-aos="fade-left" data-aos-duration="1000" data-aos-delay="200">
@@ -176,7 +182,7 @@
                             {% if next_event.location %}
                                 <p><i class="fas fa-map-marker-alt me-2"></i>{{ next_event.location }}</p>
                             {% endif %}
-                            {% if next_event.meeting_link %}
+                            {% if next_event.meeting_link and event_status != 'current' %}
                                 <a href="{{ next_event.meeting_link }}" target="_blank" class="btn btn-warning btn-lg">
                                     <i class="fas fa-video me-2"></i>Dołącz do spotkania
                                 </a>
@@ -188,410 +194,268 @@
         </div>
         <div class="hero-bg-animation"></div>
     </section>
-    {% elif hero_section %}
-    <!-- Default Hero Section -->
+                {% else %}
+    <!-- Default Hero Section (when no active event) -->
     <section id="hero" class="hero-section d-flex align-items-center min-vh-100">
         <div class="hero-bg-image" style="background-image: url('{{ url_for('static', filename='images/hero/hero-bg.jpg') }}');"></div>
         <div class="container position-relative">
             <div class="row align-items-center">
                 <div class="col-lg-6" data-aos="fade-right" data-aos-duration="1000">
+                                {% if section.title %}
                     <h1 class="display-4 fw-bold text-white mb-4">
-                        {{ hero_section.title }}
+                                    {{ section.title }}
                     </h1>
+                                {% endif %}
+                                {% if section.subtitle %}
                     <div class="lead text-white mb-4">
-                        {{ hero_section.subtitle|safe }}
+                                    {{ section.subtitle|safe }}
                     </div>
+                                {% endif %}
+                                {% if section.content %}
+                                <div class="text-white mb-4">
+                                    {{ section.content|safe }}
+                                </div>
+                                {% endif %}
                     <div class="hero-cta">
-                        <a href="#register" class="btn btn-primary btn-lg me-3 mb-3">
+                        <a href="#cta" class="btn btn-primary btn-lg me-3 mb-3">
                             <i class="fas fa-calendar-check me-2"></i>
-                            Zarezerwuj miejsce w darmowej prezentacji
+                            Dołącz do Klubu Lepsze Życie
                         </a>
-                        <p class="text-light small">
-                            <i class="fas fa-check-circle me-1"></i>
-                                Brak zaplanowanych wydarzeń
-                        </p>
-                        <p class="text-white-50 small">
-                            <i class="fas fa-shield-alt me-1"></i>
-                            100% darmowo · Brak zobowiązań · Ograniczona liczba miejsc
-                        </p>
                     </div>
                 </div>
                 <div class="col-lg-6" data-aos="fade-left" data-aos-duration="1000" data-aos-delay="200">
                     <div class="hero-image-container text-center">
-                        <div class="hero-stats">
-                            <div class="stat-card" data-aos="zoom-in" data-aos-delay="400">
-                                <i class="fas fa-users fa-2x text-white"></i>
-                                <h3 class="counter">500+</h3>
-                                <p>Członków klubu</p>
+                                    <img src="{{ url_for('static', filename='images/hero/hero-bg.jpg') }}" alt="Klub Lepsze Życie" class="img-fluid rounded shadow">
                             </div>
-                            <div class="stat-card" data-aos="zoom-in" data-aos-delay="600">
-                                <i class="fas fa-chart-line fa-2x text-white"></i>
-                                <h3 class="counter">85%</h3>
-                                <p>Poprawa finansów</p>
-                            </div>
-                            <div class="stat-card" data-aos="zoom-in" data-aos-delay="800">
-                                <i class="fas fa-heart fa-2x text-white"></i>
-                                <h3 class="counter">92%</h3>
-                                <p>Zadowolenie</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
         <div class="hero-bg-animation"></div>
     </section>
     {% endif %}
-
-
-
+            {% elif section.name == 'benefits' %}
     <!-- Benefits Section -->
-    {% if benefits_section %}
     <section id="benefits" class="py-5 bg-light">
         <div class="container">
             <div class="row">
                 <div class="col-12 text-center mb-5" data-aos="fade-up">
+                                {% if section.title %}
                     <h2 class="display-5 fw-bold text-primary mb-3">
-                        {{ benefits_section.title }}
+                                    {{ section.title }}
                     </h2>
-                    <p class="lead text-muted">{{ benefits_section.subtitle }}</p>
+                                {% endif %}
+                                {% if section.subtitle %}
+                                <p class="lead text-muted">{{ section.subtitle }}</p>
+                                {% endif %}
                 </div>
             </div>
             {% if benefits_items %}
-            <div class="row g-4">
-                {% for item in benefits_items %}
-                    {% if item.is_active %}
-                    <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
-                        <div class="benefit-card h-100">
-                            <div class="benefit-image mb-3">
-                                <img src="{{ url_for('static', filename=item.image.replace('static/', '')) }}" alt="{{ item.title }}" class="img-fluid rounded" style="width: 100%; height: 200px; object-fit: cover;">
+                        <div class="row g-4">
+                            {% for item in benefits_items %}
+                            <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    {% if item.image %}
+                                    <img src="{{ url_for('static', filename=item.image) }}" class="card-img-top" alt="{{ item.title }}" style="height: 200px; object-fit: cover;">
+                                    {% endif %}
+                                    <div class="card-body d-flex flex-column">
+                                        {% if item.icon %}
+                                        <div class="text-center mb-3">
+                                            <i class="{{ item.icon }} fa-3x text-primary"></i>
                             </div>
-                            <div class="benefit-icon">
-                                <i class="{{ item.icon }} fa-3x text-warning"></i>
+                                        {% endif %}
+                                        <h5 class="card-title text-center">{{ item.title }}</h5>
+                                        <p class="card-text text-muted flex-grow-1">{{ item.description }}</p>
                             </div>
-                            <h4>{{ item.title }}</h4>
-                            <p>{{ item.description }}</p>
                         </div>
                     </div>
-                    {% endif %}
                 {% endfor %}
             </div>
             {% endif %}
+                        {% if section.content %}
             <div class="row mt-5">
-                <div class="col-12 text-center" data-aos="fade-up" data-aos-delay="500">
-                    <div class="bonus-benefit">
-                        <h4 class="text-white">
-                            <i class="fas fa-arrow-right me-2"></i>
-                            Dodatkowo: Jak klub pomaga Ci wyznaczać osobiste cele — i faktycznie je osiągać
-                        </h4>
+                            <div class="col-12">
+                                {{ section.content|safe }}
                     </div>
                 </div>
-            </div>
+                        {% endif %}
         </div>
     </section>
-    {% endif %}
-
-    <!-- About Club Section -->
-    {% if about_section %}
+            {% elif section.name == 'about' %}
+                <!-- About Section -->
     <section id="about" class="py-5">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6" data-aos="fade-right">
-                    <h2 class="display-5 fw-bold text-primary mb-4">
-                        {{ about_section.title }}
-                    </h2>
-                    {% if about_section.subtitle %}
+                                {% if section.title %}
+                                <h2 class="display-5 fw-bold text-primary mb-4">{{ section.title }}</h2>
+                                {% endif %}
+                                {% if section.subtitle %}
                     <p class="lead mb-4">
-                        {{ about_section.subtitle|safe }}
+                                    {{ section.subtitle|safe }}
                     </p>
                     {% endif %}
-                    {% if about_section.content %}
+                                {% if section.content %}
                     <div class="mb-4">
-                        {{ about_section.content|safe }}
+                                    {{ section.content|safe }}
                     </div>
                     {% endif %}
-                    {% if about_section.enable_pillars and about_section.pillars_data %}
+                                {% if section.enable_pillars and section.pillars_data %}
                     <div class="pillars-grid">
-                        {% set pillars = about_section.pillars_data|from_json %}
-                        <!-- DEBUG: Pillars data -->
-                        <!-- <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">
-                            <strong>DEBUG Pillars:</strong><br>
-                            enable_pillars: {{ about_section.enable_pillars }}<br>
-                            pillars_data: {{ about_section.pillars_data }}<br>
-                            pillars count: {{ pillars|length }}<br>
-                            pillars: {{ pillars }}
-                        </div> -->
+                                    {% set pillars = section.pillars_data|from_json %}
                         {% for pillar in pillars %}
-                        {% if pillar.page_link %}
-                        <a href="/{{ pillar.page_link }}" class="pillar-item-link">
+                        {% set blog_link = generate_blog_link(pillar.blog_link) if pillar.blog_link else None %}
+                        {% if blog_link %}
+                        <a href="{{ blog_link }}" class="pillar-item-link">
                         {% endif %}
                         <div class="pillar-item">
                             <i class="fas fa-{{ pillar.icon }} fa-2x" style="color: {{ pillar.icon_color }};"></i>
                             <h5>{{ pillar.title }}</h5>
                             <p>{{ pillar.description }}</p>
                         </div>
-                        {% if pillar.page_link %}
+                        {% if blog_link %}
                         </a>
                         {% endif %}
                         {% endfor %}
                     </div>
-                    {% else %}
-                    <!-- DEBUG: Why pillars are not showing -->
-                    <div style="background: #fff3cd; padding: 10px; margin: 10px 0; border: 1px solid #ffc107; border-radius: 5px;">
-                        <strong>⚠️ Pillars nie są wyświetlane:</strong><br>
-                        enable_pillars: {{ about_section.enable_pillars }}<br>
-                        pillars_data: {{ about_section.pillars_data }}<br>
-                        about_section.is_active: {{ about_section.is_active if about_section else 'No section' }}
-                    </div>
                     {% endif %}
-                    {% if about_section.final_text %}
+                                {% if section.final_text %}
                     <p class="mt-4">
-                        <strong>{{ about_section.final_text|safe }}</strong>
+                                    <strong>{{ section.final_text|safe }}</strong>
                     </p>
                     {% endif %}
-
                 </div>
                 <div class="col-lg-6" data-aos="fade-left" data-aos-delay="200">
                     <div class="about-visual">
                         <img src="{{ url_for('static', filename='images/about/community.jpg') }}" alt="Społeczność" class="img-fluid rounded shadow" style="width: 100%; height: 400px; object-fit: cover;">
-                        {% if about_section.enable_floating_cards and about_section.floating_cards_data %}
-                            {% set floating_cards = about_section.floating_cards_data|from_json %}
-                            <!-- DEBUG: Floating cards data -->
-                            <!-- <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">
-                                <strong>DEBUG Floating Cards:</strong><br>
-                                enable_floating_cards: {{ about_section.enable_floating_cards }}<br>
-                                floating_cards_data: {{ about_section.floating_cards_data }}<br>
-                                floating_cards count: {{ floating_cards|length }}
-                            </div> -->
+                                    {% if section.enable_floating_cards and section.floating_cards_data %}
+                                        {% set floating_cards = section.floating_cards_data|from_json %}
                             {% for card in floating_cards %}
-                            {% if card.page_link %}
-                            <a href="/{{ card.page_link }}" class="floating-card-link">
+                            {% set blog_link = generate_blog_link(card.blog_link) if card.blog_link else None %}
+                            {% if blog_link %}
+                            <a href="{{ blog_link }}" class="floating-card-link">
                             {% endif %}
                             <div class="floating-card" data-aos="zoom-in" data-aos-delay="{{ card.delay }}" style="top: {{ card.position or 300 }}px;">
                                 <i class="fas fa-{{ card.icon }} fa-4x" style="color: {{ card.icon_color }};"></i>
                                 <h4>{{ card.title }}</h4>
                             </div>
-                            {% if card.page_link %}
+                            {% if blog_link %}
                             </a>
                             {% endif %}
                             {% endfor %}
                             
                             <!-- Final text after floating cards -->
-                            {% if about_section.final_text %}
+                                        {% if section.final_text %}
                             <div class="floating-cards-final-text mt-4">
                                 <p class="text-center">
-                                    <strong>{{ about_section.final_text|safe }}</strong>
+                                                <strong>{{ section.final_text|safe }}</strong>
                                 </p>
                             </div>
                             {% endif %}
-                        {% else %}
-                        <!-- DEBUG: Why floating cards are not showing -->
-                        <div style="background: #fff3cd; padding: 10px; margin: 10px 0; border: 1px solid #ffc107; border-radius: 5px;">
-                            <strong>⚠️ Floating Cards nie są wyświetlane:</strong><br>
-                            enable_floating_cards: {{ about_section.enable_floating_cards }}<br>
-                            floating_cards_data: {{ about_section.floating_cards_data }}<br>
-                            about_section.is_active: {{ about_section.is_active if about_section else 'No section' }}
-                        </div>
                         {% endif %}
                     </div>
                 </div>
             </div>
         </div>
     </section>
-    {% endif %}
-
-    {% if testimonials_section %}
+            {% elif section.name == 'testimonials' %}
     <!-- Testimonials Section -->
     <section id="testimonials" class="py-5 bg-light">
         <div class="container">
             <div class="row">
                 <div class="col-12 text-center mb-5" data-aos="fade-up">
-                    <h2 class="display-5 fw-bold text-primary mb-3">
-                        {{ testimonials_section.title }}
-                    </h2>
-                    {% if testimonials_section.subtitle %}
-                        <p class="lead text-muted">{{ testimonials_section.subtitle }}</p>
+                                {% if section.title %}
+                                <h2 class="display-5 fw-bold text-primary mb-3">{{ section.title }}</h2>
+                                {% endif %}
+                                {% if section.subtitle %}
+                                <p class="lead text-muted">{{ section.subtitle }}</p>
                     {% endif %}
                 </div>
             </div>
             {% if testimonials %}
             <div class="row g-4">
                 {% for testimonial in testimonials %}
-                <div class="col-lg-4" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
-                    <div class="testimonial-card">
-                        <div class="testimonial-content">
-                            <p>"{{ testimonial.content }}"</p>
-                            {% if testimonial.rating %}
-                                <div class="testimonial-rating mb-3">
+                            <div class="col-md-4" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center">
+                                        <div class="stars mb-3">
                                     {% for i in range(testimonial.rating) %}
                                         <i class="fas fa-star text-warning"></i>
                                     {% endfor %}
-                                    {% for i in range(5 - testimonial.rating) %}
-                                        <i class="far fa-star text-muted"></i>
-                                    {% endfor %}
                         </div>
+                                        <p class="card-text fst-italic">"{{ testimonial.content }}"</p>
+                                        <h6 class="card-title">{{ testimonial.author_name }}</h6>
+                                        {% if testimonial.author_title %}
+                                        <small class="text-muted">{{ testimonial.author_title }}</small>
                             {% endif %}
-                        </div>
-                        <div class="testimonial-author">
-                            <div class="author-avatar">
-                                <i class="fas fa-user-circle fa-2x text-primary"></i>
-                            </div>
-                            <div class="author-info">
-                                <h6 class="mb-6">{{ testimonial.author_name }}</h6>
-                                {% if testimonial.member_since %}
-                                    <small class="text-muted">Członek od {{ testimonial.member_since }}</small>
-                                {% endif %}
-                            </div>
                         </div>
                     </div>
                 </div>
                 {% endfor %}
             </div>
-            {% else %}
-            <div class="row">
-                <div class="col-12 text-center">
-                    <div class="py-5">
-                        <i class="fas fa-comments fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Brak opinii do wyświetlenia</h5>
-                    </div>
-                </div>
-            </div>
             {% endif %}
+                        {% if section.content %}
+                        <div class="row mt-5">
+                            <div class="col-12">
+                                {{ section.content|safe }}
+        </div>
+                </div>
+                                    {% endif %}
         </div>
     </section>
-    {% endif %}
-
-    <!-- Monthly Events Timeline Section -->
-    {% if current_month_events and current_month_events|length > 0 %}
-    <section class="py-5 bg-light">
+            {% elif section.name == 'cta' %}
+                <!-- CTA Section -->
+                <section id="cta" class="py-5 bg-primary text-white">
         <div class="container">
-            <div class="row">
-                <div class="col-12 text-center mb-5" data-aos="fade-up">
-                    <h2 class="display-5 fw-bold text-primary mb-3">
-                        <i class="fas fa-calendar-alt me-2"></i>
-                        Wydarzenia w tym miesiącu
-                    </h2>
-                    <p class="lead text-muted">Pozostałe wydarzenia, które warto odwiedzić</p>
-                </div>
-            </div>
-            
-            <div class="timeline-container" data-aos="fade-up" data-aos-delay="200">
-                <div class="timeline">
-                    {% for event in current_month_events %}
-                    <div class="timeline-item" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
-                        <div class="timeline-marker">
-                            <i class="fas fa-calendar-check"></i>
-                        </div>
-                        <div class="timeline-content">
-                            <div class="timeline-header">
-                                <h4 class="text-primary mb-2">{{ event.title }}</h4>
-                                <div class="timeline-meta">
-                                    <span class="badge bg-info me-2">{{ event.event_type }}</span>
-                                    <span class="text-muted">
-                                        <i class="fas fa-clock me-1"></i>
-                                        {{ event.event_date.strftime('%d.%m.%Y o %H:%M') }}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="timeline-body">
-                                {% if event.description %}
-                                <p class="mb-3">{{ event.description|striptags|truncate(150) }}</p>
-                                {% endif %}
-                                <div class="timeline-actions">
-                                    <button class="btn btn-primary btn-sm me-2" onclick="openEventRegistration({{ event.id }}, '{{ event.title }}')">
-                                        <i class="fas fa-calendar-check me-1"></i>
-                                        Zarezerwuj miejsce
-                                    </button>
-                                    {% if event.meeting_link %}
-                                    <a href="{{ event.meeting_link }}" target="_blank" class="btn btn-outline-primary btn-sm me-2">
-                                        <i class="fas fa-video me-1"></i>
-                                        Dołącz do spotkania
-                                    </a>
-                                    {% endif %}
-                                    {% if event.location %}
-                                    <span class="text-muted small">
-                                        <i class="fas fa-map-marker-alt me-1"></i>
-                                        {{ event.location }}
-                                    </span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </section>
-    {% endif %}
-
-    {% if cta_section %}
-    <!-- Final CTA Section -->
-    <section id="register" class="py-5 bg-primary text-white">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-8 text-center" data-aos="fade-up">
-                    <h2 class="display-5 fw-bold mb-4">
-                        {{ cta_section.title }}
-                    </h2>
-                    {% if cta_section.subtitle %}
-                        <p class="lead mb-5">
-                            {{ cta_section.subtitle }}
-                        </p>
+                        <div class="row text-center">
+                            <div class="col-lg-8 mx-auto" data-aos="fade-up">
+                                {% if section.title %}
+                                <h2 class="display-5 fw-bold mb-4">{{ section.title }}</h2>
                     {% endif %}
-                    
-                    <!-- Flash Messages -->
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                            {% endfor %}
+                                {% if section.subtitle %}
+                                <p class="lead mb-4">{{ section.subtitle }}</p>
                         {% endif %}
-                    {% endwith %}
-                    
-                    <div class="registration-form-container">
-                        <form method="POST" action="{{ url_for('register') }}" class="registration-form">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <input type="text" class="form-control form-control-lg" name="name" placeholder="Twoje imię" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <input type="email" class="form-control form-control-lg" name="email" placeholder="Twój email" required>
-                                </div>
-                                <div class="col-12">
-                                    <input type="tel" class="form-control form-control-lg" name="phone" placeholder="Telefon (opcjonalnie)">
-                                </div>
-                                <div class="col-12">
-                                    <button type="submit" class="btn btn-success btn-lg px-5 py-3">
-                                        <i class="fas fa-ticket-alt me-2"></i>
-                                        Zarejestruj się na darmową prezentację teraz
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                        <div class="form-benefits mt-4">
-                            <p class="mb-2">
-                                <i class="fas fa-check-circle me-2"></i>
-                                Ograniczone miejsca · Szybkie i łatwe zapisy · Brak presji dołączenia
-                            </p>
+                                {% if section.content %}
+                                <div class="mb-4">
+                                    {{ section.content|safe }}
                         </div>
+                                {% endif %}
+                                
+                                <!-- Club Registration Form - Always Available -->
+                                <div class="registration-container">
+                                    <form class="registration-form">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control form-control-lg" name="name" placeholder="Twoje imię" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="email" class="form-control form-control-lg" name="email" placeholder="Twój email" required>
+                                            </div>
+                                            <div class="col-12">
+                                                <input type="tel" class="form-control form-control-lg" name="phone" placeholder="Telefon (opcjonalnie)">
+                                            </div>
+                                            <div class="col-12">
+                                                <button type="submit" class="btn btn-success btn-lg px-5 py-3">
+                                                    <i class="fas fa-users me-2"></i>
+                                                    Dołącz do Klubu Lepsze Życie
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
-    {% endif %}
-
-    {% if faq_section %}
+            {% elif section.name == 'faq' %}
     <!-- FAQ Section -->
-    <section class="py-5">
+                <section id="faq" class="py-5">
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-lg-8">
-                    <h3 class="text-center mb-5">{{ faq_section.title if faq_section.title else 'Często zadawane pytania' }}</h3>
+                                {% if section.title %}
+                                <h3 class="text-center mb-5">{{ section.title }}</h3>
+                                {% endif %}
                     <div class="accordion" id="faqAccordion">
                         {% if faqs %}
                             {% for faq in faqs %}
@@ -615,10 +479,41 @@
                             </div>
                         {% endif %}
                     </div>
+                                {% if section.content %}
+                                <div class="row mt-5">
+                                    <div class="col-12">
+                                        {{ section.content|safe }}
+                                    </div>
+                                </div>
+                                {% endif %}
                 </div>
             </div>
         </div>
     </section>
+            {% else %}
+                <!-- Custom Section -->
+                <section id="section-{{ section.id }}" class="py-5 {% if loop.index % 2 == 0 %}bg-light{% endif %}" 
+                         {% if section.background_image %}style="background-image: url('{{ url_for('public.uploaded_file', filename=section.background_image) }}'); background-size: cover; background-position: center; background-repeat: no-repeat;"{% endif %}>
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-12">
+                                {% if section.title %}
+                                <h2 class="text-center mb-4">{{ section.title }}</h2>
+                                {% endif %}
+                                {% if section.subtitle %}
+                                <p class="lead text-center text-muted mb-5">{{ section.subtitle }}</p>
+                                {% endif %}
+                                {% if section.content %}
+                                <div class="section-content">
+                                    {{ section.content|safe }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            {% endif %}
+        {% endfor %}
     {% endif %}
 
     <!-- Event Registration Modal -->
@@ -628,76 +523,125 @@
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title" id="eventRegistrationModalLabel">
+                        {% if event_status == 'current' %}
+                        <i class="fas fa-broadcast-tower me-2"></i>
+                        Wydarzenie w toku
+                        {% else %}
                         <i class="fas fa-calendar-check me-2"></i>
                         Zarezerwuj miejsce na wydarzenie
+                        {% endif %}
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="event-info mb-4 p-3 bg-light rounded">
-                        <h6 class="text-primary mb-2">{{ next_event.title }}</h6>
-                        <p class="mb-1">
-                            <i class="fas fa-clock me-2 text-muted"></i>
-                            {{ next_event.event_date.strftime('%d.%m.%Y o %H:%M') }}
-                        </p>
-                        {% if next_event.location %}
-                        <p class="mb-1">
-                            <i class="fas fa-map-marker-alt me-2 text-muted"></i>
-                            {{ next_event.location }}
-                        </p>
+                    <div class="event-info mb-4 p-4 bg-light border rounded">
+                        <h4 class="text-primary mb-3">
+                            <i class="fas fa-calendar-check me-2"></i>
+                            {{ next_event.title }}
+                        </h4>
+                        
+                        {% if next_event.description %}
+                        <p class="mb-3 text-muted">{{ next_event.description }}</p>
                         {% endif %}
-                        {% if next_event.meeting_link %}
-                        <p class="mb-0">
-                            <i class="fas fa-video me-2 text-muted"></i>
-                            <a href="{{ next_event.meeting_link }}" target="_blank" class="text-decoration-none">Link do spotkania</a>
-                        </p>
-                        {% endif %}
-                    </div>
-                    
-                    <form id="eventRegistrationForm" method="POST" action="{{ url_for('register_event', event_id=next_event.id) }}">
-                        <input type="hidden" name="event_id" value="{{ next_event.id }}" id="eventIdInput">
-                        <!-- Debug info -->
-                        <div class="d-none">
-                            <p>Debug: Event ID = {{ next_event.id }}</p>
-                            <p>Debug: Event Title = {{ next_event.title }}</p>
-                        </div>
-                        <div class="row g-3">
+                        
+                        <div class="row">
                             <div class="col-md-6">
-                                <label for="eventName" class="form-label">Imię *</label>
-                                <input type="text" class="form-control" id="eventName" name="name" placeholder="Twoje imię" required>
+                                <p class="mb-2">
+                                    <i class="fas fa-clock me-2 text-primary"></i>
+                                    <strong>Rozpoczęcie:</strong><br>
+                                    <span class="text-dark">{{ next_event.event_date.strftime('%d.%m.%Y o %H:%M') }}</span>
+                                </p>
                             </div>
+                            {% if next_event.end_date %}
                             <div class="col-md-6">
-                                <label for="eventEmail" class="form-label">Email *</label>
-                                <input type="email" class="form-control" id="eventEmail" name="email" required>
+                                <p class="mb-2">
+                                    <i class="fas fa-clock me-2 text-primary"></i>
+                                    <strong>Zakończenie:</strong><br>
+                                    <span class="text-dark">{{ next_event.end_date.strftime('%d.%m.%Y o %H:%M') }}</span>
+                                </p>
                             </div>
-                            <div class="col-12">
-                                <label for="eventPhone" class="form-label">Telefon (opcjonalnie)</label>
-                                <input type="tel" class="form-control" id="eventPhone" name="phone">
-                            </div>
-                            <div class="col-12">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="wantsClubNews" name="wants_club_news" value="true">
-                                    <label class="form-check-label" for="wantsClubNews">
-                                        Chcę otrzymywać informacje o klubie i dodatkowych wydarzeniach
-                                    </label>
-                                </div>
-                                <small class="text-muted">
-                                    Możesz zrezygnować w każdej chwili. Twoje dane są bezpieczne.
-                                </small>
-                            </div>
+                            {% endif %}
                         </div>
                         
-                        <!-- Submit button inside form -->
-                        <div class="text-center mt-4">
+                        {% if next_event.location %}
+                        <p class="mb-2">
+                            <i class="fas fa-map-marker-alt me-2 text-primary"></i>
+                            <strong>Lokalizacja:</strong> <span class="text-dark">{{ next_event.location }}</span>
+                        </p>
+                        {% endif %}
+                        
+                        <!-- Link do spotkania będzie wysłany w emailu 5 min przed spotkaniem -->
+                    </div>
+                    
+                    {% if event_status == 'current' %}
+                    <!-- Wydarzenie w toku - brak możliwości rejestracji -->
+                    <div class="alert alert-warning text-center">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Wydarzenie w toku!</strong><br>
+                        Rejestracja została zamknięta. Sprawdź nasze przyszłe wydarzenia.
+                    </div>
+                    {% else %}
+                    
+                    {% set registered_count = next_event.registrations|selectattr('status', 'equalto', 'confirmed')|list|length %}
+                    <form id="eventRegistrationForm">
+                        {% if next_event.max_participants %}
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-users me-2"></i>
+                            <strong>Dostępne miejsca:</strong> 
+                            {{ registered_count }}/{{ next_event.max_participants }}
+                            {% if registered_count >= next_event.max_participants %}
+                                <span class="text-danger">(BRAK MIEJSC)</span>
+                            {% else %}
+                                <span class="text-success">({{ next_event.max_participants - registered_count }} miejsc pozostało)</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Imię *</label>
+                                <input type="text" class="form-control form-control-lg" id="name" name="name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email *</label>
+                                <input type="email" class="form-control form-control-lg" id="email" name="email" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label">Telefon (opcjonalnie)</label>
+                                <input type="tel" class="form-control form-control-lg" id="phone" name="phone">
+                            </div>
+                            <div class="col-md-6">
+                                <!-- Puste miejsce dla lepszego layoutu -->
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <div class="card border-success">
+                                <div class="card-body">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="wants_club_news" name="wants_club_news" value="true" style="transform: scale(1.2);">
+                                        <label class="form-check-label fw-bold text-success" for="wants_club_news">
+                                            <i class="fas fa-users me-2"></i>
+                                            <strong>Chcę dołączyć do Klubu Lepsze Życie</strong><br>
+                                            <small class="text-muted">Otrzymasz hasło tymczasowe i będziesz dostawać informacje o przyszłych wydarzeniach</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            {% if next_event.max_participants and registered_count >= next_event.max_participants %}
+                            <button type="button" class="btn btn-secondary btn-lg" disabled>
+                                <i class="fas fa-times me-2"></i>
+                                Brak miejsc
+                            </button>
+                            {% else %}
                             <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="fas fa-calendar-check me-2"></i>
                                 Zarezerwuj miejsce
                             </button>
+                            {% endif %}
                         </div>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -705,275 +649,287 @@
     {% endif %}
 
     <!-- Footer -->
-    <footer class="bg-primary text-white py-4">
+    <footer class="bg-dark text-white py-5">
         <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h5 class="mb-0">
-                        <i class="fas fa-leaf me-2 text-info"></i>
-                        Klub Lepsze Życie
-                    </h5>
-                    <small class="text-light">Transformujemy życie, jeden krok na raz</small>
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <h5 class="fw-bold mb-3">{{ footer_settings.company_title or 'Klub Lepsze Życie' }}</h5>
+                    <p class="text-light">{{ footer_settings.company_description or 'Dołącz do nas i zmień swoje życie na lepsze. Osiągnij sukces finansowy, zdrowie i szczęście w relacjach.' }}</p>
                 </div>
-                <div class="col-md-6 text-md-end">
-                    <div class="social-links">
-                        {% if social_links %}
-                            {% for link in social_links %}
-                                {% if link.is_active %}
-                                <a href="{{ link.url }}" class="text-white me-3" title="{{ link.platform }}">
-                                    {% if link.icon %}
-                                        <i class="{{ link.icon }} fa-lg"></i>
-                                    {% else %}
-                                        {% if link.platform == 'Facebook' %}
-                                            <i class="fab fa-facebook fa-lg"></i>
-                                        {% elif link.platform == 'Instagram' %}
-                                            <i class="fab fa-instagram fa-lg"></i>
-                                        {% elif link.platform == 'Twitter' %}
-                                            <i class="fab fa-twitter fa-lg"></i>
-                                        {% elif link.platform == 'LinkedIn' %}
-                                            <i class="fab fa-linkedin fa-lg"></i>
-                                        {% elif link.platform == 'YouTube' %}
-                                            <i class="fab fa-youtube fa-lg"></i>
-                                        {% elif link.platform == 'TikTok' %}
-                                            <i class="fab fa-tiktok fa-lg"></i>
-                                        {% elif link.platform == 'WhatsApp' %}
-                                            <i class="fab fa-whatsapp fa-lg"></i>
-                                        {% elif link.platform == 'Telegram' %}
-                                            <i class="fab fa-telegram fa-lg"></i>
-                                        {% else %}
-                                            <i class="fas fa-link fa-lg"></i>
-                                        {% endif %}
-                                    {% endif %}
-                                </a>
-                                {% endif %}
-                            {% endfor %}
-                        {% else %}
-                            <!-- Fallback social links -->
-                            <a href="#" class="text-white me-3"><i class="fab fa-facebook fa-lg"></i></a>
-                            <a href="#" class="text-white me-3"><i class="fab fa-instagram fa-lg"></i></a>
-                            <a href="#" class="text-white me-3"><i class="fab fa-linkedin fa-lg"></i></a>
-                            <a href="#" class="text-white"><i class="fab fa-youtube fa-lg"></i></a>
+                <div class="col-lg-4 mb-4">
+                    <h5 class="fw-bold mb-3">{{ footer_settings.contact_title or 'Kontakt' }}</h5>
+                    <p class="text-light mb-2">
+                        <i class="fas fa-envelope me-2"></i>
+                        {{ footer_settings.contact_email or 'kontakt@klublepszezycie.pl' }}
+                    </p>
+                    <p class="text-light mb-2">
+                        <i class="fas fa-phone me-2"></i>
+                        {{ footer_settings.contact_phone or '+48 123 456 789' }}
+                    </p>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <h5 class="fw-bold mb-3">{{ footer_settings.social_title or 'Śledź nas' }}</h5>
+                    <div class="d-flex gap-3">
+                        {% for social_link in active_social_links %}
+                            <a href="{{ social_link.url }}" target="{{ social_link.target or '_blank' }}" rel="noopener noreferrer" class="text-white" title="{{ social_link.platform }}">
+                                <i class="fab fa-{{ social_link.platform.lower() }} fa-2x"></i>
+                            </a>
+                        {% endfor %}
+                        {% if not active_social_links %}
+                            <span class="text-muted">Brak aktywnych linków</span>
                         {% endif %}
                     </div>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="mb-0 text-light">&copy; 2024 {{ footer_settings.company_name or 'Klub Lepsze Życie' }}. Wszystkie prawa zastrzeżone.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    {% if footer_settings.show_privacy_policy %}
+                        <a href="{{ url_for('public.privacy_policy') }}" class="text-light me-3">Polityka prywatności</a>
+                    {% endif %}
+                    {% if footer_settings.show_terms %}
+                        <a href="{{ url_for('public.terms') }}" class="text-light">Regulamin</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </footer>
 
-    <!-- Bootstrap 5 JS -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- AOS Animation Library -->
+    <!-- AOS Animation -->
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
     
-    <!-- Advanced Event Management Script -->
     <script>
-        console.log('🚀 Advanced Event Management Script loaded!');
-        
-        // Global variables for event management
+        // Initialize AOS
+        AOS.init({
+            duration: 1000,
+            once: true
+        });
+
+        // Event registration form handling
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 Looking for event registration form...');
+            
+            // Handle form submission when modal is shown
+            const eventRegistrationModal = document.getElementById('eventRegistrationModal');
+            if (eventRegistrationModal) {
+                eventRegistrationModal.addEventListener('shown.bs.modal', function() {
+                    const eventRegistrationForm = document.getElementById('eventRegistrationForm');
+                    
+                    if (eventRegistrationForm) {
+                        console.log('✅ Event registration form found!');
+                        eventRegistrationForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    if (!submitBtn) {
+                        console.error('❌ Submit button not found in event form');
+                        return;
+                    }
+                    const originalText = submitBtn.innerHTML;
+                    
+                    // Disable submit button
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Rejestracja...';
+                    
+                    // Get form data as JSON
+                    const jsonData = {
+                        name: this.querySelector('input[name="name"]').value,
+                        email: this.querySelector('input[name="email"]').value,
+                        phone: this.querySelector('input[name="phone"]').value || '',
+                        wants_club_news: this.querySelector('input[name="wants_club_news"]').checked
+                    };
+                    
+                    // Check if already registered first
+                    const eventId = {% if next_event %}{{ next_event.id }}{% else %}null{% endif %};
+                    if (!eventId) {
+                        console.error('❌ Event ID not found!');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                        return;
+                    }
+                    
+                    // Check registration status first
+                    fetch(`/check-registration/${eventId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ email: jsonData.email })
+                    })
+                    .then(response => response.json())
+                    .then(checkData => {
+                        if (checkData.is_registered) {
+                            // User is already registered
+                            alert('Błąd: ' + checkData.message);
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                            return;
+                        }
+                        
+                        // User is not registered, proceed with registration
+                        return fetch(`/register-event/${eventId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(jsonData)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show success message
+                            const alertDiv = document.createElement('div');
+                            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+                            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                            alertDiv.innerHTML = `
+                                <i class="fas fa-check-circle me-2"></i>
+                                ${data.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            `;
+                            document.body.appendChild(alertDiv);
+                            
+                            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                                if (alertDiv.parentNode) {
+                                    alertDiv.remove();
+                                }
+                            }, 5000);
+                            
+                            // Reset form
+                            eventRegistrationForm.reset();
+                            
+                            // Close modal
+                            const modal = bootstrap.Modal.getInstance(eventRegistrationModal);
+                            if (modal) {
+                                modal.hide();
+                            }
+                        } else {
+                            // Show error message
+                            const errorMessage = data.message || data.error || 'Nieznany błąd';
+alert('Błąd: ' + errorMessage);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ Error:', error);
+                        alert('Wystąpił błąd podczas zapisu. Spróbuj ponownie.');
+                    })
+                    .finally(() => {
+                        // Re-enable submit button
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    });
+                    })
+                    .catch(error => {
+                        console.error('❌ Error checking registration:', error);
+                        alert('Wystąpił błąd podczas sprawdzania rejestracji. Spróbuj ponownie.');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    });
+                });
+            } else {
+                console.error('❌ Event registration form not found in modal!');
+            }
+        });
+    } else {
+        console.error('❌ Event registration modal not found!');
+    }
+
+            // General registration form handling
+            const registrationForm = document.querySelector('.registration-form');
+            
+            if (registrationForm) {
+                registrationForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    if (!submitBtn) {
+                        console.error('❌ Submit button not found in general form');
+                        return;
+                    }
+                    const originalText = submitBtn.innerHTML;
+                    
+                    // Disable submit button
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Rejestracja...';
+                    
+                    // Get form data as JSON
+                    const jsonData = {
+                        name: this.querySelector('input[name="name"]').value,
+                        email: this.querySelector('input[name="email"]').value,
+                        phone: this.querySelector('input[name="phone"]').value || '',
+                        wants_club_news: true  // CTA form always joins the club
+                    };
+                    
+                    console.log('Form data:', jsonData);
+                    
+                    // Send request
+                    fetch('/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(jsonData)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show success message
+                            const alertDiv = document.createElement('div');
+                            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+                            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                            alertDiv.innerHTML = `
+                                <i class="fas fa-check-circle me-2"></i>
+                                ${data.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            `;
+                            document.body.appendChild(alertDiv);
+                            
+                            // Auto-hide after 5 seconds
+                            setTimeout(() => {
+                                if (alertDiv.parentNode) {
+                                    alertDiv.remove();
+                                }
+                            }, 5000);
+                            
+                            // Reset form
+                            registrationForm.reset();
+                        } else {
+                            // Show error message
+                            const errorMessage = data.message || data.error || 'Nieznany błąd';
+alert('Błąd: ' + errorMessage);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ Error:', error);
+                        alert('Wystąpił błąd podczas zapisu. Spróbuj ponownie.');
+                    })
+                    .finally(() => {
+                        // Re-enable submit button
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    });
+                });
+            } else {
+                console.error('❌ Registration form not found!');
+            }
+        });
+
+        // Event Countdown Timer
+        let countdownInterval = null;
+        let eventUpdateInterval = null;
         let currentEventId = null;
         let currentEventStatus = null;
-        let eventUpdateInterval = null;
-        let countdownInterval = null;
-        
-        // Event status update function
-        async function updateEventStatus() {
-            try {
-                const response = await fetch('/api/event-status');
-                const data = await response.json();
-                
-                if (data.error) {
-                    console.error('❌ Error fetching event status:', data.error);
-                    return;
-                }
-                
-                const newEventId = data.event ? data.event.id : null;
-                const newEventStatus = data.status;
-                
-                // Check if event has changed
-                if (newEventId !== currentEventId || newEventStatus !== currentEventStatus) {
-                    console.log('🔄 Event status changed:', { 
-                        old: { id: currentEventId, status: currentEventStatus },
-                        new: { id: newEventId, status: newEventStatus }
-                    });
-                    
-                    // Update the page content without refresh
-                    updatePageContent(data);
-                    
-                    // Update global variables
-                    currentEventId = newEventId;
-                    currentEventStatus = newEventStatus;
-                }
-                
-            } catch (error) {
-                console.error('❌ Error updating event status:', error);
-            }
-        }
-        
-        // Update page content without refresh
-        function updatePageContent(data) {
-            const heroSection = document.getElementById('hero');
-            if (!heroSection) return;
-            
-            if (data.status === 'none') {
-                // No events - show default hero
-                showDefaultHero();
-            } else if (data.event) {
-                // Show event hero
-                showEventHero(data.event, data.status);
-            }
-        }
-        
-        // Show default hero section
-        function showDefaultHero() {
-            const heroSection = document.getElementById('hero');
-            if (!heroSection) return;
-            
-            // Create default hero content
-            const defaultHeroHTML = `
-                <div class="hero-bg-image" style="background-image: url('${window.location.origin}/static/images/hero/hero-bg.jpg');"></div>
-                <div class="container position-relative">
-                    <div class="row align-items-center">
-                        <div class="col-lg-6" data-aos="fade-right" data-aos-duration="1000">
-                            <h1 class="display-4 fw-bold text-white mb-4">
-                                Brak zaplanowanych wydarzeń
-                            </h1>
-                            <p class="lead text-white mb-4">
-                                Sprawdź ponownie później lub skontaktuj się z nami, aby dowiedzieć się o nadchodzących wydarzeniach.
-                            </p>
-                            <div class="hero-cta">
-                                <a href="#register" class="btn btn-primary btn-lg me-3 mb-3">
-                                    <i class="fas fa-calendar-check me-2"></i>
-                                    Zarezerwuj miejsce w darmowej prezentacji
-                                </a>
-                                <p class="text-light small">
-                                    <i class="fas fa-check-circle me-1"></i>
-                                    Brak zaplanowanych wydarzeń
-                                </p>
-                                <p class="text-white-50 small">
-                                    <i class="fas fa-shield-alt me-1"></i>
-                                    100% darmowo · Brak zobowiązań · Ograniczona liczba miejsc
-                                </p>
-                            </div>
-                        </div>
-                        <div class="col-lg-6" data-aos="fade-left" data-aos-duration="1000" data-aos-delay="200">
-                            <div class="hero-image-container text-center">
-                                <div class="hero-stats">
-                                    <div class="stat-card" data-aos="zoom-in" data-aos-delay="400">
-                                        <i class="fas fa-users fa-2x text-white"></i>
-                                        <h3 class="counter">500+</h3>
-                                        <p>Członków klubu</p>
-                                    </div>
-                                    <div class="stat-card" data-aos="zoom-in" data-aos-delay="600">
-                                        <i class="fas fa-chart-line fa-2x text-white"></i>
-                                        <h3 class="counter">85%</h3>
-                                        <p>Poprawa finansów</p>
-                                    </div>
-                                    <div class="stat-card" data-aos="zoom-in" data-aos-delay="800">
-                                        <i class="fas fa-heart fa-2x text-white"></i>
-                                        <h3 class="counter">92%</h3>
-                                        <p>Zadowolenie</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="hero-bg-animation"></div>
-            `;
-            
-            // Smoothly transition to default hero
-            heroSection.style.opacity = '0';
-            setTimeout(() => {
-                heroSection.innerHTML = defaultHeroHTML;
-                heroSection.style.opacity = '1';
-                
-                // Remove event-specific data attributes
-                heroSection.removeAttribute('data-event-id');
-                heroSection.removeAttribute('data-event-status');
-                
-                console.log('✅ Switched to default hero');
-            }, 300);
-        }
-        
-        // Show event hero section
-        function showEventHero(event, status) {
-            const heroSection = document.getElementById('hero');
-            if (!heroSection) return;
-            
-            // Update event data attributes
-            heroSection.dataset.eventId = event.id;
-            heroSection.dataset.eventStatus = status;
-            
-            // Update title
-            const titleElement = document.getElementById('event-title');
-            if (titleElement) titleElement.textContent = event.title;
-            
-            // Update description
-            const descElement = document.getElementById('event-description');
-            if (descElement) descElement.innerHTML = event.description || 'Dołącz do naszego ekskluzywnego wydarzenia!';
-            
-            // Update countdown or live status
-            updateEventDisplay(event, status);
-            
-            // Update registration modal
-            updateRegistrationModal(event);
-        }
-        
-        // Update event display (countdown or live status)
-        function updateEventDisplay(event, status) {
-            const countdownContainer = document.querySelector('.countdown-timer');
-            const liveStatusContainer = document.querySelector('.live-event-status');
-            
-            if (status === 'upcoming') {
-                // Show countdown
-                if (countdownContainer) {
-                    countdownContainer.style.display = 'block';
-                    countdownContainer.dataset.eventDate = event.event_date;
-                    countdownContainer.dataset.eventEnd = event.end_date || '';
-                    
-                    // Start countdown
-                    startCountdown();
-                }
-                if (liveStatusContainer) liveStatusContainer.style.display = 'none';
-                
-            } else if (status === 'current') {
-                // Show live status
-                if (liveStatusContainer) {
-                    liveStatusContainer.style.display = 'block';
-                    
-                    // Update end time
-                    const endTimeElement = liveStatusContainer.querySelector('p');
-                    if (endTimeElement && event.end_date) {
-                        const endDate = new Date(event.end_date);
-                        endTimeElement.innerHTML = `
-                            <i class="fas fa-clock me-2"></i>
-                            Zakończenie: ${endDate.toLocaleString('pl-PL')}
-                        `;
-                    }
-                }
-                if (countdownContainer) countdownContainer.style.display = 'none';
-                
-                // Stop countdown
-                stopCountdown();
-            }
-        }
-        
-        // Update registration modal
-        function updateRegistrationModal(event) {
-            const modal = document.getElementById('eventRegistrationModal');
-            if (!modal) return;
-            
-            // Update event info in modal
-            const eventInfoTitle = modal.querySelector('.event-info h6');
-            if (eventInfoTitle) eventInfoTitle.textContent = event.title;
-            
-            // Update hidden input
-            const eventIdInput = modal.querySelector('input[name="event_id"]');
-            if (eventIdInput) eventIdInput.value = event.id;
-        }
-        
+
         // Countdown functions
         function startCountdown() {
             if (countdownInterval) return; // Already running
@@ -1018,7 +974,70 @@
                 countdownInterval = null;
             }
         }
-        
+
+        // Update event status
+        function updateEventStatus() {
+            if (!currentEventId) return;
+            
+            fetch(`/api/event-schedule/${currentEventId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.event) {
+                        const event = data.event;
+                        const newStatus = data.event_status || 'upcoming';
+                        
+                        // Update display if status changed
+                        if (newStatus !== currentEventStatus) {
+                            console.log(`📅 Event status changed: ${currentEventStatus} → ${newStatus}`);
+                            updateEventDisplay(event, newStatus);
+                            currentEventStatus = newStatus;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Error updating event status:', error);
+                });
+        }
+
+        // Update event display (countdown or live status)
+        function updateEventDisplay(event, status) {
+            const countdownContainer = document.querySelector('.countdown-timer');
+            const liveStatusContainer = document.querySelector('.live-event-status');
+            
+            if (status === 'upcoming') {
+                // Show countdown
+                if (countdownContainer) {
+                    countdownContainer.style.display = 'block';
+                    countdownContainer.dataset.eventDate = event.event_date;
+                    countdownContainer.dataset.eventEnd = event.end_date || '';
+                    
+                    // Start countdown
+                    startCountdown();
+                }
+                if (liveStatusContainer) liveStatusContainer.style.display = 'none';
+                
+            } else if (status === 'current') {
+                // Show live status
+                if (liveStatusContainer) {
+                    liveStatusContainer.style.display = 'block';
+                    
+                    // Update end time
+                    const endTimeElement = liveStatusContainer.querySelector('p');
+                    if (endTimeElement && event.end_date) {
+                        const endDate = new Date(event.end_date);
+                        endTimeElement.innerHTML = `
+                            <i class="fas fa-clock me-2"></i>
+                            Zakończenie: ${endDate.toLocaleString('pl-PL')}
+                        `;
+                    }
+                }
+                if (countdownContainer) countdownContainer.style.display = 'none';
+                
+                // Stop countdown
+                stopCountdown();
+            }
+        }
+
         // Initialize event management
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Event management system initialized');
@@ -1042,172 +1061,10 @@
             
             // Also check when page becomes visible
             document.addEventListener('visibilitychange', function() {
-                if (!document.hidden) {
-                    console.log('👁️ Page became visible, updating event status');
+                if (!document.hidden && currentEventId) {
                     updateEventStatus();
                 }
             });
-        });
-        
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', function() {
-            if (eventUpdateInterval) clearInterval(eventUpdateInterval);
-            if (countdownInterval) clearInterval(countdownInterval);
-        });
-        
-        // Event Registration Form Handler
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔍 DOM loaded, looking for event registration form...');
-            
-            // Function to open event registration modal for specific event
-            window.openEventRegistration = function(eventId, eventTitle) {
-                console.log('🚀 Opening event registration for:', eventId, eventTitle);
-                // Update modal title and event info
-                document.getElementById('eventRegistrationModalLabel').innerHTML = 
-                    `<i class="fas fa-calendar-check me-2"></i>Zarezerwuj miejsce na: ${eventTitle}`;
-                
-                // Update hidden input
-                document.querySelector('input[name="event_id"]').value = eventId;
-                
-                // Update event info in modal
-                const eventInfo = document.querySelector('.event-info h6');
-                if (eventInfo) {
-                    eventInfo.textContent = eventTitle;
-                }
-                
-                // Show modal
-                const modal = new bootstrap.Modal(document.getElementById('eventRegistrationModal'));
-                modal.show();
-            };
-            
-            const eventRegistrationForm = document.getElementById('eventRegistrationForm');
-            console.log('📝 Found event registration form:', eventRegistrationForm);
-            console.log('📝 Form HTML:', eventRegistrationForm ? eventRegistrationForm.outerHTML : 'NOT FOUND');
-            
-            // Check if form is in the page
-            const allForms = document.querySelectorAll('form');
-            console.log('📝 All forms on page:', allForms.length);
-            allForms.forEach((form, index) => {
-                console.log(`📝 Form ${index}:`, form.id, form.action);
-            });
-            
-            // Also check if modal exists
-            const modal = document.getElementById('eventRegistrationModal');
-            console.log('📝 Found modal:', modal);
-            console.log('📝 Modal HTML:', modal ? modal.outerHTML.substring(0, 200) + '...' : 'NOT FOUND');
-            
-            // Check if form is inside modal
-            if (modal && eventRegistrationForm) {
-                const formInModal = modal.querySelector('#eventRegistrationForm');
-                console.log('📝 Form in modal:', formInModal);
-            }
-            
-            // Check if form is in modal even if eventRegistrationForm is null
-            if (modal) {
-                const formInModal = modal.querySelector('#eventRegistrationForm');
-                console.log('📝 Form in modal (direct search):', formInModal);
-                if (formInModal) {
-                    console.log('📝 Form in modal HTML:', formInModal.outerHTML.substring(0, 200) + '...');
-                }
-            }
-            
-            if (eventRegistrationForm) {
-                console.log('✅ Adding submit event listener to form');
-                eventRegistrationForm.addEventListener('submit', function(e) {
-                    console.log('🚀 Form submitted!');
-                    e.preventDefault();
-                    
-                    const formData = new FormData(this);
-                    const eventId = formData.get('event_id');
-                    console.log('📋 Form data:', Object.fromEntries(formData));
-                    console.log('🎯 Event ID from form:', eventId);
-                    
-                    // Also check the hidden input directly
-                    const eventIdInput = document.getElementById('eventIdInput');
-                    console.log('🎯 Event ID from input:', eventIdInput ? eventIdInput.value : 'NOT FOUND');
-                    
-                    if (!eventId) {
-                        console.error('❌ Event ID is missing from form data!');
-                        alert('Błąd: Brak ID wydarzenia. Odśwież stronę i spróbuj ponownie.');
-                        return;
-                    }
-                    
-                    // Disable submit button
-                    const submitBtn = this.querySelector('button[type="submit"]');
-                    console.log('🔘 Submit button found:', submitBtn);
-                    console.log('🔘 Submit button HTML:', submitBtn ? submitBtn.outerHTML : 'NOT FOUND');
-                    
-                    // Also check if button exists in modal footer
-                    const modalFooter = document.querySelector('#eventRegistrationModal .modal-footer');
-                    const submitBtnInFooter = modalFooter ? modalFooter.querySelector('button[type="submit"]') : null;
-                    console.log('🔘 Submit button in footer:', submitBtnInFooter);
-                    
-                    // Check all submit buttons in the form
-                    const allSubmitBtns = this.querySelectorAll('button[type="submit"]');
-                    console.log('🔘 All submit buttons in form:', allSubmitBtns.length);
-                    
-                    if (!submitBtn) {
-                        console.error('❌ Submit button not found in form!');
-                        return;
-                    }
-                    const originalText = submitBtn.innerHTML;
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
-                    
-                    console.log('📤 Sending request to:', `/register-event/${eventId}`);
-                    fetch(`/register-event/${eventId}`, {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => {
-                        console.log('📥 Response status:', response.status);
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('📥 Response data:', data);
-                        if (data.success) {
-                            // Show success message
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('eventRegistrationModal'));
-                            modal.hide();
-                            
-                            // Show success alert
-                            const alertDiv = document.createElement('div');
-                            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
-                            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-                            alertDiv.innerHTML = `
-                                <i class="fas fa-check-circle me-2"></i>
-                                ${data.message}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            `;
-                            document.body.appendChild(alertDiv);
-                            
-                            // Auto-hide after 5 seconds
-                            setTimeout(() => {
-                                if (alertDiv.parentNode) {
-                                    alertDiv.remove();
-                                }
-                            }, 5000);
-                            
-                            // Reset form
-                            eventRegistrationForm.reset();
-                        } else {
-                            // Show error message
-                            alert('Błąd: ' + data.error);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ Error:', error);
-                        alert('Wystąpił błąd podczas zapisu. Spróbuj ponownie.');
-                    })
-                    .finally(() => {
-                        // Re-enable submit button
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = originalText;
-                    });
-                });
-            } else {
-                console.error('❌ Event registration form not found!');
-            }
         });
     </script>
 </body>

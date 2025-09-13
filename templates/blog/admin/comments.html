@@ -1,0 +1,200 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Komentarze{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-comments me-2"></i>Zarządzanie Komentarzami
+{% endblock %}
+
+{% block page_actions %}
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+            <i class="fas fa-trash me-2"></i>
+            Usuń Zaznaczone
+        </button>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <!-- Comments Table -->
+    <div class="admin-card">
+        <div class="admin-card-body">
+            {% if comments.items %}
+                <div class="table-responsive">
+                    <table class="table admin-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll(this)">
+                                </th>
+                                <th>Autor</th>
+                                <th>Email</th>
+                                <th>Artykuł</th>
+                                <th>Komentarz</th>
+                                <th>Status</th>
+                                <th>Data</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for comment in comments.items %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" class="comment-checkbox" value="{{ comment.id }}" onchange="bulkDeleteManager.toggleBulkDeleteBtn()">
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="admin-avatar me-2">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <div>
+                                            <strong>{{ comment.author_name }}</strong>
+                                            {% if comment.author_website %}
+                                            <br><small class="text-muted">{{ comment.author_website }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <a href="mailto:{{ comment.author_email }}" class="text-decoration-none">
+                                        {{ comment.author_email }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('blog.post_detail', slug=comment.post.slug) }}" class="text-decoration-none" target="_blank">
+                                        {{ comment.post.title[:50] }}{% if comment.post.title|length > 50 %}...{% endif %}
+                                    </a>
+                                </td>
+                                <td>
+                                    <div class="comment-preview">
+                                        {{ comment.content[:100] }}{% if comment.content|length > 100 %}...{% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if comment.is_approved %}
+                                        <span class="badge admin-badge admin-badge-success">Zatwierdzony</span>
+                                    {% else %}
+                                        <span class="badge admin-badge admin-badge-warning">Oczekuje</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ comment.created_at.strftime('%d.%m.%Y %H:%M') if comment.created_at else 'Brak' }}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        {% if not comment.is_approved %}
+                                        <button class="btn btn-sm admin-btn-success" onclick="approveComment({{ comment.id }})" title="Zatwierdź">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        {% endif %}
+                                        <button class="btn btn-sm admin-btn-outline" onclick="editComment({{ comment.id }})" title="Edytuj">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteComment({{ comment.id }})" title="Usuń">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if comments.pages > 1 %}
+                <nav aria-label="Comments pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if comments.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('blog.admin_comments', page=comments.prev_num) }}">Poprzednia</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in comments.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != comments.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('blog.admin_comments', page=page_num) }}">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if comments.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('blog.admin_comments', page=comments.next_num) }}">Następna</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Brak komentarzy w systemie</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Edit Comment Modal -->
+    <div class="modal fade" id="editCommentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edytuj komentarz</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editCommentForm">
+                        <input type="hidden" id="editCommentId" name="comment_id">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editAuthorName" class="form-label">Imię i nazwisko *</label>
+                                <input type="text" class="form-control" id="editAuthorName" name="author_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editAuthorEmail" class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="editAuthorEmail" name="author_email" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editAuthorWebsite" class="form-label">Strona internetowa</label>
+                            <input type="url" class="form-control" id="editAuthorWebsite" name="author_website">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editContent" class="form-label">Komentarz *</label>
+                            <textarea class="form-control" id="editContent" name="content" rows="4" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editIsApproved" name="is_approved">
+                                <label class="form-check-label" for="editIsApproved">
+                                    Zatwierdzony
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="button" class="btn admin-btn" onclick="saveComment()">Zapisz</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin/bulk-delete.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/blog_comments.js') }}"></script>
+{% endblock %}

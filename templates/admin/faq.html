@@ -7,10 +7,16 @@
 {% endblock %}
 
 {% block page_actions %}
-    <button class="btn admin-btn" onclick="showAddFaqModal()">
-        <i class="fas fa-plus me-2"></i>
-        Dodaj Pytanie
-    </button>
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn" onclick="showAddFaqModal()">
+            <i class="fas fa-plus me-2"></i>
+            Dodaj Pytanie
+        </button>
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+            <i class="fas fa-trash me-2"></i>
+            Usuń Zaznaczone
+        </button>
+    </div>
 {% endblock %}
 
 {% block content %}
@@ -19,9 +25,12 @@
         <div class="admin-card-body">
             {% if faqs %}
                 <div class="table-responsive">
-                    <table class="table admin-table">
+                    <table class="table admin-table faq-table">
                         <thead>
                             <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll()">
+                                </th>
                                 <th>Kolejność</th>
                                 <th>Pytanie</th>
                                 <th>Odpowiedź</th>
@@ -31,7 +40,10 @@
                         </thead>
                         <tbody>
                             {% for faq in faqs %}
-                            <tr data-faq-id="{{ faq.id }}">
+                            <tr data-faq-id="{{ faq.id }}" data-item-id="{{ faq.id }}">
+                                <td>
+                                    <input type="checkbox" class="faq-checkbox" value="{{ faq.id }}" onchange="bulkDeleteManager.updateBulkDeleteButton()">
+                                </td>
                                 <td>
                                     <span class="badge admin-badge admin-badge-primary">{{ faq.order }}</span>
                                 </td>
@@ -162,5 +174,18 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/admin/faq.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/faq.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize bulk delete manager for FAQ
+    window.bulkDeleteManager = BulkDeleteManager.createForPage('faq', {
+        itemCheckboxClass: 'faq-checkbox',
+        bulkDeleteBtnId: 'bulkDeleteBtn',
+        apiEndpoint: '/api/faq',
+        confirmMessage: 'Czy na pewno chcesz usunąć zaznaczone pytania? Tej operacji nie można cofnąć.',
+        successMessage: 'Pytania zostały usunięte pomyślnie',
+        errorMessage: 'Wystąpił błąd podczas usuwania pytań'
+    });
+});
+</script>
 {% endblock %}

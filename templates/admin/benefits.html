@@ -7,10 +7,16 @@
 {% endblock %}
 
 {% block page_actions %}
-    <button class="btn admin-btn" onclick="showAddBenefitModal()">
-        <i class="fas fa-plus me-2"></i>
-        Dodaj Korzyść
-    </button>
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn" onclick="showAddBenefitModal()">
+            <i class="fas fa-plus me-2"></i>
+            Dodaj Korzyść
+        </button>
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+            <i class="fas fa-trash me-2"></i>
+            Usuń Zaznaczone
+        </button>
+    </div>
 {% endblock %}
 
 {% block content %}
@@ -22,6 +28,9 @@
                     <table class="table admin-table">
                         <thead>
                             <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll()">
+                                </th>
                                 <th>Kolejność</th>
                                 <th>Tytuł</th>
                                 <th>Opis</th>
@@ -33,9 +42,12 @@
                         </thead>
                         <tbody>
                             {% for benefit in benefits %}
-                            <tr data-benefit-id="{{ benefit.id }}">
+                            <tr data-benefit-id="{{ benefit.id }}" data-item-id="{{ benefit.id }}">
                                 <td>
-                                    <span class="badge admin-badge admin-badge-secondary">{{ benefit.order }}</span>
+                                    <input type="checkbox" class="benefit-checkbox" value="{{ benefit.id }}" onchange="bulkDeleteManager.updateBulkDeleteButton()">
+                                </td>
+                                <td>
+                                    <span class="badge admin-badge admin-badge-primary">{{ benefit.order }}</span>
                                 </td>
                                 <td>
                                     <strong>{{ benefit.title }}</strong>

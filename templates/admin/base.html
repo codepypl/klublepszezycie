@@ -22,8 +22,17 @@
             
             <!-- Main Content -->
             <main class="col-lg-10 admin-content">
-                <div class="admin-header">
+                <div class="admin-header d-flex justify-content-between align-items-center">
                     <h1>{% block page_title %}Panel Administracyjny{% endblock %}</h1>
+                    <div class="d-flex align-items-center">
+                        <span class="text-muted me-3">Witaj, {{ current_user.name or current_user.email }}</span>
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-sign-out-alt me-1"></i>
+                            Wyloguj
+                        </a>
+                    </div>
+                </div>
+                <div class="admin-header-actions">
                     {% block page_actions %}{% endblock %}
                 </div>
                 
@@ -45,12 +54,66 @@
         </div>
     </div>
 
+    <!-- Universal Bulk Delete Confirmation Modal -->
+    <div class="modal fade admin-modal" id="bulkDeleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                        Potwierdź usunięcie
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" id="bulkDeleteClose"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="bulkDeleteMessage">Czy na pewno chcesz usunąć zaznaczone elementy?</p>
+                    <p class="text-muted">Ta operacja nie może być cofnięta.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="bulkDeleteCancel">Anuluj</button>
+                    <button type="button" class="btn btn-danger" id="confirmBulkDelete">Usuń</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Toast Manager -->
+    <script src="{{ url_for('static', filename='js/utils/toast.js') }}"></script>
+    <!-- Form Validators -->
+    <script src="{{ url_for('static', filename='js/utils/validators.js') }}"></script>
+    <!-- Slug generation -->
+    <script src="{{ url_for('static', filename='js/utils/slugify.js') }}"></script>
     <!-- Custom Admin JS -->
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin/bulk-delete.js') }}"></script>
+    <script src="https://cdn.tiny.cloud/1/nzk6x47f5uoxs3thrhw5hjtjhrby1u3skrpld6z2z032z7tv/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    
+    <!-- TinyMCE Initialization -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize TinyMCE for admin forms
+        tinymce.init({
+            selector: 'textarea[data-tinymce]',
+            height: 300,
+            plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
+            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
+            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
+            setup: function (editor) {
+                editor.on('init', function () {
+                    console.log('TinyMCE initialized for:', editor.id);
+                });
+                editor.on('ready', function () {
+                    console.log('TinyMCE ready for:', editor.id);
+                });
+            }
+        });
+    });
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

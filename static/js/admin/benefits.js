@@ -1,90 +1,6 @@
 // Admin Benefits JavaScript for Lepsze Życie Club
 
-// Toast notification system (reused from sections)
-class ToastManager {
-    constructor() {
-        this.container = this.createToastContainer();
-    }
-
-    createToastContainer() {
-        let container = document.getElementById('toast-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'toast-container';
-            container.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                left: 20px;
-                z-index: 9999;
-                max-width: 400px;
-            `;
-            document.body.appendChild(container);
-        }
-        return container;
-    }
-
-    show(message, type = 'info', duration = 5000) {
-        const toast = document.createElement('div');
-        toast.className = `toast align-items-center text-white bg-${type} border-0`;
-        toast.setAttribute('role', 'alert');
-        toast.setAttribute('aria-live', 'assertive');
-        toast.setAttribute('aria-atomic', 'true');
-        
-        toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="fas fa-${this.getIcon(type)} me-2"></i>
-                    ${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        `;
-
-        this.container.appendChild(toast);
-        
-        // Initialize Bootstrap toast
-        const bsToast = new bootstrap.Toast(toast, {
-            autohide: true,
-            delay: duration
-        });
-        
-        bsToast.show();
-        
-        // Remove from DOM after hiding
-        toast.addEventListener('hidden.bs.toast', () => {
-            toast.remove();
-        });
-    }
-
-    getIcon(type) {
-        const icons = {
-            'success': 'check-circle',
-            'danger': 'exclamation-triangle',
-            'warning': 'exclamation-circle',
-            'info': 'info-circle'
-        };
-        return icons[type] || 'info-circle';
-    }
-
-    success(message, duration = 5000) {
-        this.show(message, 'success', duration);
-    }
-
-    error(message, duration = 7000) {
-        this.show(message, 'danger', duration);
-    }
-
-    warning(message, duration = 6000) {
-        this.show(message, 'warning', duration);
-    }
-
-    info(message, duration = 5000) {
-        this.show(message, 'info', duration);
-    }
-}
-
-// Initialize toast manager
-const toastManager = new ToastManager();
+// Toast manager is loaded globally from utils/toast.js
 
 // Benefits management functions
 class BenefitsManager {
@@ -113,7 +29,7 @@ class BenefitsManager {
     }
 
     editBenefit(benefitId) {
-        fetch(`/admin/api/benefits/${benefitId}`)
+        fetch(`/api/benefits/${benefitId}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -138,65 +54,121 @@ class BenefitsManager {
                     const modal = new bootstrap.Modal(document.getElementById('editBenefitModal'));
                     modal.show();
                 } else {
-                    toastManager.error('Błąd podczas ładowania korzyści: ' + data.error);
+                    window.toastManager.error('Błąd podczas ładowania korzyści: ' + data.error);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                toastManager.error('Wystąpił błąd podczas ładowania korzyści');
+                window.toastManager.error('Wystąpił błąd podczas ładowania korzyści');
             });
     }
 
     deleteBenefit(benefitId) {
-        if (confirm('Czy na pewno chcesz usunąć tę korzyść? Tej operacji nie można cofnąć.')) {
-            fetch(`/admin/api/benefits?id=${benefitId}`, {
-                method: 'DELETE'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    toastManager.success('Korzyść została usunięta pomyślnie!');
-                    // Usuń wiersz z tabeli
-                    const row = document.querySelector(`tr[data-benefit-id="${benefitId}"]`);
-                    if (row) {
-                        row.remove();
-                    }
-                } else {
-                    toastManager.error('Błąd podczas usuwania: ' + data.error);
+        // Use Bootstrap modal instead of confirm()
+        const modal = document.getElementById('bulkDeleteModal');
+        const messageElement = document.getElementById('bulkDeleteMessage');
+        const confirmButton = document.getElementById('confirmBulkDelete');
+        const cancelButton = modal.querySelector('button[data-bs-dismiss="modal"]');
+        
+        if (modal && messageElement && confirmButton) {
+            // Update message
+            messageElement.textContent = 'Czy na pewno chcesz usunąć tę korzyść? Tej operacji nie można cofnąć.';
+            
+            // Remove existing event listeners
+            const newConfirmButton = confirmButton.cloneNode(true);
+            confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+            
+            // Add new event listener for confirm button
+            newConfirmButton.addEventListener('click', () => {
+                // Hide modal first
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                toastManager.error('Wystąpił błąd podczas usuwania korzyści');
+                
+                // Then perform delete
+                this.performDeleteBenefit(benefitId);
             });
+            
+            // Add event listener for cancel button to properly clean up
+            if (cancelButton) {
+                const newCancelButton = cancelButton.cloneNode(true);
+                cancelButton.parentNode.replaceChild(newCancelButton, cancelButton);
+                
+                newCancelButton.addEventListener('click', () => {
+                    // Hide modal
+                    modal.classList.remove('show');
+                    modal.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                });
+            }
+            
+            // Show modal
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+        } else {
+            // Fallback to confirm() if modal not available
+            if (confirm('Czy na pewno chcesz usunąć tę korzyść? Tej operacji nie można cofnąć.')) {
+                this.performDeleteBenefit(benefitId);
+            }
         }
+    }
+
+    performDeleteBenefit(benefitId) {
+        fetch(`/api/benefits?id=${benefitId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.toastManager.success('Korzyść została usunięta pomyślnie!');
+                // Usuń wiersz z tabeli
+                const row = document.querySelector(`tr[data-benefit-id="${benefitId}"]`);
+                if (row) {
+                    row.remove();
+                }
+            } else {
+                window.toastManager.error('Błąd podczas usuwania: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            window.toastManager.error('Wystąpił błąd podczas usuwania korzyści');
+        });
     }
 
     handleAddBenefit(e) {
         e.preventDefault();
         
         const formData = new FormData(e.target);
-        formData.append('is_active', document.getElementById('benefitActive').checked);
+        // Don't append is_active - let the form handle it naturally
         
-        fetch('/admin/api/benefits', {
+        fetch('/api/benefits', {
             method: 'POST',
             body: formData
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                toastManager.success('Korzyść została dodana pomyślnie!');
+                window.toastManager.success('Korzyść została dodana pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('addBenefitModal'));
                 modal.hide();
                 // Odśwież stronę
                 window.location.reload();
             } else {
-                toastManager.error('Błąd podczas dodawania: ' + data.error);
+                window.toastManager.error('Błąd podczas dodawania: ' + data.error);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            toastManager.error('Wystąpił błąd podczas dodawania korzyści');
+            window.toastManager.error('Wystąpił błąd podczas dodawania korzyści');
         });
     }
 
@@ -204,27 +176,27 @@ class BenefitsManager {
         e.preventDefault();
         
         const formData = new FormData(e.target);
-        formData.append('is_active', document.getElementById('editBenefitActive').checked);
+        // Don't append is_active - let the form handle it naturally
         
-        fetch('/admin/api/benefits', {
+        fetch('/api/benefits', {
             method: 'PUT',
             body: formData
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                toastManager.success('Korzyść została zaktualizowana pomyślnie!');
+                window.toastManager.success('Korzyść została zaktualizowana pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editBenefitModal'));
                 modal.hide();
                 // Odśwież stronę
                 window.location.reload();
             } else {
-                toastManager.error('Błąd podczas aktualizacji: ' + data.error);
+                window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            toastManager.error('Wystąpił błąd podczas aktualizacji korzyści');
+            window.toastManager.error('Wystąpił błąd podczas aktualizacji korzyści');
         });
     }
 }
@@ -245,4 +217,14 @@ function deleteBenefit(benefitId) {
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     window.benefitsManager = new BenefitsManager();
+    
+    // Initialize bulk delete manager for benefits
+    window.bulkDeleteManager = BulkDeleteManager.createForPage('benefits', {
+        itemCheckboxClass: 'benefit-checkbox',
+        bulkDeleteBtnId: 'bulkDeleteBtn',
+        apiEndpoint: '/api/benefits',
+        confirmMessage: 'Czy na pewno chcesz usunąć zaznaczone korzyści? Tej operacji nie można cofnąć.',
+        successMessage: 'Korzyści zostały usunięte pomyślnie',
+        errorMessage: 'Wystąpił błąd podczas usuwania korzyści'
+    });
 });

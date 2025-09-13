@@ -7,10 +7,8 @@
 {% endblock %}
 
 {% block page_actions %}
-    <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
-        <i class="fas fa-sign-out-alt me-2"></i>
-        Wyloguj
-    </a>
+    <div class="d-flex justify-content-end gap-2 mb-3">
+    </div>
 {% endblock %}
 
 {% block content %}
@@ -18,16 +16,16 @@
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="admin-stats-card">
-                <i class="fas fa-user-plus"></i>
-                <h3>{{ stats.total_registrations }}</h3>
-                <p>Wszystkie Rejestracje</p>
+                <i class="fas fa-users"></i>
+                <h3>{{ stats.total_users }}</h3>
+                <p>Wszyscy Użytkownicy</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="admin-stats-card">
-                <i class="fas fa-clock"></i>
-                <h3>{{ stats.pending_registrations }}</h3>
-                <p>Oczekujące</p>
+                <i class="fas fa-user-plus"></i>
+                <h3>{{ stats.new_users }}</h3>
+                <p>Nowi Użytkownicy (30 dni)</p>
             </div>
         </div>
         <div class="col-md-3">
@@ -39,9 +37,9 @@
         </div>
         <div class="col-md-3">
             <div class="admin-stats-card">
-                <i class="fas fa-bars"></i>
-                <h3>{{ stats.active_menu_items }}</h3>
-                <p>Aktywne Menu</p>
+                <i class="fas fa-list-alt"></i>
+                <h3>{{ stats.total_registrations }}</h3>
+                <p>Rejestracje</p>
             </div>
         </div>
     </div>

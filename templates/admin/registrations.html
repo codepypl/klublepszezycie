@@ -1,321 +1,295 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administratora - Rejestracje</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
-</head>
-<body class="admin-body">
-        <div class="container-fluid">
-            <div class="row">            <!-- Sidebar -->
-            {% include 'admin/sidebar.html' %}
-                <!-- Main Content -->
-                <main class="col-lg-10 admin-content">
-                    <div class="admin-header">
-                        <h1><i class="fas fa-user-plus me-2"></i>Zarządzanie Rejestracjami</h1>
-                        <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
-                            <i class="fas fa-sign-out-alt me-2"></i>
-                            Wyloguj
-                        </a>
-                    </div>
-                    <!-- Statistics Cards -->
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="admin-stats-card">
-                                <i class="fas fa-users"></i>
-                                <h3>{{ registrations|length }}</h3>
-                                <p>Wszystkie Rejestracje</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="admin-stats-card">
-                                <i class="fas fa-clock"></i>
-                                <h3>{{ registrations|selectattr('status', 'equalto', 'pending')|list|length }}</h3>
-                                <p>Oczekujące</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="admin-stats-card">
-                                <i class="fas fa-check-circle"></i>
-                                <h3>{{ registrations|selectattr('status', 'equalto', 'approved')|list|length }}</h3>
-                                <p>Zatwierdzone</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="admin-stats-card">
-                                <i class="fas fa-times-circle"></i>
-                                <h3>{{ registrations|selectattr('status', 'equalto', 'rejected')|list|length }}</h3>
-                                <p>Odrzucone</p>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Registrations Table -->
-                    <div class="admin-card">
-                        <div class="admin-card-body">
-                            {% if registrations %}
-                                <div class="table-responsive">
-                                    <table class="table admin-table admin-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Data</th>
-                                                <th>Imię i Nazwisko</th>
-                                                <th>Email</th>
-                                                <th>Telefon</th>
-                                                <th>Status</th>
-                                                <th>Akcje</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for registration in registrations %}
-                                            <tr>
-                                                <td>
-                                                    <small class="text-muted">
-                                                        {{ registration.created_at.strftime('%d.%m.%Y %H:%M') if registration.created_at else 'Brak' }}
-                                                    </small>
-                                                </td>
-                                                <td>
-                                                    <strong>{{ registration.name }}</strong>
-                                                </td>
-                                                <td>
-                                                    <a href="mailto:{{ registration.email }}" class="text-decoration-none">
-                                                        {{ registration.email }}
-                                                    </a>
-                                                </td>
-                                                <td>
-                                                    <a href="tel:{{ registration.phone }}" class="text-decoration-none">
-                                                        {{ registration.phone }}
-                                                    </a>
-                                                </td>
-                                                <td>
-                                                    {% if registration.status == 'pending' %}
-                                                        <span class="badge bg-warning">Oczekująca</span>
-                                                    {% elif registration.status == 'approved' %}
-                                                        <span class="badge bg-success">Zatwierdzona</span>
-                                                    {% elif registration.status == 'rejected' %}
-                                                        <span class="badge bg-danger">Odrzucona</span>
-                                                    {% else %}
-                                                        <span class="admin-badge admin-badge-secondary">{{ registration.status }}</span>
-                                                    {% endif %}
-                                                </td>
-                                                <td>
-                                                    <div class="btn-group" role="group">
-                                                        <button class="btn btn-sm admin-btn-outline" 
-                                                                data-action="view" 
-                                                                data-id="{{ registration.id }}"
-                                                                data-name="{{ registration.name }}"
-                                                                data-email="{{ registration.email }}"
-                                                                data-phone="{{ registration.phone }}"
-                                                                data-presentation-date="{{ registration.presentation_date or '' }}"
-                                                                data-status="{{ registration.status }}">
-                                                            <i class="fas fa-eye"></i>
-                                                        </button>
-                                                        {% if registration.status == 'pending' %}
-                                                        <button class="btn btn-sm admin-btn-success" 
-                                                                data-action="approve" 
-                                                                data-id="{{ registration.id }}">
-                                                            <i class="fas fa-check"></i>
-                                                        </button>
-                                                        <button class="btn btn-sm admin-btn-danger" 
-                                                                data-action="reject" 
-                                                                data-id="{{ registration.id }}">
-                                                            <i class="fas fa-times"></i>
-                                                        </button>
-                                                        {% endif %}
-                                                        <button class="btn btn-sm admin-btn-danger" 
-                                                                data-action="delete" 
-                                                                data-id="{{ registration.id }}"
-                                                                data-name="{{ registration.name }}">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
+{% extends "admin/base.html" %}
+
+{% block title %}Zarządzanie Rejestracjami{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <h1><i class="fas fa-user-plus me-2"></i>Zarządzanie Rejestracjami</h1>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="admin-stats-card">
+            <i class="fas fa-users"></i>
+            <h3>{{ registrations|length }}</h3>
+            <p>Wszystkie Rejestracje</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-stats-card">
+            <i class="fas fa-clock"></i>
+            <h3>{{ registrations|selectattr('status', 'equalto', 'pending')|list|length }}</h3>
+            <p>Oczekujące</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-stats-card">
+            <i class="fas fa-check-circle"></i>
+            <h3>{{ registrations|selectattr('status', 'equalto', 'approved')|list|length }}</h3>
+            <p>Zatwierdzone</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-stats-card">
+            <i class="fas fa-times-circle"></i>
+            <h3>{{ registrations|selectattr('status', 'equalto', 'rejected')|list|length }}</h3>
+            <p>Odrzucone</p>
+        </div>
+    </div>
+</div>
+
+<!-- Registrations Table -->
+<div class="admin-card">
+    <div class="admin-card-body">
+        {% if registrations %}
+            <div class="table-responsive">
+                <table class="table admin-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Imię i Nazwisko</th>
+                            <th>Email</th>
+                            <th>Telefon</th>
+                            <th>Status</th>
+                            <th>Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for registration in registrations %}
+                        <tr>
+                            <td>
+                                <small class="text-muted">
+                                    {{ registration.created_at.strftime('%d.%m.%Y %H:%M') if registration.created_at else 'Brak' }}
+                                </small>
+                            </td>
+                            <td>
+                                <strong>{{ registration.name }}</strong>
+                            </td>
+                            <td>
+                                <a href="mailto:{{ registration.email }}" class="text-decoration-none">
+                                    {{ registration.email }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="tel:{{ registration.phone }}" class="text-decoration-none">
+                                    {{ registration.phone }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if registration.status == 'pending' %}
+                                    <span class="badge bg-warning">Oczekująca</span>
+                                {% elif registration.status == 'approved' %}
+                                    <span class="badge bg-success">Zatwierdzona</span>
+                                {% elif registration.status == 'rejected' %}
+                                    <span class="badge bg-danger">Odrzucona</span>
+                                {% else %}
+                                    <span class="admin-badge admin-badge-secondary">{{ registration.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm admin-btn-outline" 
+                                            data-action="view" 
+                                            data-id="{{ registration.id }}"
+                                            data-name="{{ registration.name }}"
+                                            data-email="{{ registration.email }}"
+                                            data-phone="{{ registration.phone }}"
+                                            data-presentation-date="{{ registration.presentation_date or '' }}"
+                                            data-status="{{ registration.status }}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    {% if registration.status == 'pending' %}
+                                    <button class="btn btn-sm admin-btn-success" 
+                                            data-action="approve" 
+                                            data-id="{{ registration.id }}">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-sm admin-btn-danger" 
+                                            data-action="reject" 
+                                            data-id="{{ registration.id }}">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    {% endif %}
+                                    <button class="btn btn-sm admin-btn-danger" 
+                                            data-action="delete" 
+                                            data-id="{{ registration.id }}"
+                                            data-name="{{ registration.name }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
-                            {% else %}
-                                <div class="text-center py-5">
-                                    <i class="fas fa-user-plus fa-3x text-muted mb-3"></i>
-                                    <h5 class="text-muted">Brak rejestracji</h5>
-                                    <p class="text-muted">Nie ma jeszcze żadnych rejestracji w systemie</p>
-                                </div>
-                            {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-user-plus fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Brak rejestracji</h5>
+                <p class="text-muted">Nie ma jeszcze żadnych rejestracji w systemie</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- View Registration Modal -->
+<div class="modal fade admin-modal" id="viewRegistrationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye me-2"></i>
+                    Szczegóły Rejestracji
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Imię i Nazwisko</label>
+                            <p id="view_name" class="mb-0"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Email</label>
+                            <p id="view_email" class="mb-0"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Telefon</label>
+                            <p id="view_phone" class="mb-0"></p>
                         </div>
                     </div>
-                </main>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Status</label>
+                            <p id="view_status" class="mb-0"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Data Rejestracji</label>
+                            <p id="view_date" class="mb-0"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Data Prezentacji</label>
+                    <p id="view_presentation_date" class="mb-0"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Zamknij</button>
             </div>
         </div>
     </div>
-    <!-- View Registration Modal -->
-    <div class="modal fade admin-modal" id="viewRegistrationModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-eye me-2"></i>
-                        Szczegóły Rejestracji
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Imię i Nazwisko</label>
-                                <p id="view_name" class="mb-0"></p>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Email</label>
-                                <p id="view_email" class="mb-0"></p>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Telefon</label>
-                                <p id="view_phone" class="mb-0"></p>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Status</label>
-                                <p id="view_status" class="mb-0"></p>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Data Rejestracji</label>
-                                <p id="view_date" class="mb-0"></p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Data Prezentacji</label>
-                        <p id="view_presentation_date" class="mb-0"></p>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Zamknij</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // View Registration
-        function viewRegistration(id, name, email, phone, presentationDate, status) {
-            document.getElementById('view_name').textContent = name;
-            document.getElementById('view_email').textContent = email;
-            document.getElementById('view_phone').textContent = phone;
-            document.getElementById('view_presentation_date').textContent = presentationDate || 'Brak daty';
-            let statusText = '';
-            let statusClass = '';
-            if (status === 'pending') {
-                statusText = 'Oczekująca';
-                statusClass = 'admin-badge admin-badge-warning';
-            } else if (status === 'approved') {
-                statusText = 'Zatwierdzona';
-                statusClass = 'admin-badge admin-badge-success';
-            } else if (status === 'rejected') {
-                statusText = 'Odrzucona';
-                statusClass = 'admin-badge admin-badge-danger';
-            } else {
-                statusText = status;
-                statusClass = 'admin-badge admin-badge-secondary';
-            }
-            document.getElementById('view_status').innerHTML = `<span class="${statusClass}">${statusText}</span>`;
-            document.getElementById('view_date').textContent = new Date().toLocaleDateString('pl-PL');
-            new bootstrap.Modal(document.getElementById('viewRegistrationModal')).show();
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // View Registration
+    function viewRegistration(id, name, email, phone, presentationDate, status) {
+        document.getElementById('view_name').textContent = name;
+        document.getElementById('view_email').textContent = email;
+        document.getElementById('view_phone').textContent = phone;
+        document.getElementById('view_presentation_date').textContent = presentationDate || 'Brak daty';
+        let statusText = '';
+        let statusClass = '';
+        if (status === 'pending') {
+            statusText = 'Oczekująca';
+            statusClass = 'admin-badge admin-badge-warning';
+        } else if (status === 'approved') {
+            statusText = 'Zatwierdzona';
+            statusClass = 'admin-badge admin-badge-success';
+        } else if (status === 'rejected') {
+            statusText = 'Odrzucona';
+            statusClass = 'admin-badge admin-badge-danger';
+        } else {
+            statusText = status;
+            statusClass = 'admin-badge admin-badge-secondary';
         }
-        // Update Status
-        function updateStatus(id, status) {
-            const statusText = status === 'approved' ? 'zatwierdzić' : 'odrzucić';
-            if (confirm(`Czy na pewno chcesz ${statusText} tę rejestrację?`)) {
-                const formData = new FormData();
-                formData.append('id', id);
-                formData.append('status', status);
-                fetch('/admin/api/registrations', {
-                    method: 'PUT',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Błąd: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Wystąpił błąd podczas aktualizacji statusu');
-                });
-            }
-        }
-        // Delete Registration
-        function deleteRegistration(id, name) {
-            if (confirm(`Czy na pewno chcesz usunąć rejestrację użytkownika "${name}"?`)) {
-                fetch(`/admin/api/registrations/${id}`, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Błąd: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Wystąpił błąd podczas usuwania rejestracji');
-                });
-            }
-        }
-        // Event listeners for buttons
-        document.addEventListener('click', function(event) {
-            if (event.target.closest('[data-action]')) {
-                const button = event.target.closest('[data-action]');
-                const action = button.dataset.action;
-                const id = button.dataset.id;
-                
-                switch (action) {
-                    case 'view':
-                        const name = button.dataset.name;
-                        const email = button.dataset.email;
-                        const phone = button.dataset.phone;
-                        const presentationDate = button.dataset.presentationDate;
-                        const status = button.dataset.status;
-                        viewRegistration(id, name, email, phone, presentationDate, status);
-                        break;
-                    case 'approve':
-                        updateStatus(id, 'approved');
-                        break;
-                    case 'reject':
-                        updateStatus(id, 'rejected');
-                        break;
-                    case 'delete':
-                        const deleteName = button.dataset.name;
-                        deleteRegistration(id, deleteName);
-                        break;
+        document.getElementById('view_status').innerHTML = `<span class="${statusClass}">${statusText}</span>`;
+        document.getElementById('view_date').textContent = new Date().toLocaleDateString('pl-PL');
+        new bootstrap.Modal(document.getElementById('viewRegistrationModal')).show();
+    }
+
+    // Update Status
+    function updateStatus(id, status) {
+        const statusText = status === 'approved' ? 'zatwierdzić' : 'odrzucić';
+        if (confirm(`Czy na pewno chcesz ${statusText} tę rejestrację?`)) {
+            const formData = new FormData();
+            formData.append('id', id);
+            formData.append('status', status);
+            fetch('/admin/api/registrations', {
+                method: 'PUT',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.toastManager.success('Status rejestracji został zaktualizowany!');
+                    location.reload();
+                } else {
+                    window.toastManager.error('Błąd: ' + data.error);
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.toastManager.error('Wystąpił błąd podczas aktualizacji statusu');
+            });
+        }
+    }
+
+    // Delete Registration
+    function deleteRegistration(id, name) {
+        if (confirm(`Czy na pewno chcesz usunąć rejestrację użytkownika "${name}"?`)) {
+            fetch(`/admin/api/registrations/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.toastManager.success('Rejestracja została usunięta!');
+                    location.reload();
+                } else {
+                    window.toastManager.error('Błąd: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.toastManager.error('Wystąpił błąd podczas usuwania rejestracji');
+            });
+        }
+    }
+
+    // Event listeners for buttons
+    document.addEventListener('click', function(event) {
+        if (event.target.closest('[data-action]')) {
+            const button = event.target.closest('[data-action]');
+            const action = button.dataset.action;
+            const id = button.dataset.id;
+            
+            switch (action) {
+                case 'view':
+                    const name = button.dataset.name;
+                    const email = button.dataset.email;
+                    const phone = button.dataset.phone;
+                    const presentationDate = button.dataset.presentationDate;
+                    const status = button.dataset.status;
+                    viewRegistration(id, name, email, phone, presentationDate, status);
+                    break;
+                case 'approve':
+                    updateStatus(id, 'approved');
+                    break;
+                case 'reject':
+                    updateStatus(id, 'rejected');
+                    break;
+                case 'delete':
+                    const deleteName = button.dataset.name;
+                    deleteRegistration(id, deleteName);
+                    break;
             }
-        });
-        
-        // Sidebar toggle functionality
-        document.getElementById('sidebarToggle').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('show');
-        });
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', function(event) {
-            const sidebar = document.getElementById('sidebar');
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            if (window.innerWidth < 992 && 
-                !sidebar.contains(event.target) && 
-                !sidebarToggle.contains(event.target)) {
-                sidebar.classList.remove('show');
-            }
-        });
-    </script>
-</body>
-</html>
+        }
+    });
+</script>
+{% endblock %}

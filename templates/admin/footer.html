@@ -1,0 +1,188 @@
+{% extends "admin/base.html" %}
+
+{% block page_title %}Zarządzanie Stopką{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-shoe-prints me-2"></i>
+                    Zarządzanie Stopką
+                </h1>
+            </div>
+
+            <!-- Footer Settings Form -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cog me-2"></i>
+                        Ustawienia Stopki
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('footer.update_footer') }}">
+                        <div class="row">
+                            <!-- Company Info Section -->
+                            <div class="col-md-6">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="fas fa-building me-2"></i>
+                                    Informacje o Firmie
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="company_title" class="form-label">Tytuł firmy</label>
+                                    <input type="text" class="form-control" id="company_title" name="company_title" 
+                                           value="{{ footer_settings.company_title or '' }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="company_description" class="form-label">Opis firmy</label>
+                                    <textarea class="form-control" id="company_description" name="company_description" 
+                                              rows="3" required>{{ footer_settings.company_description or '' }}</textarea>
+                                </div>
+                            </div>
+
+                            <!-- Contact Section -->
+                            <div class="col-md-6">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="fas fa-phone me-2"></i>
+                                    Kontakt
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="contact_title" class="form-label">Tytuł sekcji kontakt</label>
+                                    <input type="text" class="form-control" id="contact_title" name="contact_title" 
+                                           value="{{ footer_settings.contact_title or '' }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="contact_email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="contact_email" name="contact_email" 
+                                           value="{{ footer_settings.contact_email or '' }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="contact_phone" class="form-label">Telefon</label>
+                                    <input type="text" class="form-control" id="contact_phone" name="contact_phone" 
+                                           value="{{ footer_settings.contact_phone or '' }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Social Media Section -->
+                            <div class="col-md-6">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="fas fa-share-alt me-2"></i>
+                                    Media Społecznościowe
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="social_title" class="form-label">Tytuł sekcji social media</label>
+                                    <input type="text" class="form-control" id="social_title" name="social_title" 
+                                           value="{{ footer_settings.social_title or '' }}" required>
+                                </div>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Linki do mediów społecznościowych są pobierane automatycznie z sekcji 
+                                    <a href="{{ url_for('social.index') }}" class="alert-link">Social Media</a>
+                                </div>
+                            </div>
+
+                            <!-- Legal Section -->
+                            <div class="col-md-6">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="fas fa-gavel me-2"></i>
+                                    Dokumenty Prawne
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="company_name" class="form-label">Nazwa firmy (copyright)</label>
+                                    <input type="text" class="form-control" id="company_name" name="company_name" 
+                                           value="{{ footer_settings.company_name or '' }}" required>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="show_privacy_policy" name="show_privacy_policy" 
+                                           {% if footer_settings.show_privacy_policy %}checked{% endif %}>
+                                    <label class="form-check-label" for="show_privacy_policy">
+                                        Pokaż link do Polityki Prywatności
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="show_terms" name="show_terms" 
+                                           {% if footer_settings.show_terms %}checked{% endif %}>
+                                    <label class="form-check-label" for="show_terms">
+                                        Pokaż link do Regulaminu
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn admin-btn">
+                                <i class="fas fa-save me-2"></i>
+                                Zapisz Ustawienia
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Legal Documents Management -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-contract me-2"></i>
+                        Zarządzanie Dokumentami Prawnymi
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-shield-alt me-2 text-primary"></i>
+                                        Polityka Prywatności
+                                    </h6>
+                                    <p class="card-text text-muted">
+                                        {% if privacy_policy %}
+                                            Ostatnia aktualizacja: {{ privacy_policy.updated_at.strftime('%d.%m.%Y') if privacy_policy.updated_at else 'Nie określono' }}
+                                        {% else %}
+                                            Dokument nie został jeszcze utworzony
+                                        {% endif %}
+                                    </p>
+                                    <a href="{{ url_for('footer.edit_legal', document_type='privacy_policy') }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-edit me-2"></i>
+                                        {% if privacy_policy %}Edytuj{% else %}Utwórz{% endif %}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-clipboard-list me-2 text-success"></i>
+                                        Regulamin
+                                    </h6>
+                                    <p class="card-text text-muted">
+                                        {% if terms %}
+                                            Ostatnia aktualizacja: {{ terms.updated_at.strftime('%d.%m.%Y') if terms.updated_at else 'Nie określono' }}
+                                        {% else %}
+                                            Dokument nie został jeszcze utworzony
+                                        {% endif %}
+                                    </p>
+                                    <a href="{{ url_for('footer.edit_legal', document_type='terms') }}" class="btn btn-outline-success btn-sm">
+                                        <i class="fas fa-edit me-2"></i>
+                                        {% if terms %}Edytuj{% else %}Utwórz{% endif %}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+

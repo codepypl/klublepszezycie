@@ -1,138 +1,199 @@
 <!-- Admin Sidebar -->
-<nav class="col-lg-2 admin-sidebar">
+<nav class="col-lg-2 admin-sidebar" id="adminSidebar">
     <div class="admin-sidebar-header">
-        <h5><i class="fas fa-cog me-2"></i>Panel Admin</h5>
+        <h5 onclick="toggleSidebar()" class="sidebar-header-clickable">
+            <i class="fas fa-cog me-2"></i><span class="sidebar-text">Panel Admin</span>
+        </h5>
+        <button class="btn btn-sm btn-outline-light sidebar-toggle" onclick="toggleSidebar()" title="Zwiń/rozwiń menu">
+            <i class="fas fa-bars"></i>
+        </button>
     </div>
     
     <ul class="nav nav-pills flex-column mb-auto">
         <li class="nav-item">
-            <a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+            <a href="{{ url_for('admin.dashboard') }}" class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
                 <i class="fas fa-tachometer-alt"></i>
-                Dashboard
+                <span class="nav-link-text">Dashboard</span>
             </a>
-        </li>
-        
-        <!-- Grupa: Treść -->
-        <li class="nav-item">
-            <a href="#contentSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="false">
-                <i class="fas fa-file-alt me-2"></i>
-                Treść
-                <i class="fas fa-chevron-down ms-auto"></i>
-            </a>
-            <div class="collapse" id="contentSubmenu">
-                <ul class="nav flex-column ms-3">
-                    <li class="nav-item">
-                        <a href="{{ url_for('admin_menu') }}" class="nav-link {% if request.endpoint == 'admin_menu' %}active{% endif %}">
-                            <i class="fas fa-bars"></i>
-                            Menu
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ url_for('admin_sections') }}" class="nav-link {% if request.endpoint == 'admin_sections' %}active{% endif %}">
-                            <i class="fas fa-th-large"></i>
-                            Sekcje
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ url_for('admin_pages') }}" class="nav-link {% if request.endpoint == 'admin_pages' %}active{% endif %}">
-                            <i class="fas fa-file-alt"></i>
-                            Podstrony
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ url_for('admin_benefits') }}" class="nav-link {% if request.endpoint == 'admin_benefits' %}active{% endif %}">
-                            <i class="fas fa-star"></i>
-                            Korzyści
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ url_for('admin_testimonials') }}" class="nav-link {% if request.endpoint == 'admin_testimonials' %}active{% endif %}">
-                            <i class="fas fa-quote-left"></i>
-                            Opinie
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ url_for('admin_faq') }}" class="nav-link {% if request.endpoint == 'admin_faq' %}active{% endif %}">
-                            <i class="fas fa-question-circle"></i>
-                            FAQ
-                        </a>
-                    </li>
-                </ul>
-            </div>
         </li>
         
         <!-- Grupa: Mailing -->
         <li class="nav-item">
-            <a href="#mailingSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="false">
+            <a href="#mailingSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['admin.email_templates', 'admin.email_campaigns', 'admin.email_groups', 'admin.email_queue'] %}true{% else %}false{% endif %}">
                 <i class="fas fa-envelope me-2"></i>
-                Mailing
+                <span class="nav-link-text">Mailing</span>
                 <i class="fas fa-chevron-down ms-auto"></i>
             </a>
-            <div class="collapse" id="mailingSubmenu">
+            <div class="collapse{% if request.endpoint in ['admin.email_templates', 'admin.email_campaigns', 'admin.email_groups', 'admin.email_queue'] %} show{% endif %}" id="mailingSubmenu">
                 <ul class="nav flex-column ms-3">
                     <li class="nav-item">
-                        <a href="{{ url_for('email_templates') }}" class="nav-link {% if request.endpoint == 'email_templates' %}active{% endif %}">
-                            <i class="fas fa-envelope"></i>
-                            Szablony e-mail
+                        <a href="{{ url_for('admin.email_templates') }}" class="nav-link {% if request.endpoint == 'admin.email_templates' %}active{% endif %}">
+                            <i class="fas fa-file-alt"></i>
+                            <span class="nav-link-text">Szablony</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ url_for('admin_schedules') }}" class="nav-link {% if request.endpoint == 'admin_schedules' %}active{% endif %}">
-                            <i class="fas fa-clock"></i>
-                            Harmonogramy
+                        <a href="{{ url_for('admin.email_campaigns') }}" class="nav-link {% if request.endpoint == 'admin.email_campaigns' %}active{% endif %}">
+                            <i class="fas fa-bullhorn"></i>
+                            <span class="nav-link-text">Kampanie</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ url_for('admin_user_groups') }}" class="nav-link {% if request.endpoint == 'admin_user_groups' %}active{% endif %}">
-                            <i class="fas fa-user-friends"></i>
-                            Grupy użytkowników
+                        <a href="{{ url_for('admin.email_groups') }}" class="nav-link {% if request.endpoint == 'admin.email_groups' %}active{% endif %}">
+                            <i class="fas fa-users"></i>
+                            <span class="nav-link-text">Grupy</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin.email_queue') }}" class="nav-link {% if request.endpoint == 'admin.email_queue' %}active{% endif %}">
+                            <i class="fas fa-inbox"></i>
+                            <span class="nav-link-text">Kolejka</span>
                         </a>
                     </li>
                 </ul>
             </div>
         </li>
         
-        <!-- Grupa: Użytkownicy -->
+        <!-- Grupa: Zarządzanie treścią -->
         <li class="nav-item">
-                                    <a href="#usersSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="false">
-                            <i class="fas fa-users me-2"></i>
-                            Użytkownicy i Wydarzenia
-                            <i class="fas fa-chevron-down ms-auto"></i>
-                        </a>
-            <div class="collapse" id="usersSubmenu">
+            <a href="#contentSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['admin.menu', 'admin.sections', 'admin.benefits', 'admin.testimonials', 'admin.faq', 'footer.index'] %}true{% else %}false{% endif %}">
+                <i class="fas fa-edit me-2"></i>
+                <span class="nav-link-text">Treść</span>
+                <i class="fas fa-chevron-down ms-auto"></i>
+            </a>
+            <div class="collapse{% if request.endpoint in ['admin.menu', 'admin.sections', 'admin.benefits', 'admin.testimonials', 'admin.faq', 'footer.index'] %} show{% endif %}" id="contentSubmenu">
                 <ul class="nav flex-column ms-3">
                     <li class="nav-item">
-                        <a href="{{ url_for('admin_event_schedule') }}" class="nav-link {% if request.endpoint == 'admin_event_schedule' %}active{% endif %}">
-                            <i class="fas fa-calendar-alt"></i>
-                            Wydarzenia
+                        <a href="{{ url_for('admin.menu') }}" class="nav-link {% if request.endpoint == 'admin.menu' %}active{% endif %}">
+                            <i class="fas fa-bars"></i>
+                            <span class="nav-link-text">Menu</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ url_for('admin_event_registrations') }}" class="nav-link {% if request.endpoint == 'admin_event_registrations' %}active{% endif %}">
-                            <i class="fas fa-calendar-check"></i>
-                            Rejestracje
+                        <a href="{{ url_for('admin.sections') }}" class="nav-link {% if request.endpoint == 'admin.sections' %}active{% endif %}">
+                            <i class="fas fa-th-large"></i>
+                            <span class="nav-link-text">Sekcje</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ url_for('admin_users') }}" class="nav-link {% if request.endpoint == 'admin_users' %}active{% endif %}">
-                            <i class="fas fa-user-cog"></i>
-                            Konta
+                        <a href="{{ url_for('admin.benefits') }}" class="nav-link {% if request.endpoint == 'admin.benefits' %}active{% endif %}">
+                            <i class="fas fa-star"></i>
+                            <span class="nav-link-text">Korzyści</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin.testimonials') }}" class="nav-link {% if request.endpoint == 'admin.testimonials' %}active{% endif %}">
+                            <i class="fas fa-quote-left"></i>
+                            <span class="nav-link-text">Opinie</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin.faq') }}" class="nav-link {% if request.endpoint == 'admin.faq' %}active{% endif %}">
+                            <i class="fas fa-question-circle"></i>
+                            <span class="nav-link-text">FAQ</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('footer.index') }}" class="nav-link {% if request.endpoint == 'footer.index' %}active{% endif %}">
+                            <i class="fas fa-shoe-prints"></i>
+                            <span class="nav-link-text">Stopka</span>
                         </a>
                     </li>
                 </ul>
             </div>
         </li>
+        
+        <!-- Grupa: Blog -->
         <li class="nav-item">
-            <a href="{{ url_for('admin_seo') }}" class="nav-link {% if request.endpoint == 'admin_seo' %}active{% endif %}">
-                <i class="fas fa-search"></i>
-                SEO
+            <a href="#blogSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['blog.admin_posts', 'blog.admin_categories', 'blog.admin_tags', 'blog.admin_comments'] %}true{% else %}false{% endif %}">
+                <i class="fas fa-blog me-2"></i>
+                <span class="nav-link-text">Blog</span>
+                <i class="fas fa-chevron-down ms-auto"></i>
             </a>
+            <div class="collapse{% if request.endpoint in ['blog.admin_posts', 'blog.admin_categories', 'blog.admin_tags', 'blog.admin_comments'] %} show{% endif %}" id="blogSubmenu">
+                <ul class="nav flex-column ms-3">
+                    <li class="nav-item">
+                        <a href="{{ url_for('blog.admin_posts') }}" class="nav-link {% if request.endpoint == 'blog.admin_posts' %}active{% endif %}">
+                            <i class="fas fa-newspaper"></i>
+                            <span class="nav-link-text">Artykuły</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('blog.admin_categories') }}" class="nav-link {% if request.endpoint == 'blog.admin_categories' %}active{% endif %}">
+                            <i class="fas fa-folder"></i>
+                            <span class="nav-link-text">Kategorie</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('blog.admin_tags') }}" class="nav-link {% if request.endpoint == 'blog.admin_tags' %}active{% endif %}">
+                            <i class="fas fa-tags"></i>
+                            <span class="nav-link-text">Tagi</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('blog.admin_comments') }}" class="nav-link {% if request.endpoint == 'blog.admin_comments' %}active{% endif %}">
+                            <i class="fas fa-comments"></i>
+                            <span class="nav-link-text">Komentarze</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </li>
+        
+        <!-- Grupa: Wydarzenia i użytkownicy -->
         <li class="nav-item">
-            <a href="{{ url_for('admin_social') }}" class="nav-link {% if request.endpoint == 'admin_social' %}active{% endif %}">
-                <i class="fas fa-share-alt"></i>
-                Media społecznościowe
+            <a href="#eventsSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['events.index', 'events.registrations', 'users.index'] %}true{% else %}false{% endif %}">
+                <i class="fas fa-calendar me-2"></i>
+                <span class="nav-link-text">Wydarzenia</span>
+                <i class="fas fa-chevron-down ms-auto"></i>
             </a>
+            <div class="collapse{% if request.endpoint in ['events.index', 'events.registrations', 'users.index'] %} show{% endif %}" id="eventsSubmenu">
+                <ul class="nav flex-column ms-3">
+                    <li class="nav-item">
+                        <a href="{{ url_for('events.index') }}" class="nav-link {% if request.endpoint == 'events.index' %}active{% endif %}">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span class="nav-link-text">Harmonogram wydarzeń</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('events.registrations') }}" class="nav-link {% if request.endpoint == 'events.registrations' %}active{% endif %}">
+                            <i class="fas fa-user-plus"></i>
+                            <span class="nav-link-text">Rejestracje na wydarzenia</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('users.index') }}" class="nav-link {% if request.endpoint == 'users.index' %}active{% endif %}">
+                            <i class="fas fa-users"></i>
+                            <span class="nav-link-text">Użytkownicy</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        
+        <!-- Grupa: SEO i social media -->
+        <li class="nav-item">
+            <a href="#seoSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['seo.index', 'social.index'] %}true{% else %}false{% endif %}">
+                <i class="fas fa-search me-2"></i>
+                <span class="nav-link-text">Reklama</span>
+                <i class="fas fa-chevron-down ms-auto"></i>
+            </a>
+            <div class="collapse{% if request.endpoint in ['seo.index', 'social.index'] %} show{% endif %}" id="seoSubmenu">
+                <ul class="nav flex-column ms-3">
+                    <li class="nav-item">
+                        <a href="{{ url_for('seo.index') }}" class="nav-link {% if request.endpoint == 'seo.index' %}active{% endif %}">
+                            <i class="fas fa-search"></i>
+                            <span class="nav-link-text">SEO</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('social.index') }}" class="nav-link {% if request.endpoint == 'social.index' %}active{% endif %}">
+                            <i class="fas fa-share-alt"></i>
+                            <span class="nav-link-text">Social media</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </li>
 
     </ul>

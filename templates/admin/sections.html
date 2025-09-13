@@ -7,10 +7,16 @@
 {% endblock %}
 
 {% block page_actions %}
-    <button class="btn admin-btn" onclick="showAddSectionModal()">
-        <i class="fas fa-plus me-2"></i>
-        Dodaj Sekcję
-    </button>
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn" onclick="showAddSectionModal()">
+            <i class="fas fa-plus me-2"></i>
+            Dodaj Sekcję
+        </button>
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+            <i class="fas fa-trash me-2"></i>
+            Usuń Zaznaczone
+        </button>
+    </div>
 {% endblock %}
 
 {% block content %}
@@ -19,9 +25,12 @@
         <div class="admin-card-body">
             {% if sections %}
                 <div class="table-responsive">
-                    <table class="table admin-table">
+                    <table class="table admin-table sections-table">
                         <thead>
                             <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll()">
+                                </th>
                                 <th>Kolejność</th>
                                 <th>Nazwa</th>
                                 <th>Tytuł</th>
@@ -32,7 +41,10 @@
                         </thead>
                         <tbody>
                             {% for section in sections %}
-                            <tr data-section-id="{{ section.id }}">
+                            <tr data-section-id="{{ section.id }}" data-item-id="{{ section.id }}">
+                                <td>
+                                    <input type="checkbox" class="section-checkbox" value="{{ section.id }}" onchange="bulkDeleteManager.updateBulkDeleteButton()">
+                                </td>
                                 <td>
                                     <span class="badge admin-badge admin-badge-primary">{{ section.order }}</span>
                                 </td>
@@ -113,7 +125,7 @@
                         </div>
                         <div class="mb-3">
                             <label for="sectionContent" class="form-label">Treść</label>
-                            <textarea class="form-control" id="sectionContent" name="content" rows="10"></textarea>
+                            <textarea class="form-control" id="sectionContent" name="content" rows="10" data-tinymce></textarea>
                         </div>
 
                         <div class="mb-3">
@@ -197,7 +209,7 @@
                         </div>
                         <div class="mb-3">
                             <label for="editSectionContent" class="form-label">Treść</label>
-                            <textarea class="form-control" id="editSectionContent" name="content" rows="10"></textarea>
+                            <textarea class="form-control" id="editSectionContent" name="content" rows="10" data-tinymce></textarea>
                         </div>
 
                         <div class="mb-3">
@@ -335,6 +347,19 @@
 
 {% block extra_js %}
 <!-- TinyMCE WYSIWYG Editor -->
-<script src="https://cdn.tiny.cloud/1/nzk6x47f5uoxs3thrhw5hjtjhrby1u3skrpld6z2z032z7tv/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+
 <script src="{{ url_for('static', filename='js/admin/sections.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize bulk delete manager for sections
+    window.bulkDeleteManager = BulkDeleteManager.createForPage('sections', {
+        itemCheckboxClass: 'section-checkbox',
+        bulkDeleteBtnId: 'bulkDeleteBtn',
+        apiEndpoint: '/api/sections',
+        confirmMessage: 'Czy na pewno chcesz usunąć zaznaczone sekcje? Tej operacji nie można cofnąć.',
+        successMessage: 'Sekcje zostały usunięte pomyślnie',
+        errorMessage: 'Wystąpił błąd podczas usuwania sekcji'
+    });
+});
+</script>
 {% endblock %}

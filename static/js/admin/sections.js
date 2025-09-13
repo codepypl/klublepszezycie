@@ -4,91 +4,7 @@
 let pillarsData = [];
 let floatingCardsData = [];
 
-// Toast notification system
-class ToastManager {
-    constructor() {
-        this.container = this.createToastContainer();
-    }
-
-    createToastContainer() {
-        let container = document.getElementById('toast-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'toast-container';
-            container.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                left: 20px;
-                z-index: 9999;
-                max-width: 400px;
-            `;
-            document.body.appendChild(container);
-        }
-        return container;
-    }
-
-    show(message, type = 'info', duration = 5000) {
-        const toast = document.createElement('div');
-        toast.className = `toast align-items-center text-white bg-${type} border-0`;
-        toast.setAttribute('role', 'alert');
-        toast.setAttribute('aria-live', 'assertive');
-        toast.setAttribute('aria-atomic', 'true');
-        
-        toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="fas fa-${this.getIcon(type)} me-2"></i>
-                    ${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        `;
-
-        this.container.appendChild(toast);
-        
-        // Initialize Bootstrap toast
-        const bsToast = new bootstrap.Toast(toast, {
-            autohide: true,
-            delay: duration
-        });
-        
-        bsToast.show();
-        
-        // Remove from DOM after hiding
-        toast.addEventListener('hidden.bs.toast', () => {
-            toast.remove();
-        });
-    }
-
-    getIcon(type) {
-        const icons = {
-            'success': 'check-circle',
-            'danger': 'exclamation-triangle',
-            'warning': 'exclamation-circle',
-            'info': 'info-circle'
-        };
-        return icons[type] || 'info-circle';
-    }
-
-    success(message, duration = 5000) {
-        this.show(message, 'success', duration);
-    }
-
-    error(message, duration = 7000) {
-        this.show(message, 'danger', duration);
-    }
-
-    warning(message, duration = 6000) {
-        this.show(message, 'warning', duration);
-    }
-
-    info(message, duration = 5000) {
-        this.show(message, 'info', duration);
-    }
-}
-
-// Initialize toast manager
-const toastManager = new ToastManager();
+// Toast manager is loaded globally from utils/toast.js
 
 // Sections management functions
 class SectionsManager {
@@ -153,7 +69,7 @@ class SectionsManager {
     }
 
     editSection(sectionId) {
-        fetch(`/admin/api/sections/${sectionId}`)
+        fetch(`/api/sections/${sectionId}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -183,38 +99,94 @@ class SectionsManager {
                     const modal = new bootstrap.Modal(document.getElementById('editSectionModal'));
                     modal.show();
                 } else {
-                    toastManager.error('Błąd podczas ładowania sekcji: ' + data.error);
+                    window.toastManager.error('Błąd podczas ładowania sekcji: ' + data.error);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                toastManager.error('Wystąpił błąd podczas ładowania sekcji');
+                window.toastManager.error('Wystąpił błąd podczas ładowania sekcji');
             });
     }
 
     deleteSection(sectionId) {
-        if (confirm('Czy na pewno chcesz usunąć tę sekcję? Tej operacji nie można cofnąć.')) {
-            fetch(`/admin/api/sections?id=${sectionId}`, {
-                method: 'DELETE'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    toastManager.success('Sekcja została usunięta pomyślnie!');
-                    // Usuń wiersz z tabeli
-                    const row = document.querySelector(`tr[data-section-id="${sectionId}"]`);
-                    if (row) {
-                        row.remove();
-                    }
-                } else {
-                    toastManager.error('Błąd podczas usuwania: ' + data.error);
+        // Use Bootstrap modal instead of confirm()
+        const modal = document.getElementById('bulkDeleteModal');
+        const messageElement = document.getElementById('bulkDeleteMessage');
+        const confirmButton = document.getElementById('confirmBulkDelete');
+        const cancelButton = modal.querySelector('button[data-bs-dismiss="modal"]');
+        
+        if (modal && messageElement && confirmButton) {
+            // Update message
+            messageElement.textContent = 'Czy na pewno chcesz usunąć tę sekcję? Tej operacji nie można cofnąć.';
+            
+            // Remove existing event listeners
+            const newConfirmButton = confirmButton.cloneNode(true);
+            confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+            
+            // Add new event listener for confirm button
+            newConfirmButton.addEventListener('click', () => {
+                // Hide modal first
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                toastManager.error('Wystąpił błąd podczas usuwania sekcji');
+                
+                // Then perform delete
+                this.performDeleteSection(sectionId);
             });
+            
+            // Add event listener for cancel button to properly clean up
+            if (cancelButton) {
+                const newCancelButton = cancelButton.cloneNode(true);
+                cancelButton.parentNode.replaceChild(newCancelButton, cancelButton);
+                
+                newCancelButton.addEventListener('click', () => {
+                    // Hide modal
+                    modal.classList.remove('show');
+                    modal.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                });
+            }
+            
+            // Show modal
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+        } else {
+            // Fallback to confirm() if modal not available
+            if (confirm('Czy na pewno chcesz usunąć tę sekcję? Tej operacji nie można cofnąć.')) {
+                this.performDeleteSection(sectionId);
+            }
         }
+    }
+
+    performDeleteSection(sectionId) {
+        fetch(`/api/sections/${sectionId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.toastManager.success('Sekcja została usunięta pomyślnie!');
+                // Usuń wiersz z tabeli
+                const row = document.querySelector(`tr[data-section-id="${sectionId}"]`);
+                if (row) {
+                    row.remove();
+                }
+            } else {
+                window.toastManager.error('Błąd podczas usuwania: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            window.toastManager.error('Wystąpił błąd podczas usuwania sekcji');
+        });
     }
 
     handleAddSection(e) {
@@ -230,25 +202,25 @@ class SectionsManager {
         formData.delete('enable_pillars_hidden');
         formData.delete('enable_floating_cards_hidden');
         
-        fetch('/admin/api/sections', {
+        fetch('/api/sections', {
             method: 'POST',
             body: formData
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                toastManager.success('Sekcja została dodana pomyślnie!');
+                window.toastManager.success('Sekcja została dodana pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('addSectionModal'));
                 modal.hide();
                 // Odśwież stronę
                 window.location.reload();
             } else {
-                toastManager.error('Błąd podczas dodawania: ' + data.error);
+                window.toastManager.error('Błąd podczas dodawania: ' + data.error);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            toastManager.error('Wystąpił błąd podczas dodawania sekcji');
+            window.toastManager.error('Wystąpił błąd podczas dodawania sekcji');
         });
     }
 
@@ -270,87 +242,96 @@ class SectionsManager {
         formData.delete('enable_pillars_hidden');
         formData.delete('enable_floating_cards_hidden');
         
-        fetch('/admin/api/sections', {
+        const sectionId = document.getElementById('editSectionId').value;
+        fetch(`/api/sections/${sectionId}`, {
             method: 'PUT',
             body: formData
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                toastManager.success('Sekcja została zaktualizowana pomyślnie!');
+                window.toastManager.success('Sekcja została zaktualizowana pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editSectionModal'));
                 modal.hide();
                 // Odśwież stronę
                 window.location.reload();
             } else {
-                toastManager.error('Błąd podczas aktualizacji: ' + data.error);
+                window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            toastManager.error('Wystąpił błąd podczas aktualizacji sekcji');
+            window.toastManager.error('Wystąpił błąd podczas aktualizacji sekcji');
         });
     }
 }
 
-// Helper function to get pages for dropdown
-async function getPagesOptions(selectedPage = '') {
+// Helper function to get blog link options for dropdown
+async function getBlogLinkOptions(selectedLink = '') {
     try {
-        // Try to fetch pages from the database
-        const response = await fetch('/admin/api/pages');
+        // Get blog categories and posts
+        const [categoriesResponse, postsResponse] = await Promise.all([
+            fetch('/api/blog/categories'),
+            fetch('/api/blog/posts')
+        ]);
         
-        if (response.ok) {
-            const data = await response.json();
-            
-            if (data.success && Array.isArray(data.pages)) {
-                // Filter only active and published pages
-                const activePages = data.pages.filter(page => page.is_active && page.is_published);
-                
-                if (activePages.length > 0) {
-                    return activePages.map(page => 
-                        `<option value="${page.slug}" ${page.slug === selectedPage ? 'selected' : ''}>${page.title}</option>`
-                    ).join('');
-                } else {
-                    // No active and published pages found
-                    return `<option value="" disabled>Brak dostępnych podstron</option>`;
+        let options = '<option value="">-- Wybierz link --</option>';
+        
+        // Add menu options
+        options += '<optgroup label="Menu">';
+        options += '<option value="menu:blog" ' + (selectedLink === 'menu:blog' ? 'selected' : '') + '>Blog (#blog)</option>';
+        options += '</optgroup>';
+        
+        // Add blog index
+        options += '<optgroup label="Blog">';
+        options += '<option value="blog_index" ' + (selectedLink === 'blog_index' ? 'selected' : '') + '>Strona główna bloga</option>';
+        options += '</optgroup>';
+        
+        // Add categories if available
+        if (categoriesResponse.ok) {
+            try {
+                const categoriesData = await categoriesResponse.json();
+                if (categoriesData.success && Array.isArray(categoriesData.categories)) {
+                    options += '<optgroup label="Kategorie">';
+                    categoriesData.categories.forEach(category => {
+                        const value = `category:${category.slug}`;
+                        options += `<option value="${value}" ${value === selectedLink ? 'selected' : ''}>${category.full_path || category.title}</option>`;
+                    });
+                    options += '</optgroup>';
                 }
+            } catch (error) {
+                console.warn('Error parsing categories response:', error);
             }
         }
         
-        // Fallback to static pages if API fails
-        console.warn('Could not fetch pages from API, using fallback');
-        const fallbackPages = [
-            { slug: 'o-nas', title: 'O nas' },
-            { slug: 'korzysci', title: 'Korzyści' },
-            { slug: 'kontakt', title: 'Kontakt' },
-            { slug: 'faq', title: 'FAQ' }
-        ];
+        // Add posts if available
+        if (postsResponse.ok) {
+            try {
+                const postsData = await postsResponse.json();
+                if (postsData.success && Array.isArray(postsData.posts)) {
+                    options += '<optgroup label="Artykuły">';
+                    postsData.posts.forEach(post => {
+                        const value = `post:${post.slug}`;
+                        options += `<option value="${value}" ${value === selectedLink ? 'selected' : ''}>${post.title}</option>`;
+                    });
+                    options += '</optgroup>';
+                }
+            } catch (error) {
+                console.warn('Error parsing posts response:', error);
+            }
+        }
         
-        return fallbackPages.map(page => 
-            `<option value="${page.slug}" ${page.slug === selectedPage ? 'selected' : ''}>${page.title}</option>`
-        ).join('');
-        
+        return options;
     } catch (error) {
-        console.error('Error fetching pages:', error);
-        
-        // Fallback to static pages on error
-        const fallbackPages = [
-            { slug: 'o-nas', title: 'O nas' },
-            { slug: 'korzysci', title: 'Korzyści' },
-            { slug: 'kontakt', title: 'Kontakt' },
-            { slug: 'faq', title: 'FAQ' }
-        ];
-        
-        return fallbackPages.map(page => 
-            `<option value="${page.slug}" ${page.slug === selectedPage ? 'selected' : ''}>${page.title}</option>`
-        ).join('');
+        console.error('Error fetching blog options:', error);
+        return '<option value="" disabled>Błąd ładowania opcji bloga</option>';
     }
 }
 
 // Pillars and Floating Cards Management
 async function editPillars(sectionId) {
     try {
-        const response = await fetch(`/admin/api/sections/${sectionId}`);
+        const response = await fetch(`/api/sections/${sectionId}`);
         const data = await response.json();
         
         if (data.success) {
@@ -369,17 +350,17 @@ async function editPillars(sectionId) {
             const modal = new bootstrap.Modal(document.getElementById('editPillarsModal'));
             modal.show();
         } else {
-            toastManager.error('Błąd podczas ładowania filarów: ' + data.error);
+            window.toastManager.error('Błąd podczas ładowania filarów: ' + data.error);
         }
     } catch (error) {
         console.error('Error:', error);
-        toastManager.error('Wystąpił błąd podczas ładowania filarów');
+        window.toastManager.error('Wystąpił błąd podczas ładowania filarów');
     }
 }
 
 async function editFloatingCards(sectionId) {
     try {
-        const response = await fetch(`/admin/api/sections/${sectionId}`);
+        const response = await fetch(`/api/sections/${sectionId}`);
         const data = await response.json();
         
         if (data.success) {
@@ -398,11 +379,11 @@ async function editFloatingCards(sectionId) {
             const modal = new bootstrap.Modal(document.getElementById('editFloatingCardsModal'));
             modal.show();
         } else {
-            toastManager.error('Błąd podczas ładowania kart: ' + data.error);
+            window.toastManager.error('Błąd podczas ładowania kart: ' + data.error);
         }
     } catch (error) {
         console.error('Error:', error);
-        toastManager.error('Wystąpił błąd podczas ładowania kart');
+        window.toastManager.error('Wystąpił błąd podczas ładowania kart');
     }
 }
 
@@ -432,8 +413,8 @@ async function createPillarElement(pillar, index) {
     const div = document.createElement('div');
     div.className = 'card mb-3 pillar-card';
     
-    // Get pages options asynchronously
-    const pagesOptions = await getPagesOptions(pillar.page_link || '');
+    // Get blog link options asynchronously
+    const blogLinkOptions = await getBlogLinkOptions(pillar.blog_link || '');
     
     div.innerHTML = `
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -465,12 +446,11 @@ async function createPillarElement(pillar, index) {
                         <input type="color" class="form-control form-control-color" name="pillar_icon_color_${index}" value="${pillar.icon_color || '#007bff'}" title="Wybierz kolor ikony">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Link do podstrony</label>
-                        <select class="form-control" name="pillar_page_link_${index}">
-                            <option value="">-- Wybierz podstronę --</option>
-                            ${pagesOptions}
+                        <label class="form-label">Link do bloga</label>
+                        <select class="form-control" name="pillar_blog_link_${index}">
+                            ${blogLinkOptions}
                         </select>
-                        <div class="form-text">Opcjonalny link do podstrony</div>
+                        <div class="form-text">Opcjonalny link do bloga (kategoria, artykuł, menu)</div>
                     </div>
                 </div>
             </div>
@@ -483,8 +463,8 @@ async function createFloatingCardElement(card, index) {
     const div = document.createElement('div');
     div.className = 'card mb-3 floating-card-card';
     
-    // Get pages options asynchronously
-    const pagesOptions = await getPagesOptions(card.page_link || '');
+    // Get blog link options asynchronously
+    const blogLinkOptions = await getBlogLinkOptions(card.blog_link || '');
     
     div.innerHTML = `
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -521,12 +501,11 @@ async function createFloatingCardElement(card, index) {
                         <input type="color" class="form-control form-control-color" name="card_icon_color_${index}" value="${card.icon_color || '#007bff'}" title="Wybierz kolor ikony">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Link do podstrony</label>
-                        <select class="form-control" name="card_page_link_${index}">
-                            <option value="">-- Wybierz podstrony --</option>
-                            ${pagesOptions}
+                        <label class="form-label">Link do bloga</label>
+                        <select class="form-control" name="card_blog_link_${index}">
+                            ${blogLinkOptions}
                         </select>
-                        <div class="form-text">Opcjonalny link do podstrony</div>
+                        <div class="form-text">Opcjonalny link do bloga (kategoria, artykuł, menu)</div>
                     </div>
                 </div>
             </div>
@@ -541,7 +520,7 @@ async function addPillar() {
         description: '', 
         icon: '', 
         icon_color: '#007bff', 
-        page_link: '' 
+        blog_link: '' 
     });
     await renderPillars();
 }
@@ -552,7 +531,7 @@ async function addFloatingCard() {
         description: '', 
         icon: '', 
         icon_color: '#007bff', 
-        page_link: '',
+        blog_link: '',
         position: 300
     });
     await renderFloatingCards();
@@ -581,26 +560,7 @@ function deleteSection(sectionId) {
     sectionsManager.deleteSection(sectionId);
 }
 
-// Initialize TinyMCE
-function initTinyMCE() {
-    if (typeof tinymce !== 'undefined') {
-        tinymce.init({
-            selector: '#sectionContent, #editSectionContent',
-            height: 300,
-            plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
-            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
-            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
-            setup: function (editor) {
-                editor.on('init', function () {
-                    console.log('TinyMCE initialized for:', editor.id);
-                });
-                editor.on('ready', function () {
-                    console.log('TinyMCE instance ready for:', editor.id);
-                });
-            }
-        });
-    }
-}
+// TinyMCE is now initialized globally in admin/base.html
 
 // Form handlers for pillars and floating cards
 function handlePillarsForm(e) {
@@ -616,7 +576,7 @@ function handlePillarsForm(e) {
         const description = formData.get(`pillar_description_${i}`);
         const icon = formData.get(`pillar_icon_${i}`);
         const icon_color = formData.get(`pillar_icon_color_${i}`);
-        const page_link = formData.get(`pillar_page_link_${i}`);
+        const blog_link = formData.get(`pillar_blog_link_${i}`);
         
         if (title) {
             pillars.push({ 
@@ -624,7 +584,7 @@ function handlePillarsForm(e) {
                 description: description || '', 
                 icon: icon || '', 
                 icon_color: icon_color || '#007bff', 
-                page_link: page_link || '' 
+                blog_link: blog_link || '' 
             });
         }
     }
@@ -633,7 +593,7 @@ function handlePillarsForm(e) {
     const finalText = formData.get('final_text') || '';
     
     // Send to API
-    fetch(`/admin/api/sections/${sectionId}/pillars`, {
+    fetch(`/api/sections/${sectionId}/pillars`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -646,16 +606,16 @@ function handlePillarsForm(e) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            toastManager.success('Filary zostały zaktualizowane pomyślnie!');
+            window.toastManager.success('Filary zostały zaktualizowane pomyślnie!');
             const modal = bootstrap.Modal.getInstance(document.getElementById('editPillarsModal'));
             modal.hide();
         } else {
-            toastManager.error('Błąd podczas aktualizacji filarów: ' + data.error);
+            window.toastManager.error('Błąd podczas aktualizacji filarów: ' + data.error);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        toastManager.error('Wystąpił błąd podczas aktualizacji filarów');
+        window.toastManager.error('Wystąpił błąd podczas aktualizacji filarów');
     });
 }
 
@@ -672,7 +632,7 @@ function handleFloatingCardsForm(e) {
         const description = formData.get(`card_description_${i}`);
         const icon = formData.get(`card_icon_${i}`);
         const icon_color = formData.get(`card_icon_color_${i}`);
-        const page_link = formData.get(`card_page_link_${i}`);
+        const blog_link = formData.get(`card_blog_link_${i}`);
         const position = formData.get(`card_position_${i}`);
         
         if (title) {
@@ -681,7 +641,7 @@ function handleFloatingCardsForm(e) {
                 description: description || '', 
                 icon: icon || '', 
                 icon_color: icon_color || '#007bff', 
-                page_link: page_link || '',
+                blog_link: blog_link || '',
                 position: position ? parseInt(position) : 300
             });
         }
@@ -691,7 +651,7 @@ function handleFloatingCardsForm(e) {
     const finalText = formData.get('final_text') || '';
     
     // Send to API
-    fetch(`/admin/api/sections/${sectionId}/floating-cards`, {
+    fetch(`/api/sections/${sectionId}/floating-cards`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -704,16 +664,16 @@ function handleFloatingCardsForm(e) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            toastManager.success('Karty zostały zaktualizowane pomyślnie!');
+            window.toastManager.success('Karty zostały zaktualizowane pomyślnie!');
             const modal = bootstrap.Modal.getInstance(document.getElementById('editFloatingCardsModal'));
             modal.hide();
         } else {
-            toastManager.error('Błąd podczas aktualizacji kart: ' + data.error);
+            window.toastManager.error('Błąd podczas aktualizacji kart: ' + data.error);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        toastManager.error('Wystąpił błąd podczas aktualizacji kart');
+        window.toastManager.error('Wystąpił błąd podczas aktualizacji kart');
     });
 }
 
@@ -722,7 +682,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.sectionsManager = new SectionsManager();
     
     // Initialize TinyMCE
-    initTinyMCE();
+    // TinyMCE is now initialized globally
     
     // Add form event listeners
     const pillarsForm = document.getElementById('editPillarsForm');

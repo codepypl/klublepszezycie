@@ -7,10 +7,16 @@
 {% endblock %}
 
 {% block page_actions %}
-    <button class="btn admin-btn" onclick="showAddLinkModal()">
-        <i class="fas fa-plus me-2"></i>
-        Dodaj Link
-    </button>
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button id="bulkDeleteBtn" class="btn admin-btn-danger" style="display: none;" onclick="confirmBulkDelete()">
+            <i class="fas fa-trash me-2"></i>
+            Usuń zaznaczone (<span id="selectedCount">0</span>)
+        </button>
+        <button class="btn admin-btn" onclick="showAddLinkModal()">
+            <i class="fas fa-plus me-2"></i>
+            Dodaj Link
+        </button>
+    </div>
 {% endblock %}
 
 {% block content %}
@@ -22,10 +28,14 @@
                     <table class="table admin-table">
                         <thead>
                             <tr>
+                                <th width="50">
+                                    <input type="checkbox" id="selectAll" class="form-check-input">
+                                </th>
+                                <th>Kolejność</th>
                                 <th>Platforma</th>
                                 <th>URL</th>
+                                <th>Otwórz w</th>
                                 <th>Status</th>
-                                <th>Kolejność</th>
                                 <th>Akcje</th>
                             </tr>
                         </thead>
@@ -33,13 +43,32 @@
                             {% for link in social_links %}
                             <tr data-link-id="{{ link.id }}">
                                 <td>
+                                    <input type="checkbox" class="form-check-input item-checkbox" value="{{ link.id }}">
+                                </td>
+                                <td>
+                                    <span class="badge admin-badge admin-badge-primary">{{ link.order }}</span>
+                                </td>
+                                <td>
                                     <i class="fab fa-{{ link.platform.lower() }} me-2"></i>
                                     <strong>{{ link.platform }}</strong>
                                 </td>
                                 <td>
-                                    <a href="{{ link.url }}" target="_blank" class="text-decoration-none">
+                                    <a href="{{ link.url }}" target="{{ link.target or '_blank' }}" class="text-decoration-none">
                                         {{ link.url }}
                                     </a>
+                                </td>
+                                <td>
+                                    {% if link.target == '_blank' %}
+                                        <span class="badge admin-badge admin-badge-info">Nowa karta</span>
+                                    {% elif link.target == '_self' %}
+                                        <span class="badge admin-badge admin-badge-secondary">Ta sama karta</span>
+                                    {% elif link.target == '_parent' %}
+                                        <span class="badge admin-badge admin-badge-warning">Ramka nadrzędna</span>
+                                    {% elif link.target == '_top' %}
+                                        <span class="badge admin-badge admin-badge-dark">Najwyższe okno</span>
+                                    {% else %}
+                                        <span class="badge admin-badge admin-badge-info">Nowa karta</span>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if link.is_active %}
@@ -48,9 +77,7 @@
                                         <span class="badge admin-badge admin-badge-danger">Nieaktywny</span>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    <span class="badge admin-badge admin-badge-secondary">{{ link.order }}</span>
-                                </td>
+
                                 <td>
                                     <div class="btn-group" role="group">
                                         <button class="btn btn-sm admin-btn-outline" onclick="editLink({{ link.id }})">
@@ -106,6 +133,15 @@
                             <input type="url" class="form-control" id="linkUrl" name="url" required>
                         </div>
                         <div class="mb-3">
+                            <label for="linkTarget" class="form-label">Otwórz w</label>
+                            <select class="form-select" id="linkTarget" name="target">
+                                <option value="_blank">Nowej karcie/oknie</option>
+                                <option value="_self">Tej samej karcie</option>
+                                <option value="_parent">Ramce nadrzędnej</option>
+                                <option value="_top">Najwyższym oknie</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
                             <label for="linkOrder" class="form-label">Kolejność</label>
                             <input type="number" class="form-control" id="linkOrder" name="order" value="1" min="1">
                         </div>
@@ -158,6 +194,15 @@
                             <input type="url" class="form-control" id="editLinkUrl" name="url" required>
                         </div>
                         <div class="mb-3">
+                            <label for="editLinkTarget" class="form-label">Otwórz w</label>
+                            <select class="form-select" id="editLinkTarget" name="target">
+                                <option value="_blank">Nowej karcie/oknie</option>
+                                <option value="_self">Tej samej karcie</option>
+                                <option value="_parent">Ramce nadrzędnej</option>
+                                <option value="_top">Najwyższym oknie</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
                             <label for="editLinkOrder" class="form-label">Kolejność</label>
                             <input type="number" class="form-control" id="editLinkOrder" name="order" min="1">
                         </div>
@@ -191,7 +236,7 @@
 
     // Edit link function
     function editLink(linkId) {
-        fetch(`/admin/api/social/${linkId}`)
+        fetch(`/api/social/${linkId}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -199,45 +244,68 @@
                     document.getElementById('editLinkId').value = link.id;
                     document.getElementById('editLinkPlatform').value = link.platform;
                     document.getElementById('editLinkUrl').value = link.url;
+                    document.getElementById('editLinkTarget').value = link.target || '_blank';
                     document.getElementById('editLinkOrder').value = link.order || 1;
                     document.getElementById('editLinkActive').checked = link.is_active;
                     
                     const modal = new bootstrap.Modal(document.getElementById('editLinkModal'));
                     modal.show();
                 } else {
-                    alert('Błąd podczas ładowania linku: ' + data.error);
+                    window.toastManager.error('Błąd podczas ładowania linku: ' + data.error);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Wystąpił błąd podczas ładowania linku');
+                window.toastManager.error('Wystąpił błąd podczas ładowania linku');
             });
     }
 
     // Delete link function
     function deleteLink(linkId) {
-        if (confirm('Czy na pewno chcesz usunąć ten link? Tej operacji nie można cofnąć.')) {
-            fetch(`/admin/api/social?id=${linkId}`, {
-                method: 'DELETE'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Link został usunięty pomyślnie!');
-                    // Usuń wiersz z tabeli
-                    const row = document.querySelector(`tr[data-link-id="${linkId}"]`);
-                    if (row) {
-                        row.remove();
-                    }
-                } else {
-                    alert('Błąd podczas usuwania: ' + data.error);
+        // Set up modal for single delete
+        document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz usunąć ten link?<br><small class="text-muted">Ta operacja nie może być cofnięta.</small>';
+        
+        const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+        modal.show();
+        
+        // Store linkId for deletion
+        window.currentDeleteLinkId = linkId;
+        
+        // Update confirm button
+        const confirmBtn = document.getElementById('confirmBulkDelete');
+        confirmBtn.onclick = function() {
+            performDeleteLink(linkId);
+            modal.hide();
+        };
+    }
+    
+    // Perform actual delete operation
+    function performDeleteLink(linkId) {
+        fetch(`/api/social/${linkId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.toastManager.success('Link został usunięty pomyślnie!');
+                // Usuń wiersz z tabeli
+                const row = document.querySelector(`tr[data-link-id="${linkId}"]`);
+                if (row) {
+                    row.remove();
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Wystąpił błąd podczas usuwania linku');
-            });
-        }
+                updateBulkDeleteUI();
+            } else {
+                window.toastManager.error('Błąd podczas usuwania: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            window.toastManager.error('Wystąpił błąd podczas usuwania linku');
+        });
     }
 
     // Form submissions
@@ -248,25 +316,38 @@
         // Always send is_active field as string
         formData.set('is_active', document.getElementById('linkActive').checked ? 'true' : 'false');
         
-        fetch('/admin/api/social', {
+        // Convert FormData to JSON
+        const jsonData = {
+            platform: formData.get('platform'),
+            url: formData.get('url'),
+            icon: formData.get('icon') || '',
+            order: parseInt(formData.get('order')) || 0,
+            is_active: formData.get('is_active') === 'true'
+        };
+        
+        fetch('/api/social', {
             method: 'POST',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(jsonData)
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Link został dodany pomyślnie!');
+                window.toastManager.success('Link został dodany pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('addLinkModal'));
                 modal.hide();
                 // Odśwież stronę
                 window.location.reload();
             } else {
-                alert('Błąd podczas dodawania: ' + data.error);
+                window.toastManager.error('Błąd podczas dodawania: ' + data.error);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Wystąpił błąd podczas dodawania linku');
+            window.toastManager.error('Wystąpił błąd podczas dodawania linku');
         });
     });
 
@@ -274,29 +355,154 @@
         e.preventDefault();
         
         const formData = new FormData(this);
-        // Always send is_active field as string
-        formData.set('is_active', document.getElementById('editLinkActive').checked ? 'true' : 'false');
         
-        fetch('/admin/api/social', {
+        // Convert FormData to JSON
+        const jsonData = {
+            platform: formData.get('platform'),
+            url: formData.get('url'),
+            icon: formData.get('icon') || '',
+            order: parseInt(formData.get('order')) || 0,
+            is_active: document.getElementById('editLinkActive').checked
+        };
+        
+        const linkId = formData.get('id');
+        
+        fetch(`/api/social/${linkId}`, {
             method: 'PUT',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(jsonData)
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Link został zaktualizowany pomyślnie!');
+                window.toastManager.success('Link został zaktualizowany pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editLinkModal'));
                 modal.hide();
                 // Odśwież stronę
                 window.location.reload();
             } else {
-                alert('Błąd podczas aktualizacji: ' + data.error);
+                window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Wystąpił błąd podczas aktualizacji linku');
+            window.toastManager.error('Wystąpił błąd podczas aktualizacji linku');
         });
+    });
+    
+    // Bulk delete functionality
+    function updateBulkDeleteUI() {
+        const checkboxes = document.querySelectorAll('.item-checkbox');
+        const selectedCheckboxes = document.querySelectorAll('.item-checkbox:checked');
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        const selectedCount = document.getElementById('selectedCount');
+        const selectAllCheckbox = document.getElementById('selectAll');
+        
+        selectedCount.textContent = selectedCheckboxes.length;
+        
+        if (selectedCheckboxes.length > 0) {
+            bulkDeleteBtn.style.display = 'inline-block';
+        } else {
+            bulkDeleteBtn.style.display = 'none';
+        }
+        
+        // Update select all checkbox state
+        if (checkboxes.length === 0) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        } else if (selectedCheckboxes.length === checkboxes.length) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = true;
+        } else if (selectedCheckboxes.length > 0) {
+            selectAllCheckbox.indeterminate = true;
+        } else {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        }
+    }
+    
+    function confirmBulkDelete() {
+        const selectedCheckboxes = document.querySelectorAll('.item-checkbox:checked');
+        const count = selectedCheckboxes.length;
+        
+        if (count === 0) {
+            window.toastManager.error('Nie wybrano żadnych linków do usunięcia');
+            return;
+        }
+        
+        document.getElementById('bulkDeleteMessage').innerHTML = 
+            `Czy na pewno chcesz usunąć <strong>${count}</strong> link${count === 1 ? '' : count < 5 ? 'i' : 'ów'}?<br><small class="text-muted">Ta operacja nie może być cofnięta.</small>`;
+        
+        const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+        modal.show();
+        
+        // Update confirm button for bulk delete
+        const confirmBtn = document.getElementById('confirmBulkDelete');
+        confirmBtn.onclick = function() {
+            performBulkDelete();
+            modal.hide();
+        };
+    }
+    
+    function performBulkDelete() {
+        const selectedCheckboxes = document.querySelectorAll('.item-checkbox:checked');
+        const linkIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+        
+        if (linkIds.length === 0) return;
+        
+        fetch('/api/social/bulk-delete', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ ids: linkIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const count = data.deleted_count || linkIds.length;
+                window.toastManager.success(`Usunięto ${count} link${count === 1 ? '' : count < 5 ? 'i' : 'ów'} pomyślnie!`);
+                
+                // Remove deleted rows from table
+                linkIds.forEach(linkId => {
+                    const row = document.querySelector(`tr[data-link-id="${linkId}"]`);
+                    if (row) {
+                        row.remove();
+                    }
+                });
+                
+                updateBulkDeleteUI();
+            } else {
+                window.toastManager.error('Błąd podczas usuwania: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            window.toastManager.error('Wystąpił błąd podczas usuwania linków');
+        });
+    }
+    
+    // Event listeners for checkboxes
+    document.addEventListener('DOMContentLoaded', function() {
+        // Select all checkbox
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateBulkDeleteUI();
+        });
+        
+        // Individual checkboxes
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('item-checkbox')) {
+                updateBulkDeleteUI();
+            }
+        });
+        
+        updateBulkDeleteUI();
     });
 </script>
 {% endblock %}

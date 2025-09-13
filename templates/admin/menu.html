@@ -7,10 +7,16 @@
 {% endblock %}
 
 {% block page_actions %}
-    <button class="btn admin-btn" onclick="showAddMenuItemModal()">
-        <i class="fas fa-plus me-2"></i>
-        Dodaj Element Menu
-    </button>
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn" onclick="showAddMenuItemModal()">
+            <i class="fas fa-plus me-2"></i>
+            Dodaj Element Menu
+        </button>
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+            <i class="fas fa-trash me-2"></i>
+            Usuń Zaznaczone
+        </button>
+    </div>
 {% endblock %}
 
 {% block content %}
@@ -22,16 +28,24 @@
                     <table class="table admin-table">
                         <thead>
                             <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll()">
+                                </th>
                                 <th>Kolejność</th>
                                 <th>Nazwa</th>
-                                <th>URL</th>
+                                <th>URL (Strona główna)</th>
+                                <th>URL (Blog)</th>
+                                <th>Blog</th>
                                 <th>Status</th>
                                 <th>Akcje</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for item in menu_items %}
-                            <tr data-menu-id="{{ item.id }}">
+                            <tr data-menu-id="{{ item.id }}" data-item-id="{{ item.id }}">
+                                <td>
+                                    <input type="checkbox" class="menu-checkbox" value="{{ item.id }}" onchange="bulkDeleteManager.updateBulkDeleteButton()">
+                                </td>
                                 <td>
                                     <span class="badge admin-badge admin-badge-primary">{{ item.order }}</span>
                                 </td>
@@ -42,7 +56,16 @@
                                 <td>
                                     <code>{{ item.url or '#' }}</code>
                                 </td>
-
+                                <td>
+                                    <code>{{ item.blog_url or '-' }}</code>
+                                </td>
+                                <td>
+                                    {% if item.blog %}
+                                        <span class="badge admin-badge admin-badge-success">Tak</span>
+                                    {% else %}
+                                        <span class="badge admin-badge admin-badge-secondary">Nie</span>
+                                    {% endif %}
+                                </td>
                                 <td>
                                     {% if item.is_active %}
                                         <span class="badge admin-badge admin-badge-success">Aktywny</span>
@@ -91,13 +114,26 @@
                             <input type="text" class="form-control" id="menuItemName" name="title" required>
                         </div>
                         <div class="mb-3">
-                            <label for="menuItemUrl" class="form-label">URL</label>
+                            <label for="menuItemUrl" class="form-label">URL (Strona główna)</label>
                             <input type="text" class="form-control" id="menuItemUrl" name="url" placeholder="np. /o-nas, #sekcja">
+                        </div>
+                        <div class="mb-3">
+                            <label for="menuItemBlogUrl" class="form-label">URL (Blog) - opcjonalnie</label>
+                            <input type="text" class="form-control" id="menuItemBlogUrl" name="blog_url" placeholder="np. /blog, /kontakt">
+                            <small class="text-muted">Jeśli nie podasz, będzie używany URL strony głównej</small>
                         </div>
 
                         <div class="mb-3">
                             <label for="menuItemOrder" class="form-label">Kolejność</label>
                             <input type="number" class="form-control" id="menuItemOrder" name="order" value="1" min="1">
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="menuItemBlog" name="blog">
+                                <label class="form-check-label" for="menuItemBlog">
+                                    Wyświetlaj na blogu
+                                </label>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
@@ -135,13 +171,26 @@
                             <input type="text" class="form-control" id="editMenuItemName" name="title" required>
                         </div>
                         <div class="mb-3">
-                            <label for="editMenuItemUrl" class="form-label">URL</label>
+                            <label for="editMenuItemUrl" class="form-label">URL (Strona główna)</label>
                             <input type="text" class="form-control" id="editMenuItemUrl" name="url">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editMenuItemBlogUrl" class="form-label">URL (Blog) - opcjonalnie</label>
+                            <input type="text" class="form-control" id="editMenuItemBlogUrl" name="blog_url" placeholder="np. /blog, /kontakt">
+                            <small class="text-muted">Jeśli nie podasz, będzie używany URL strony głównej</small>
                         </div>
 
                         <div class="mb-3">
                             <label for="editMenuItemOrder" class="form-label">Kolejność</label>
                             <input type="number" class="form-control" id="editMenuItemOrder" name="order" min="1">
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editMenuItemBlog" name="blog">
+                                <label class="form-check-label" for="editMenuItemBlog">
+                                    Wyświetlaj na blogu
+                                </label>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
@@ -164,4 +213,17 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/admin/menu.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize bulk delete manager for menu
+    window.bulkDeleteManager = BulkDeleteManager.createForPage('menu', {
+        itemCheckboxClass: 'menu-checkbox',
+        bulkDeleteBtnId: 'bulkDeleteBtn',
+        apiEndpoint: '/api/menu',
+        confirmMessage: 'Czy na pewno chcesz usunąć zaznaczone elementy menu? Tej operacji nie można cofnąć.',
+        successMessage: 'Elementy menu zostały usunięte pomyślnie',
+        errorMessage: 'Wystąpił błąd podczas usuwania elementów menu'
+    });
+});
+</script>
 {% endblock %}

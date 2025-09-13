@@ -1,0 +1,85 @@
+{% extends "admin/base.html" %}
+
+{% block page_title %}
+    {% if document.document_type == 'privacy_policy' %}Polityka Prywatności{% else %}Regulamin{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-{% if document.document_type == 'privacy_policy' %}shield-alt{% else %}clipboard-list{% endif %} me-2"></i>
+                    {% if document.document_type == 'privacy_policy' %}Polityka Prywatności{% else %}Regulamin{% endif %}
+                </h1>
+                <a href="{{ url_for('footer.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Powrót do Stopki
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        Edycja Dokumentu
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('footer.update_legal', document_type=document.document_type) }}">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Tytuł dokumentu</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{{ document.title or '' }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Treść dokumentu</label>
+                            <textarea class="form-control" id="content" name="content" rows="20" data-tinymce required>{{ document.content or '' }}</textarea>
+                            <div class="form-text">
+                                Możesz używać HTML do formatowania tekstu.
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <a href="{{ url_for('footer.index') }}" class="btn btn-secondary me-2">
+                                <i class="fas fa-times me-2"></i>
+                                Anuluj
+                            </a>
+                            <button type="submit" class="btn admin-btn">
+                                <i class="fas fa-save me-2"></i>
+                                Zapisz Zmiany
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% if document.content %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-eye me-2"></i>
+                        Podgląd Dokumentu
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="border rounded p-3" style="min-height: 200px;">
+                        {{ document.content|safe }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- TinyMCE is now initialized globally in admin/base.html -->
+{% endblock %}
+
+
+
+

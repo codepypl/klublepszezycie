@@ -1,0 +1,172 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Tagi{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-tags me-2"></i>Zarządzanie Tagami
+{% endblock %}
+
+{% block page_actions %}
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn" onclick="showAddTagModal()">
+            <i class="fas fa-plus me-2"></i>
+            Dodaj Tag
+        </button>
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+            <i class="fas fa-trash me-2"></i>
+            Usuń Zaznaczone
+        </button>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <!-- Tags Table -->
+    <div class="admin-card">
+        <div class="admin-card-body">
+            {% if tags %}
+                <div class="table-responsive">
+                    <table class="table admin-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll(this)">
+                                </th>
+                                <th>Nazwa</th>
+                                <th>Slug</th>
+                                <th>Artykułów</th>
+                                <th>Status</th>
+                                <th>Data utworzenia</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tag in tags %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" class="tag-checkbox" value="{{ tag.id }}" onchange="bulkDeleteManager.toggleBulkDeleteBtn()">
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-primary me-2">{{ tag.name }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <code>{{ tag.slug }}</code>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ tag.posts_count }}</span>
+                                </td>
+                                <td>
+                                    {% if tag.is_active %}
+                                        <span class="badge admin-badge admin-badge-success">Aktywny</span>
+                                    {% else %}
+                                        <span class="badge admin-badge admin-badge-danger">Nieaktywny</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ tag.created_at.strftime('%d.%m.%Y') if tag.created_at else 'Brak' }}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm admin-btn-outline" onclick="editTag({{ tag.id }})" title="Edytuj">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteTag({{ tag.id }})" title="Usuń">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Brak tagów w systemie</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Add Tag Modal -->
+    <div class="modal fade" id="addTagModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Dodaj tag</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addTagForm">
+                        <div class="mb-3">
+                            <label for="tagName" class="form-label">Nazwa tagu *</label>
+                            <input type="text" class="form-control" id="tagName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tagSlug" class="form-label">Slug</label>
+                            <input type="text" class="form-control" id="tagSlug" name="slug" readonly>
+                            <div class="form-text">Slug zostanie wygenerowany automatycznie</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="tagIsActive" name="is_active" checked>
+                                <label class="form-check-label" for="tagIsActive">
+                                    Aktywny
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="button" class="btn admin-btn" onclick="saveTag()">Zapisz</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Tag Modal -->
+    <div class="modal fade" id="editTagModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edytuj tag</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editTagForm">
+                        <input type="hidden" id="editTagId" name="tag_id">
+                        <div class="mb-3">
+                            <label for="editTagName" class="form-label">Nazwa tagu *</label>
+                            <input type="text" class="form-control" id="editTagName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTagSlug" class="form-label">Slug</label>
+                            <input type="text" class="form-control" id="editTagSlug" name="slug" readonly>
+                            <div class="form-text">Slug zostanie wygenerowany automatycznie</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editTagIsActive" name="is_active">
+                                <label class="form-check-label" for="editTagIsActive">
+                                    Aktywny
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="button" class="btn admin-btn" onclick="saveTag()">Zapisz</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin/bulk-delete.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/blog_tags.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Meta Tagów - {{ post.title }}</title>
+    
+    <!-- Meta tags from post -->
+    <meta name="description" content="{{ post.meta_description or post.excerpt or post.content[:160]|striptags }}">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:locale" content="pl_PL">
+    <meta property="og:title" content="{{ post.meta_title or post.title }}">
+    <meta property="og:description" content="{{ post.meta_description or post.excerpt or post.content[:160]|striptags }}">
+    <meta property="og:image" content="{{ image_url }}">
+    <meta property="og:site_name" content="{{ config.get('SITE_NAME', 'Klub Lepsze Życie') }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="article:author" content="{{ post.author.name or post.author.email }}">
+    <meta property="article:publisher" content="{{ config.get('SITE_NAME', 'Klub Lepsze Życie') }}">
+    {% if post.published_at %}
+    <meta property="article:published_time" content="{{ post.published_at.isoformat() }}">
+    {% endif %}
+    {% if post.categories %}
+    {% for category in post.categories %}
+    <meta property="article:section" content="{{ category.title }}">
+    {% endfor %}
+    {% endif %}
+    {% if post.tags %}
+    {% for tag in post.tags %}
+    <meta property="article:tag" content="{{ tag.name }}">
+    {% endfor %}
+    {% endif %}
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ request.url }}">
+    <meta property="twitter:title" content="{{ post.meta_title or post.title }}">
+    <meta property="twitter:description" content="{{ post.meta_description or post.excerpt or post.content[:160]|striptags }}">
+    <meta property="twitter:image" content="{{ image_url }}">
+    <meta property="twitter:site" content="@{{ config.get('SITE_NAME', 'KlubLepszeZycie') }}">
+    <meta property="twitter:creator" content="@{{ config.get('SITE_NAME', 'KlubLepszeZycie') }}">
+    
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .meta-section { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .meta-item { margin: 5px 0; }
+        .meta-label { font-weight: bold; color: #333; }
+        .meta-value { color: #666; word-break: break-all; }
+        .test-links { margin: 20px 0; }
+        .test-links a { display: inline-block; margin: 5px; padding: 10px 15px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+        .test-links a:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>Test Meta Tagów dla: {{ post.title }}</h1>
+    
+    <div class="meta-section">
+        <h3>Podstawowe informacje</h3>
+        <div class="meta-item">
+            <span class="meta-label">Tytuł:</span>
+            <span class="meta-value">{{ post.title }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">URL:</span>
+            <span class="meta-value">{{ request.url }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Obraz:</span>
+            <span class="meta-value">{{ image_url }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Opis (100 znaków):</span>
+            <span class="meta-value">{{ (post.excerpt or post.content[:100]|striptags) + '...' if (post.excerpt or post.content|striptags)|length > 100 else (post.excerpt or post.content[:100]|striptags) }}</span>
+        </div>
+    </div>
+    
+    <div class="meta-section">
+        <h3>Open Graph (Facebook)</h3>
+        <div class="meta-item">
+            <span class="meta-label">og:title:</span>
+            <span class="meta-value">{{ post.meta_title or post.title }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">og:description:</span>
+            <span class="meta-value">{{ (post.excerpt or post.content[:100]|striptags) + '...' if (post.excerpt or post.content|striptags)|length > 100 else (post.excerpt or post.content[:100]|striptags) }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">og:image:</span>
+            <span class="meta-value">{{ image_url }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">og:url:</span>
+            <span class="meta-value">{{ request.url }}</span>
+        </div>
+    </div>
+    
+    <div class="meta-section">
+        <h3>Twitter Cards</h3>
+        <div class="meta-item">
+            <span class="meta-label">twitter:title:</span>
+            <span class="meta-value">{{ post.meta_title or post.title }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">twitter:description:</span>
+            <span class="meta-value">{{ (post.excerpt or post.content[:100]|striptags) + '...' if (post.excerpt or post.content|striptags)|length > 100 else (post.excerpt or post.content[:100]|striptags) }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">twitter:image:</span>
+            <span class="meta-value">{{ image_url }}</span>
+        </div>
+    </div>
+    
+    <div class="test-links">
+        <h3>Testy udostępniania</h3>
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url|urlencode }}" target="_blank">Test Facebook</a>
+        <a href="https://twitter.com/intent/tweet?url={{ request.url|urlencode }}&text={{ post.title|urlencode }}" target="_blank">Test Twitter</a>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.url|urlencode }}" target="_blank">Test LinkedIn</a>
+        <a href="https://developers.facebook.com/tools/debug/?q={{ request.url|urlencode }}" target="_blank">Facebook Debugger</a>
+        <a href="https://cards-dev.twitter.com/validator" target="_blank">Twitter Card Validator</a>
+    </div>
+    
+    <div class="meta-section">
+        <h3>Obraz podglądu</h3>
+        {% if image_url %}
+        <img src="{{ image_url }}" alt="{{ post.title }}" style="max-width: 400px; height: auto;">
+        {% else %}
+        <p>Brak obrazu</p>
+        {% endif %}
+    </div>
+</body>
+</html>

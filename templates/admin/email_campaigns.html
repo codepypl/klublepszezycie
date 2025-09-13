@@ -1,510 +1,120 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kampanie E-mail - Panel Administratora</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/admin.css') }}?v={{ range(1, 1000) | random }}" rel="stylesheet">
-    <script src="https://cdn.tiny.cloud/1/nzk6x47f5uoxs3thrhw5hjtjhrby1u3skrpld6z2z032z7tv/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
-</head>
-<body class="admin-body">
-    <div class="admin-container">
-        <div class="admin-sidebar" id="sidebar">
-            {% include 'admin/sidebar.html' %}
-        </div>
-        <div class="admin-content">
-            <div class="admin-header">
-                <h1><i class="fas fa-bullhorn me-2"></i>Kampanie E-mail</h1>
-                <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
-                    <i class="fas fa-sign-out-alt me-2"></i>Wyloguj
-                </a>
-            </div>
-            
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="mb-2"></h5>
-                            <p class="text-muted mb-0"></p>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn admin-btn" onclick="showAddCampaignModal()">
-                                <i class="fas fa-plus me-2"></i>Nowa Kampania
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="admin-card">
+{% extends "admin/base.html" %}
 
-                <div class="admin-card-body">
+{% block title %}Kampanie Emaili - Panel Admin{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-bullhorn me-2"></i>Kampanie Emaili
+{% endblock %}
+
+{% block page_actions %}
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn" onclick="showCampaignModal()">
+            <i class="fas fa-plus me-2"></i>Nowa kampania
+        </button>
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+            <i class="fas fa-trash me-2"></i>Usuń Zaznaczone
+        </button>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <!-- Campaigns Table -->
+    <div class="admin-card">
+        <div class="admin-card-body">
                     <div class="table-responsive">
                         <table class="table admin-table">
                             <thead>
                                 <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll()">
+                                    </th>
                                     <th>Nazwa</th>
                                     <th>Temat</th>
-                                    <th>Odbiorcy</th>
                                     <th>Status</th>
-                                    <th>Planowanie</th>
+                                    <th>Odbiorcy</th>
                                     <th>Wysłane</th>
-                                    <th>Utworzona</th>
+                                    <th>Utworzono</th>
                                     <th>Akcje</th>
                                 </tr>
                             </thead>
                             <tbody id="campaignsTableBody">
-                                <tr><td colspan="8" class="text-center text-muted">Ładowanie kampanii...</td></tr>
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">
+                                        <i class="fas fa-spinner fa-spin me-2"></i>Ładowanie...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
+                    
+            <!-- Pagination -->
+            <div id="pagination" class="mt-3"></div>
         </div>
     </div>
 
-    <!-- Modal Dodawania/Edytowania Kampanii -->
-    <div class="modal fade" id="campaignModal" tabindex="-1" aria-labelledby="campaignModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="campaignModalLabel">Nowa Kampania E-mail</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
+<!-- Campaign Modal -->
+<div class="modal fade" id="campaignModal" tabindex="-1" aria-labelledby="campaignModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="campaignModalLabel">Kampania Emaila</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="campaignForm">
                 <div class="modal-body">
-                    <form id="campaignForm">
-                        <input type="hidden" id="campaignId" name="id">
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="campaignName" class="form-label">Nazwa kampanii *</label>
-                                    <input type="text" class="form-control" id="campaignName" name="name" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="campaignSubject" class="form-label">Temat e-maila *</label>
-                                    <input type="text" class="form-control" id="campaignSubject" name="subject" required>
-                                </div>
-                            </div>
+                    <input type="hidden" id="campaign_id" name="campaign_id">
+                    
+                    <div class="mb-3">
+                        <label for="campaign_name" class="form-label">Nazwa kampanii *</label>
+                        <input type="text" class="form-control" id="campaign_name" name="campaign_name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="campaign_subject" class="form-label">Temat emaila *</label>
+                        <input type="text" class="form-control" id="campaign_subject" name="campaign_subject" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="campaign_template" class="form-label">Szablon emaila *</label>
+                        <select class="form-select" id="campaign_template" name="campaign_template" required onchange="handleTemplateChange()">
+                            <option value="">Wybierz szablon</option>
+                        </select>
+                        <div class="form-text">Wybierz szablon, który będzie używany do generowania emaili</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="campaign_groups" class="form-label">Grupy odbiorców *</label>
+                        <select class="form-select" id="campaign_groups" name="campaign_groups" multiple required>
+                            <option value="">Wybierz grupy</option>
+                        </select>
+                        <div class="form-text">Przytrzymaj Ctrl (Cmd na Mac) aby wybrać wiele grup</div>
+                    </div>
+                    
+                    <div id="templateVariables" class="mb-3" style="display: none;">
+                        <label class="form-label">Treść do wstawienia w szablon</label>
+                        <div id="variablesContainer">
+                            <!-- Variables will be loaded here dynamically -->
                         </div>
-
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label for="recipientType" class="form-label">Typ odbiorców *</label>
-                                    <select class="form-select" id="recipientType" name="recipient_type" required onchange="toggleRecipientFields()">
-                                        <option value="">Wybierz typ</option>
-                                        <option value="specific">Konkretne adresy e-mail</option>
-                                        <option value="filtered">Filtrowani odbiorcy</option>
-                                        <option value="all">Wszyscy zatwierdzeni</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label for="sendType" class="form-label">Typ wysyłki</label>
-                                    <select class="form-select" id="sendType" name="send_type" onchange="toggleScheduleFields()">
-                                        <option value="immediate">Natychmiast</option>
-                                        <option value="scheduled">Zaplanowane</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label for="campaignStatus" class="form-label">Status</label>
-                                    <select class="form-select" id="campaignStatus" name="status">
-                                        <option value="draft">Szkic</option>
-                                        <option value="scheduled">Zaplanowane</option>
-                                        <option value="sending">Wysyłanie</option>
-                                        <option value="completed">Zakończone</option>
-                                        <option value="cancelled">Anulowane</option>
-                                    </select>
-                                </div>
-                            </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Podgląd emaila</label>
+                        <div id="emailPreview" class="border p-3 bg-light" style="min-height: 200px;">
+                            <p class="text-muted">Wybierz szablon aby zobaczyć podgląd</p>
                         </div>
-
-                        <!-- Pola dla konkretnych e-maili -->
-                        <div id="specificEmailsField" class="mb-3" style="display: none;">
-                            <label for="recipientEmails" class="form-label">Adresy e-mail (jeden na linię)</label>
-                            <textarea class="form-control" id="recipientEmails" name="recipient_emails" rows="4" placeholder="user1@example.com&#10;user2@example.com&#10;user3@example.com"></textarea>
-                            <div class="form-text">Wpisz jeden adres e-mail na linię</div>
-                        </div>
-
-                        <!-- Pola dla filtrowanych odbiorców -->
-                        <div id="filteredRecipientsField" class="mb-3" style="display: none;">
-                            <label class="form-label">Filtry odbiorców</label>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="filterApproved" name="filter_approved" checked>
-                                        <label class="form-check-label" for="filterApproved">
-                                            Tylko zatwierdzeni użytkownicy
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="filterActive" name="filter_active" checked>
-                                        <label class="form-check-label" for="filterActive">
-                                            Tylko aktywni użytkownicy
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Pola dla planowania -->
-                        <div id="scheduleFields" class="mb-3" style="display: none;">
-                            <label for="scheduledAt" class="form-label">Data i godzina wysyłki</label>
-                            <input type="datetime-local" class="form-control" id="scheduledAt" name="scheduled_at">
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="campaignHtmlContent" class="form-label">Treść HTML *</label>
-                            <textarea id="campaignHtmlContent" name="html_content" required></textarea>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="campaignTextContent" class="form-label">Treść tekstowa (opcjonalnie)</label>
-                            <textarea class="form-control" id="campaignTextContent" name="text_content" rows="4" placeholder="Wersja tekstowa e-maila (dla klientów bez obsługi HTML)"></textarea>
-                        </div>
-                    </form>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                    <button type="button" class="btn btn-primary" onclick="saveCampaign()">Zapisz Kampanię</button>
-                    <button type="button" class="btn btn-success" id="sendCampaignBtn" onclick="sendCampaign()" style="display: none;">Wyślij Teraz</button>
+                    <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="button" class="btn admin-btn" onclick="saveCampaign()">Zapisz kampanię</button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        let campaignModal;
-        let editor;
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            campaignModal = new bootstrap.Modal(document.getElementById('campaignModal'));
-            loadCampaigns();
-            initTinyMCE();
-        });
-        
-        function initTinyMCE() {
-            tinymce.init({
-                selector: '#campaignHtmlContent',
-                height: 400,
-                plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
-                toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
-                content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }'
-            }).then(function(editors) {
-                editor = editors[0];
-            });
-        }
-        
-        function loadCampaigns() {
-            fetch('/admin/api/email-campaigns')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        displayCampaigns(data.campaigns);
-                    } else {
-                        showNotification('Błąd podczas ładowania kampanii: ' + (data.error || 'Nieznany błąd'), 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading campaigns:', error);
-                    showNotification('Błąd podczas ładowania kampanii: ' + error.message, 'error');
-                });
-        }
-        
-        function displayCampaigns(campaigns) {
-            const tbody = document.getElementById('campaignsTableBody');
-            tbody.innerHTML = '';
-            
-            if (campaigns.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Brak kampanii</td></tr>';
-                return;
-            }
-            
-            campaigns.forEach(campaign => {
-                const row = document.createElement('tr');
-                const createdDate = campaign.created_at ? new Date(campaign.created_at).toLocaleDateString('pl-PL') : 'Brak';
-                const statusBadge = getStatusBadge(campaign.status);
-                
-                row.innerHTML = `
-                    <td><strong>${campaign.name}</strong></td>
-                    <td>${campaign.subject}</td>
-                    <td>${getRecipientTypeText(campaign.recipient_type)}</td>
-                    <td>${statusBadge}</td>
-                    <td>${getSendTypeText(campaign.send_type)}</td>
-                    <td>${campaign.sent_count}/${campaign.total_count}</td>
-                    <td>${createdDate}</td>
-                    <td>
-                        <div class="btn-group btn-group-sm" role="group">
-                            <button class="btn btn-outline-primary" onclick="editCampaign(${campaign.id})" title="Edytuj">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-outline-success" onclick="sendCampaign(${campaign.id})" title="Wyślij" ${campaign.status === 'completed' ? 'disabled' : ''}>
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                            <button class="btn btn-outline-danger" onclick="deleteCampaign(${campaign.id}, '${campaign.name}')" title="Usuń">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                `;
-                
-                tbody.appendChild(row);
-            });
-        }
-        
-        function getStatusBadge(status) {
-            const badges = {
-                'draft': '<span class="badge bg-secondary">Szkic</span>',
-                'scheduled': '<span class="badge bg-info">Zaplanowane</span>',
-                'sending': '<span class="badge bg-warning">Wysyłanie</span>',
-                'completed': '<span class="badge bg-success">Zakończone</span>',
-                'cancelled': '<span class="badge bg-danger">Anulowane</span>'
-            };
-            return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
-        }
-        
-        function getRecipientTypeText(type) {
-            const types = {
-                'specific': 'Konkretne adresy',
-                'filtered': 'Filtrowani',
-                'all': 'Wszyscy zatwierdzeni'
-            };
-            return types[type] || type;
-        }
-        
-        function getSendTypeText(type) {
-            const types = {
-                'immediate': 'Natychmiast',
-                'scheduled': 'Zaplanowane'
-            };
-            return types[type] || type;
-        }
-        
-        function showAddCampaignModal() {
-            document.getElementById('campaignModalLabel').textContent = 'Nowa Kampania E-mail';
-            document.getElementById('campaignForm').reset();
-            document.getElementById('campaignId').value = '';
-            document.getElementById('sendCampaignBtn').style.display = 'none';
-            
-            // Resetuj TinyMCE
-            if (editor) {
-                editor.setContent('');
-            }
-            
-            // Resetuj dodatkowe pola
-            document.getElementById('recipientEmails').value = '';
-            document.getElementById('campaignTextContent').value = '';
-            document.getElementById('scheduledAt').value = '';
-            
-            // Pokaż domyślne pola
-            toggleRecipientFields();
-            toggleScheduleFields();
-            
-            campaignModal.show();
-        }
-        
-        function editCampaign(id) {
-            fetch(`/admin/api/email-campaigns/${id}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const campaign = data.campaign;
-                        
-                        document.getElementById('campaignModalLabel').textContent = 'Edytuj Kampanię E-mail';
-                        document.getElementById('campaignId').value = campaign.id;
-                        document.getElementById('campaignName').value = campaign.name;
-                        document.getElementById('campaignSubject').value = campaign.subject;
-                        document.getElementById('recipientType').value = campaign.recipient_type;
-                        document.getElementById('sendType').value = campaign.send_type;
-                        document.getElementById('campaignStatus').value = campaign.status;
-                        
-                        if (campaign.recipient_emails) {
-                            document.getElementById('recipientEmails').value = campaign.recipient_emails;
-                        }
-                        
-                        if (campaign.scheduled_at) {
-                            const scheduledDate = new Date(campaign.scheduled_at);
-                            const localDateTime = new Date(scheduledDate.getTime() - scheduledDate.getTimezoneOffset() * 60000);
-                            document.getElementById('scheduledAt').value = localDateTime.toISOString().slice(0, 16);
-                        }
-                        
-                        if (campaign.html_content && editor) {
-                            editor.setContent(campaign.html_content);
-                        }
-                        
-                        if (campaign.text_content) {
-                            document.getElementById('campaignTextContent').value = campaign.text_content;
-                        }
-                        
-                        // Pokaż odpowiednie pola
-                        toggleRecipientFields();
-                        toggleScheduleFields();
-                        
-                        // Pokaż przycisk wysyłania jeśli kampania nie jest zakończona
-                        if (campaign.status !== 'completed') {
-                            document.getElementById('sendCampaignBtn').style.display = 'inline-block';
-                        } else {
-                            document.getElementById('sendCampaignBtn').style.display = 'none';
-                        }
-                        
-                        campaignModal.show();
-                    } else {
-                        showNotification('Błąd podczas ładowania kampanii: ' + (data.error || 'Nieznany błąd'), 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading campaign:', error);
-                    showNotification('Błąd podczas ładowania kampanii: ' + error.message, 'error');
-                });
-        }
-        
-        function toggleRecipientFields() {
-            const recipientType = document.getElementById('recipientType').value;
-            const specificField = document.getElementById('specificEmailsField');
-            const filteredField = document.getElementById('filteredRecipientsField');
-            
-            specificField.style.display = 'none';
-            filteredField.style.display = 'none';
-            
-            if (recipientType === 'specific') {
-                specificField.style.display = 'block';
-            } else if (recipientType === 'filtered') {
-                filteredField.style.display = 'block';
-            }
-        }
-        
-        function toggleScheduleFields() {
-            const sendType = document.getElementById('sendType').value;
-            const scheduleFields = document.getElementById('scheduleFields');
-            
-            if (sendType === 'scheduled') {
-                scheduleFields.style.display = 'block';
-            } else {
-                scheduleFields.style.display = 'none';
-            }
-        }
-        
-        function saveCampaign() {
-            const form = document.getElementById('campaignForm');
-            const formData = new FormData(form);
-            
-            // Pobierz treść z TinyMCE
-            if (editor) {
-                formData.set('html_content', editor.getContent());
-            }
-            
-            // Dodaj filtry dla filtrowanych odbiorców
-            if (document.getElementById('recipientType').value === 'filtered') {
-                const filters = {
-                    approved: document.getElementById('filterApproved').checked,
-                    active: document.getElementById('filterActive').checked
-                };
-                formData.set('recipient_filters', JSON.stringify(filters));
-            }
-            
-            const campaignId = document.getElementById('campaignId').value;
-            const url = campaignId ? `/admin/api/email-campaigns/${campaignId}` : '/admin/api/email-campaigns';
-            const method = campaignId ? 'PUT' : 'POST';
-            
-            fetch(url, {
-                method: method,
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification(data.message, 'success');
-                    campaignModal.hide();
-                    loadCampaigns();
-                } else {
-                    showNotification('Błąd podczas zapisywania kampanii: ' + (data.error || 'Nieznany błąd'), 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error saving campaign:', error);
-                showNotification('Błąd podczas zapisywania kampanii: ' + error.message, 'error');
-            });
-        }
-        
-        function sendCampaign(id) {
-            if (!id) {
-                id = document.getElementById('campaignId').value;
-            }
-            
-            if (!id) {
-                showNotification('Błąd: Brak ID kampanii', 'error');
-                return;
-            }
-            
-            if (confirm('Czy na pewno chcesz wysłać tę kampanię teraz?')) {
-                fetch(`/admin/api/email-campaigns/${id}/send`, {
-                    method: 'POST'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showNotification(data.message, 'success');
-                        loadCampaigns();
-                        if (campaignModal._isShown) {
-                            campaignModal.hide();
-                        }
-                    } else {
-                        showNotification('Błąd podczas wysyłania kampanii: ' + (data.error || 'Nieznany błąd'), 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error sending campaign:', error);
-                    showNotification('Błąd podczas wysyłania kampanii: ' + error.message, 'error');
-                });
-            }
-        }
-        
-        function deleteCampaign(id, name) {
-            if (confirm(`Czy na pewno chcesz usunąć kampanię "${name}"?`)) {
-                fetch(`/admin/api/email-campaigns/${id}`, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showNotification(data.message, 'success');
-                        loadCampaigns();
-                    } else {
-                        showNotification('Błąd podczas usuwania kampanii: ' + (data.error || 'Nieznany błąd'), 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error deleting campaign:', error);
-                    showNotification('Błąd podczas usuwania kampanii: ' + error.message, 'error');
-                });
-            }
-        }
-        
-        function showNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
-            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-            notification.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 5000);
-        }
-    </script>
-</body>
-</html>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/utils/paginate.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/email_campaigns.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
+{% endblock %}

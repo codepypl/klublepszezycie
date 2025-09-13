@@ -7,10 +7,16 @@
 {% endblock %}
 
 {% block page_actions %}
-    <button class="btn admin-btn" onclick="showAddTestimonialModal()">
-        <i class="fas fa-plus me-2"></i>
-        Dodaj Opinię
-    </button>
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn" onclick="showAddTestimonialModal()">
+            <i class="fas fa-plus me-2"></i>
+            Dodaj Opinię
+        </button>
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+            <i class="fas fa-trash me-2"></i>
+            Usuń Zaznaczone
+        </button>
+    </div>
 {% endblock %}
 
 {% block content %}
@@ -19,9 +25,13 @@
         <div class="admin-card-body">
             {% if testimonials %}
                 <div class="table-responsive">
-                    <table class="table admin-table">
+                    <table class="table admin-table testimonials-table">
                         <thead>
                             <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll()">
+                                </th>
+                                <th>Kolejność</th>
                                 <th>Autor</th>
                                 <th>Opinia</th>
                                 <th>Ocena</th>
@@ -32,7 +42,13 @@
                         </thead>
                         <tbody>
                             {% for testimonial in testimonials %}
-                            <tr data-testimonial-id="{{ testimonial.id }}">
+                            <tr data-testimonial-id="{{ testimonial.id }}" data-item-id="{{ testimonial.id }}">
+                                <td>
+                                    <input type="checkbox" class="testimonial-checkbox" value="{{ testimonial.id }}" onchange="bulkDeleteManager.updateBulkDeleteButton()">
+                                </td>
+                                <td>
+                                    <span class="badge admin-badge admin-badge-primary">{{ testimonial.order }}</span>
+                                </td>
                                 <td>
                                     <strong>{{ testimonial.author_name }}</strong>
 
@@ -119,6 +135,14 @@
                             </select>
                         </div>
                         <div class="mb-3">
+                            <label for="testimonialMemberSince" class="form-label">Członek od</label>
+                            <input type="text" class="form-control" id="testimonialMemberSince" name="member_since" placeholder="np. 2020">
+                        </div>
+                        <div class="mb-3">
+                            <label for="testimonialOrder" class="form-label">Kolejność</label>
+                            <input type="number" class="form-control" id="testimonialOrder" name="order" value="0" min="0">
+                        </div>
+                        <div class="mb-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="testimonialActive" name="is_active" checked>
                                 <label class="form-check-label" for="testimonialActive">
@@ -169,6 +193,14 @@
                             </select>
                         </div>
                         <div class="mb-3">
+                            <label for="editTestimonialMemberSince" class="form-label">Członek od</label>
+                            <input type="text" class="form-control" id="editTestimonialMemberSince" name="member_since" placeholder="np. 2020">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTestimonialOrder" class="form-label">Kolejność</label>
+                            <input type="number" class="form-control" id="editTestimonialOrder" name="order" value="0" min="0">
+                        </div>
+                        <div class="mb-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="editTestimonialActive" name="is_active">
                                 <label class="form-check-label" for="editTestimonialActive">
@@ -188,123 +220,18 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin/testimonials.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
 <script>
-    // Show add testimonial modal
-    function showAddTestimonialModal() {
-        document.getElementById('addTestimonialForm').reset();
-        const modal = new bootstrap.Modal(document.getElementById('addTestimonialModal'));
-        modal.show();
-    }
-
-    // Edit testimonial function
-    function editTestimonial(testimonialId) {
-        fetch(`/admin/api/testimonials/${testimonialId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const testimonial = data.testimonial;
-                    document.getElementById('editTestimonialId').value = testimonial.id;
-                    document.getElementById('editTestimonialAuthor').value = testimonial.author_name;
-
-                    document.getElementById('editTestimonialContent').value = testimonial.content;
-                    document.getElementById('editTestimonialRating').value = testimonial.rating;
-                    document.getElementById('editTestimonialActive').checked = testimonial.is_active;
-                    
-                    const modal = new bootstrap.Modal(document.getElementById('editTestimonialModal'));
-                    modal.show();
-                } else {
-                    alert('Błąd podczas ładowania opinii: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Wystąpił błąd podczas ładowania opinii');
-            });
-    }
-
-    // Delete testimonial function
-    function deleteTestimonial(testimonialId) {
-        if (confirm('Czy na pewno chcesz usunąć tę opinię? Tej operacji nie można cofnąć.')) {
-            fetch(`/admin/api/testimonials?id=${testimonialId}`, {
-                method: 'DELETE'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Opinia została usunięta pomyślnie!');
-                    // Usuń wiersz z tabeli
-                    const row = document.querySelector(`tr[data-testimonial-id="${testimonialId}"]`);
-                    if (row) {
-                        row.remove();
-                    }
-                } else {
-                    alert('Błąd podczas usuwania: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Wystąpił błąd podczas usuwania opinii');
-            });
-        }
-    }
-
-    // Form submissions
-    document.getElementById('addTestimonialForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        // Always send is_active field as string
-        formData.set('is_active', document.getElementById('testimonialActive').checked ? 'true' : 'false');
-        
-        fetch('/admin/api/testimonials', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Opinia została dodana pomyślnie!');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addTestimonialModal'));
-                modal.hide();
-                // Odśwież stronę
-                window.location.reload();
-            } else {
-                alert('Błąd podczas dodawania: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Wystąpił błąd podczas dodawania opinii');
-        });
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize bulk delete manager for testimonials
+    window.bulkDeleteManager = BulkDeleteManager.createForPage('testimonials', {
+        itemCheckboxClass: 'testimonial-checkbox',
+        bulkDeleteBtnId: 'bulkDeleteBtn',
+        apiEndpoint: '/api/testimonials',
+        confirmMessage: 'Czy na pewno chcesz usunąć zaznaczone opinie? Tej operacji nie można cofnąć.',
+        successMessage: 'Opinie zostały usunięte pomyślnie',
+        errorMessage: 'Wystąpił błąd podczas usuwania opinii'
     });
-
-    document.getElementById('editTestimonialForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        // Always send is_active field as string
-        formData.set('is_active', document.getElementById('editTestimonialActive').checked ? 'true' : 'false');
-        
-        fetch('/admin/api/testimonials', {
-            method: 'PUT',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Opinia została zaktualizowana pomyślnie!');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('editTestimonialModal'));
-                modal.hide();
-                // Odśwież stronę
-                window.location.reload();
-            } else {
-                alert('Błąd podczas aktualizacji: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Wystąpił błąd podczas aktualizacji opinii');
-        });
-    });
+});
 </script>
 {% endblock %}

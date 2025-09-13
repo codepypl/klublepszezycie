@@ -1,0 +1,131 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Kolejka Emaili - Panel Admin{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-inbox me-2"></i>Kolejka Emaili
+{% endblock %}
+
+{% block page_actions %}
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn-warning" onclick="processQueue()">
+            <i class="fas fa-play me-2"></i>Przetwórz kolejkę
+        </button>
+        <button class="btn admin-btn-secondary" onclick="retryFailed()">
+            <i class="fas fa-redo me-2"></i>Ponów nieudane
+        </button>
+    </div>
+{% endblock %}
+
+{% block content %}
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <div class="admin-stats-card-body">
+                    <div class="admin-stats-card-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="admin-stats-card-content">
+                        <h3 id="totalEmails">0</h3>
+                        <p>Wszystkie emaile</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <div class="admin-stats-card-body">
+                    <div class="admin-stats-card-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="admin-stats-card-content">
+                        <h3 id="pendingEmails">0</h3>
+                        <p>Oczekujące</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <div class="admin-stats-card-body">
+                    <div class="admin-stats-card-icon">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="admin-stats-card-content">
+                        <h3 id="sentEmails">0</h3>
+                        <p>Wysłane</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <div class="admin-stats-card-body">
+                    <div class="admin-stats-card-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="admin-stats-card-content">
+                        <h3 id="failedEmails">0</h3>
+                        <p>Nieudane</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Queue Table -->
+    <div class="admin-card">
+        <div class="admin-card-body">
+                    <!-- Filter Buttons -->
+                    <div class="mb-3">
+                        <div class="btn-group" role="group">
+                            <button class="btn admin-btn-outline" onclick="loadQueue('pending')" id="filterPending">
+                                Oczekujące
+                            </button>
+                            <button class="btn admin-btn-outline" onclick="loadQueue('sent')" id="filterSent">
+                                Wysłane
+                            </button>
+                            <button class="btn admin-btn-outline" onclick="loadQueue('failed')" id="filterFailed">
+                                Nieudane
+                            </button>
+                            <button class="btn admin-btn-outline" onclick="loadQueue('all')" id="filterAll">
+                                Wszystkie
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Do</th>
+                                    <th>Temat</th>
+                                    <th>Status</th>
+                                    <th>Zaplanowano</th>
+                                    <th>Wysłano</th>
+                                    <th>Akcje</th>
+                                </tr>
+                            </thead>
+                            <tbody id="queueTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">
+                                        <i class="fas fa-spinner fa-spin me-2"></i>Ładowanie...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+            <!-- Pagination -->
+            <div id="pagination" class="mt-3"></div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/utils/paginate.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/email_queue.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
+{% endblock %}

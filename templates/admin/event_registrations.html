@@ -1,28 +1,12 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rejestracje na wydarzenia - Panel Admina</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
-</head>
-<body class="admin-body">
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            {% include 'admin/sidebar.html' %}
+{% extends "admin/base.html" %}
 
-            <!-- Main Content -->
-            <main class="col-lg-10 admin-content">
-                <div class="admin-header">
-                    <h1><i class="fas fa-calendar-check me-2"></i>Rejestracje na wydarzenia</h1>
-                    <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
-                        <i class="fas fa-sign-out-alt me-2"></i>
-                        Wyloguj
-                    </a>
-                </div>
+{% block title %}Rejestracje na wydarzenia{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-calendar-check me-2"></i>Rejestracje na wydarzenia
+{% endblock %}
+
+{% block content %}
 
                 <!-- Content -->
                 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -72,6 +56,7 @@
     <!-- Tabela rejestracji -->
     <div class="card">
         <div class="card-body">
+            {% if event_registrations %}
             <div class="table-responsive">
                 <table class="table table-striped" id="eventRegistrationsTable">
                     <thead>
@@ -101,7 +86,7 @@
                                 <strong>{{ registration.name }}</strong>
                                 <br>
                                 <small class="text-muted">
-                                    <a href="{{ url_for('admin_users') }}?edit_user={{ registration.email }}" class="text-decoration-none">
+                                    <a href="{{ url_for('users.index') }}?edit_user={{ registration.email }}" class="text-decoration-none">
                                         <i class="fas fa-user-edit me-1"></i>Edytuj konto
                                     </a>
                                 </small>
@@ -123,9 +108,7 @@
                                 {{ registration.created_at.strftime('%d.%m.%Y %H:%M') if registration.created_at else 'Brak' }}
                             </td>
                             <td>
-                                <button class="btn btn-sm btn-outline-danger" 
-                                        onclick="deleteRegistration({{ registration.id }})"
-                                        title="Usuń rejestrację">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteRegistration({{ registration.id }})" title="Usuń rejestrację">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </td>
@@ -134,12 +117,34 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Registrations Info -->
+            {% if pagination %}
+            <div class="text-center text-muted mt-3">
+                <i class="fas fa-info-circle me-1"></i>
+                Wyświetlane {{ event_registrations|length }} z {{ pagination.total }} rejestracji
+            </div>
+            {% endif %}
+            
+            <!-- Pagination -->
+            {% if pagination and pagination.pages > 1 %}
+            <div id="pagination" class="mt-4"></div>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-user-plus fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Brak rejestracji</h5>
+                <p class="text-muted">Nie ma jeszcze żadnych rejestracji na wydarzenia</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
+{% endblock %}
 
-
-
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/utils/paginate.js') }}"></script>
 <script>
 // Filtrowanie tabeli
 document.addEventListener('DOMContentLoaded', function() {
@@ -186,6 +191,41 @@ document.addEventListener('DOMContentLoaded', function() {
         eventFilter.addEventListener('change', filterTable);
         dateFilter.addEventListener('change', filterTable);
         searchFilter.addEventListener('input', filterTable);
+        
+        // Inicjalizacja paginacji
+        {% if pagination and pagination.pages > 1 %}
+        const pagination = createPaginationFromFlask(
+            {
+                page: {{ pagination.page }},
+                pages: {{ pagination.pages }},
+                total: {{ pagination.total }},
+                per_page: {{ pagination.per_page }}
+            },
+            'pagination',
+            {
+                infoText: 'Strona {page} z {pages}',
+                perPageOptions: [5, 10, 25, 50],
+                defaultPerPage: {{ pagination.per_page }},
+                showPerPage: true
+            }
+        );
+        
+        // Obsługa zmiany strony
+        pagination.setPageChangeCallback(function(page, perPage) {
+            const url = new URL(window.location);
+            url.searchParams.set('page', page);
+            url.searchParams.set('per_page', perPage);
+            window.location.href = url.toString();
+        });
+        
+        // Obsługa zmiany liczby elementów na stronę
+        pagination.setPerPageChangeCallback(function(page, perPage) {
+            const url = new URL(window.location);
+            url.searchParams.set('page', 1); // Reset to first page
+            url.searchParams.set('per_page', perPage);
+            window.location.href = url.toString();
+        });
+        {% endif %}
 });
 
 
@@ -267,11 +307,4 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
     </script>
-            </main>
-        </div>
-    </div>
-
-    <!-- Bootstrap 5 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+{% endblock %}

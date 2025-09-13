@@ -1,276 +1,253 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harmonogram Wydarzeń - Panel Administratora</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
-    <script src="https://cdn.tiny.cloud/1/nzk6x47f5uoxs3thrhw5hjtjhrby1u3skrpld6z2z032z7tv/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
-</head>
-<body class="admin-body">
-        <div class="container-fluid">
-            <div class="row">            <!-- Sidebar -->
-            {% include 'admin/sidebar.html' %}
-            <!-- Main Content -->
-            <main class="col-lg-10 admin-content">
-                <div class="admin-header">
-                    <h1><i class="fas fa-calendar-alt me-2"></i>Harmonogram Wydarzeń</h1>
-                    <a href="{{ url_for('admin_logout') }}" class="btn admin-btn-logout">
-                        <i class="fas fa-sign-out-alt me-2"></i>
-                        Wyloguj
-                    </a>
-                </div>
-                <!-- Add Event Button -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div></div>
-                    <button class="btn admin-btn" data-bs-toggle="modal" data-bs-target="#addEventModal">
+{% extends "admin/base.html" %}
+
+{% block title %}Harmonogram Wydarzeń{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-calendar-alt me-2"></i>Harmonogram Wydarzeń
+{% endblock %}
+
+{% block page_actions %}
+                <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn" onclick="showAddEventModal()">
                         <i class="fas fa-plus me-2"></i>
                         Dodaj Wydarzenie
                     </button>
+                    <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+                        <i class="fas fa-trash me-2"></i>
+                        Usuń Zaznaczone
+                    </button>
                 </div>
+{% endblock %}
+
+{% block content %}
                 <!-- Events Table -->
                 <div class="admin-card">
                     <div class="admin-card-body">
-                        <div class="table-responsive">
-                            <table class="table admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Tytuł</th>
-                                        <th>Typ</th>
-                                        <th>Data i godzina</th>
-                                        <th>Lokalizacja</th>
-                                        <th>Status</th>
-                                        <th>Publikacja</th>
-                                        <th>Utworzono</th>
-                                        <th>Akcje</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="eventsTableBody">
-                                    <!-- Events will be loaded here -->
-                                </tbody>
-                            </table>
-                        </div>
+            <div id="eventsTableContainer">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Ładowanie...</span>
                     </div>
+                    <p class="mt-2 text-muted">Ładowanie wydarzeń...</p>
                 </div>
-            </main>
+            </div>
         </div>
     </div>
+
     <!-- Add Event Modal -->
-    <div class="modal fade admin-modal" id="addEventModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
+    <div class="modal fade" id="addEventModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-plus me-2"></i>
-                        Dodaj Nowe Wydarzenie
+                        <i class="fas fa-plus me-2"></i>Dodaj Nowe Wydarzenie
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="addEventForm">
                     <div class="modal-body">
                         <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="title" class="form-label">Tytuł wydarzenia *</label>
-                                    <input type="text" class="form-control" id="title" name="title" required>
+                            <div class="col-md-6 mb-3">
+                                <label for="eventTitle" class="form-label">Tytuł *</label>
+                                <input type="text" class="form-control" id="eventTitle" name="title" required>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="event_type" class="form-label">Typ wydarzenia *</label>
-                                    <select class="form-control" id="event_type" name="event_type" required>
+                            <div class="col-md-6 mb-3">
+                                <label for="eventType" class="form-label">Typ Wydarzenia *</label>
+                                <select class="form-select" id="eventType" name="event_type" required>
                                         <option value="">Wybierz typ</option>
-                                        <option value="Prezentacja">Prezentacja</option>
-                                        <option value="Webinar">Webinar</option>
-                                        <option value="Spotkanie">Spotkanie</option>
-                                        <option value="Event">Event</option>
-                                        <option value="Inne">Inne</option>
+                                    <option value="workshop">Warsztat</option>
+                                    <option value="webinar">Webinar</option>
+                                    <option value="meeting">Spotkanie</option>
+                                    <option value="conference">Konferencja</option>
+                                    <option value="other">Inne</option>
                                     </select>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="event_date" class="form-label">Data rozpoczęcia *</label>
-                                    <input type="date" class="form-control" id="event_date" name="event_date" required min="">
-                                    <div class="invalid-feedback" id="event_date_error">
-                                        Data rozpoczęcia nie może być w przeszłości
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="eventDate" class="form-label">Data Wydarzenia *</label>
+                                <input type="date" class="form-control" id="eventDate" name="event_date" required>
+                                    </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="eventTime" class="form-label">Godzina *</label>
+                                <input type="time" class="form-control" id="eventTime" name="event_time" required>
                                     </div>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="event_time" class="form-label">Godzina rozpoczęcia *</label>
-                                    <input type="time" class="form-control" id="event_time" name="event_time" required step="900">
-                                    <div class="invalid-feedback" id="event_time_error">
-                                        Data i godzina rozpoczęcia nie może być w przeszłości
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="endDate" class="form-label">Data Zakończenia</label>
+                                <input type="date" class="form-control" id="endDate" name="end_date">
+                                    </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="endTime" class="form-label">Godzina Zakończenia</label>
+                                <input type="time" class="form-control" id="endTime" name="end_time">
                                     </div>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="end_date" class="form-label">Data zakończenia</label>
-                                    <input type="date" class="form-control" id="end_date" name="end_date">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="eventLocation" class="form-label">Lokalizacja</label>
+                                <input type="text" class="form-control" id="eventLocation" name="location">
                                 </div>
-                                <div class="mb-3">
-                                    <label for="end_time" class="form-label">Godzina zakończenia</label>
-                                    <input type="time" class="form-control" id="end_time" name="end_time" step="900">
-                                    <small class="text-muted">Pozostaw puste, aby automatycznie ustawić +1 godzinę</small>
+                            <div class="col-md-6 mb-3">
+                                <label for="meetingLink" class="form-label">Link do Spotkania</label>
+                                <input type="url" class="form-control" id="meetingLink" name="meeting_link">
                                 </div>
-                                <div class="mb-3">
-                                    <label for="location" class="form-label">Lokalizacja</label>
-                                    <input type="text" class="form-control" id="location" name="location" placeholder="np. Online, Warszawa, ul. Przykładowa 1">
                                 </div>
-                                <div class="mb-3">
-                                    <label for="meeting_link" class="form-label">Link do spotkania</label>
-                                    <input type="url" class="form-control" id="meeting_link" name="meeting_link" placeholder="https://...">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="maxParticipants" class="form-label">Maksymalna Liczba Uczestników</label>
+                                <input type="number" class="form-control" id="maxParticipants" name="max_participants" min="1">
                                 </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="heroBackgroundType" class="form-label">Typ Tła</label>
+                                <select class="form-select" id="heroBackgroundType" name="hero_background_type">
+                                    <option value="image">Obraz</option>
+                                    <option value="video">Wideo</option>
+                                </select>
                             </div>
-                            <div class="col-md-6">
+                        </div>
+                        
                                 <div class="mb-3">
-                                    <label for="description" class="form-label">Opis wydarzenia</label>
-                                    <textarea class="form-control" id="description" name="description" rows="8" placeholder="Opisz wydarzenie..."></textarea>
+                            <label for="eventDescription" class="form-label">Opis</label>
+                            <textarea class="form-control" id="eventDescription" name="description" rows="4"></textarea>
                                 </div>
-                                <div class="mb-3">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
-                                        <label class="form-check-label" for="is_active">
+                                    <input class="form-check-input" type="checkbox" id="eventActive" name="is_active" checked>
+                                    <label class="form-check-label" for="eventActive">
                                             Aktywne
                                         </label>
                                     </div>
                                 </div>
-                                <div class="mb-3">
+                            <div class="col-md-6 mb-3">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="is_published" name="is_published" checked>
-                                        <label class="form-check-label" for="is_published">
-                                            Opublikowane na stronie
+                                    <input class="form-check-input" type="checkbox" id="eventPublished" name="is_published" checked>
+                                    <label class="form-check-label" for="eventPublished">
+                                        Opublikowane
                                         </label>
-                                    </div>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="hero_background" class="form-label">Tło bannera (zdjęcie/wideo)</label>
-                                    <input type="file" class="form-control" id="hero_background" name="hero_background" accept="image/*,video/*">
-                                    <small class="text-muted">Obsługiwane formaty: JPG, PNG, MP4, WebM</small>
-                                    <div class="invalid-feedback" id="hero_background_error">
-                                        Dozwolone są tylko pliki graficzne (JPG, PNG) i wideo (MP4, WebM)
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="hero_background_type" class="form-label">Typ tła</label>
-                                    <select class="form-control" id="hero_background_type" name="hero_background_type">
-                                        <option value="image">Zdjęcie</option>
-                                        <option value="video">Wideo</option>
-                                    </select>
-                                </div>
-
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
                         <button type="submit" class="btn admin-btn">Dodaj Wydarzenie</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
     <!-- Edit Event Modal -->
-    <div class="modal fade admin-modal" id="editEventModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
+    <div class="modal fade" id="editEventModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-edit me-2"></i>
-                        Edytuj Wydarzenie
+                        <i class="fas fa-edit me-2"></i>Edytuj Wydarzenie
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="editEventForm">
-                    <input type="hidden" id="edit_event_id" name="id">
+                    <input type="hidden" id="editEventId" name="id">
                     <div class="modal-body">
                         <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="edit_title" class="form-label">Tytuł wydarzenia *</label>
-                                    <input type="text" class="form-control" id="edit_title" name="title" required>
+                            <div class="col-md-6 mb-3">
+                                <label for="editEventTitle" class="form-label">Tytuł *</label>
+                                <input type="text" class="form-control" id="editEventTitle" name="title" required>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="edit_event_type" class="form-label">Typ wydarzenia *</label>
-                                    <select class="form-control" id="edit_event_type" name="event_type" required>
-                                        <option value="Prezentacja">Prezentacja</option>
-                                        <option value="Webinar">Webinar</option>
-                                        <option value="Spotkanie">Spotkanie</option>
-                                        <option value="Event">Event</option>
-                                        <option value="Inne">Inne</option>
+                            <div class="col-md-6 mb-3">
+                                <label for="editEventType" class="form-label">Typ Wydarzenia *</label>
+                                <select class="form-select" id="editEventType" name="event_type" required>
+                                    <option value="">Wybierz typ</option>
+                                    <option value="workshop">Warsztat</option>
+                                    <option value="webinar">Webinar</option>
+                                    <option value="meeting">Spotkanie</option>
+                                    <option value="conference">Konferencja</option>
+                                    <option value="other">Inne</option>
                                     </select>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="edit_event_date" class="form-label">Data rozpoczęcia *</label>
-                                    <input type="date" class="form-control" id="edit_event_date" name="event_date" required min="">
-                                    <div class="invalid-feedback" id="edit_event_date_error">
-                                        Data rozpoczęcia nie może być w przeszłości
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editEventDate" class="form-label">Data Wydarzenia *</label>
+                                <input type="date" class="form-control" id="editEventDate" name="event_date" required>
+                                    </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editEventTime" class="form-label">Godzina *</label>
+                                <input type="time" class="form-control" id="editEventTime" name="event_time" required>
                                     </div>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="edit_event_time" class="form-label">Godzina rozpoczęcia *</label>
-                                    <input type="time" class="form-control" id="edit_event_time" name="event_time" required step="900">
-                                    <div class="invalid-feedback" id="edit_event_time_error">
-                                        Data i godzina rozpoczęcia nie może być w przeszłości
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editEndDate" class="form-label">Data Zakończenia</label>
+                                <input type="date" class="form-control" id="editEndDate" name="end_date">
+                                    </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editEndTime" class="form-label">Godzina Zakończenia</label>
+                                <input type="time" class="form-control" id="editEndTime" name="end_time">
                                     </div>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="edit_end_date" class="form-label">Data zakończenia</label>
-                                    <input type="date" class="form-control" id="edit_end_date" name="end_date">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editEventLocation" class="form-label">Lokalizacja</label>
+                                <input type="text" class="form-control" id="editEventLocation" name="location">
                                 </div>
-                                <div class="mb-3">
-                                    <label for="edit_end_time" class="form-label">Godzina zakończenia</label>
-                                    <input type="time" class="form-control" id="edit_end_time" name="end_time" step="900">
-                                    <small class="text-muted">Pozostaw puste, aby automatycznie ustawić +1 godzinę</small>
+                            <div class="col-md-6 mb-3">
+                                <label for="editMeetingLink" class="form-label">Link do Spotkania</label>
+                                <input type="url" class="form-control" id="editMeetingLink" name="meeting_link">
                                 </div>
-                                <div class="mb-3">
-                                    <label for="edit_location" class="form-label">Lokalizacja</label>
-                                    <input type="text" class="form-control" id="edit_location" name="location" placeholder="np. Online, Warszawa, ul. Przykładowa 1">
                                 </div>
-                                <div class="mb-3">
-                                    <label for="edit_meeting_link" class="form-label">Link do spotkania</label>
-                                    <input type="url" class="form-control" id="edit_meeting_link" name="meeting_link" placeholder="https://...">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editMaxParticipants" class="form-label">Maksymalna Liczba Uczestników</label>
+                                <input type="number" class="form-control" id="editMaxParticipants" name="max_participants" min="1">
                                 </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editHeroBackgroundType" class="form-label">Typ Tła</label>
+                                <select class="form-select" id="editHeroBackgroundType" name="hero_background_type">
+                                    <option value="image">Obraz</option>
+                                    <option value="video">Wideo</option>
+                                </select>
                             </div>
-                            <div class="col-md-6">
+                        </div>
+                        
                                 <div class="mb-3">
-                                    <label for="edit_description" class="form-label">Opis wydarzenia</label>
-                                    <textarea class="form-control" id="edit_description" name="description" rows="8" placeholder="Opisz wydarzenie..."></textarea>
+                            <label for="editEventDescription" class="form-label">Opis</label>
+                            <textarea class="form-control" id="editEventDescription" name="description" rows="4"></textarea>
                                 </div>
-                                <div class="mb-3">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
-                                        <label class="form-check-label" for="edit_is_active">
+                                    <input class="form-check-input" type="checkbox" id="editEventActive" name="is_active">
+                                    <label class="form-check-label" for="editEventActive">
                                             Aktywne
                                         </label>
                                     </div>
                                 </div>
-                                <div class="mb-3">
+                            <div class="col-md-6 mb-3">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="edit_is_published" name="is_published">
-                                        <label class="form-check-label" for="edit_is_published">
-                                            Opublikowane na stronie
+                                    <input class="form-check-input" type="checkbox" id="editEventPublished" name="is_published">
+                                    <label class="form-check-label" for="editEventPublished">
+                                        Opublikowane
                                         </label>
-                                    </div>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="edit_hero_background" class="form-label">Tło bannera (zdjęcie/wideo)</label>
-                                    <input type="file" class="form-control" id="edit_hero_background" name="hero_background" accept="image/*,video/*">
-                                    <small class="text-muted">Obsługiwane formaty: JPG, PNG, MP4, WebM</small>
-                                    <div class="invalid-feedback" id="edit_hero_background_error">
-                                        Dozwolone są tylko pliki graficzne (JPG, PNG) i wideo (MP4, WebM)
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="edit_hero_background_type" class="form-label">Typ tła</label>
-                                    <select class="form-control" id="edit_hero_background_type" name="hero_background_type">
-                                        <option value="image">Zdjęcie</option>
-                                        <option value="video">Wideo</option>
-                                    </select>
-                                </div>
-
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
                         <button type="submit" class="btn admin-btn">Zapisz Zmiany</button>
                     </div>
                 </form>
@@ -278,554 +255,44 @@
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade admin-modal" id="deleteEventModal" tabindex="-1">
+    <!-- Delete Event Modal -->
+    <div class="modal fade" id="deleteEventModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
-                        Potwierdź usunięcie
+                        <i class="fas fa-exclamation-triangle me-2"></i>Potwierdzenie Usunięcia
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Czy na pewno chcesz usunąć to wydarzenie?</p>
-                    <p class="text-muted">Ta operacja nie może być cofnięta.</p>
+                    <p>Czy na pewno chcesz usunąć to wydarzenie? Tej operacji nie można cofnąć.</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                    <button type="button" class="btn btn-danger" id="confirmDeleteEvent">Usuń</button>
-
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade admin-modal" id="deleteEventModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
-                        Potwierdź usunięcie
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Czy na pewno chcesz usunąć to wydarzenie?</p>
-                    <p class="text-muted">Ta operacja nie może być cofnięta.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                    <button type="button" class="btn btn-danger" id="confirmDeleteEvent">Usuń</button>
+                    <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="button" class="btn admin-btn-danger" id="confirmDeleteEvent">Usuń Wydarzenie</button>
                 </div>
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin/events.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
     <script>
-        let currentEventId = null;
-        
-        // Sprawdź czy TinyMCE jest dostępny
-        if (typeof tinymce === 'undefined') {
-            console.error('TinyMCE not loaded!');
-        } else {
-            console.log('TinyMCE version:', tinymce.majorVersion);
-        }
-        // Initialize TinyMCE for description fields
-        tinymce.init({
-            selector: '#description',
-            height: 200,
-            plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
-            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
-            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
-            setup: function(editor) {
-                console.log('TinyMCE initialized for:', editor.id);
-            },
-            init_instance_callback: function(editor) {
-                console.log('TinyMCE instance ready for:', editor.id);
-            }
-        });
-        
-        // Inicjalizuj TinyMCE dla pola edycji po otwarciu modala
-        function initEditTinyMCE() {
-            if (!tinymce.get('edit_description')) {
-                tinymce.init({
-                    selector: '#edit_description',
-                    height: 200,
-                    plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
-                    toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
-                    content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
-                    setup: function(editor) {
-                        console.log('TinyMCE edit initialized for:', editor.id);
-                    },
-                    init_instance_callback: function(editor) {
-                        console.log('TinyMCE edit instance ready for:', editor.id);
-                    }
-                });
-            }
-        }
-        // Load events on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Poczekaj na gotowość TinyMCE
-            setTimeout(() => {
-            loadEvents();
-                setupDateValidation();
-                setupFileValidation();
-                console.log('TinyMCE instances:', tinymce.editors);
-                console.log('Available editors:', tinymce.editors.map(e => e.id));
-                
-                // Sprawdź czy pola istnieją w DOM
-                console.log('Description field exists:', !!document.getElementById('description'));
-                console.log('Edit description field exists:', !!document.getElementById('edit_description'));
-            }, 100);
-        });
-        // Load events from API
-        function loadEvents() {
-            fetch('/admin/api/event-schedule')
-                .then(response => response.json())
-                .then(events => {
-                    displayEvents(events);
-                })
-                .catch(error => {
-                    console.error('Error loading events:', error);
-                    alert('Wystąpił błąd podczas ładowania wydarzeń');
-                });
-        }
-        // Display events in table
-        function displayEvents(events) {
-            const tbody = document.getElementById('eventsTableBody');
-            tbody.innerHTML = '';
-            events.forEach(event => {
-                const row = document.createElement('tr');
-                // Format dates
-                const startDate = new Date(event.event_date).toLocaleString('pl-PL');
-                const endDate = event.end_date ? new Date(event.end_date).toLocaleString('pl-PL') : 'Auto (+1h)';
-                row.innerHTML = `
-                    <td>
-                        <strong>${event.title}</strong>
-                        ${event.meeting_link ? `<br><small><a href="${event.meeting_link}" target="_blank" class="text-info"><i class="fas fa-link me-1"></i>Link do spotkania</a></small>` : ''}
-                    </td>
-                    <td><span class="badge bg-info">${event.event_type}</span></td>
-                    <td>
-                        <div><strong>Start:</strong> ${startDate}</div>
-                        <div><small>Koniec: ${endDate}</small></div>
-                    </td>
-                    <td>${event.location || 'Online'}</td>
-                    <td>
-                        ${event.is_active ? '<span class="badge bg-success">Aktywne</span>' : '<span class="badge bg-danger">Nieaktywne</span>'}
-                    </td>
-                    <td>
-                        ${event.is_published ? '<span class="badge bg-primary">Opublikowane</span>' : '<span class="badge bg-secondary">Szkic</span>'}
-                    </td>
-                    <td>${new Date(event.created_at).toLocaleDateString('pl-PL')}</td>
-                    <td>
-                        <div class="btn-group" role="group">
-                            <button class="btn btn-sm admin-btn-outline" onclick="editEvent(${event.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm admin-btn-danger" onclick="deleteEvent(${event.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-        // Edit event
-        function editEvent(eventId) {
-            fetch(`/admin/api/event-schedule/${eventId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const event = data.event;
-                        currentEventId = event.id;
-                        document.getElementById('edit_event_id').value = event.id;
-                        document.getElementById('edit_title').value = event.title;
-                        document.getElementById('edit_event_type').value = event.event_type;
-                        // Ustaw datę i czas rozpoczęcia
-                        const startDate = new Date(event.event_date);
-                        document.getElementById('edit_event_date').value = startDate.toISOString().split('T')[0];
-                        document.getElementById('edit_event_time').value = startDate.toTimeString().slice(0, 5);
-                        
-                        // Ustaw datę i czas zakończenia
-                        if (event.end_date) {
-                            const endDate = new Date(event.end_date);
-                            document.getElementById('edit_end_date').value = endDate.toISOString().split('T')[0];
-                            document.getElementById('edit_end_time').value = endDate.toTimeString().slice(0, 5);
-                        } else {
-                            document.getElementById('edit_end_date').value = '';
-                            document.getElementById('edit_end_time').value = '';
-                        }
-                        document.getElementById('edit_location').value = event.location || '';
-                        document.getElementById('edit_meeting_link').value = event.meeting_link || '';
-                        document.getElementById('edit_is_active').checked = event.is_active;
-                        document.getElementById('edit_is_published').checked = event.is_published;
-                        if (event.hero_background_type) {
-                            document.getElementById('edit_hero_background_type').value = event.hero_background_type;
-                        }
-                        
-                        // Show current background if exists
-                        if (event.hero_background) {
-                            const currentBgDiv = document.createElement('div');
-                            currentBgDiv.className = 'mb-3';
-                            currentBgDiv.innerHTML = `
-                                <label class="form-label">Aktualne tło:</label>
-                                <div class="current-background">
-                                    ${event.hero_background_type === 'video' ? 
-                                        `<video width="200" height="150" controls><source src="${event.hero_background}" type="video/mp4"></video>` :
-                                        `<img src="${event.hero_background}" alt="Aktualne tło" style="max-width: 200px; max-height: 150px; border-radius: 8px;">`
-                                    }
-                                    <p class="text-muted small mt-2">${event.hero_background}</p>
-                                </div>
-                            `;
-                            document.getElementById('edit_hero_background').parentNode.insertBefore(currentBgDiv, document.getElementById('edit_hero_background'));
-                        }
+            // Initialize bulk delete manager for events
+    window.bulkDeleteManager = BulkDeleteManager.createForPage('event', {
+                    itemCheckboxClass: 'event-checkbox',
+                    bulkDeleteBtnId: 'bulkDeleteBtn',
+                    apiEndpoint: '/api/event-schedule',
+                    confirmMessage: 'Czy na pewno chcesz usunąć zaznaczone wydarzenia? Tej operacji nie można cofnąć.',
+                    successMessage: 'Wydarzenia zostały usunięte pomyślnie',
+        errorMessage: 'Wystąpił błąd podczas usuwania wydarzeń'
+    });
 
-                        // Ustaw zawartość w TinyMCE z obsługą błędów
-                        try {
-                            const editDescriptionEditor = tinymce.get('edit_description');
-                            if (editDescriptionEditor) {
-                                editDescriptionEditor.setContent(event.description || '');
-                            } else {
-                                console.error('TinyMCE editor for edit_description not found');
-                                document.getElementById('edit_description').value = event.description || '';
-                            }
-                        } catch (error) {
-                            console.error('Error setting content in TinyMCE edit_description:', error);
-                            document.getElementById('edit_description').value = event.description || '';
-                        }
-                        
-                        // Inicjalizuj TinyMCE dla pola edycji
-                        initEditTinyMCE();
-                        
-                        // Poczekaj na gotowość TinyMCE przed otwarciem modala
-                        setTimeout(() => {
-                        new bootstrap.Modal(document.getElementById('editEventModal')).show();
-                        }, 100);
-                    } else {
-                        alert('Błąd: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Wystąpił błąd podczas ładowania danych wydarzenia');
-                });
-        }
-
-        // Delete event
-        function deleteEvent(eventId) {
-            currentEventId = eventId;
-            new bootstrap.Modal(document.getElementById('deleteEventModal')).show();
-        }
-        // Handle add event form submission
-        document.getElementById('addEventForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Walidacja przed wysłaniem
-            if (!validateAddForm()) {
-                alert('Proszę poprawić błędy w formularzu przed wysłaniem.');
-                return;
-            }
-            
-            const formData = new FormData(this);
-            
-            // Łącz datę i czas w jeden string
-            const eventDate = document.getElementById('event_date').value;
-            const eventTime = document.getElementById('event_time').value;
-            if (eventDate && eventTime) {
-                formData.set('event_date', `${eventDate}T${eventTime}`);
-            }
-            
-            const endDate = document.getElementById('end_date').value;
-            const endTime = document.getElementById('end_time').value;
-            if (endDate && endTime) {
-                formData.set('end_date', `${endDate}T${endTime}`);
-            } else {
-                formData.set('end_date', '');
-            }
-            
-            // Pobierz zawartość z TinyMCE z obsługą błędów
-            try {
-                const descriptionEditor = tinymce.get('description');
-                if (descriptionEditor) {
-                    formData.set('description', descriptionEditor.getContent());
-                } else {
-                    console.error('TinyMCE editor for description not found');
-                    formData.set('description', document.getElementById('description').value || '');
-                }
-            } catch (error) {
-                console.error('Error getting description from TinyMCE:', error);
-                formData.set('description', document.getElementById('description').value || '');
-            }
-            formData.set('is_active', document.getElementById('is_active').checked.toString());
-            formData.set('is_published', document.getElementById('is_published').checked.toString());
-            
-            // Handle file upload
-            const fileInput = document.getElementById('hero_background');
-            if (fileInput.files.length > 0) {
-                formData.set('hero_background', fileInput.files[0]);
-            }
-            
-            fetch('/admin/api/event-schedule', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
-                    loadEvents();
-                    alert('Wydarzenie zostało dodane pomyślnie!');
-                } else {
-                    alert('Błąd: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Wystąpił błąd podczas dodawania wydarzenia');
-            });
-        });
-        // Handle edit event form submission
-        document.getElementById('editEventForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Walidacja przed wysłaniem
-            if (!validateEditForm()) {
-                alert('Proszę poprawić błędy w formularzu przed wysłaniem.');
-                return false;
-            }
-            
-            const formData = new FormData(this);
-            
-            // Łącz datę i czas w jeden string
-            const eventDate = document.getElementById('edit_event_date').value;
-            const eventTime = document.getElementById('edit_event_time').value;
-            if (eventDate && eventTime) {
-                formData.set('event_date', `${eventDate}T${eventTime}`);
-            }
-            
-            const endDate = document.getElementById('edit_end_date').value;
-            const endTime = document.getElementById('edit_end_time').value;
-            if (endDate && endTime) {
-                formData.set('end_date', `${endDate}T${endTime}`);
-            } else {
-                formData.set('end_date', '');
-            }
-            
-            // Pobierz zawartość z TinyMCE z obsługą błędów
-            try {
-                const editDescriptionEditor = tinymce.get('edit_description');
-                if (editDescriptionEditor) {
-                    formData.set('description', editDescriptionEditor.getContent());
-                } else {
-                    console.error('TinyMCE editor for edit_description not found');
-                    formData.set('description', document.getElementById('edit_description').value || '');
-                }
-            } catch (error) {
-                console.error('Error getting description from TinyMCE edit_description:', error);
-                formData.set('description', document.getElementById('edit_description').value || '');
-            }
-            formData.set('is_active', document.getElementById('edit_is_active').checked.toString());
-            formData.set('is_published', document.getElementById('edit_is_published').checked.toString());
-            
-            // Handle file upload
-            const fileInput = document.getElementById('edit_hero_background');
-            if (fileInput.files.length > 0) {
-                formData.set('hero_background', fileInput.files[0]);
-            }
-            
-            fetch('/admin/api/event-schedule', {
-                method: 'PUT',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    bootstrap.Modal.getInstance(document.getElementById('editEventModal')).hide();
-                    loadEvents();
-                    alert('Wydarzenie zostało zaktualizowane pomyślnie!');
-                } else {
-                    alert('Błąd: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Wystąpił błąd podczas aktualizacji wydarzenia');
-            });
-        });
-        // Handle delete confirmation
-        document.getElementById('confirmDeleteEvent').addEventListener('click', function() {
-            if (currentEventId) {
-                fetch(`/admin/api/event-schedule?id=${currentEventId}`, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        bootstrap.Modal.getInstance(document.getElementById('deleteEventModal')).hide();
-                        loadEvents();
-                        alert('Wydarzenie zostało usunięte pomyślnie!');
-                    } else {
-                        alert('Błąd: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Wystąpił błąd podczas usuwania wydarzenia');
-                });
-            }
-        });
-        
-        // Funkcje walidacji
-        function setupDateValidation() {
-            // Ustaw minimalną datę na dzisiaj, ale pozwalaj na wydarzenia w tym samym dniu
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('event_date').min = today;
-            document.getElementById('edit_event_date').min = today;
-            
-            // Dodaj event listenery do walidacji daty i czasu
-            document.getElementById('event_date').addEventListener('change', validateEventDate);
-            document.getElementById('event_time').addEventListener('change', validateEventDate);
-            document.getElementById('edit_event_date').addEventListener('change', validateEditEventDate);
-            document.getElementById('edit_event_time').addEventListener('change', validateEditEventDate);
-        }
-        
-        function validateEventDate() {
-            const eventDate = document.getElementById('event_date').value;
-            const eventTime = document.getElementById('event_time').value;
-            const dateInput = document.getElementById('event_date');
-            const timeInput = document.getElementById('event_time');
-            
-            if (eventDate && eventTime) {
-                const selectedDateTime = new Date(`${eventDate}T${eventTime}`);
-                // Porównuj z aktualnym momentem, pozwalając na wydarzenia w tym samym dniu
-                const now = new Date();
-                
-                if (selectedDateTime < now) {
-                    dateInput.classList.add('is-invalid');
-                    timeInput.classList.add('is-invalid');
-                    return false;
-                } else {
-                    dateInput.classList.remove('is-invalid');
-                    timeInput.classList.remove('is-invalid');
-                    return true;
-                }
-            }
-            return true;
-        }
-        
-        function validateEditEventDate() {
-            const eventDate = document.getElementById('edit_event_date').value;
-            const eventTime = document.getElementById('edit_event_time').value;
-            const dateInput = document.getElementById('edit_event_date');
-            const timeInput = document.getElementById('edit_event_time');
-            
-            if (eventDate && eventTime) {
-                const selectedDateTime = new Date(`${eventDate}T${eventTime}`);
-                // Porównuj z aktualnym momentem, pozwalając na wydarzenia w tym samym dniu
-                const now = new Date();
-                
-                if (selectedDateTime < now) {
-                    dateInput.classList.add('is-invalid');
-                    timeInput.classList.add('is-invalid');
-                    return false;
-                } else {
-                    dateInput.classList.remove('is-invalid');
-                    timeInput.classList.remove('is-invalid');
-                    return true;
-                }
-            }
-            return true;
-        }
-        
-        function setupFileValidation() {
-            // Dodaj event listenery do walidacji plików
-            document.getElementById('hero_background').addEventListener('change', validateFile);
-            document.getElementById('edit_hero_background').addEventListener('change', validateEditFile);
-        }
-        
-        function validateFile() {
-            const fileInput = document.getElementById('hero_background');
-            const file = fileInput.files[0];
-            const input = fileInput;
-            
-            if (file) {
-                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'video/mp4', 'video/webm', 'video/mov'];
-                const maxSize = 50 * 1024 * 1024; // 50MB
-                
-                if (!allowedTypes.includes(file.type)) {
-                    input.classList.add('is-invalid');
-                    return false;
-                } else if (file.size > maxSize) {
-                    input.classList.add('is-invalid');
-                    document.getElementById('hero_background_error').textContent = 'Plik jest za duży. Maksymalny rozmiar: 50MB';
-                    return false;
-                } else {
-                    input.classList.remove('is-invalid');
-                    return true;
-                }
-            }
-            return true;
-        }
-        
-        function validateEditFile() {
-            const fileInput = document.getElementById('edit_hero_background');
-            const file = fileInput.files[0];
-            const input = fileInput;
-            
-            if (file) {
-                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'video/mp4', 'video/webm', 'video/mov'];
-                const maxSize = 50 * 1024 * 1024; // 50MB
-                
-                if (!allowedTypes.includes(file.type)) {
-                    input.classList.add('is-invalid');
-                    return false;
-                } else if (file.size > maxSize) {
-                    input.classList.add('is-invalid');
-                    document.getElementById('edit_hero_background_error').textContent = 'Plik jest za duży. Maksymalny rozmiar: 50MB';
-                    return false;
-                } else {
-                    input.classList.remove('is-invalid');
-                    return true;
-                }
-            }
-            return true;
-        }
-        
-        // Sprawdź czy TinyMCE jest gotowy
-        function isTinyMCEReady(editorId) {
-            try {
-                const editor = tinymce.get(editorId);
-                return editor && editor.initialized;
-            } catch (error) {
-                console.error('Error checking TinyMCE readiness:', error);
-                return false;
-            }
-        }
-        
-        // Walidacja przed wysłaniem formularza
-        function validateAddForm() {
-            const isDateValid = validateEventDate();
-            const isFileValid = validateFile();
-            
-            // Sprawdź czy TinyMCE jest gotowy
-            if (!isTinyMCEReady('description')) {
-                console.warn('TinyMCE for description not ready, using fallback');
-            }
-            
-            return isDateValid && isFileValid;
-        }
-        
-        function validateEditForm() {
-            const isDateValid = validateEditEventDate();
-            const isFileValid = validateEditFile();
-            
-            // Sprawdź czy TinyMCE jest gotowy
-            if (!isTinyMCEReady('edit_description')) {
-                console.warn('TinyMCE for edit_description not ready, using fallback');
-            }
-            
-            return isDateValid && isFileValid;
-        }
+    // Initialize events manager
+    window.eventsManager = new EventsManager();
+});
     </script>
-</body>
-</html>
+{% endblock %}

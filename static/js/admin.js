@@ -227,28 +227,57 @@ function updateTestimonial(testimonialId) {
 }
 
 function deleteTestimonial(testimonialId) {
-    if (confirm('Czy na pewno chcesz usunąć tę opinię? Tej operacji nie można cofnąć.')) {
-        fetch(`/admin/api/testimonials/${testimonialId}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showSuccessMessage('Opinia została usunięta pomyślnie!');
-                // Remove the testimonial from the DOM
-                const testimonialElement = document.getElementById(`testimonial${testimonialId}`);
-                if (testimonialElement) {
-                    testimonialElement.remove();
-                }
-            } else {
-                showErrorMessage('Błąd podczas usuwania opinii: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error deleting testimonial:', error);
-            showErrorMessage('Wystąpił błąd podczas usuwania opinii.');
+    // Use Bootstrap modal instead of confirm()
+    const modal = document.getElementById('bulkDeleteModal');
+    const messageElement = document.getElementById('bulkDeleteMessage');
+    const confirmButton = document.getElementById('confirmBulkDelete');
+    
+    if (modal && messageElement && confirmButton) {
+        // Update message
+        messageElement.textContent = 'Czy na pewno chcesz usunąć tę opinię? Tej operacji nie można cofnąć.';
+        
+        // Remove existing event listeners
+        const newConfirmButton = confirmButton.cloneNode(true);
+        confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+        
+        // Add new event listener
+        newConfirmButton.addEventListener('click', () => {
+            bootstrap.Modal.getInstance(modal).hide();
+            performDeleteTestimonial(testimonialId);
         });
+        
+        // Show modal
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+    } else {
+        // Fallback to confirm() if modal not available
+        if (confirm('Czy na pewno chcesz usunąć tę opinię? Tej operacji nie można cofnąć.')) {
+            performDeleteTestimonial(testimonialId);
+        }
     }
+}
+
+function performDeleteTestimonial(testimonialId) {
+    fetch(`/admin/api/testimonials/${testimonialId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccessMessage('Opinia została usunięta pomyślnie!');
+            // Remove the testimonial from the DOM
+            const testimonialElement = document.getElementById(`testimonial${testimonialId}`);
+            if (testimonialElement) {
+                testimonialElement.remove();
+            }
+        } else {
+            showErrorMessage('Błąd podczas usuwania opinii: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting testimonial:', error);
+        showErrorMessage('Wystąpił błąd podczas usuwania opinii.');
+    });
 }
 
 // Utility Functions
@@ -376,4 +405,52 @@ style.textContent = `
 `;
 
 document.head.appendChild(style);
+
+// Sidebar Toggle Functionality
+function toggleSidebar() {
+    const sidebar = document.getElementById('adminSidebar');
+    const mainContent = document.querySelector('.admin-content');
+    
+    if (sidebar.classList.contains('collapsed')) {
+        // Expand sidebar
+        sidebar.classList.remove('collapsed');
+        if (mainContent) {
+            mainContent.style.marginLeft = '280px';
+            mainContent.style.marginRight = '';
+            mainContent.style.maxWidth = '';
+        }
+        localStorage.setItem('sidebarCollapsed', 'false');
+    } else {
+        // Collapse sidebar
+        sidebar.classList.add('collapsed');
+        if (mainContent) {
+            mainContent.style.marginLeft = 'auto';
+            mainContent.style.marginRight = 'auto';
+            mainContent.style.maxWidth = 'calc(100vw - 70px)';
+        }
+        localStorage.setItem('sidebarCollapsed', 'true');
+    }
+}
+
+// Initialize sidebar state from localStorage
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.getElementById('adminSidebar');
+    const mainContent = document.querySelector('.admin-content');
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    
+    if (isCollapsed) {
+        sidebar.classList.add('collapsed');
+        if (mainContent) {
+            mainContent.style.marginLeft = 'auto';
+            mainContent.style.marginRight = 'auto';
+            mainContent.style.maxWidth = 'calc(100vw - 70px)';
+        }
+    } else {
+        if (mainContent) {
+            mainContent.style.marginLeft = '280px';
+            mainContent.style.marginRight = '';
+            mainContent.style.maxWidth = '';
+        }
+    }
+});
 

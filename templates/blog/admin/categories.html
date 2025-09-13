@@ -1,0 +1,266 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Kategorie bloga{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-folder me-2"></i>Zarządzanie kategoriami
+{% endblock %}
+
+{% block page_actions %}
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn" onclick="showAddCategoryModal()">
+            <i class="fas fa-plus me-2"></i>
+            Dodaj Kategorię
+        </button>
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+            <i class="fas fa-trash me-2"></i>
+            Usuń Zaznaczone
+        </button>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <!-- Categories Table -->
+    <div class="admin-card">
+        <div class="admin-card-body">
+            {% if categories.items %}
+                <div class="table-responsive">
+                    <table class="table admin-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll()">
+                                </th>
+                                <th>Nazwa</th>
+                                <th>Slug</th>
+                                <th>Ścieżka</th>
+                                <th>Artykuły</th>
+                                <th>Status</th>
+                                <th>Utworzono</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category in categories.items %}
+                            <tr data-category-id="{{ category.id }}" data-item-id="{{ category.id }}">
+                                <td>
+                                    <input type="checkbox" class="category-checkbox" value="{{ category.id }}" onchange="bulkDeleteManager.updateBulkDeleteButton()">
+                                </td>
+                                <td>
+                                    <strong>{{ category.title }}</strong>
+                                    {% if category.description %}
+                                    <br><small class="text-muted">{{ category.description[:100] }}{% if category.description|length > 100 %}...{% endif %}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <code>{{ category.slug }}</code>
+                                </td>
+                                <td>
+                                    {% if category.parent %}
+                                        <span class="text-muted">{{ category.parent.title }} / </span>{{ category.title }}
+                                    {% else %}
+                                        {{ category.title }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge admin-badge admin-badge-info">{{ category.posts_count }}</span>
+                                </td>
+                                <td>
+                                    {% if category.is_active %}
+                                        <span class="badge admin-badge admin-badge-success">Aktywna</span>
+                                    {% else %}
+                                        <span class="badge admin-badge admin-badge-danger">Nieaktywna</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ category.created_at.strftime('%d.%m.%Y') }}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm admin-btn-outline" onclick="editCategory({{ category.id }})" title="Edytuj">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteCategory({{ category.id }})" title="Usuń">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if categories.pages > 1 %}
+                <div class="d-flex justify-content-center mt-4">
+                    <nav aria-label="Paginacja kategorii">
+                        <ul class="pagination pagination-sm">
+                            {% if categories.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('blog.admin_categories', page=categories.prev_num) }}" aria-label="Poprzednia">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in categories.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != categories.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('blog.admin_categories', page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">…</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if categories.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('blog.admin_categories', page=categories.next_num) }}" aria-label="Następna">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-folder fa-3x text-muted mb-3"></i>
+                    <h3 class="text-muted">Brak kategorii</h3>
+                    <p class="text-muted">Dodaj pierwszą kategorię, aby organizować artykuły.</p>
+                    <button class="btn admin-btn" onclick="showAddCategoryModal()">
+                        <i class="fas fa-plus me-2"></i>
+                        Dodaj Kategorię
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Add Category Modal -->
+    <div class="modal fade admin-modal" id="addCategoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus me-2"></i>Dodaj Nową Kategorię
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addCategoryForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="categoryTitle" class="form-label">Nazwa *</label>
+                            <input type="text" class="form-control" id="categoryTitle" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categorySlug" class="form-label">Slug</label>
+                            <input type="text" class="form-control" id="categorySlug" name="slug">
+                            <div class="form-text">Pozostaw puste, aby wygenerować automatycznie</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryDescription" class="form-label">Opis</label>
+                            <textarea class="form-control" id="categoryDescription" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryParent" class="form-label">Kategoria nadrzędna</label>
+                            <select class="form-select" id="categoryParent" name="parent_id">
+                                <option value="">Brak (kategoria główna)</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}">{{ cat.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categorySortOrder" class="form-label">Kolejność</label>
+                            <input type="number" class="form-control" id="categorySortOrder" name="sort_order" value="0">
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="categoryIsActive" name="is_active" checked>
+                            <label class="form-check-label" for="categoryIsActive">
+                                Aktywna
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">
+                            <i class="fas fa-save me-2"></i>Zapisz Kategorię
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Category Modal -->
+    <div class="modal fade admin-modal" id="editCategoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit me-2"></i>Edytuj Kategorię
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editCategoryForm">
+                    <input type="hidden" id="editCategoryId" name="id">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="editCategoryTitle" class="form-label">Nazwa *</label>
+                            <input type="text" class="form-control" id="editCategoryTitle" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editCategorySlug" class="form-label">Slug</label>
+                            <input type="text" class="form-control" id="editCategorySlug" name="slug">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editCategoryDescription" class="form-label">Opis</label>
+                            <textarea class="form-control" id="editCategoryDescription" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editCategoryParent" class="form-label">Kategoria nadrzędna</label>
+                            <select class="form-select" id="editCategoryParent" name="parent_id">
+                                <option value="">Brak (kategoria główna)</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}">{{ cat.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editCategorySortOrder" class="form-label">Kolejność</label>
+                            <input type="number" class="form-control" id="editCategorySortOrder" name="sort_order">
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="editCategoryIsActive" name="is_active">
+                            <label class="form-check-label" for="editCategoryIsActive">
+                                Aktywna
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn admin-btn">
+                            <i class="fas fa-save me-2"></i>Zapisz Zmiany
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/utils/paginate.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/blog_categories.js') }}"></script>
+{% endblock %}
