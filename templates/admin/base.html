@@ -26,6 +26,10 @@
                     <h1>{% block page_title %}Panel Administracyjny{% endblock %}</h1>
                     <div class="d-flex align-items-center">
                         <span class="text-muted me-3">Witaj, {{ current_user.name or current_user.email }}</span>
+                        <a href="{{ url_for('public.index') }}" target="_blank" class="btn btn-outline-primary btn-sm me-2">
+                            <i class="fas fa-external-link-alt me-1"></i>
+                            Strona główna
+                        </a>
                         <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm">
                             <i class="fas fa-sign-out-alt me-1"></i>
                             Wyloguj

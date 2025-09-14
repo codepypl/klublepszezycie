@@ -72,6 +72,15 @@ function displayTemplates(templates) {
     templates.forEach(template => {
         const row = document.createElement('tr');
         
+        // Debug: sprawdź flagę is_default dla szablonu password_reset
+        if (template.name === 'password_reset') {
+            console.log('🔍 Debug password_reset template:', {
+                name: template.name,
+                is_default: template.is_default,
+                type: typeof template.is_default
+            });
+        }
+        
         // Ukryj checkbox i przycisk usuwania dla domyślnych szablonów
         const checkboxHtml = template.is_default ? 
             '<input type="checkbox" name="itemIds" value="' + template.id + '" disabled title="Nie można usuwać szablonów domyślnych">' :
@@ -322,3 +331,5 @@ function performResetTemplates() {
 // Make functions globally available
 window.resetTemplates = resetTemplates;
 window.deleteTemplate = deleteTemplate;
+
+// Cache buster: 1757820821
