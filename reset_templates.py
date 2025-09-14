@@ -532,11 +532,24 @@ def reset_templates():
     app = create_app()
     with app.app_context():
         try:
+            from models import EmailLog, EmailQueue, EmailCampaign
+            
             # Pobierz domyślne szablony
             default_templates = get_default_templates()
             
-            # Usuń wszystkie istniejące szablony
+            # Usuń wszystkie tabele w odpowiedniej kolejności (od child do parent)
+            EmailLog.query.delete()
+            print("🗑️ Usunięto logi emaili")
+            
+            EmailQueue.query.delete()
+            print("🗑️ Usunięto kolejki emaili")
+            
+            EmailCampaign.query.delete()
+            print("🗑️ Usunięto kampanie emaili")
+            
+            # Potem usuń wszystkie istniejące szablony
             EmailTemplate.query.delete()
+            print("🗑️ Usunięto istniejące szablony")
             
             # Dodaj domyślne szablony
             for template_data in default_templates:
@@ -554,10 +567,13 @@ def reset_templates():
         except Exception as e:
             db.session.rollback()
             print(f"❌ Błąd podczas resetowania szablonów: {e}")
+            import traceback
+            traceback.print_exc()
             return False
         
         return True
 
 if __name__ == "__main__":
     reset_templates()
+
 

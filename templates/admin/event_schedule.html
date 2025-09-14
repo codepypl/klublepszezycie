@@ -12,7 +12,7 @@
                         <i class="fas fa-plus me-2"></i>
                         Dodaj Wydarzenie
                     </button>
-                    <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+                    <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
                         <i class="fas fa-trash me-2"></i>
                         Usuń Zaznaczone
                     </button>
@@ -31,6 +31,13 @@
                     <p class="mt-2 text-muted">Ładowanie wydarzeń...</p>
                 </div>
             </div>
+            
+            <!-- Pagination -->
+            <div id="pagination" class="mt-3 pagination-container" 
+                 data-show-info="true" 
+                 data-show-per-page="true" 
+                 data-default-per-page="10" 
+                 data-max-visible-pages="5"></div>
         </div>
     </div>
 
@@ -281,18 +288,20 @@
 <script src="{{ url_for('static', filename='js/admin/events.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize bulk delete manager for events
-    window.bulkDeleteManager = BulkDeleteManager.createForPage('event', {
-                    itemCheckboxClass: 'event-checkbox',
-                    bulkDeleteBtnId: 'bulkDeleteBtn',
-                    apiEndpoint: '/api/event-schedule',
-                    confirmMessage: 'Czy na pewno chcesz usunąć zaznaczone wydarzenia? Tej operacji nie można cofnąć.',
-                    successMessage: 'Wydarzenia zostały usunięte pomyślnie',
-        errorMessage: 'Wystąpił błąd podczas usuwania wydarzeń'
-    });
+            // Set up pagination handlers for auto-initialization
+            window.paginationHandlers = {
+                onPageChange: (page) => {
+                    // Events don't have server-side pagination, so this is just for UI
+                    console.log('Page changed to:', page);
+                },
+                onPerPageChange: (newPage, perPage) => {
+                    // Events don't have server-side pagination, so this is just for UI
+                    console.log('Per page changed to:', perPage);
+                }
+            };
 
-    // Initialize events manager
-    window.eventsManager = new EventsManager();
-});
+            // Initialize events manager
+            window.eventsManager = new EventsManager();
+        });
     </script>
 {% endblock %}

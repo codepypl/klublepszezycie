@@ -1,37 +1,29 @@
 // Admin Email Queue JavaScript for Lepsze Życie Club
 
 // Global variables
-let pagination = null;
 let currentPage = 1;
 let currentPerPage = 10;
 let currentFilter = 'pending';
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-    initializePagination();
     loadStats();
     loadQueue('pending');
-});
-
-// Initialize pagination
-function initializePagination() {
-    pagination = new Pagination({
-        containerId: 'pagination',
-        showInfo: true,
-        showPerPage: true,
-        perPageOptions: [5, 10, 25, 50],
-        defaultPerPage: 10,
+    
+    // Set up pagination handlers for auto-initialization
+    window.paginationHandlers = {
         onPageChange: (page) => {
             currentPage = page;
             loadQueue(currentFilter);
         },
-        onPerPageChange: (currentPage, perPage) => {
+        onPerPageChange: (newPage, perPage) => {
             currentPerPage = perPage;
-            currentPage = 1;
+            currentPage = newPage; // Use the page passed by pagination
             loadQueue(currentFilter);
         }
-    });
-}
+    };
+});
+
 
 // Load statistics
 function loadStats() {
@@ -72,7 +64,11 @@ function loadQueue(filter) {
             if (data.success) {
                 displayQueue(data.emails);
                 if (data.pagination) {
-                    pagination.setData(data.pagination);
+                    // Update pagination if it exists
+                    const paginationElement = document.getElementById('pagination');
+                    if (paginationElement && paginationElement.paginationInstance) {
+                        paginationElement.paginationInstance.setData(data.pagination);
+                    }
                 }
             } else {
                 toastManager.error('Błąd ładowania kolejki: ' + data.error);

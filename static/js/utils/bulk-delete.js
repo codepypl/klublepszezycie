@@ -21,6 +21,12 @@ class BulkDelete {
     init() {
         this.bindEvents();
         this.updateDeleteButton();
+        
+        // Initially hide the delete button
+        const deleteBtn = document.getElementById(this.options.deleteButtonId);
+        if (deleteBtn) {
+            deleteBtn.style.display = 'none';
+        }
     }
     
     bindEvents() {
@@ -93,9 +99,11 @@ class BulkDelete {
         
         if (this.selectedIds.size === 0) {
             deleteBtn.disabled = true;
+            deleteBtn.style.display = 'none';
             deleteBtn.textContent = 'Usuń wybrane (0)';
         } else {
             deleteBtn.disabled = false;
+            deleteBtn.style.display = 'inline-block';
             deleteBtn.textContent = `Usuń wybrane (${this.selectedIds.size})`;
         }
     }
@@ -106,10 +114,55 @@ class BulkDelete {
             return;
         }
         
-        if (!confirm(this.options.confirmMessage)) {
+        // Show Bootstrap modal instead of confirm()
+        this.showConfirmModal();
+    }
+    
+    showConfirmModal() {
+        const modal = document.getElementById('bulkDeleteModal');
+        const message = document.getElementById('bulkDeleteMessage');
+        const confirmBtn = document.getElementById('confirmBulkDelete');
+        const cancelBtn = document.getElementById('bulkDeleteCancel');
+        const closeBtn = document.getElementById('bulkDeleteClose');
+        
+        if (!modal || !message || !confirmBtn || !cancelBtn || !closeBtn) {
+            console.error('Bulk delete modal elements not found');
             return;
         }
         
+        // Update message
+        message.textContent = this.options.confirmMessage;
+        
+        // Show modal
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+        
+        // Handle confirm button click
+        const handleConfirm = () => {
+            this.performDelete();
+            bootstrapModal.hide();
+            // Remove event listeners
+            confirmBtn.removeEventListener('click', handleConfirm);
+            cancelBtn.removeEventListener('click', handleCancel);
+            closeBtn.removeEventListener('click', handleCancel);
+        };
+        
+        // Handle cancel button click
+        const handleCancel = () => {
+            bootstrapModal.hide();
+            // Remove event listeners
+            confirmBtn.removeEventListener('click', handleConfirm);
+            cancelBtn.removeEventListener('click', handleCancel);
+            closeBtn.removeEventListener('click', handleCancel);
+        };
+        
+        // Add event listeners
+        confirmBtn.addEventListener('click', handleConfirm);
+        cancelBtn.addEventListener('click', handleCancel);
+        closeBtn.addEventListener('click', handleCancel);
+    }
+    
+    async performDelete() {
         try {
             const response = await fetch(this.deleteEndpoint, {
                 method: 'POST',
@@ -141,29 +194,33 @@ class BulkDelete {
     }
     
     showMessage(message, type) {
-        // Create or update message element
-        let messageEl = document.getElementById('bulk-delete-message');
-        if (!messageEl) {
-            messageEl = document.createElement('div');
-            messageEl.id = 'bulk-delete-message';
-            messageEl.className = 'alert';
-            document.body.insertBefore(messageEl, document.body.firstChild);
+        // Use global toast manager if available
+        if (window.toastManager) {
+            switch (type) {
+                case 'success':
+                    window.toastManager.success(message);
+                    break;
+                case 'error':
+                case 'danger':
+                    window.toastManager.error(message);
+                    break;
+                case 'warning':
+                    window.toastManager.warning(message);
+                    break;
+                default:
+                    window.toastManager.info(message);
+            }
+        } else {
+            // Fallback to alert if toast manager is not available
+            console.log(`${type.toUpperCase()}: ${message}`);
         }
-        
-        messageEl.textContent = message;
-        messageEl.className = `alert alert-${type}`;
-        messageEl.style.display = 'block';
-        
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            messageEl.style.display = 'none';
-        }, 5000);
     }
 }
 
 // Auto-initialize bulk delete for tables with bulk-delete class
 document.addEventListener('DOMContentLoaded', function() {
     const tables = document.querySelectorAll('.bulk-delete-table');
+    
     tables.forEach(table => {
         const tableId = table.id;
         const deleteEndpoint = table.dataset.deleteEndpoint;

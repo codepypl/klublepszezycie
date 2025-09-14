@@ -242,3 +242,4 @@ def create_event_reminder_templates():
 if __name__ == '__main__':
     create_event_reminder_templates()
 
+

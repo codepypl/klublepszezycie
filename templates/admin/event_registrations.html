@@ -6,61 +6,76 @@
     <i class="fas fa-calendar-check me-2"></i>Rejestracje na wydarzenia
 {% endblock %}
 
+{% block page_actions %}
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn" onclick="exportEventRegistrations()">
+            <i class="fas fa-download me-2"></i>
+            Eksportuj
+        </button>
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
+            <i class="fas fa-trash me-2"></i>
+            Usuń Zaznaczone
+        </button>
+    </div>
+{% endblock %}
+
 {% block content %}
 
-                <!-- Content -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="h4 mb-0">Lista rejestracji na wydarzenia</h2>
-                    <div>
-                        <button class="btn btn-primary" onclick="exportEventRegistrations()">
-                            <i class="fas fa-download me-2"></i>Eksportuj
-                        </button>
+    <!-- Filtry -->
+    <div class="admin-card mb-4">
+        <div class="admin-card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>Filtry i wyszukiwanie
+                </h5>
+                <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse" aria-expanded="false" aria-controls="filtersCollapse">
+                    <i class="fas fa-chevron-down me-1"></i>Rozwiń
+                </button>
+            </div>
+        </div>
+        <div class="collapse" id="filtersCollapse">
+            <div class="admin-card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="searchFilter" class="form-label">Szukaj</label>
+                        <input type="text" class="form-control" id="searchFilter" placeholder="Imię, email, telefon...">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="eventFilter" class="form-label">Wydarzenie</label>
+                        <select class="form-select" id="eventFilter">
+                            <option value="">Wszystkie wydarzenia</option>
+                            {% for event in events %}
+                            <option value="{{ event.id }}">{{ event.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="dateFilter" class="form-label">Data od</label>
+                        <input type="date" class="form-control" id="dateFilter">
                     </div>
                 </div>
-                
-                <!-- Info about user accounts -->
-                <div class="alert alert-info mb-4">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Informacja:</strong> Każda rejestracja na wydarzenie automatycznie tworzy konto użytkownika w systemie. 
-                    Użytkownicy otrzymują email z hasłem tymczasowym i mogą się logować na swoje konto.
-                    <br>
-                    <small class="text-muted">Wszystkie konta użytkowników są widoczne w sekcji "Zarządzanie kontami".</small>
-                </div>
-
-    <!-- Filtry -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label for="eventFilter" class="form-label">Wydarzenie</label>
-                    <select class="form-select" id="eventFilter">
-                        <option value="">Wszystkie wydarzenia</option>
-                        {% for event in events %}
-                        <option value="{{ event.id }}">{{ event.title }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-3">
-                    <label for="dateFilter" class="form-label">Data od</label>
-                    <input type="date" class="form-control" id="dateFilter">
-                </div>
-                <div class="col-md-3">
-                    <label for="searchFilter" class="form-label">Szukaj</label>
-                    <input type="text" class="form-control" id="searchFilter" placeholder="Imię, email...">
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button class="btn btn-secondary btn-sm" onclick="clearFilters()">
+                            <i class="fas fa-times me-1"></i>Wyczyść filtry
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Tabela rejestracji -->
-    <div class="card">
-        <div class="card-body">
+    <!-- Registrations Table -->
+    <div class="admin-card">
+        <div class="admin-card-body">
             {% if event_registrations %}
             <div class="table-responsive">
-                <table class="table table-striped" id="eventRegistrationsTable">
+                <table class="table admin-table bulk-delete-table" id="eventRegistrationsTable" data-delete-endpoint="/api/bulk-delete/registrations">
                     <thead>
                         <tr>
+                            <th>
+                                <input type="checkbox" id="selectAll">
+                            </th>
                             <th>ID</th>
                             <th>Wydarzenie</th>
                             <th>Imię</th>
@@ -74,6 +89,9 @@
                     <tbody>
                         {% for registration in event_registrations %}
                         <tr data-event-id="{{ registration.event_id }}" data-registration-id="{{ registration.id }}">
+                            <td>
+                                <input type="checkbox" name="itemIds" value="{{ registration.id }}">
+                            </td>
                             <td>{{ registration.id }}</td>
                             <td>
                                 <strong>{{ registration.event.title if registration.event else 'Brak wydarzenia' }}</strong>
@@ -108,9 +126,11 @@
                                 {{ registration.created_at.strftime('%d.%m.%Y %H:%M') if registration.created_at else 'Brak' }}
                             </td>
                             <td>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteRegistration({{ registration.id }})" title="Usuń rejestrację">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm admin-btn-danger" onclick="deleteRegistration({{ registration.id }})" title="Usuń rejestrację">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -119,17 +139,12 @@
             </div>
             
             <!-- Registrations Info -->
-            {% if pagination %}
-            <div class="text-center text-muted mt-3">
-                <i class="fas fa-info-circle me-1"></i>
-                Wyświetlane {{ event_registrations|length }} z {{ pagination.total }} rejestracji
-            </div>
-            {% endif %}
-            
             <!-- Pagination -->
-            {% if pagination and pagination.pages > 1 %}
-            <div id="pagination" class="mt-4"></div>
-            {% endif %}
+            <div id="pagination" class="mt-4 pagination-container" 
+                 data-show-info="true" 
+                 data-show-per-page="true" 
+                 data-default-per-page="10" 
+                 data-max-visible-pages="5"></div>
             
             {% else %}
             <div class="text-center py-5">
@@ -144,7 +159,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/utils/paginate.js') }}"></script>
 <script>
 // Filtrowanie tabeli
 document.addEventListener('DOMContentLoaded', function() {
@@ -169,17 +183,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Filtrowanie po dacie
                 if (dateValue) {
-                    const registrationDate = row.querySelector('td:nth-child(7)').textContent;
+                    const registrationDate = row.querySelector('td:nth-child(8)').textContent;
                     if (!registrationDate.includes(dateValue.split('-')[2])) {
                         show = false;
                     }
                 }
                 
-                // Filtrowanie po tekście
+                // Filtrowanie po tekście (imię, email, telefon)
                 if (searchValue) {
-                    const name = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
-                    const email = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
-                    if (!name.includes(searchValue) && !email.includes(searchValue)) {
+                    const name = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+                    const email = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
+                    const phone = row.querySelector('td:nth-child(6)').textContent.toLowerCase();
+                    if (!name.includes(searchValue) && !email.includes(searchValue) && !phone.includes(searchValue)) {
                         show = false;
                     }
                 }
@@ -192,39 +207,44 @@ document.addEventListener('DOMContentLoaded', function() {
         dateFilter.addEventListener('change', filterTable);
         searchFilter.addEventListener('input', filterTable);
         
-        // Inicjalizacja paginacji
-        {% if pagination and pagination.pages > 1 %}
-        const pagination = createPaginationFromFlask(
-            {
-                page: {{ pagination.page }},
-                pages: {{ pagination.pages }},
-                total: {{ pagination.total }},
-                per_page: {{ pagination.per_page }}
+        // Obsługa przycisku rozwijania/zwijania filtrów
+        const filtersCollapse = document.getElementById('filtersCollapse');
+        const toggleButton = document.querySelector('[data-bs-target="#filtersCollapse"]');
+        const chevronIcon = toggleButton.querySelector('i');
+        
+        filtersCollapse.addEventListener('show.bs.collapse', function () {
+            chevronIcon.className = 'fas fa-chevron-up me-1';
+            toggleButton.innerHTML = '<i class="fas fa-chevron-up me-1"></i>Zwiń';
+        });
+        
+        filtersCollapse.addEventListener('hide.bs.collapse', function () {
+            chevronIcon.className = 'fas fa-chevron-down me-1';
+            toggleButton.innerHTML = '<i class="fas fa-chevron-down me-1"></i>Rozwiń';
+        });
+        
+        // Set up pagination handlers for auto-initialization
+        {% if pagination %}
+        window.flaskPaginationData = {
+            page: {{ pagination.page }},
+            pages: {{ pagination.pages }},
+            total: {{ pagination.total }},
+            per_page: {{ pagination.per_page }}
+        };
+        
+        window.paginationHandlers = {
+            onPageChange: (page) => {
+                const url = new URL(window.location);
+                url.searchParams.set('page', page);
+                url.searchParams.set('per_page', {{ pagination.per_page if pagination else 10 }});
+                window.location.href = url.toString();
             },
-            'pagination',
-            {
-                infoText: 'Strona {page} z {pages}',
-                perPageOptions: [5, 10, 25, 50],
-                defaultPerPage: {{ pagination.per_page }},
-                showPerPage: true
+            onPerPageChange: (newPage, perPage) => {
+                const url = new URL(window.location);
+                url.searchParams.set('page', newPage);
+                url.searchParams.set('per_page', perPage);
+                window.location.href = url.toString();
             }
-        );
-        
-        // Obsługa zmiany strony
-        pagination.setPageChangeCallback(function(page, perPage) {
-            const url = new URL(window.location);
-            url.searchParams.set('page', page);
-            url.searchParams.set('per_page', perPage);
-            window.location.href = url.toString();
-        });
-        
-        // Obsługa zmiany liczby elementów na stronę
-        pagination.setPerPageChangeCallback(function(page, perPage) {
-            const url = new URL(window.location);
-            url.searchParams.set('page', 1); // Reset to first page
-            url.searchParams.set('per_page', perPage);
-            window.location.href = url.toString();
-        });
+        };
         {% endif %}
 });
 

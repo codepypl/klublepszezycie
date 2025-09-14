@@ -6,16 +6,7 @@ class BlogCommentsManager {
     }
 
     init() {
-        // Initialize bulk delete manager
-        this.bulkDeleteManager = new BulkDeleteManager({
-            itemSelector: '.comment-checkbox',
-            selectAllSelector: '#selectAll',
-            bulkDeleteBtnSelector: '#bulkDeleteBtn',
-            deleteEndpoint: '/api/blog/comments/bulk-delete',
-            getSelectedIds: () => this.getSelectedCommentIds(),
-            onDeleteSuccess: () => this.loadComments()
-        });
-
+        // Bulk delete is now handled by the BulkDeleteManager in the template
         // Bind events
         this.bindEvents();
     }
@@ -29,7 +20,7 @@ class BlogCommentsManager {
     }
 
     getSelectedCommentIds() {
-        const checkboxes = document.querySelectorAll('.comment-checkbox:checked');
+        const checkboxes = document.querySelectorAll('input[name="itemIds"]:checked');
         return Array.from(checkboxes).map(cb => cb.value);
     }
 

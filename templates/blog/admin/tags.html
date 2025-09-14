@@ -12,7 +12,7 @@
             <i class="fas fa-plus me-2"></i>
             Dodaj Tag
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
@@ -25,11 +25,11 @@
         <div class="admin-card-body">
             {% if tags %}
                 <div class="table-responsive">
-                    <table class="table admin-table">
+                    <table id="tagsTable" class="table admin-table bulk-delete-table" data-delete-endpoint="/api/blog/admin/tags/bulk-delete">
                         <thead>
                             <tr>
                                 <th>
-                                    <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll(this)">
+                                    <input type="checkbox" id="selectAll">
                                 </th>
                                 <th>Nazwa</th>
                                 <th>Slug</th>
@@ -43,7 +43,7 @@
                             {% for tag in tags %}
                             <tr>
                                 <td>
-                                    <input type="checkbox" class="tag-checkbox" value="{{ tag.id }}" onchange="bulkDeleteManager.toggleBulkDeleteBtn()">
+                                    <input type="checkbox" name="itemIds" value="{{ tag.id }}">
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
@@ -81,6 +81,13 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Pagination -->
+                <div id="pagination" class="mt-3 pagination-container" 
+                     data-show-info="true" 
+                     data-show-per-page="true" 
+                     data-default-per-page="10" 
+                     data-max-visible-pages="5"></div>
             {% else %}
                 <div class="text-center py-4">
                     <i class="fas fa-tags fa-3x text-muted mb-3"></i>
@@ -167,6 +174,20 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/admin/bulk-delete.js') }}"></script>
 <script src="{{ url_for('static', filename='js/admin/blog_tags.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up pagination handlers for auto-initialization
+    window.paginationHandlers = {
+        onPageChange: (page) => {
+            // Tags don't have server-side pagination, so this is just for UI
+            console.log('Page changed to:', page);
+        },
+        onPerPageChange: (newPage, perPage) => {
+            // Tags don't have server-side pagination, so this is just for UI
+            console.log('Per page changed to:', perPage);
+        }
+    };
+});
+</script>
 {% endblock %}

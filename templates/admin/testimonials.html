@@ -12,7 +12,7 @@
             <i class="fas fa-plus me-2"></i>
             Dodaj Opinię
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
@@ -25,11 +25,11 @@
         <div class="admin-card-body">
             {% if testimonials %}
                 <div class="table-responsive">
-                    <table class="table admin-table testimonials-table">
+                    <table id="testimonialsTable" class="table admin-table testimonials-table bulk-delete-table" data-delete-endpoint="/api/bulk-delete/testimonials">
                         <thead>
                             <tr>
                                 <th>
-                                    <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll()">
+                                    <input type="checkbox" id="selectAll">
                                 </th>
                                 <th>Kolejność</th>
                                 <th>Autor</th>
@@ -44,7 +44,7 @@
                             {% for testimonial in testimonials %}
                             <tr data-testimonial-id="{{ testimonial.id }}" data-item-id="{{ testimonial.id }}">
                                 <td>
-                                    <input type="checkbox" class="testimonial-checkbox" value="{{ testimonial.id }}" onchange="bulkDeleteManager.updateBulkDeleteButton()">
+                                    <input type="checkbox" name="itemIds" value="{{ testimonial.id }}">
                                 </td>
                                 <td>
                                     <span class="badge admin-badge admin-badge-primary">{{ testimonial.order }}</span>
@@ -93,6 +93,13 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Pagination -->
+                <div id="pagination" class="mt-3 pagination-container" 
+                     data-show-info="true" 
+                     data-show-per-page="true" 
+                     data-default-per-page="10" 
+                     data-max-visible-pages="5"></div>
             {% else %}
                 <div class="text-center py-4">
                     <i class="fas fa-comments fa-3x text-muted mb-3"></i>
@@ -223,15 +230,17 @@
 <script src="{{ url_for('static', filename='js/admin/testimonials.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize bulk delete manager for testimonials
-    window.bulkDeleteManager = BulkDeleteManager.createForPage('testimonials', {
-        itemCheckboxClass: 'testimonial-checkbox',
-        bulkDeleteBtnId: 'bulkDeleteBtn',
-        apiEndpoint: '/api/testimonials',
-        confirmMessage: 'Czy na pewno chcesz usunąć zaznaczone opinie? Tej operacji nie można cofnąć.',
-        successMessage: 'Opinie zostały usunięte pomyślnie',
-        errorMessage: 'Wystąpił błąd podczas usuwania opinii'
-    });
+    // Set up pagination handlers for auto-initialization
+    window.paginationHandlers = {
+        onPageChange: (page) => {
+            // Testimonials don't have server-side pagination, so this is just for UI
+            console.log('Page changed to:', page);
+        },
+        onPerPageChange: (newPage, perPage) => {
+            // Testimonials don't have server-side pagination, so this is just for UI
+            console.log('Per page changed to:', perPage);
+        }
+    };
 });
 </script>
 {% endblock %}

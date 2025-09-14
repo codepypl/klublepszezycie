@@ -1,52 +1,29 @@
 // Admin Email Templates JavaScript for Lepsze Życie Club
 
 // Global variables
-let pagination = null;
 let currentPage = 1;
 let currentPerPage = 10;
 let currentTemplateId = null;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-    initializePagination();
     loadTemplates();
     initializeModalListeners();
     
-    // Initialize bulk delete manager after data is loaded
-    setTimeout(() => {
-        if (typeof BulkDeleteManager !== 'undefined') {
-            window.bulkDeleteManager = BulkDeleteManager.createForPage('email_templates', {
-                itemCheckboxClass: 'template-checkbox',
-                bulkDeleteBtnId: 'bulkDeleteBtn',
-                apiEndpoint: '/api/email/templates',
-                confirmMessage: 'Czy na pewno chcesz usunąć zaznaczone szablony? Tej operacji nie można cofnąć.',
-                successMessage: 'Szablony zostały usunięte pomyślnie',
-                errorMessage: 'Wystąpił błąd podczas usuwania szablonów'
-            });
-        }
-    }, 100);
-});
-
-// Initialize pagination
-function initializePagination() {
-    pagination = new Pagination({
-        containerId: 'pagination',
-        showInfo: true,
-        showPerPage: true,
-        perPageOptions: [5, 10, 25, 50],
-        defaultPerPage: 10,
+    // Set up pagination handlers for auto-initialization
+    window.paginationHandlers = {
         onPageChange: (page) => {
             currentPage = page;
             loadTemplates();
         },
-        onPerPageChange: (currentPage, perPage) => {
+        onPerPageChange: (newPage, perPage) => {
             currentPerPage = perPage;
-            currentPage = 1;
+            currentPage = newPage; // Use the page passed by pagination
             loadTemplates();
         }
-    });
-    
-}
+    };
+});
+
 
 // Initialize modal listeners
 function initializeModalListeners() {
@@ -66,7 +43,11 @@ function loadTemplates() {
             if (data.success) {
                 displayTemplates(data.templates);
                 if (data.pagination) {
-                    pagination.setData(data.pagination);
+                    // Update pagination if it exists
+                    const paginationElement = document.getElementById('pagination');
+                    if (paginationElement && paginationElement.paginationInstance) {
+                        paginationElement.paginationInstance.setData(data.pagination);
+                    }
                 }
             } else {
                 toastManager.error('Błąd ładowania szablonów: ' + data.error);
@@ -93,8 +74,8 @@ function displayTemplates(templates) {
         
         // Ukryj checkbox i przycisk usuwania dla domyślnych szablonów
         const checkboxHtml = template.is_default ? 
-            '<input type="checkbox" class="template-checkbox" value="' + template.id + '" disabled title="Nie można usuwać szablonów domyślnych">' :
-            '<input type="checkbox" class="template-checkbox" value="' + template.id + '" onchange="bulkDeleteManager.updateBulkDeleteButton()">';
+            '<input type="checkbox" name="itemIds" value="' + template.id + '" disabled title="Nie można usuwać szablonów domyślnych">' :
+            '<input type="checkbox" name="itemIds" value="' + template.id + '">';
         
         const deleteButtonHtml = template.is_default ? 
             '<button class="btn btn-sm admin-btn-outline" disabled title="Nie można usuwać szablonów domyślnych"><i class="fas fa-lock"></i></button>' :

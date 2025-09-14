@@ -12,7 +12,7 @@
             <i class="fas fa-plus me-2"></i>
             Dodaj Pytanie
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
@@ -25,11 +25,11 @@
         <div class="admin-card-body">
             {% if faqs %}
                 <div class="table-responsive">
-                    <table class="table admin-table faq-table">
+                    <table id="faqTable" class="table admin-table faq-table bulk-delete-table" data-delete-endpoint="/api/bulk-delete/faq">
                         <thead>
                             <tr>
                                 <th>
-                                    <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll()">
+                                    <input type="checkbox" id="selectAll">
                                 </th>
                                 <th>Kolejność</th>
                                 <th>Pytanie</th>
@@ -42,7 +42,7 @@
                             {% for faq in faqs %}
                             <tr data-faq-id="{{ faq.id }}" data-item-id="{{ faq.id }}">
                                 <td>
-                                    <input type="checkbox" class="faq-checkbox" value="{{ faq.id }}" onchange="bulkDeleteManager.updateBulkDeleteButton()">
+                                    <input type="checkbox" name="itemIds" value="{{ faq.id }}">
                                 </td>
                                 <td>
                                     <span class="badge admin-badge admin-badge-primary">{{ faq.order }}</span>
@@ -76,6 +76,13 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Pagination -->
+                <div id="pagination" class="mt-3 pagination-container" 
+                     data-show-info="true" 
+                     data-show-per-page="true" 
+                     data-default-per-page="10" 
+                     data-max-visible-pages="5"></div>
             {% else %}
                 <div class="text-center py-4">
                     <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
@@ -177,15 +184,17 @@
 <script src="{{ url_for('static', filename='js/admin/faq.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize bulk delete manager for FAQ
-    window.bulkDeleteManager = BulkDeleteManager.createForPage('faq', {
-        itemCheckboxClass: 'faq-checkbox',
-        bulkDeleteBtnId: 'bulkDeleteBtn',
-        apiEndpoint: '/api/faq',
-        confirmMessage: 'Czy na pewno chcesz usunąć zaznaczone pytania? Tej operacji nie można cofnąć.',
-        successMessage: 'Pytania zostały usunięte pomyślnie',
-        errorMessage: 'Wystąpił błąd podczas usuwania pytań'
-    });
+    // Set up pagination handlers for auto-initialization
+    window.paginationHandlers = {
+        onPageChange: (page) => {
+            // FAQ don't have server-side pagination, so this is just for UI
+            console.log('Page changed to:', page);
+        },
+        onPerPageChange: (newPage, perPage) => {
+            // FAQ don't have server-side pagination, so this is just for UI
+            console.log('Per page changed to:', perPage);
+        }
+    };
 });
 </script>
 {% endblock %}

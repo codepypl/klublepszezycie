@@ -1,7 +1,6 @@
 // Admin Email Campaigns JavaScript for Lepsze Życie Club
 
 // Global variables
-let pagination = null;
 let currentPage = 1;
 let currentPerPage = 10;
 let availableTemplates = [];
@@ -9,45 +8,24 @@ let availableGroups = [];
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-    initializePagination();
     loadCampaigns();
     loadTemplates();
     loadGroups();
     
-    // Initialize bulk delete manager after data is loaded
-    setTimeout(() => {
-        if (typeof BulkDeleteManager !== 'undefined') {
-            window.bulkDeleteManager = BulkDeleteManager.createForPage('email_campaigns', {
-                itemCheckboxClass: 'campaign-checkbox',
-                bulkDeleteBtnId: 'bulkDeleteBtn',
-                apiEndpoint: '/api/email/campaigns',
-                confirmMessage: 'Czy na pewno chcesz usunąć zaznaczone kampanie? Tej operacji nie można cofnąć.',
-                successMessage: 'Kampanie zostały usunięte pomyślnie',
-                errorMessage: 'Wystąpił błąd podczas usuwania kampanii'
-            });
-        }
-    }, 100);
-});
-
-// Initialize pagination
-function initializePagination() {
-    pagination = new Pagination({
-        containerId: 'pagination',
-        showInfo: true,
-        showPerPage: true,
-        perPageOptions: [5, 10, 25, 50],
-        defaultPerPage: 10,
+    // Set up pagination handlers for auto-initialization
+    window.paginationHandlers = {
         onPageChange: (page) => {
             currentPage = page;
             loadCampaigns();
         },
-        onPerPageChange: (currentPage, perPage) => {
+        onPerPageChange: (newPage, perPage) => {
             currentPerPage = perPage;
-            currentPage = 1;
+            currentPage = newPage; // Use the page passed by pagination
             loadCampaigns();
         }
-    });
-}
+    };
+});
+
 
 // Load campaigns
 function loadCampaigns() {
@@ -62,7 +40,11 @@ function loadCampaigns() {
             if (data.success) {
                 displayCampaigns(data.campaigns);
                 if (data.pagination) {
-                    pagination.setData(data.pagination);
+                    // Update pagination if it exists
+                    const paginationElement = document.getElementById('pagination');
+                    if (paginationElement && paginationElement.paginationInstance) {
+                        paginationElement.paginationInstance.setData(data.pagination);
+                    }
                 }
             } else {
                 toastManager.error('Błąd ładowania kampanii: ' + data.error);
@@ -94,7 +76,7 @@ function displayCampaigns(campaigns) {
         
         row.innerHTML = `
             <td>
-                <input type="checkbox" class="campaign-checkbox" value="${campaign.id}" onchange="bulkDeleteManager.updateBulkDeleteButton()">
+                <input type="checkbox" name="itemIds" value="${campaign.id}">
             </td>
             <td>${campaign.name}</td>
             <td>${campaign.subject}</td>

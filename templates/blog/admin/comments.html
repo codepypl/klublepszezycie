@@ -8,7 +8,7 @@
 
 {% block page_actions %}
     <div class="d-flex justify-content-end gap-2 mb-3">
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
@@ -21,11 +21,11 @@
         <div class="admin-card-body">
             {% if comments.items %}
                 <div class="table-responsive">
-                    <table class="table admin-table">
+                    <table id="commentsTable" class="table admin-table bulk-delete-table" data-delete-endpoint="/api/blog/comments/bulk-delete">
                         <thead>
                             <tr>
                                 <th>
-                                    <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll(this)">
+                                    <input type="checkbox" id="selectAll">
                                 </th>
                                 <th>Autor</th>
                                 <th>Email</th>
@@ -40,7 +40,7 @@
                             {% for comment in comments.items %}
                             <tr>
                                 <td>
-                                    <input type="checkbox" class="comment-checkbox" value="{{ comment.id }}" onchange="bulkDeleteManager.toggleBulkDeleteBtn()">
+                                    <input type="checkbox" name="itemIds" value="{{ comment.id }}">
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
@@ -102,41 +102,11 @@
                 </div>
 
                 <!-- Pagination -->
-                {% if comments.pages > 1 %}
-                <nav aria-label="Comments pagination">
-                    <ul class="pagination justify-content-center">
-                        {% if comments.has_prev %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('blog.admin_comments', page=comments.prev_num) }}">Poprzednia</a>
-                        </li>
-                        {% endif %}
-                        
-                        {% for page_num in comments.iter_pages() %}
-                            {% if page_num %}
-                                {% if page_num != comments.page %}
-                                <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('blog.admin_comments', page=page_num) }}">{{ page_num }}</a>
-                                </li>
-                                {% else %}
-                                <li class="page-item active">
-                                    <span class="page-link">{{ page_num }}</span>
-                                </li>
-                                {% endif %}
-                            {% else %}
-                            <li class="page-item disabled">
-                                <span class="page-link">…</span>
-                            </li>
-                            {% endif %}
-                        {% endfor %}
-                        
-                        {% if comments.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('blog.admin_comments', page=comments.next_num) }}">Następna</a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
+                <div id="pagination" class="mt-4 pagination-container" 
+                     data-show-info="true" 
+                     data-show-per-page="true" 
+                     data-default-per-page="10" 
+                     data-max-visible-pages="5"></div>
             {% else %}
                 <div class="text-center py-4">
                     <i class="fas fa-comments fa-3x text-muted mb-3"></i>
@@ -194,7 +164,29 @@
     </div>
 {% endblock %}
 
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/admin/bulk-delete.js') }}"></script>
+{% block extra_js %}
 <script src="{{ url_for('static', filename='js/admin/blog_comments.js') }}"></script>
+<script>
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up pagination handlers for auto-initialization
+        {% if comments %}
+        window.flaskPaginationData = {
+            page: {{ comments.page }},
+            pages: {{ comments.pages }},
+            total: {{ comments.total }},
+            per_page: {{ comments.per_page }}
+        };
+        
+        window.paginationHandlers = {
+            onPageChange: (page) => {
+                window.location.href = `{{ url_for('blog.admin_comments') }}?page=${page}&per_page={{ comments.per_page if comments else 10 }}`;
+            },
+            onPerPageChange: (newPage, perPage) => {
+                window.location.href = `{{ url_for('blog.admin_comments') }}?page=${newPage}&per_page=${perPage}`;
+            }
+        };
+        {% endif %}
+    });
+</script>
 {% endblock %}

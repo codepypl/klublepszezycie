@@ -37,7 +37,7 @@ class Pagination {
     
     setData(data) {
         this.currentPage = data.page || 1;
-        this.totalPages = data.pages || 1;
+        this.totalPages = Math.max(data.pages || 1, 1); // Always at least 1 page
         this.totalItems = data.total || 0;
         this.perPage = data.per_page || this.options.defaultPerPage;
         this.render();
@@ -138,6 +138,12 @@ class Pagination {
         const maxVisible = this.options.maxVisiblePages;
         const current = this.currentPage;
         const total = this.totalPages;
+        
+        // Handle case when there are no items (total = 0)
+        if (total === 0) {
+            pages.push(1); // Show at least page 1
+            return pages;
+        }
         
         if (total <= maxVisible) {
             // Show all pages if total is less than max visible
@@ -273,6 +279,65 @@ function createPaginationFromFlask(flaskPagination, containerId, options = {}) {
     
     return pagination;
 }
+
+// Auto-initialize pagination for elements with pagination-container class
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit for other scripts to set up data
+    setTimeout(() => {
+        const paginationContainers = document.querySelectorAll('.pagination-container');
+        
+        paginationContainers.forEach(container => {
+            const containerId = container.id || 'pagination';
+            const options = {};
+            
+            // Get options from data attributes
+            if (container.dataset.showInfo !== undefined) {
+                options.showInfo = container.dataset.showInfo === 'true';
+            }
+            if (container.dataset.showPerPage !== undefined) {
+                options.showPerPage = container.dataset.showPerPage === 'true';
+            }
+            if (container.dataset.defaultPerPage) {
+                options.defaultPerPage = parseInt(container.dataset.defaultPerPage);
+            }
+            if (container.dataset.maxVisiblePages) {
+                options.maxVisiblePages = parseInt(container.dataset.maxVisiblePages);
+            }
+            
+            // Check if there's Flask pagination data
+            const flaskPagination = window.flaskPaginationData;
+            let paginationInstance;
+            
+            if (flaskPagination && flaskPagination.page) {
+                // Use Flask pagination data
+                paginationInstance = createPaginationFromFlask(flaskPagination, containerId, options);
+            } else {
+                // Create basic pagination with default data
+                paginationInstance = new Pagination({
+                    containerId: containerId,
+                    ...options
+                });
+                
+                // Set default data to make pagination visible
+                paginationInstance.setData({
+                    page: 1,
+                    pages: 1,
+                    total: 0,
+                    per_page: options.defaultPerPage || 10
+                });
+            }
+            
+            // Set up event handlers if they exist
+            if (window.paginationHandlers) {
+                paginationInstance.onPageChange = window.paginationHandlers.onPageChange;
+                paginationInstance.onPerPageChange = window.paginationHandlers.onPerPageChange;
+            }
+            
+            // Store instance in container element for later access
+            container.paginationInstance = paginationInstance;
+        });
+    }, 100);
+});
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {

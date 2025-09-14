@@ -1071,101 +1071,113 @@ small {
 /* Admin table improvements */
 .admin-table {
     width: 100%;
-    table-layout: fixed;
+    table-layout: auto; /* Changed from fixed to auto for better responsiveness */
+    min-width: 800px; /* Minimum width to prevent too much compression */
 }
 
 .admin-table th,
 .admin-table td {
     vertical-align: middle;
+    white-space: nowrap; /* Prevent text wrapping by default */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.75rem 0.5rem; /* Reduced padding for more space */
 }
 
+/* Checkbox column */
 .admin-table th:first-child,
 .admin-table td:first-child {
     width: 50px;
+    min-width: 50px;
     text-align: center;
 }
 
-/* For tables without checkbox where "Kolejność" is first column */
-.admin-table.no-checkbox th:first-child,
-.admin-table.no-checkbox td:first-child {
-    width: 80px;
-    min-width: 80px;
-    text-align: center;
-    white-space: nowrap;
-}
-
+/* ID column */
 .admin-table th:nth-child(2),
 .admin-table td:nth-child(2) {
     width: 80px;
     min-width: 80px;
     text-align: center;
-    white-space: nowrap;
 }
 
+/* Main content columns - more flexible */
 .admin-table th:nth-child(3),
 .admin-table td:nth-child(3) {
-    width: 150px;
+    width: auto;
+    min-width: 150px;
 }
 
 .admin-table th:nth-child(4),
 .admin-table td:nth-child(4) {
-    width: 100px;
+    width: auto;
+    min-width: 150px;
 }
 
 .admin-table th:nth-child(5),
 .admin-table td:nth-child(5) {
-    width: 120px;
+    width: auto;
+    min-width: 150px;
 }
 
 .admin-table th:nth-child(6),
 .admin-table td:nth-child(6) {
-    width: 80px;
-    text-align: center;
+    width: auto;
+    min-width: 120px;
 }
 
 .admin-table th:nth-child(7),
 .admin-table td:nth-child(7) {
-    width: 100px;
+    width: auto;
+    min-width: 120px;
+}
+
+.admin-table th:nth-child(8),
+.admin-table td:nth-child(8) {
+    width: auto;
+    min-width: 120px;
+}
+
+/* Actions column */
+.admin-table th:last-child,
+.admin-table td:last-child {
+    width: 120px;
+    min-width: 120px;
     text-align: center;
 }
 
-/* Specific widths for blog posts table */
-.admin-table.blog-posts-table th:nth-child(2),
-.admin-table.blog-posts-table td:nth-child(2) {
-    width: 300px; /* Tytuł - więcej miejsca */
-}
-
+/* Specific adjustments for blog posts table */
 .admin-table.blog-posts-table th:nth-child(3),
 .admin-table.blog-posts-table td:nth-child(3) {
-    width: 200px; /* Slug */
+    min-width: 250px; /* Tytuł - więcej miejsca */
 }
 
 .admin-table.blog-posts-table th:nth-child(4),
 .admin-table.blog-posts-table td:nth-child(4) {
-    width: 150px; /* Kategorie */
+    min-width: 180px; /* Slug */
 }
 
 .admin-table.blog-posts-table th:nth-child(5),
 .admin-table.blog-posts-table td:nth-child(5) {
-    width: 100px; /* Status */
+    min-width: 150px; /* Kategorie */
 }
 
 .admin-table.blog-posts-table th:nth-child(6),
 .admin-table.blog-posts-table td:nth-child(6) {
-    width: 120px; /* Data publikacji */
+    min-width: 100px; /* Status */
 }
 
 .admin-table.blog-posts-table th:nth-child(7),
 .admin-table.blog-posts-table td:nth-child(7) {
-    width: 80px; /* Komentarze - mniej miejsca */
+    min-width: 140px; /* Data publikacji */
 }
 
 .admin-table.blog-posts-table th:nth-child(8),
 .admin-table.blog-posts-table td:nth-child(8) {
-    width: 120px; /* Akcje */
+    min-width: 80px; /* Komentarze */
+    text-align: center;
 }
 
-/* Text wrapping for specific tables */
+/* Text wrapping for specific tables that need it */
 .admin-table.sections-table th:nth-child(3),
 .admin-table.sections-table td:nth-child(3),
 .admin-table.sections-table th:nth-child(4),
@@ -1174,7 +1186,7 @@ small {
 .admin-table.sections-table td:nth-child(5) {
     white-space: normal !important;
     word-wrap: break-word !important;
-    max-width: 200px !important;
+    min-width: 200px !important;
 }
 
 .admin-table.faq-table th:nth-child(3),
@@ -1183,7 +1195,7 @@ small {
 .admin-table.faq-table td:nth-child(4) {
     white-space: normal !important;
     word-wrap: break-word !important;
-    max-width: 300px !important;
+    min-width: 250px !important;
 }
 
 .admin-table.testimonials-table th:nth-child(3),
@@ -1192,7 +1204,20 @@ small {
 .admin-table.testimonials-table td:nth-child(4) {
     white-space: normal !important;
     word-wrap: break-word !important;
-    max-width: 250px !important;
+    min-width: 250px !important;
+}
+
+/* Event registrations table specific adjustments */
+.admin-table th:nth-child(4), /* Imię */
+.admin-table td:nth-child(4),
+.admin-table th:nth-child(5), /* Email */
+.admin-table td:nth-child(5) {
+    min-width: 180px;
+}
+
+.admin-table th:nth-child(6), /* Telefon */
+.admin-table td:nth-child(6) {
+    min-width: 140px;
 }
 
 .admin-table th:last-child,

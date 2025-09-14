@@ -223,7 +223,12 @@ class EventsManager {
 
     loadEvents() {
         fetch('/api/event-schedule')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(events => {
                 this.displayEvents(events);
             })
@@ -243,16 +248,18 @@ class EventsManager {
                     <p class="text-muted">Brak wydarzeń w systemie</p>
                 </div>
             `;
+            // Update pagination with 0 items
+            this.updatePagination(0);
             return;
         }
 
         const tableHTML = `
             <div class="table-responsive">
-                <table class="table admin-table">
+                <table id="eventsTable" class="table admin-table bulk-delete-table" data-delete-endpoint="/api/bulk-delete/events">
                     <thead>
                         <tr>
                             <th>
-                                <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll()">
+                                <input type="checkbox" id="selectAll">
                             </th>
                             <th>Tytuł</th>
                             <th>Typ</th>
@@ -270,6 +277,34 @@ class EventsManager {
         `;
         
         container.innerHTML = tableHTML;
+        
+        // Initialize bulk delete for the dynamically created table
+        this.initializeBulkDelete();
+        
+        // Update pagination with actual data
+        this.updatePagination(events.length);
+    }
+    
+    initializeBulkDelete() {
+        const table = document.getElementById('eventsTable');
+        if (table && table.classList.contains('bulk-delete-table')) {
+            const deleteEndpoint = table.dataset.deleteEndpoint;
+            if (deleteEndpoint) {
+                new BulkDelete('eventsTable', deleteEndpoint);
+            }
+        }
+    }
+    
+    updatePagination(totalItems) {
+        const paginationContainer = document.getElementById('pagination');
+        if (paginationContainer && paginationContainer.paginationInstance) {
+            paginationContainer.paginationInstance.setData({
+                page: 1,
+                pages: 1,
+                total: totalItems,
+                per_page: 10
+            });
+        }
     }
 
     createEventRow(event) {
@@ -298,7 +333,7 @@ class EventsManager {
         return `
             <tr data-event-id="${event.id}" data-item-id="${event.id}">
                 <td>
-                    <input type="checkbox" class="event-checkbox" value="${event.id}" onchange="bulkDeleteManager.updateBulkDeleteButton()">
+                    <input type="checkbox" name="itemIds" value="${event.id}">
                 </td>
                 <td>
                     <strong>${event.title}</strong>

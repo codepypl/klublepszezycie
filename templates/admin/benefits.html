@@ -12,7 +12,7 @@
             <i class="fas fa-plus me-2"></i>
             Dodaj Korzyść
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
@@ -25,11 +25,11 @@
         <div class="admin-card-body">
             {% if benefits %}
                 <div class="table-responsive">
-                    <table class="table admin-table">
+                    <table id="benefitsTable" class="table admin-table bulk-delete-table" data-delete-endpoint="/api/bulk-delete/benefits">
                         <thead>
                             <tr>
                                 <th>
-                                    <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll()">
+                                    <input type="checkbox" id="selectAll">
                                 </th>
                                 <th>Kolejność</th>
                                 <th>Tytuł</th>
@@ -44,7 +44,7 @@
                             {% for benefit in benefits %}
                             <tr data-benefit-id="{{ benefit.id }}" data-item-id="{{ benefit.id }}">
                                 <td>
-                                    <input type="checkbox" class="benefit-checkbox" value="{{ benefit.id }}" onchange="bulkDeleteManager.updateBulkDeleteButton()">
+                                    <input type="checkbox" name="itemIds" value="{{ benefit.id }}">
                                 </td>
                                 <td>
                                     <span class="badge admin-badge admin-badge-primary">{{ benefit.order }}</span>
@@ -87,6 +87,13 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Pagination -->
+                <div id="pagination" class="mt-3 pagination-container" 
+                     data-show-info="true" 
+                     data-show-per-page="true" 
+                     data-default-per-page="10" 
+                     data-max-visible-pages="5"></div>
             {% else %}
                 <div class="text-center py-4">
                     <i class="fas fa-star fa-3x text-muted mb-3"></i>
@@ -208,4 +215,20 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/admin/benefits.js') }}"></script>
+<script>
+    // Initialize pagination for benefits
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up pagination handlers for auto-initialization
+        window.paginationHandlers = {
+            onPageChange: (page) => {
+                // Benefits don't have server-side pagination, so this is just for UI
+                console.log('Page changed to:', page);
+            },
+            onPerPageChange: (newPage, perPage) => {
+                // Benefits don't have server-side pagination, so this is just for UI
+                console.log('Per page changed to:', perPage);
+            }
+        };
+    });
+</script>
 {% endblock %}

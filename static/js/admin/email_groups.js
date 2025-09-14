@@ -1,50 +1,28 @@
 // Admin Email Groups JavaScript for Lepsze Życie Club
 
 // Global variables
-let pagination = null;
 let currentPage = 1;
 let currentPerPage = 10;
 let currentGroupId = null;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-    initializePagination();
     loadGroups();
     
-    // Initialize bulk delete manager after data is loaded
-    setTimeout(() => {
-        if (typeof BulkDeleteManager !== 'undefined') {
-            window.bulkDeleteManager = BulkDeleteManager.createForPage('email_groups', {
-                itemCheckboxClass: 'group-checkbox',
-                bulkDeleteBtnId: 'bulkDeleteBtn',
-                apiEndpoint: '/api/email/groups',
-                confirmMessage: 'Czy na pewno chcesz usunąć zaznaczone grupy? Tej operacji nie można cofnąć.',
-                successMessage: 'Grupy zostały usunięte pomyślnie',
-                errorMessage: 'Wystąpił błąd podczas usuwania grup'
-            });
-        }
-    }, 100);
-});
-
-// Initialize pagination
-function initializePagination() {
-    pagination = new Pagination({
-        containerId: 'pagination',
-        showInfo: true,
-        showPerPage: true,
-        perPageOptions: [5, 10, 25, 50],
-        defaultPerPage: 10,
+    // Set up pagination handlers for auto-initialization
+    window.paginationHandlers = {
         onPageChange: (page) => {
             currentPage = page;
             loadGroups();
         },
-        onPerPageChange: (currentPage, perPage) => {
+        onPerPageChange: (newPage, perPage) => {
             currentPerPage = perPage;
-            currentPage = 1;
+            currentPage = newPage; // Use the page passed by pagination
             loadGroups();
         }
-    });
-}
+    };
+});
+
 
 // Load groups
 function loadGroups() {
@@ -59,7 +37,11 @@ function loadGroups() {
             if (data.success) {
                 displayGroups(data.groups);
                 if (data.pagination) {
-                    pagination.setData(data.pagination);
+                    // Update pagination if it exists
+                    const paginationElement = document.getElementById('pagination');
+                    if (paginationElement && paginationElement.paginationInstance) {
+                        paginationElement.paginationInstance.setData(data.pagination);
+                    }
                 }
             } else {
                 toastManager.error('Błąd ładowania grup: ' + data.error);
@@ -87,7 +69,7 @@ function displayGroups(groups) {
         // Ukryj checkbox i przyciski dla domyślnych grup
         const checkboxHtml = group.is_default ? 
             '<input type="checkbox" class="group-checkbox" value="' + group.id + '" disabled title="Nie można usuwać grup domyślnych">' :
-            '<input type="checkbox" class="group-checkbox" value="' + group.id + '" onchange="bulkDeleteManager.updateBulkDeleteButton()">';
+            '<input type="checkbox" name="itemIds" value="' + group.id + '">';
         
         const actionButtonsHtml = group.is_default ? 
             '<div class="btn-group" role="group">' +

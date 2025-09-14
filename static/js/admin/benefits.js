@@ -218,13 +218,4 @@ function deleteBenefit(benefitId) {
 document.addEventListener('DOMContentLoaded', function() {
     window.benefitsManager = new BenefitsManager();
     
-    // Initialize bulk delete manager for benefits
-    window.bulkDeleteManager = BulkDeleteManager.createForPage('benefits', {
-        itemCheckboxClass: 'benefit-checkbox',
-        bulkDeleteBtnId: 'bulkDeleteBtn',
-        apiEndpoint: '/api/benefits',
-        confirmMessage: 'Czy na pewno chcesz usunąć zaznaczone korzyści? Tej operacji nie można cofnąć.',
-        successMessage: 'Korzyści zostały usunięte pomyślnie',
-        errorMessage: 'Wystąpił błąd podczas usuwania korzyści'
-    });
 });

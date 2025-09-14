@@ -7,16 +7,7 @@ class BlogCategoriesManager {
     }
 
     init() {
-        // Initialize bulk delete manager
-        this.bulkDeleteManager = new BulkDeleteManager({
-            itemSelector: '.category-checkbox',
-            selectAllSelector: '#selectAll',
-            bulkDeleteBtnSelector: '#bulkDeleteBtn',
-            deleteEndpoint: '/api/blog/admin/categories/bulk-delete',
-            getSelectedIds: () => this.getSelectedCategoryIds(),
-            onDeleteSuccess: () => this.loadCategories()
-        });
-
+        // Bulk delete is now handled by the BulkDeleteManager in the template
         // Initialize pagination if needed
         this.initPagination();
 
@@ -61,7 +52,7 @@ class BlogCategoriesManager {
     }
 
     getSelectedCategoryIds() {
-        const checkboxes = document.querySelectorAll('.category-checkbox:checked');
+        const checkboxes = document.querySelectorAll('input[name="itemIds"]:checked');
         return Array.from(checkboxes).map(cb => cb.value);
     }
 

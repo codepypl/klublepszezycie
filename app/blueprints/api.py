@@ -1018,6 +1018,7 @@ def api_bulk_delete_users():
         db.session.commit()
         
         return jsonify({
+            'success': True,
             'message': f'Successfully deleted {deleted_count} users',
             'deleted_count': deleted_count
         })
@@ -3368,7 +3369,7 @@ def api_blog_comments_bulk_delete():
             return jsonify({'error': 'Brak uprawnień'}), 403
         
         data = request.get_json()
-        comment_ids = data.get('comment_ids', [])
+        comment_ids = data.get('ids', [])
         
         if not comment_ids:
             return jsonify({'error': 'Brak komentarzy do usunięcia'}), 400
@@ -3537,6 +3538,47 @@ def api_blog_tag(tag_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@api_bp.route('/blog/admin/categories/bulk-delete', methods=['POST'])
+@login_required
+def api_blog_categories_bulk_delete():
+    """Bulk delete blog categories"""
+    try:
+        if not current_user.is_admin:
+            return jsonify({'error': 'Brak uprawnień'}), 403
+        
+        data = request.get_json()
+        category_ids = data.get('ids', [])
+        
+        if not category_ids:
+            return jsonify({'error': 'Brak kategorii do usunięcia'}), 400
+        
+        from models import BlogCategory
+        categories = BlogCategory.query.filter(BlogCategory.id.in_(category_ids)).all()
+        
+        # Check if any category is used by posts
+        used_categories = [cat for cat in categories if cat.posts]
+        if used_categories:
+            return jsonify({'error': f'Nie można usunąć kategorii używanych przez artykuły: {", ".join([cat.title for cat in used_categories])}'}), 400
+        
+        # Check if any category has child categories
+        child_categories = [cat for cat in categories if cat.children]
+        if child_categories:
+            return jsonify({'error': f'Nie można usunąć kategorii z podkategoriami: {", ".join([cat.title for cat in child_categories])}'}), 400
+        
+        for category in categories:
+            db.session.delete(category)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Usunięto {len(categories)} kategorii'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @api_bp.route('/blog/tags/bulk-delete', methods=['POST'])
 @login_required
 def api_blog_tags_bulk_delete():
@@ -3546,7 +3588,7 @@ def api_blog_tags_bulk_delete():
             return jsonify({'error': 'Brak uprawnień'}), 403
         
         data = request.get_json()
-        tag_ids = data.get('tag_ids', [])
+        tag_ids = data.get('ids', [])
         
         if not tag_ids:
             return jsonify({'error': 'Brak tagów do usunięcia'}), 400
@@ -3567,6 +3609,260 @@ def api_blog_tags_bulk_delete():
         return jsonify({
             'success': True,
             'message': f'Usunięto {len(tags)} tagów'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/bulk-delete/menu', methods=['POST'])
+@login_required
+def api_bulk_delete_menu():
+    """Bulk delete menu items"""
+    try:
+        if not current_user.is_admin:
+            return jsonify({'error': 'Brak uprawnień'}), 403
+            
+        data = request.get_json()
+        menu_ids = data.get('ids', [])
+        
+        if not menu_ids:
+            return jsonify({'error': 'Brak elementów do usunięcia'}), 400
+        
+        from models import MenuItem
+        deleted_count = MenuItem.query.filter(MenuItem.id.in_(menu_ids)).delete(synchronize_session=False)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Usunięto {deleted_count} elementów menu',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/bulk-delete/benefits', methods=['POST'])
+@login_required
+def api_bulk_delete_benefits():
+    """Bulk delete benefits"""
+    try:
+        if not current_user.is_admin:
+            return jsonify({'error': 'Brak uprawnień'}), 403
+            
+        data = request.get_json()
+        benefit_ids = data.get('ids', [])
+        
+        if not benefit_ids:
+            return jsonify({'error': 'Brak korzyści do usunięcia'}), 400
+        
+        from models import BenefitItem
+        deleted_count = BenefitItem.query.filter(BenefitItem.id.in_(benefit_ids)).delete(synchronize_session=False)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Usunięto {deleted_count} korzyści',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/bulk-delete/sections', methods=['POST'])
+@login_required
+def api_bulk_delete_sections():
+    """Bulk delete sections"""
+    try:
+        if not current_user.is_admin:
+            return jsonify({'error': 'Brak uprawnień'}), 403
+            
+        data = request.get_json()
+        section_ids = data.get('ids', [])
+        
+        if not section_ids:
+            return jsonify({'error': 'Brak sekcji do usunięcia'}), 400
+        
+        from models import Section
+        deleted_count = Section.query.filter(Section.id.in_(section_ids)).delete(synchronize_session=False)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Usunięto {deleted_count} sekcji',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/bulk-delete/testimonials', methods=['POST'])
+@login_required
+def api_bulk_delete_testimonials():
+    """Bulk delete testimonials"""
+    try:
+        if not current_user.is_admin:
+            return jsonify({'error': 'Brak uprawnień'}), 403
+            
+        data = request.get_json()
+        testimonial_ids = data.get('ids', [])
+        
+        if not testimonial_ids:
+            return jsonify({'error': 'Brak opinii do usunięcia'}), 400
+        
+        from models import Testimonial
+        deleted_count = Testimonial.query.filter(Testimonial.id.in_(testimonial_ids)).delete(synchronize_session=False)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Usunięto {deleted_count} opinii',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/bulk-delete/faq', methods=['POST'])
+@login_required
+def api_bulk_delete_faq():
+    """Bulk delete FAQ"""
+    try:
+        if not current_user.is_admin:
+            return jsonify({'error': 'Brak uprawnień'}), 403
+            
+        data = request.get_json()
+        faq_ids = data.get('ids', [])
+        
+        if not faq_ids:
+            return jsonify({'error': 'Brak pytań do usunięcia'}), 400
+        
+        from models import FAQ
+        deleted_count = FAQ.query.filter(FAQ.id.in_(faq_ids)).delete(synchronize_session=False)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Usunięto {deleted_count} pytań',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/bulk-delete/email-templates', methods=['POST'])
+@login_required
+def api_bulk_delete_email_templates():
+    """Bulk delete email templates"""
+    try:
+        if not current_user.is_admin:
+            return jsonify({'error': 'Brak uprawnień'}), 403
+            
+        data = request.get_json()
+        template_ids = data.get('ids', [])
+        
+        if not template_ids:
+            return jsonify({'error': 'Brak szablonów do usunięcia'}), 400
+        
+        from models import EmailTemplate
+        # Don't allow deleting default templates
+        templates = EmailTemplate.query.filter(EmailTemplate.id.in_(template_ids)).all()
+        default_templates = [t for t in templates if t.is_default]
+        
+        if default_templates:
+            return jsonify({'error': f'Nie można usunąć domyślnych szablonów: {", ".join([t.name for t in default_templates])}'}), 400
+        
+        deleted_count = EmailTemplate.query.filter(
+            EmailTemplate.id.in_(template_ids),
+            EmailTemplate.is_default == False
+        ).delete(synchronize_session=False)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Usunięto {deleted_count} szablonów',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/bulk-delete/email-groups', methods=['POST'])
+@login_required
+def api_bulk_delete_email_groups():
+    """Bulk delete email groups"""
+    try:
+        if not current_user.is_admin:
+            return jsonify({'error': 'Brak uprawnień'}), 403
+            
+        data = request.get_json()
+        group_ids = data.get('ids', [])
+        
+        if not group_ids:
+            return jsonify({'error': 'Brak grup do usunięcia'}), 400
+        
+        from models import EmailGroup
+        # Don't allow deleting default groups
+        groups = EmailGroup.query.filter(EmailGroup.id.in_(group_ids)).all()
+        default_groups = [g for g in groups if g.is_default]
+        
+        if default_groups:
+            return jsonify({'error': f'Nie można usunąć domyślnych grup: {", ".join([g.name for g in default_groups])}'}), 400
+        
+        deleted_count = EmailGroup.query.filter(
+            EmailGroup.id.in_(group_ids),
+            EmailGroup.is_default == False
+        ).delete(synchronize_session=False)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Usunięto {deleted_count} grup',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/bulk-delete/email-campaigns', methods=['POST'])
+@login_required
+def api_bulk_delete_email_campaigns():
+    """Bulk delete email campaigns"""
+    try:
+        if not current_user.is_admin:
+            return jsonify({'error': 'Brak uprawnień'}), 403
+            
+        data = request.get_json()
+        campaign_ids = data.get('ids', [])
+        
+        if not campaign_ids:
+            return jsonify({'error': 'Brak kampanii do usunięcia'}), 400
+        
+        from models import EmailCampaign
+        # Don't allow deleting sent campaigns
+        campaigns = EmailCampaign.query.filter(EmailCampaign.id.in_(campaign_ids)).all()
+        sent_campaigns = [c for c in campaigns if c.status in ['sent', 'completed']]
+        
+        if sent_campaigns:
+            return jsonify({'error': f'Nie można usunąć wysłanych kampanii: {", ".join([c.name for c in sent_campaigns])}'}), 400
+        
+        deleted_count = EmailCampaign.query.filter(
+            EmailCampaign.id.in_(campaign_ids),
+            ~EmailCampaign.status.in_(['sent', 'completed'])
+        ).delete(synchronize_session=False)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Usunięto {deleted_count} kampanii',
+            'deleted_count': deleted_count
         })
         
     except Exception as e:

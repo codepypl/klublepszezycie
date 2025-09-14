@@ -55,7 +55,7 @@
                                 </div>
                             </div>
                             <div class="col-md-6 text-end">
-                                <button type="button" class="btn btn-danger" id="bulkDeleteBtn" disabled>
+                                <button type="button" class="btn btn-danger" id="bulkDeleteBtn" style="display: none;">
                                     <i class="fas fa-trash me-2"></i>Usuń wybrane (0)
                                 </button>
                             </div>
@@ -65,7 +65,7 @@
                     <div class="table-responsive">
                         <table class="table table-hover bulk-delete-table" 
                                id="schedulesTable" 
-                               data-delete-endpoint="/admin/api/bulk-delete/schedules">
+                               data-delete-endpoint="/api/bulk-delete/schedules">
                             <thead>
                                 <tr>
                                     <th width="50">
@@ -252,7 +252,7 @@ function renderSchedulesTable(schedules) {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>
-                <input type="checkbox" name="itemIds" value="${schedule.id}" onchange="toggleSchedule(${schedule.id}, this.checked)">
+                <input type="checkbox" name="itemIds" value="${schedule.id}">
             </td>
             <td><strong>${schedule.name}</strong></td>
             <td>${schedule.description || '-'}</td>
@@ -356,84 +356,11 @@ async function deleteSchedule(id) {
 }
 
 // Bulk delete functionality
-let selectedSchedules = new Set();
 
-function toggleSelectAll(checked) {
-    const checkboxes = document.querySelectorAll('#schedulesTableBody input[type="checkbox"]');
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = checked;
-        toggleSchedule(checkbox.value, checked);
-    });
-}
-
-function toggleSchedule(id, checked) {
-    if (checked) {
-        selectedSchedules.add(id);
-    } else {
-        selectedSchedules.delete(id);
-    }
-    updateBulkDeleteButton();
-}
-
-function updateBulkDeleteButton() {
-    const button = document.getElementById('bulkDeleteBtn');
-    if (selectedSchedules.size === 0) {
-        button.disabled = true;
-        button.innerHTML = '<i class="fas fa-trash me-2"></i>Usuń wybrane (0)';
-    } else {
-        button.disabled = false;
-        button.innerHTML = `<i class="fas fa-trash me-2"></i>Usuń wybrane (${selectedSchedules.size})`;
-    }
-}
-
-async function bulkDeleteSchedules() {
-    if (selectedSchedules.size === 0) {
-        window.toastManager.error('Nie wybrano żadnych harmonogramów do usunięcia');
-        return;
-    }
-    
-    if (!confirm(`Czy na pewno chcesz usunąć ${selectedSchedules.size} harmonogramów?`)) {
-        return;
-    }
-    
-    try {
-        const response = await fetch('/admin/api/bulk-delete/schedules', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                ids: Array.from(selectedSchedules)
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            alert(data.message);
-            selectedSchedules.clear();
-            loadSchedules();
-        } else {
-            window.toastManager.error('Błąd: ' + data.error);
-        }
-    } catch (error) {
-        window.toastManager.error('Błąd podczas usuwania: ' + error.message);
-    }
-}
 
 // Bind bulk delete button
 document.addEventListener('DOMContentLoaded', function() {
-    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
-    if (bulkDeleteBtn) {
-        bulkDeleteBtn.addEventListener('click', bulkDeleteSchedules);
-    }
     
-    const selectAllCheckbox = document.getElementById('selectAll');
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', (e) => {
-            toggleSelectAll(e.target.checked);
-        });
-    }
 });
 </script>
 {% endblock %}

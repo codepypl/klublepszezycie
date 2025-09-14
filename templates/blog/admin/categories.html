@@ -12,7 +12,7 @@
             <i class="fas fa-plus me-2"></i>
             Dodaj Kategorię
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn" onclick="bulkDeleteManager.showBulkDeleteModal()" style="display: none;">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
@@ -25,11 +25,11 @@
         <div class="admin-card-body">
             {% if categories.items %}
                 <div class="table-responsive">
-                    <table class="table admin-table">
+                    <table id="categoriesTable" class="table admin-table bulk-delete-table" data-delete-endpoint="/api/blog/admin/categories/bulk-delete">
                         <thead>
                             <tr>
                                 <th>
-                                    <input type="checkbox" id="selectAll" onchange="bulkDeleteManager.toggleSelectAll()">
+                                    <input type="checkbox" id="selectAll">
                                 </th>
                                 <th>Nazwa</th>
                                 <th>Slug</th>
@@ -42,9 +42,9 @@
                         </thead>
                         <tbody>
                             {% for category in categories.items %}
-                            <tr data-category-id="{{ category.id }}" data-item-id="{{ category.id }}">
+                            <tr data-category-id="{{ category.id }}">
                                 <td>
-                                    <input type="checkbox" class="category-checkbox" value="{{ category.id }}" onchange="bulkDeleteManager.updateBulkDeleteButton()">
+                                    <input type="checkbox" name="itemIds" value="{{ category.id }}">
                                 </td>
                                 <td>
                                     <strong>{{ category.title }}</strong>
@@ -92,47 +92,11 @@
                 </div>
 
                 <!-- Pagination -->
-                {% if categories.pages > 1 %}
-                <div class="d-flex justify-content-center mt-4">
-                    <nav aria-label="Paginacja kategorii">
-                        <ul class="pagination pagination-sm">
-                            {% if categories.has_prev %}
-                                <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('blog.admin_categories', page=categories.prev_num) }}" aria-label="Poprzednia">
-                                        <span aria-hidden="true">&laquo;</span>
-                                    </a>
-                                </li>
-                            {% endif %}
-                            
-                            {% for page_num in categories.iter_pages() %}
-                                {% if page_num %}
-                                    {% if page_num != categories.page %}
-                                        <li class="page-item">
-                                            <a class="page-link" href="{{ url_for('blog.admin_categories', page=page_num) }}">{{ page_num }}</a>
-                                        </li>
-                                    {% else %}
-                                        <li class="page-item active">
-                                            <span class="page-link">{{ page_num }}</span>
-                                        </li>
-                                    {% endif %}
-                                {% else %}
-                                    <li class="page-item disabled">
-                                        <span class="page-link">…</span>
-                                    </li>
-                                {% endif %}
-                            {% endfor %}
-                            
-                            {% if categories.has_next %}
-                                <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('blog.admin_categories', page=categories.next_num) }}" aria-label="Następna">
-                                        <span aria-hidden="true">&raquo;</span>
-                                    </a>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </nav>
-                </div>
-                {% endif %}
+                <div id="pagination" class="mt-4 pagination-container" 
+                     data-show-info="true" 
+                     data-show-per-page="true" 
+                     data-default-per-page="10" 
+                     data-max-visible-pages="5"></div>
             {% else %}
                 <div class="text-center py-5">
                     <i class="fas fa-folder fa-3x text-muted mb-3"></i>
@@ -261,6 +225,28 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/utils/paginate.js') }}"></script>
 <script src="{{ url_for('static', filename='js/admin/blog_categories.js') }}"></script>
+<script>
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up pagination handlers for auto-initialization
+        {% if categories %}
+        window.flaskPaginationData = {
+            page: {{ categories.page }},
+            pages: {{ categories.pages }},
+            total: {{ categories.total }},
+            per_page: {{ categories.per_page }}
+        };
+        
+        window.paginationHandlers = {
+            onPageChange: (page) => {
+                window.location.href = `{{ url_for('blog.admin_categories') }}?page=${page}&per_page={{ categories.per_page if categories else 10 }}`;
+            },
+            onPerPageChange: (newPage, perPage) => {
+                window.location.href = `{{ url_for('blog.admin_categories') }}?page=${newPage}&per_page=${perPage}`;
+            }
+        };
+        {% endif %}
+    });
+</script>
 {% endblock %}
