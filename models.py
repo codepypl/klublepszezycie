@@ -113,6 +113,7 @@ class SocialLink(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     platform = db.Column(db.String(50), nullable=False)
     url = db.Column(db.String(200), nullable=False)
+    target = db.Column(db.String(20), default='_blank')
     icon = db.Column(db.String(100))
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
