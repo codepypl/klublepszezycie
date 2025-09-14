@@ -2995,16 +2995,30 @@ def api_social():
     if request.method == 'GET':
         try:
             social_links = SocialLink.query.order_by(SocialLink.order.asc()).all()
-            return jsonify([{
-                'id': link.id,
-                'platform': link.platform,
-                'url': link.url,
-                'icon': link.icon,
-                'target': link.target,
-                'order': link.order,
-                'is_active': link.is_active,
-                'created_at': link.created_at.isoformat() if link.created_at else None
-            } for link in social_links])
+            
+            # Build response with target field (if column exists)
+            result = []
+            for link in social_links:
+                link_data = {
+                    'id': link.id,
+                    'platform': link.platform,
+                    'url': link.url,
+                    'icon': link.icon,
+                    'order': link.order,
+                    'is_active': link.is_active,
+                    'created_at': link.created_at.isoformat() if link.created_at else None
+                }
+                
+                # Add target field if column exists
+                try:
+                    link_data['target'] = link.target
+                except Exception as target_error:
+                    print(f"Target field read error (column may not exist): {target_error}")
+                    link_data['target'] = '_blank'  # Default value
+                
+                result.append(link_data)
+            
+            return jsonify(result)
         except Exception as e:
             return jsonify({'error': str(e)}), 500
     
@@ -3029,14 +3043,26 @@ def api_social():
             if not re.match(r'^https?://', url):
                 return jsonify({'error': 'URL musi zaczynać się od http:// lub https://'}), 400
             
-            social_link = SocialLink(
-                platform=data.get('platform').strip(),
-                url=url,
-                icon=data.get('icon', ''),
-                target=data.get('target', '_blank'),
-                order=data.get('order', 0),
-                is_active=data.get('is_active', True)
-            )
+            # Create social link with target field (if column exists)
+            try:
+                social_link = SocialLink(
+                    platform=data.get('platform').strip(),
+                    url=url,
+                    icon=data.get('icon', ''),
+                    target=data.get('target', '_blank'),
+                    order=data.get('order', 0),
+                    is_active=data.get('is_active', True)
+                )
+            except Exception as target_error:
+                print(f"Target field error, trying without target: {target_error}")
+                # Fallback: create without target field if column doesn't exist
+                social_link = SocialLink(
+                    platform=data.get('platform').strip(),
+                    url=url,
+                    icon=data.get('icon', ''),
+                    order=data.get('order', 0),
+                    is_active=data.get('is_active', True)
+                )
             
             db.session.add(social_link)
             db.session.commit()
@@ -3060,18 +3086,27 @@ def api_social_detail(link_id):
         link = SocialLink.query.get_or_404(link_id)
         
         if request.method == 'GET':
+            # Build response with target field (if column exists)
+            link_data = {
+                'id': link.id,
+                'platform': link.platform,
+                'url': link.url,
+                'icon': link.icon,
+                'order': link.order,
+                'is_active': link.is_active,
+                'created_at': link.created_at.isoformat() if link.created_at else None
+            }
+            
+            # Add target field if column exists
+            try:
+                link_data['target'] = link.target
+            except Exception as target_error:
+                print(f"Target field read error (column may not exist): {target_error}")
+                link_data['target'] = '_blank'  # Default value
+            
             return jsonify({
                 'success': True,
-                'link': {
-                    'id': link.id,
-                    'platform': link.platform,
-                    'url': link.url,
-                    'icon': link.icon,
-                    'target': link.target,
-                    'order': link.order,
-                    'is_active': link.is_active,
-                    'created_at': link.created_at.isoformat() if link.created_at else None
-                }
+                'link': link_data
             })
         
         elif request.method == 'PUT':
@@ -3090,7 +3125,14 @@ def api_social_detail(link_id):
             link.platform = data.get('platform', link.platform)
             link.url = url if url else link.url
             link.icon = data.get('icon', link.icon)
-            link.target = data.get('target', link.target)
+            
+            # Update target field (if column exists)
+            try:
+                link.target = data.get('target', link.target)
+            except Exception as target_error:
+                print(f"Target field update error (column may not exist): {target_error}")
+                # Target column doesn't exist yet, skip this field
+            
             link.order = data.get('order', link.order)
             link.is_active = data.get('is_active', link.is_active)
             
