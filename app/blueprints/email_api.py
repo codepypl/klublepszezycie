@@ -46,8 +46,7 @@ def email_retry_single(email_id):
             email.to_email,
             email.subject,
             email.html_content,
-            email.text_content,
-            email.to_name
+            email.text_content
         )
         
         if success:
