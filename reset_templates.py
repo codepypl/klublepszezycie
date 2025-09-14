@@ -419,6 +419,8 @@ Usuń konto: {{delete_account_url}}''',
         .content { padding: 20px; background: #f8f9fa; }
         .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
         .notification { background: #d1ecf1; padding: 15px; border-left: 4px solid #17a2b8; margin: 15px 0; }
+        .info-row { margin: 10px 0; }
+        .label { font-weight: bold; color: #34495e; }
     </style>
 </head>
 <body>
@@ -428,8 +430,19 @@ Usuń konto: {{delete_account_url}}''',
         </div>
         <div class="content">
             <div class="notification">
-                <h3>{{notification_title}}</h3>
-                <p>{{notification_message}}</p>
+                <h3>Nowa osoba dołączyła do klubu</h3>
+                <div class="info-row">
+                    <span class="label">Imię:</span> {{user_name}}
+                </div>
+                <div class="info-row">
+                    <span class="label">Email:</span> {{user_email}}
+                </div>
+                <div class="info-row">
+                    <span class="label">Telefon:</span> {{user_phone}}
+                </div>
+                <div class="info-row">
+                    <span class="label">Data dołączenia:</span> {{registration_date}}
+                </div>
             </div>
             
             <p>Pozdrawiamy,<br>System Klubu Lepsze Życie</p>
@@ -442,56 +455,68 @@ Usuń konto: {{delete_account_url}}''',
 </html>''',
             'text_content': '''Powiadomienie administratora
 
-{{notification_title}}
+Nowa osoba dołączyła do klubu
 
-{{notification_message}}
+Imię: {{user_name}}
+Email: {{user_email}}
+Telefon: {{user_phone}}
+Data dołączenia: {{registration_date}}
 
 Pozdrawiamy,
 System Klubu Lepsze Życie''',
-            'variables': json.dumps(['notification_title', 'notification_message']),
+            'variables': json.dumps(['user_name', 'user_email', 'user_phone', 'registration_date']),
             'is_active': True
         },
         {
-            'name': 'campaign_newsletter',
+            'name': 'admin_message',
             'template_type': 'campaign',
-            'subject': '{{newsletter_title}} - Newsletter Klubu Lepsze Życie',
+            'subject': '{{message_subject}}',
             'html_content': '''<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Newsletter Klubu Lepsze Życie</title>
+    <title>{{message_subject}}</title>
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #2c3e50; color: white; padding: 20px; text-align: center; }
+        .header { background: #34495e; color: white; padding: 20px; text-align: center; }
         .content { padding: 20px; background: #f8f9fa; }
         .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        .message { background: #ffffff; padding: 20px; border: 1px solid #ddd; border-radius: 5px; margin: 15px 0; }
         .highlight { background: #e8f4f8; padding: 15px; border-left: 4px solid #3498db; margin: 15px 0; }
-        .btn { display: inline-block; padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; }
+        .btn { display: inline-block; padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; margin: 10px 5px; }
+        .btn:hover { background: #2980b9; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>{{newsletter_title}}</h1>
+            <h1>{{message_subject}}</h1>
         </div>
         <div class="content">
-            <h2>{{main_heading}}</h2>
-            
-            <p>{{main_content}}</p>
-            
-            <div class="highlight">
-                <h3>{{highlight_title}}</h3>
-                <p>{{highlight_content}}</p>
+            <div class="message">
+                <h2>Cześć {{recipient_name}}!</h2>
+                
+                <p>{{message_content}}</p>
+                
+                <div class="highlight">
+                    <h3>{{highlight_title}}</h3>
+                    <p>{{highlight_content}}</p>
+                </div>
+                
+                <p style="text-align: center;">
+                    <a href="{{cta_url}}" class="btn">{{cta_text}}</a>
+                </p>
+                
+                <div class="highlight">
+                    <h4>Dodatkowe informacje:</h4>
+                    <p>{{additional_info}}</p>
+                </div>
+                
+                <p>Jeśli masz pytania, skontaktuj się z nami.</p>
+                
+                <p>Pozdrawiamy,<br>Zespół Klubu Lepsze Życie</p>
             </div>
-            
-            <p style="text-align: center;">
-                <a href="{{cta_url}}" class="btn">{{cta_text}}</a>
-            </p>
-            
-            <p>Dziękujemy za bycie częścią naszej społeczności!</p>
-            
-            <p>Pozdrawiamy,<br>Zespół Klubu Lepsze Życie</p>
         </div>
         <div class="footer">
             <p>
@@ -503,18 +528,20 @@ System Klubu Lepsze Życie''',
     </div>
 </body>
 </html>''',
-            'text_content': '''{{newsletter_title}}
+            'text_content': '''{{message_subject}}
 
-{{main_heading}}
+Cześć {{recipient_name}}!
 
-{{main_content}}
+{{message_content}}
 
 {{highlight_title}}
 {{highlight_content}}
 
 {{cta_text}}: {{cta_url}}
 
-Dziękujemy za bycie częścią naszej społeczności!
+Dodatkowe informacje:
+{{additional_info}}
+Jeśli masz pytania, skontaktuj się z nami.
 
 Pozdrawiamy,
 Zespół Klubu Lepsze Życie
@@ -522,7 +549,7 @@ Zespół Klubu Lepsze Życie
 ---
 Wypisz się z klubu: {{unsubscribe_url}}
 Usuń konto: {{delete_account_url}}''',
-            'variables': json.dumps(['newsletter_title', 'main_heading', 'main_content', 'highlight_title', 'highlight_content', 'cta_text', 'cta_url', 'unsubscribe_url', 'delete_account_url']),
+            'variables': json.dumps(['message_subject', 'recipient_name', 'message_content', 'highlight_title', 'highlight_content', 'cta_text', 'cta_url', 'additional_info', 'unsubscribe_url', 'delete_account_url']),
             'is_active': True
         }
     ]
