@@ -22,28 +22,28 @@
         <div class="col-md-3">
             <div class="admin-stats-card">
                 <i class="fas fa-users"></i>
-                <h3>{{ users|length }}</h3>
+                <h3>{{ stats.total_users }}</h3>
                 <p>Wszyscy Użytkownicy</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="admin-stats-card">
                 <i class="fas fa-user-check"></i>
-                <h3>{{ users|selectattr('is_active', 'equalto', true)|list|length }}</h3>
+                <h3>{{ stats.active_users }}</h3>
                 <p>Aktywne Konta</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="admin-stats-card">
                 <i class="fas fa-user-shield"></i>
-                <h3>{{ users|selectattr('is_admin', 'equalto', true)|list|length }}</h3>
+                <h3>{{ stats.admin_users }}</h3>
                 <p>Administratorzy</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="admin-stats-card">
                 <i class="fas fa-user-clock"></i>
-                <h3>{{ users|selectattr('last_login', 'none')|list|length }}</h3>
+                <h3>{{ stats.never_logged_users }}</h3>
                 <p>Nigdy Nie Logowali</p>
             </div>
         </div>

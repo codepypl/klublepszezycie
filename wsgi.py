@@ -45,3 +45,4 @@ if __name__ == '__main__':
     logger = logging.getLogger(__name__)
     logger.info("🌐 Starting Flask application directly on http://0.0.0.0:5000")
     application.run(debug=True, host='0.0.0.0', port=5000)
+

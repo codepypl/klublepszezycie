@@ -25,6 +25,12 @@ def index():
         
         users = users_pagination.items
         
+        # Get statistics for all users (not just current page)
+        total_users = User.query.count()
+        active_users = User.query.filter_by(is_active=True).count()
+        admin_users = User.query.filter_by(is_admin=True).count()
+        never_logged_users = User.query.filter(User.last_login.is_(None)).count()
+        
         # Check if we're editing a specific user
         edit_user_email = request.args.get('edit_user')
         edit_user = None
@@ -34,10 +40,21 @@ def index():
         return render_template('admin/users.html', 
                              users=users, 
                              edit_user=edit_user,
-                             pagination=users_pagination)
+                             pagination=users_pagination,
+                             stats={
+                                 'total_users': total_users,
+                                 'active_users': active_users,
+                                 'admin_users': admin_users,
+                                 'never_logged_users': never_logged_users
+                             })
     except Exception as e:
         flash(f'Błąd podczas ładowania użytkowników: {str(e)}', 'error')
-        return render_template('admin/users.html', users=[], edit_user=None, pagination=None)
+        return render_template('admin/users.html', users=[], edit_user=None, pagination=None, stats={
+            'total_users': 0,
+            'active_users': 0,
+            'admin_users': 0,
+            'never_logged_users': 0
+        })
 
 @users_bp.route('/users/groups')
 @login_required
