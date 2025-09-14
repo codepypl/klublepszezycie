@@ -30,7 +30,7 @@ class User(UserMixin, db.Model):
     
     def is_admin_role(self):
         """Check if user has admin role"""
-        return self.role == 'admin' or self.is_admin  # Backward compatibility
+        return self.role == 'admin' or (self.is_admin is True)  # Backward compatibility
     
     def is_ankieter_role(self):
         """Check if user has ankieter role"""

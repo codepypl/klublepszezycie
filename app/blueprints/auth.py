@@ -29,7 +29,15 @@ def login():
             if user.is_active:
                 login_user(user)
                 next_page = request.args.get('next')
-                return redirect(next_page) if next_page else redirect(url_for('public.index'))
+                if next_page:
+                    return redirect(next_page)
+                # Redirect based on user role
+                if user.is_ankieter_role():
+                    return redirect(url_for('ankieter.dashboard'))
+                elif user.is_admin_role():
+                    return redirect(url_for('admin.dashboard'))
+                else:
+                    return redirect(url_for('public.index'))
             else:
                 flash('Konto jest nieaktywne', 'error')
         else:

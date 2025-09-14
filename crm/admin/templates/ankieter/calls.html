@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Zarządzanie połączeniami - {{ super() }}{% endblock %}
+{% block title %}CRM - Zarządzanie połączeniami - {{ super() }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -11,7 +11,7 @@
                     <i class="fas fa-phone me-2"></i>Zarządzanie połączeniami
                 </h1>
                 <a href="{{ url_for('ankieter.dashboard') }}" class="btn admin-btn-outline">
-                    <i class="fas fa-arrow-left me-2"></i>Powrót do dashboardu
+                    <i class="fas fa-arrow-left me-2"></i>Powrót do CRM
                 </a>
             </div>
         </div>
@@ -219,7 +219,7 @@ document.getElementById('callResultForm').addEventListener('submit', function(e)
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Zapisywanie...';
     submitBtn.disabled = true;
     
-    fetch('{{ url_for("ankieter.process_call") }}', {
+    fetch('/api/crm/calls/process', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -248,4 +248,7 @@ document.getElementById('callResultForm').addEventListener('submit', function(e)
     });
 });
 </script>
+
+<!-- External JavaScript -->
+<script src="{{ url_for('static', filename='js/crm/calls.js') }}"></script>
 {% endblock %}

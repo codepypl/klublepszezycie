@@ -34,6 +34,18 @@ def ankieter_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def crm_required(f):
+    """Decorator to require CRM access (ankieter or admin role)"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('auth.login'))
+        if not (current_user.is_ankieter_role() or current_user.is_admin_role()):
+            flash('Brak uprawnień do systemu CRM', 'error')
+            return redirect(url_for('public.index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 def role_required(role_name):
     """Decorator factory to require specific role"""
     def decorator(f):

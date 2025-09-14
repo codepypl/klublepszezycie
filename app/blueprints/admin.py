@@ -5,6 +5,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from models import db, EventSchedule, EventRegistration, User, UserGroup, EventRecipientGroup, Section
 from app.utils.timezone import get_local_now
+from app.utils.auth import admin_required
 import json
 
 admin_bp = Blueprint('admin', __name__)
@@ -12,6 +13,7 @@ admin_bp = Blueprint('admin', __name__)
 # Admin dashboard
 @admin_bp.route('/')
 @login_required
+@admin_required
 def dashboard():
     """Admin dashboard"""
     try:
@@ -63,30 +65,35 @@ def dashboard():
 
 @admin_bp.route('/email-system')
 @login_required
+@admin_required
 def email_system():
     """System mailingu - przekierowanie do szablonów"""
     return redirect(url_for('admin.email_templates'))
 
 @admin_bp.route('/email-templates')
 @login_required
+@admin_required
 def email_templates():
     """Szablony emaili"""
     return render_template('admin/email_templates.html')
 
 @admin_bp.route('/email-campaigns')
 @login_required
+@admin_required
 def email_campaigns():
     """Kampanie emaili"""
     return render_template('admin/email_campaigns.html')
 
 @admin_bp.route('/email-groups')
 @login_required
+@admin_required
 def email_groups():
     """Grupy użytkowników"""
     return render_template('admin/email_groups.html')
 
 @admin_bp.route('/email-queue')
 @login_required
+@admin_required
 def email_queue():
     """Kolejka emaili"""
     return render_template('admin/email_queue.html')
@@ -94,6 +101,7 @@ def email_queue():
 # Content Management Routes
 @admin_bp.route('/menu')
 @login_required
+@admin_required
 def menu():
     """Menu management page"""
     from models import MenuItem
@@ -102,6 +110,7 @@ def menu():
 
 @admin_bp.route('/sections')
 @login_required
+@admin_required
 def sections():
     """Sections management page"""
     from models import Section
@@ -111,6 +120,7 @@ def sections():
 
 @admin_bp.route('/benefits')
 @login_required
+@admin_required
 def benefits():
     """Benefits management page"""
     from models import BenefitItem
@@ -120,6 +130,7 @@ def benefits():
 # Benefits API
 @admin_bp.route('/testimonials')
 @login_required
+@admin_required
 def testimonials():
     """Testimonials management page"""
     from models import Testimonial
@@ -128,6 +139,7 @@ def testimonials():
 
 @admin_bp.route('/faq')
 @login_required
+@admin_required
 def faq():
     """FAQ management page"""
     from models import FAQ

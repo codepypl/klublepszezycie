@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Zarządzanie kontaktami - {{ super() }}{% endblock %}
+{% block title %}CRM - Zarządzanie kontaktami - {{ super() }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -11,7 +11,7 @@
                     <i class="fas fa-address-book me-2"></i>Zarządzanie kontaktami
                 </h1>
                 <a href="{{ url_for('ankieter.dashboard') }}" class="btn admin-btn-outline">
-                    <i class="fas fa-arrow-left me-2"></i>Powrót do dashboardu
+                    <i class="fas fa-arrow-left me-2"></i>Powrót do CRM
                 </a>
             </div>
         </div>
@@ -206,7 +206,7 @@ document.getElementById('importForm').addEventListener('submit', function(e) {
     const formData = new FormData();
     formData.append('file', file);
     
-    fetch('{{ url_for("ankieter.import_contacts") }}', {
+    fetch('/api/crm/contacts/import', {
         method: 'POST',
         body: formData
     })
@@ -230,5 +230,8 @@ document.getElementById('importForm').addEventListener('submit', function(e) {
         submitBtn.disabled = false;
     });
 });
+
+<!-- External JavaScript -->
+<script src="{{ url_for('static', filename='js/crm/contacts.js') }}"></script>
 </script>
 {% endblock %}

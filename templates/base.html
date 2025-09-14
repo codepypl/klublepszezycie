@@ -67,7 +67,7 @@
                                 <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">Panel Admin</a></li>
                                 {% endif %}
                                 {% if current_user.is_ankieter_role() %}
-                                <li><a class="dropdown-item" href="{{ url_for('ankieter.dashboard') }}">Panel Ankietera</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('ankieter.dashboard') }}">Panel CRM</a></li>
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Wyloguj</a></li>

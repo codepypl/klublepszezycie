@@ -50,6 +50,7 @@ def create_app():
     # Register blueprints
     logger.info("🛣️ Registering routes...")
     from app.blueprints import public_bp, admin_bp, api_bp, auth_bp, blog_bp, seo_bp, social_bp, events_bp, users_bp, footer_bp, email_api_bp, ankieter_bp
+    from crm.crm_api import crm_api_bp
     
     app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -62,7 +63,8 @@ def create_app():
     app.register_blueprint(events_bp, url_prefix='/admin')
     app.register_blueprint(users_bp, url_prefix='/admin')
     app.register_blueprint(footer_bp, url_prefix='/admin')
-    app.register_blueprint(ankieter_bp, url_prefix='/ankieter')
+    app.register_blueprint(ankieter_bp, url_prefix='/crm')
+    app.register_blueprint(crm_api_bp)
     
     # Import user loader
     logger.info("👤 Setting up user authentication...")

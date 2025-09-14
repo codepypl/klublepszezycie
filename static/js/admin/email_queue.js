@@ -25,6 +25,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
+    // Setup auto-refresh
+    setupEmailQueueAutoRefresh();
+    
     // Make functions globally available
     window.processQueue = processQueue;
     window.retryFailed = retryFailed;
@@ -302,3 +305,144 @@ function updateProgressBar(progress) {
         progressTime.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
 }
+
+// Auto-refresh functionality for email queue
+let emailQueueRefreshInterval;
+let isProcessing = false;
+
+function setupEmailQueueAutoRefresh() {
+    // Refresh every 15 seconds (more frequent than CRM pages)
+    emailQueueRefreshInterval = setInterval(() => {
+        // Only refresh if not currently processing
+        if (!isProcessing) {
+            refreshEmailQueueData();
+        }
+    }, 15000); // 15 seconds
+    
+    // Add refresh indicator
+    addEmailQueueRefreshIndicator();
+    
+    // Add manual refresh button
+    addEmailQueueRefreshButton();
+}
+
+function refreshEmailQueueData() {
+    // Show subtle loading indicator
+    showEmailQueueRefreshIndicator();
+    
+    // Load both stats and queue
+    Promise.all([
+        fetch('/api/email/queue-stats').then(response => response.json()),
+        fetch(`/api/email/queue?page=${currentPage}&per_page=${currentPerPage}&filter=${currentFilter}`).then(response => response.json())
+    ])
+    .then(([statsData, queueData]) => {
+        if (statsData.success) {
+            updateEmailQueueStats(statsData.stats);
+        }
+        if (queueData.success) {
+            displayQueue(queueData.emails);
+            updatePagination(queueData.pagination);
+        }
+        hideEmailQueueRefreshIndicator();
+    })
+    .catch(error => {
+        console.error('Error refreshing email queue data:', error);
+        hideEmailQueueRefreshIndicator();
+    });
+}
+
+function updateEmailQueueStats(stats) {
+    // Update stats cards
+    const totalElement = document.getElementById('totalEmails');
+    const pendingElement = document.getElementById('pendingEmails');
+    const sentElement = document.getElementById('sentEmails');
+    const failedElement = document.getElementById('failedEmails');
+    
+    if (totalElement) totalElement.textContent = stats.total || 0;
+    if (pendingElement) pendingElement.textContent = stats.pending || 0;
+    if (sentElement) sentElement.textContent = stats.sent || 0;
+    if (failedElement) failedElement.textContent = stats.failed || 0;
+}
+
+function addEmailQueueRefreshIndicator() {
+    // Add refresh indicator to the page
+    const indicator = document.createElement('div');
+    indicator.id = 'emailQueueRefreshIndicator';
+    indicator.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i>';
+    indicator.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    `;
+    document.body.appendChild(indicator);
+}
+
+function showEmailQueueRefreshIndicator() {
+    const indicator = document.getElementById('emailQueueRefreshIndicator');
+    if (indicator) {
+        indicator.style.display = 'block';
+    }
+}
+
+function hideEmailQueueRefreshIndicator() {
+    const indicator = document.getElementById('emailQueueRefreshIndicator');
+    if (indicator) {
+        indicator.style.display = 'none';
+    }
+}
+
+function addEmailQueueRefreshButton() {
+    // Add refresh button to the page actions
+    const pageActions = document.querySelector('.page-actions .d-flex');
+    if (pageActions) {
+        const refreshButton = document.createElement('button');
+        refreshButton.innerHTML = '<i class="fas fa-sync-alt me-2"></i>Odśwież kolejkę';
+        refreshButton.className = 'btn admin-btn-outline';
+        refreshButton.onclick = function() {
+            refreshEmailQueueData();
+        };
+        
+        // Add button if it doesn't exist
+        const existingButton = pageActions.querySelector('.email-queue-refresh-button');
+        if (!existingButton) {
+            refreshButton.classList.add('email-queue-refresh-button');
+            pageActions.appendChild(refreshButton);
+        }
+    }
+}
+
+// Override processQueue to track processing state
+const originalProcessQueue = processQueue;
+processQueue = function() {
+    isProcessing = true;
+    originalProcessQueue();
+    
+    // Reset processing state after 30 seconds
+    setTimeout(() => {
+        isProcessing = false;
+        // Refresh data after processing
+        refreshEmailQueueData();
+    }, 30000);
+};
+
+// Override retryFailed to track processing state
+const originalRetryFailed = retryFailed;
+retryFailed = function() {
+    isProcessing = true;
+    originalRetryFailed();
+    
+    // Reset processing state after 30 seconds
+    setTimeout(() => {
+        isProcessing = false;
+        // Refresh data after processing
+        refreshEmailQueueData();
+    }, 30000);
+};
