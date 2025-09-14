@@ -36,6 +36,7 @@ def create():
                 platform=data.get('platform', '').strip(),
                 url=url,
                 icon=data.get('icon', ''),
+                target=data.get('target', '_blank'),
                 order=data.get('order', 0),
                 is_active=data.get('is_active', True)
             )
@@ -67,6 +68,7 @@ def manage_link(link_id):
             'platform': link.platform,
             'url': link.url,
             'icon': link.icon,
+            'target': link.target,
             'order': link.order,
             'is_active': link.is_active,
             'created_at': link.created_at.isoformat() if link.created_at else None
@@ -85,6 +87,7 @@ def manage_link(link_id):
             link.platform = data.get('platform', link.platform)
             link.url = url if url else link.url
             link.icon = data.get('icon', link.icon)
+            link.target = data.get('target', link.target)
             link.order = data.get('order', link.order)
             link.is_active = data.get('is_active', link.is_active)
             
@@ -124,6 +127,7 @@ def get_public_links():
             'platform': link.platform,
             'url': link.url,
             'icon': link.icon,
+            'target': link.target,
             'order': link.order
         } for link in links])
         
