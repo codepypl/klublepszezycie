@@ -1147,6 +1147,7 @@ def api_user(user_id):
                 'club_member': user.club_member,
                 'is_active': user.is_active,
                 'is_admin': user.is_admin,
+                'role': user.role,
                 'created_at': user.created_at.isoformat() if user.created_at else None,
                 'last_login': user.last_login.isoformat() if user.last_login else None
             })
@@ -1171,6 +1172,14 @@ def api_user(user_id):
                 user.is_active = bool(data['is_active'])
             if 'is_admin' in data:
                 user.is_admin = bool(data['is_admin'])
+            if 'role' in data:
+                user.role = data['role']
+                # Update is_admin for backward compatibility
+                if data['role'] == 'admin':
+                    user.is_admin = True
+                elif data['role'] != 'admin' and not user.is_admin:
+                    # Only set to False if it wasn't already True (preserve existing admins)
+                    pass
             
             db.session.commit()
             

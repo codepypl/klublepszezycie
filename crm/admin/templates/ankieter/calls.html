@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Zarządzanie połączeniami - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-phone me-2"></i>Zarządzanie połączeniami
+                </h1>
+                <a href="{{ url_for('ankieter.dashboard') }}" class="btn admin-btn-outline">
+                    <i class="fas fa-arrow-left me-2"></i>Powrót do dashboardu
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Queue Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card admin-card">
+                <div class="card-body text-center">
+                    <h3 class="text-danger">{{ queue_stats.pending_high }}</h3>
+                    <p class="mb-0">Przeplanowane połączenia</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card admin-card">
+                <div class="card-body text-center">
+                    <h3 class="text-warning">{{ queue_stats.pending_medium }}</h3>
+                    <p class="mb-0">Potencjały</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card admin-card">
+                <div class="card-body text-center">
+                    <h3 class="text-info">{{ queue_stats.pending_low }}</h3>
+                    <p class="mb-0">Nowe kontakty</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card admin-card">
+                <div class="card-body text-center">
+                    <h3 class="text-primary">{{ queue_stats.total_pending }}</h3>
+                    <p class="mb-0">Razem w kolejce</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Next Contact -->
+    {% if next_contact %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card admin-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-phone me-2"></i>Następny kontakt do połączenia
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>{{ next_contact.name }}</h4>
+                            <p class="mb-1"><strong>Telefon:</strong> {{ next_contact.phone }}</p>
+                            {% if next_contact.email %}
+                            <p class="mb-1"><strong>Email:</strong> {{ next_contact.email }}</p>
+                            {% endif %}
+                            {% if next_contact.company %}
+                            <p class="mb-1"><strong>Firma:</strong> {{ next_contact.company }}</p>
+                            {% endif %}
+                            {% if next_contact.notes %}
+                            <p class="mb-1"><strong>Notatki:</strong> {{ next_contact.notes }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-grid gap-2">
+                                <a href="tel:{{ next_contact.phone }}" class="btn admin-btn">
+                                    <i class="fas fa-phone me-2"></i>Zadzwoń
+                                </a>
+                                <button class="btn admin-btn-secondary" onclick="startCall({{ next_contact.id }})">
+                                    <i class="fas fa-play me-2"></i>Rozpocznij połączenie
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card admin-card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                    <h4>Brak kontaktów w kolejce</h4>
+                    <p>Wszystkie kontakty zostały przetworzone lub nie ma nowych do połączenia.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Call Form -->
+    <div class="row" id="callForm" style="display: none;">
+        <div class="col-12">
+            <div class="card admin-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-edit me-2"></i>Formularz połączenia
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="callResultForm">
+                        <input type="hidden" id="contactId" name="contact_id">
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="callStatus" class="form-label">Wynik połączenia</label>
+                                <select class="form-select" id="callStatus" name="status" required>
+                                    <option value="">Wybierz wynik...</option>
+                                    <option value="lead">Pozyskany lead</option>
+                                    <option value="rejection">Odmowa</option>
+                                    <option value="callback">Przeplanowane połączenie</option>
+                                    <option value="no_answer">Nie odebrał</option>
+                                    <option value="busy">Zajęty</option>
+                                    <option value="wrong_number">Błędny numer</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="eventId" class="form-label">Wydarzenie (dla leada)</label>
+                                <select class="form-select" id="eventId" name="event_id">
+                                    <option value="">Wybierz wydarzenie...</option>
+                                    {% for event in available_events %}
+                                    <option value="{{ event.id }}">{{ event.title }} - {{ event.event_date.strftime('%d.%m.%Y %H:%M') }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3" id="callbackDateRow" style="display: none;">
+                            <div class="col-md-6">
+                                <label for="callbackDate" class="form-label">Data i godzina przełożenia</label>
+                                <input type="datetime-local" class="form-control" id="callbackDate" name="callback_date">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="callNotes" class="form-label">Notatki z rozmowy</label>
+                            <textarea class="form-control" id="callNotes" name="notes" rows="3" placeholder="Zapisz notatki z rozmowy..."></textarea>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn admin-btn">
+                                <i class="fas fa-save me-2"></i>Zapisz wynik
+                            </button>
+                            <button type="button" class="btn admin-btn-outline" onclick="cancelCall()">
+                                <i class="fas fa-times me-2"></i>Anuluj
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Call form management
+function startCall(contactId) {
+    document.getElementById('contactId').value = contactId;
+    document.getElementById('callForm').style.display = 'block';
+    document.getElementById('callForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelCall() {
+    document.getElementById('callForm').style.display = 'none';
+    document.getElementById('callResultForm').reset();
+}
+
+// Show/hide callback date field
+document.getElementById('callStatus').addEventListener('change', function() {
+    const callbackDateRow = document.getElementById('callbackDateRow');
+    const eventIdField = document.getElementById('eventId');
+    
+    if (this.value === 'callback') {
+        callbackDateRow.style.display = 'block';
+        eventIdField.required = false;
+    } else if (this.value === 'lead') {
+        callbackDateRow.style.display = 'none';
+        eventIdField.required = true;
+    } else {
+        callbackDateRow.style.display = 'none';
+        eventIdField.required = false;
+    }
+});
+
+// Form submission
+document.getElementById('callResultForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Convert callback date to ISO format
+    if (data.callback_date) {
+        data.callback_date = new Date(data.callback_date).toISOString();
+    }
+    
+    // Show loading
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Zapisywanie...';
+    submitBtn.disabled = true;
+    
+    fetch('{{ url_for("ankieter.process_call") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            alert('Połączenie przetworzone pomyślnie!');
+            // Reload page to get next contact
+            window.location.reload();
+        } else {
+            alert('Błąd: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Wystąpił błąd podczas przetwarzania połączenia');
+    })
+    .finally(() => {
+        // Reset button
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+</script>
+{% endblock %}

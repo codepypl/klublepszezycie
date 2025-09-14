@@ -89,10 +89,11 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="editUserAdmin" class="form-label">Rola</label>
-                                <select class="form-select" id="editUserAdmin">
-                                    <option value="false" {% if not edit_user.is_admin %}selected{% endif %}>Użytkownik</option>
-                                    <option value="true" {% if edit_user.is_admin %}selected{% endif %}>Administrator</option>
+                                <label for="editUserRole" class="form-label">Rola</label>
+                                <select class="form-select" id="editUserRole">
+                                    <option value="user" {% if edit_user.role == 'user' %}selected{% endif %}>Użytkownik</option>
+                                    <option value="ankieter" {% if edit_user.role == 'ankieter' %}selected{% endif %}>Ankieter</option>
+                                    <option value="admin" {% if edit_user.role == 'admin' or edit_user.is_admin %}selected{% endif %}>Administrator</option>
                                 </select>
                             </div>
                         </div>
@@ -138,9 +139,15 @@
                                 <td>{{ user.id }}</td>
                                 <td>
                                     <strong>{{ user.name }}</strong>
-                                    {% if user.is_admin %}
-                                        <br><small class="text-muted">Administrator</small>
-                                    {% endif %}
+                                    <br><small class="text-muted">
+                                        {% if user.role == 'admin' or user.is_admin %}
+                                            Administrator
+                                        {% elif user.role == 'ankieter' %}
+                                            Ankieter
+                                        {% else %}
+                                            Użytkownik
+                                        {% endif %}
+                                    </small>
                                 </td>
                                 <td>
                                     <a href="mailto:{{ user.email }}" class="text-decoration-none">
@@ -248,7 +255,7 @@
                     phone: document.getElementById('editUserPhone').value,
                     club_member: document.getElementById('editUserClub').value === 'true',
                     is_active: document.getElementById('editUserActive').value === 'true',
-                    is_admin: document.getElementById('editUserAdmin').value === 'true'
+                    role: document.getElementById('editUserRole').value
                 };
                 
                 // Wyślij żądanie aktualizacji

@@ -17,7 +17,8 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(20))  # Phone number
     club_member = db.Column(db.Boolean, default=False)  # Whether user wants to join the club
     is_active = db.Column(db.Boolean, default=True)  # Whether the account is active
-    is_admin = db.Column(db.Boolean, default=False)
+    is_admin = db.Column(db.Boolean, default=False)  # Deprecated - use role instead
+    role = db.Column(db.String(20), default='user')  # admin, user, ankieter
     is_temporary_password = db.Column(db.Boolean, default=True)  # Whether user needs to change password
     created_at = db.Column(db.DateTime, default=get_local_datetime)
     last_login = db.Column(db.DateTime)
@@ -26,6 +27,24 @@ class User(UserMixin, db.Model):
         """Check if provided password matches the hash"""
         from werkzeug.security import check_password_hash
         return check_password_hash(self.password_hash, password)
+    
+    def is_admin_role(self):
+        """Check if user has admin role"""
+        return self.role == 'admin' or self.is_admin  # Backward compatibility
+    
+    def is_ankieter_role(self):
+        """Check if user has ankieter role"""
+        return self.role == 'ankieter'
+    
+    def is_user_role(self):
+        """Check if user has basic user role"""
+        return self.role == 'user'
+    
+    def has_role(self, role_name):
+        """Check if user has specific role"""
+        if role_name == 'admin':
+            return self.is_admin_role()
+        return self.role == role_name
 
 class PasswordResetToken(db.Model):
     __tablename__ = 'password_reset_tokens'
