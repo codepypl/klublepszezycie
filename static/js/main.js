@@ -177,6 +177,9 @@ function initializeFormHandling() {
             input.addEventListener('input', clearFieldError);
         });
     }
+    
+    // Initialize timeline event registration forms
+    initializeTimelineForms();
 }
 
 // Field Validation
@@ -494,4 +497,58 @@ revealStyle.textContent = `
 `;
 
 document.head.appendChild(revealStyle);
+
+// Timeline Event Registration Forms
+function initializeTimelineForms() {
+    const timelineForms = document.querySelectorAll('.event-registration-form');
+    
+    timelineForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalText = submitButton.innerHTML;
+            const eventId = this.getAttribute('data-event-id');
+            
+            // Show loading state
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
+            submitButton.disabled = true;
+            
+            // Get form data
+            const formData = {
+                name: this.querySelector('input[name="name"]').value,
+                email: this.querySelector('input[name="email"]').value,
+                event_id: eventId
+            };
+            
+            // Send registration request
+            fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    this.reset();
+                } else {
+                    showNotification(data.error || 'Wystąpił błąd podczas rejestracji.', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Registration error:', error);
+                showNotification('Wystąpił błąd podczas rejestracji. Spróbuj ponownie.', 'error');
+            })
+            .finally(() => {
+                // Reset button
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            });
+        });
+    });
+}
 

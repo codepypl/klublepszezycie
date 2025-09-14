@@ -326,6 +326,8 @@
             is_active: formData.get('is_active') === 'true'
         };
         
+        console.log('Sending social link data:', jsonData);
+        
         fetch('/api/social', {
             method: 'POST',
             headers: {
@@ -334,8 +336,19 @@
             },
             body: JSON.stringify(jsonData)
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
+            
             if (data.success) {
                 window.toastManager.success('Link został dodany pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('addLinkModal'));
@@ -347,8 +360,9 @@
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            window.toastManager.error('Wystąpił błąd podczas dodawania linku');
+            console.error('Error details:', error);
+            console.error('Error message:', error.message);
+            window.toastManager.error('Wystąpił błąd podczas dodawania linku: ' + error.message);
         });
     });
 

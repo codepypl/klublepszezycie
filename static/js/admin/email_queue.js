@@ -4,6 +4,8 @@
 let currentPage = 1;
 let currentPerPage = 10;
 let currentFilter = 'pending';
+let progressInterval = null;
+let progressStartTime = null;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
@@ -22,6 +24,17 @@ document.addEventListener('DOMContentLoaded', function() {
             loadQueue(currentFilter);
         }
     };
+    
+    // Make functions globally available
+    window.processQueue = processQueue;
+    window.retryFailed = retryFailed;
+    window.retryEmail = retryEmail;
+    window.deleteEmail = deleteEmail;
+    window.loadQueue = loadQueue;
+    window.showProgressBar = showProgressBar;
+    window.hideProgressBar = hideProgressBar;
+    window.startProgressMonitoring = startProgressMonitoring;
+    window.updateProgress = updateProgress;
 });
 
 
@@ -103,8 +116,8 @@ function displayQueue(emails) {
             <td>${email.to_email}</td>
             <td>${email.subject}</td>
             <td><span class="admin-badge admin-badge-${statusClass}">${email.status}</span></td>
-            <td>${email.scheduled_at ? new Date(email.scheduled_at).toLocaleString() : '-'}</td>
-            <td>${email.sent_at ? new Date(email.sent_at).toLocaleString() : '-'}</td>
+            <td>${email.scheduled_at ? new Date(email.scheduled_at + 'Z').toLocaleString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'}) : '-'}</td>
+            <td>${email.sent_at ? new Date(email.sent_at + 'Z').toLocaleString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'}) : '-'}</td>
             <td>
                 <div class="btn-group" role="group">
                     ${email.status === 'failed' ? `<button class="btn btn-sm admin-btn-warning" onclick="retryEmail(${email.id})" title="Ponów email">
@@ -123,21 +136,26 @@ function displayQueue(emails) {
 
 // Process queue
 function processQueue() {
+    // Show progress bar
+    showProgressBar();
+    
+    // Start processing
     fetch('/api/email/process-queue', {
         method: 'POST'
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            toastManager.success('Kolejka przetworzona pomyślnie!');
-            loadStats();
-            loadQueue(currentFilter);
+            // Start progress monitoring
+            startProgressMonitoring();
         } else {
+            hideProgressBar();
             toastManager.error('Błąd przetwarzania kolejki: ' + data.error);
         }
     })
     .catch(error => {
         console.error('Error processing queue:', error);
+        hideProgressBar();
         toastManager.error('Błąd przetwarzania kolejki');
     });
 }
@@ -203,5 +221,84 @@ function deleteEmail(emailId) {
             console.error('Error deleting email:', error);
             toastManager.error('Błąd usuwania');
         });
+    }
+}
+
+// Progress bar functions
+function showProgressBar() {
+    const container = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const progressDetails = document.getElementById('progressDetails');
+    const progressTime = document.getElementById('progressTime');
+    
+    container.style.display = 'block';
+    progressBar.style.width = '0%';
+    progressText.textContent = '0%';
+    progressDetails.textContent = 'Przygotowywanie...';
+    progressTime.textContent = '00:00';
+    
+    progressStartTime = new Date();
+}
+
+function hideProgressBar() {
+    const container = document.getElementById('progressContainer');
+    container.style.display = 'none';
+    
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+}
+
+function startProgressMonitoring() {
+    // Update progress every 5 seconds
+    progressInterval = setInterval(updateProgress, 5000);
+    
+    // Initial update
+    updateProgress();
+}
+
+function updateProgress() {
+    fetch('/api/email/queue-progress')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const progress = data.progress;
+                updateProgressBar(progress);
+                
+                // Check if processing is complete
+                if (progress.percent >= 100 || (progress.pending === 0 && progress.processing === 0)) {
+                    hideProgressBar();
+                    loadStats();
+                    loadQueue(currentFilter);
+                    toastManager.success(`Przetwarzanie zakończone! Wysłano: ${progress.sent}, Błędy: ${progress.failed}`);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error updating progress:', error);
+        });
+}
+
+function updateProgressBar(progress) {
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const progressDetails = document.getElementById('progressDetails');
+    const progressTime = document.getElementById('progressTime');
+    
+    // Update progress bar
+    progressBar.style.width = progress.percent + '%';
+    progressText.textContent = progress.percent + '%';
+    
+    // Update details
+    progressDetails.textContent = `Przetworzono: ${progress.processed}/${progress.total} | Oczekujące: ${progress.pending} | Wysłane: ${progress.sent} | Błędy: ${progress.failed}`;
+    
+    // Update time
+    if (progressStartTime) {
+        const elapsed = Math.floor((new Date() - progressStartTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        progressTime.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
 }

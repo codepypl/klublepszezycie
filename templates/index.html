@@ -403,6 +403,97 @@
         </div>
     </section>
             {% elif section.name == 'cta' %}
+                <!-- Events Timeline Section (between about and cta) -->
+                {% if events|length > 1 %}
+                <section id="events-timeline" class="py-5 bg-light">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-lg-8 mx-auto text-center mb-5">
+                                <h2 class="display-5 fw-bold text-primary mb-4">Nadchodzące Wydarzenia</h2>
+                                <p class="lead text-muted">Dołącz do nas na wyjątkowe spotkania i warsztaty</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-lg-10 mx-auto">
+                                <div class="timeline">
+                                    {% for event in events[1:] %}
+                                    <div class="timeline-item" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 100 }}">
+                                        <div class="timeline-marker">
+                                            <i class="fas fa-calendar-check"></i>
+                                        </div>
+                                        <div class="timeline-content">
+                                            <div class="card h-100">
+                                                <div class="card-body">
+                                                    <div class="row align-items-center">
+                                                        <div class="col-md-8">
+                                                            <h4 class="card-title text-primary mb-3">{{ event.title }}</h4>
+                                                            <p class="card-text text-muted mb-3">{{ event.description|truncate(150) }}</p>
+                                                            
+                                                            <div class="event-meta mb-3">
+                                                                <div class="row">
+                                                                    <div class="col-sm-6">
+                                                                        <small class="text-muted">
+                                                                            <i class="fas fa-calendar-alt me-2"></i>
+                                                                            {{ event.event_date_local.strftime('%d.%m.%Y') if event.event_date_local else event.event_date.strftime('%d.%m.%Y') }}
+                                                                        </small>
+                                                                    </div>
+                                                                    <div class="col-sm-6">
+                                                                        <small class="text-muted">
+                                                                            <i class="fas fa-clock me-2"></i>
+                                                                            {{ event.event_date_local.strftime('%H:%M') if event.event_date_local else event.event_date.strftime('%H:%M') }}
+                                                                        </small>
+                                                                    </div>
+                                                                </div>
+                                                                {% if event.location %}
+                                                                <div class="mt-2">
+                                                                    <small class="text-muted">
+                                                                        <i class="fas fa-map-marker-alt me-2"></i>
+                                                                        {{ event.location }}
+                                                                    </small>
+                                                                </div>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4 text-center">
+                                                            <div class="event-registration">
+                                                                <h5 class="text-primary mb-3">{{ event.event_type }}</h5>
+                                                                
+                                                                <!-- Event Registration Form -->
+                                                                <form class="event-registration-form" data-event-id="{{ event.id }}">
+                                                                    <div class="mb-3">
+                                                                        <input type="text" class="form-control" name="name" placeholder="Twoje imię" required>
+                                                                    </div>
+                                                                    <div class="mb-3">
+                                                                        <input type="email" class="form-control" name="email" placeholder="Twój email" required>
+                                                                    </div>
+                                                                    <button type="submit" class="btn btn-primary w-100">
+                                                                        <i class="fas fa-user-plus me-2"></i>
+                                                                        Zapisz się
+                                                                    </button>
+                                                                </form>
+                                                                
+                                                                {% if event.meeting_link %}
+                                                                <div class="mt-3">
+                                                                    <a href="{{ event.meeting_link }}" target="_blank" class="btn btn-outline-primary w-100">
+                                                                        <i class="fas fa-video me-2"></i>
+                                                                        Dołącz do spotkania
+                                                                    </a>
+                                                                </div>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                {% endif %}
                 <!-- CTA Section -->
                 <section id="cta" class="py-5 bg-primary text-white">
         <div class="container">

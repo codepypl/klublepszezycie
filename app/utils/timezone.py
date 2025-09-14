@@ -4,6 +4,19 @@ Timezone utility functions
 import pytz
 from datetime import datetime
 
+def get_local_datetime():
+    """Get current datetime in local timezone for database defaults"""
+    try:
+        from config import config
+        if getattr(config['development'], 'USE_LOCAL_TIME', True):
+            tz = get_local_timezone()
+            return datetime.now(tz)
+        else:
+            return datetime.utcnow()
+    except:
+        # Fallback to local time if config fails
+        return datetime.now()
+
 def get_local_timezone():
     """Get the configured timezone from config"""
     try:

@@ -25,3 +25,7 @@ MAIL_DEFAULT_SENDER_NAME=Lepsze Życie Club
 EMAIL_BATCH_SIZE=50
 EMAIL_DELAY=1
 
+# Timezone Configuration
+TIMEZONE=Europe/Warsaw
+USE_LOCAL_TIME=true
+

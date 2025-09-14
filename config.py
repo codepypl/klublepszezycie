@@ -33,12 +33,16 @@ class Config:
     # Email Settings
     EMAIL_BATCH_SIZE = int(os.getenv('EMAIL_BATCH_SIZE', 50))  # Max emails per batch
     EMAIL_DELAY = int(os.getenv('EMAIL_DELAY', 1))  # Delay between emails in seconds
+    
+    # Admin Settings
+    ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@lepszezycie.pl')
 
 
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.getenv('DEV_DATABASE_URL')
+    SQLALCHEMY_DATABASE_URI = os.getenv('DEV_DATABASE_URL', 
+        'postgresql://shadi@localhost:5432/betterlife')
     
     # Database connection parameters for scripts
     DB_HOST = os.getenv('DB_HOST')

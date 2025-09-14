@@ -266,6 +266,9 @@ def register():
         # Check if user already exists
         existing_user = User.query.filter_by(email=data['email']).first()
         if existing_user:
+            # If user exists and event_id is provided, just register for the event
+            if data.get('event_id'):
+                return register_for_event(existing_user, data['event_id'])
             return jsonify({'success': False, 'message': 'Użytkownik z tym emailem już istnieje'}), 400
         
         # Create new user
@@ -340,7 +343,8 @@ def register():
         
         # Send admin notification
         try:
-            admin_email = os.getenv('ADMIN_EMAIL', 'admin@klublepszezycie.pl')
+            from config import config
+            admin_email = config['development'].ADMIN_EMAIL
             admin_context = {
                 'user_name': user.name,
                 'user_email': user.email,
@@ -364,6 +368,10 @@ def register():
                 
         except Exception as e:
             print(f"Error sending admin notification: {str(e)}")
+        
+        # If event_id is provided, register for the event
+        if data.get('event_id'):
+            return register_for_event(user, data['event_id'])
         
         return jsonify({
             'success': True, 
@@ -616,7 +624,8 @@ def register_event(event_id):
                     
                     # Send admin notification for new club member
                     try:
-                        admin_email = os.getenv('ADMIN_EMAIL', 'admin@klublepszezycie.pl')
+                        from config import config
+                        admin_email = config['development'].ADMIN_EMAIL
                         admin_context = {
                             'user_name': new_user.name,
                             'user_email': new_user.email,
@@ -761,4 +770,69 @@ def terms():
                          document=document,
                          footer_settings=footer_settings,
                          active_social_links=active_social_links)
+
+def register_for_event(user, event_id):
+    """Register existing user for a specific event"""
+    try:
+        from models import EventRegistration, EventSchedule
+        
+        # Check if event exists and is active
+        event = EventSchedule.query.filter_by(
+            id=event_id, 
+            is_active=True, 
+            is_published=True
+        ).first()
+        
+        if not event:
+            return jsonify({'success': False, 'message': 'Wydarzenie nie zostało znalezione lub nie jest dostępne'}), 404
+        
+        # Check if user is already registered for this event
+        existing_registration = EventRegistration.query.filter_by(
+            user_id=user.id, 
+            event_id=event_id
+        ).first()
+        
+        if existing_registration:
+            return jsonify({'success': False, 'message': 'Jesteś już zarejestrowany na to wydarzenie'}), 400
+        
+        # Create event registration
+        registration = EventRegistration(
+            user_id=user.id,
+            event_id=event_id,
+            registration_date=get_local_now(),
+            status='confirmed'
+        )
+        
+        db.session.add(registration)
+        db.session.commit()
+        
+        # Send admin notification about event registration
+        try:
+            from config import config
+            admin_email = config['development'].ADMIN_EMAIL
+            admin_context = {
+                'user_name': user.name,
+                'user_email': user.email,
+                'event_title': event.title,
+                'event_date': event.event_date.strftime('%d.%m.%Y %H:%M') if event.event_date else 'Nie podano',
+                'registration_date': get_local_now().strftime('%d.%m.%Y %H:%M'),
+                'registration_source': f'Timeline - {event.title}'
+            }
+            
+            email_service = EmailService()
+            email_service.send_template_email(
+                to_email=admin_email,
+                template_name='admin_notification',
+                context=admin_context,
+                to_name='Administrator'
+            )
+        except Exception as e:
+            print(f"Error sending admin notification: {e}")
+        
+        return jsonify({'success': True, 'message': f'Zostałeś zarejestrowany na wydarzenie: {event.title}'})
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Event registration error: {str(e)}")
+        return jsonify({'success': False, 'message': f'Błąd rejestracji na wydarzenie: {str(e)}'}), 500
 

@@ -341,6 +341,14 @@ class EmailService:
             if not members:
                 return False, "Grupa nie ma członków", 0
             
+            # Pobierz szablon kampanii
+            template = None
+            if campaign.template_id:
+                template = EmailTemplate.query.get(campaign.template_id)
+            
+            if not template:
+                return False, "Kampania nie ma przypisanego szablonu", 0
+            
             # Dodaj emaile do kolejki
             added_count = 0
             for member in members:
@@ -349,11 +357,20 @@ class EmailService:
                     'recipient_email': member.email
                 }
                 
+                # Dodaj zmienne treści z kampanii do kontekstu
+                if campaign.content_variables:
+                    try:
+                        import json
+                        content_vars = json.loads(campaign.content_variables)
+                        context.update(content_vars)
+                    except json.JSONDecodeError:
+                        pass
+                
                 if self.add_to_queue(
                     to_email=member.email,
                     subject=campaign.subject,
-                    html_content=campaign.html_content,
-                    text_content=campaign.text_content,
+                    html_content=template.html_content,
+                    text_content=template.text_content,
                     campaign_id=campaign_id,
                     context=context
                 ):

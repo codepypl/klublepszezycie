@@ -2,6 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime, timedelta
 import json
+from app.utils.timezone import get_local_datetime
 
 db = SQLAlchemy()
 
@@ -18,7 +19,7 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True)  # Whether the account is active
     is_admin = db.Column(db.Boolean, default=False)
     is_temporary_password = db.Column(db.Boolean, default=True)  # Whether user needs to change password
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
     last_login = db.Column(db.DateTime)
     
     def check_password(self, password):
@@ -34,7 +35,7 @@ class PasswordResetToken(db.Model):
     token = db.Column(db.String(255), nullable=False, unique=True)
     expires_at = db.Column(db.DateTime, nullable=False)
     used = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
     
     # Relationship
     user = db.relationship('User', backref='password_reset_tokens')
@@ -53,8 +54,8 @@ class MenuItem(db.Model):
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
     blog = db.Column(db.Boolean, default=False)  # True if this menu item should appear on blog pages
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
 
 class Section(db.Model):
     __tablename__ = 'sections'
@@ -76,8 +77,8 @@ class Section(db.Model):
     floating_cards_count = db.Column(db.Integer, default=3)  # Default number of floating cards
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
 
 class BenefitItem(db.Model):
     __tablename__ = 'benefit_items'
@@ -90,8 +91,8 @@ class BenefitItem(db.Model):
     image = db.Column(db.String(200))
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     section = db.relationship('Section', backref='benefit_items')
 
@@ -105,7 +106,7 @@ class Testimonial(db.Model):
     rating = db.Column(db.Integer, default=5)
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
 
 class SocialLink(db.Model):
     __tablename__ = 'social_links'
@@ -117,7 +118,7 @@ class SocialLink(db.Model):
     icon = db.Column(db.String(100))
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
 
 class Registration(db.Model):
     __tablename__ = 'registrations'
@@ -128,8 +129,8 @@ class Registration(db.Model):
     phone = db.Column(db.String(20))
     presentation_date = db.Column(db.DateTime)
     status = db.Column(db.String(20), default='pending')  # pending, confirmed, attended
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
 
 
 # Email models removed - will be redesigned from scratch
@@ -142,8 +143,8 @@ class FAQ(db.Model):
     answer = db.Column(db.Text, nullable=False)
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
 
 class SEOSettings(db.Model):
     __tablename__ = 'seo_settings'
@@ -164,8 +165,8 @@ class SEOSettings(db.Model):
     canonical_url = db.Column(db.String(200))
     structured_data = db.Column(db.Text)  # JSON-LD schema
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
 
 
 class EventSchedule(db.Model):
@@ -185,8 +186,8 @@ class EventSchedule(db.Model):
     hero_background = db.Column(db.String(500))  # Ścieżka do zdjęcia/wideo jako tło bannera
     hero_background_type = db.Column(db.String(20), default='image')  # 'image' lub 'video'
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
 
     def __repr__(self):
         return f'<EventSchedule {self.title} - {self.event_type} - {self.event_date}>'
@@ -220,8 +221,8 @@ class PresentationSchedule(db.Model):
     next_presentation_date = db.Column(db.DateTime, nullable=False)
     custom_text = db.Column(db.Text)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     def __repr__(self):
         return f'<PresentationSchedule {self.title} - {self.next_presentation_date}>'
@@ -244,8 +245,8 @@ class EventRegistration(db.Model):
     wants_club_news = db.Column(db.Boolean, default=False)  # Czy chce dołączyć do klubu
     notification_preferences = db.Column(db.Text)  # JSON z preferencjami powiadomień
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     # Relacje
     event = db.relationship('EventSchedule', backref='registrations')
@@ -276,8 +277,8 @@ class EventNotification(db.Model):
     template_name = db.Column(db.String(100))
     recipient_count = db.Column(db.Integer, default=0)
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     # Relacje
     event = db.relationship('EventSchedule', backref='notifications')
@@ -303,8 +304,8 @@ class EventRecipientGroup(db.Model):
     member_count = db.Column(db.Integer, default=0)
     
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     # Relacje
     event = db.relationship('EventSchedule', backref='recipient_groups')
@@ -331,8 +332,8 @@ class EmailTemplate(db.Model):
     template_type = db.Column(db.String(50), default='email')  # welcome, event_reminder, registration_confirmation, campaign
     variables = db.Column(db.Text)  # JSON string of available variables
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     def __repr__(self):
         return f'<EmailTemplate {self.name}>'
@@ -348,8 +349,8 @@ class UserGroup(db.Model):
     criteria = db.Column(db.Text)  # JSON with criteria
     is_active = db.Column(db.Boolean, default=True)
     member_count = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     def __repr__(self):
         return f'<UserGroup {self.name} ({self.group_type})>'
@@ -365,7 +366,7 @@ class UserGroupMember(db.Model):
     name = db.Column(db.String(100))
     member_type = db.Column(db.String(20), default='manual')  # manual, auto, club_member
     is_active = db.Column(db.Boolean, default=True)
-    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    joined_at = db.Column(db.DateTime, default=get_local_datetime)
     
     # Relationships
     group = db.relationship('UserGroup', backref=db.backref('members', cascade='all, delete-orphan'))
@@ -390,8 +391,8 @@ class EmailCampaign(db.Model):
     total_recipients = db.Column(db.Integer, default=0)
     sent_count = db.Column(db.Integer, default=0)
     failed_count = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     # Relationships
     template = db.relationship('EmailTemplate', backref='campaigns')
@@ -410,7 +411,7 @@ class EmailQueue(db.Model):
     html_content = db.Column(db.Text, nullable=False)
     text_content = db.Column(db.Text)
     status = db.Column(db.String(20), default='pending')  # pending, sent, failed, bounced
-    scheduled_at = db.Column(db.DateTime, default=datetime.utcnow)
+    scheduled_at = db.Column(db.DateTime, default=get_local_datetime)
     sent_at = db.Column(db.DateTime)
     error_message = db.Column(db.Text)
     template_id = db.Column(db.Integer, db.ForeignKey('email_templates.id'), nullable=True)
@@ -418,8 +419,8 @@ class EmailQueue(db.Model):
     context = db.Column(db.Text)  # JSON with template variables
     retry_count = db.Column(db.Integer, default=0)
     max_retries = db.Column(db.Integer, default=3)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     # Relationships
     template = db.relationship('EmailTemplate', backref='queued_emails')
@@ -436,7 +437,7 @@ class EmailLog(db.Model):
     email = db.Column(db.String(120), nullable=False)
     subject = db.Column(db.String(200), nullable=False)
     status = db.Column(db.String(20), default='sent')  # sent, failed, bounced
-    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sent_at = db.Column(db.DateTime, default=get_local_datetime)
     error_message = db.Column(db.Text)
     template_id = db.Column(db.Integer, db.ForeignKey('email_templates.id'), nullable=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('email_campaigns.id'), nullable=True)
@@ -461,8 +462,8 @@ class BlogCategory(db.Model):
     parent_id = db.Column(db.Integer, db.ForeignKey('blog_categories.id'), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     sort_order = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     # Relationships
     parent = db.relationship('BlogCategory', remote_side=[id], backref='children')
@@ -495,7 +496,7 @@ class BlogTag(db.Model):
     description = db.Column(db.Text)
     color = db.Column(db.String(7), default='#007bff')  # Hex color for display
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
     
     # Relationships
     posts = db.relationship('BlogPost', secondary='blog_post_tags', back_populates='tags')
@@ -536,8 +537,8 @@ class BlogPost(db.Model):
     
     # Timestamps
     published_at = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     # Relationships
     author = db.relationship('User', backref='blog_posts')
@@ -584,8 +585,8 @@ class BlogComment(db.Model):
     is_spam = db.Column(db.Boolean, default=False)
     
     # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     def __repr__(self):
         return f'<BlogComment {self.author_name} on {self.post.title}>'
@@ -615,8 +616,8 @@ class FooterSettings(db.Model):
     company_name = db.Column(db.String(200))
     show_privacy_policy = db.Column(db.Boolean, default=True)
     show_terms = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     def __repr__(self):
         return f'<FooterSettings {self.company_name}>'
@@ -630,8 +631,8 @@ class LegalDocument(db.Model):
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     def __repr__(self):
         return f'<LegalDocument {self.document_type} - {self.title}>'
@@ -646,7 +647,7 @@ class BlogPostImage(db.Model):
     alt_text = db.Column(db.String(200))  # Alt text for accessibility
     caption = db.Column(db.Text)  # Optional caption
     order = db.Column(db.Integer, default=0)  # Order of images in the post
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
     
     # Relationship
     post = db.relationship('BlogPost', backref='images')

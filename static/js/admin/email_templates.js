@@ -96,7 +96,7 @@ function displayTemplates(templates) {
             <td>${template.subject}</td>
             <td>${template.template_type}</td>
             <td><span class="admin-badge admin-badge-${template.is_active ? 'success' : 'secondary'}">${template.is_active ? 'Aktywny' : 'Nieaktywny'}</span></td>
-            <td>${new Date(template.created_at).toLocaleDateString()}</td>
+            <td>${new Date(template.created_at + 'Z').toLocaleDateString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'})}</td>
             <td>
                 <div class="btn-group" role="group">
                     <button class="btn btn-sm admin-btn-outline" onclick="editTemplate(${template.id})" title="Edytuj szablon">

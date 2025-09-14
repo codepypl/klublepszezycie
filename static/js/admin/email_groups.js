@@ -21,6 +21,22 @@ document.addEventListener('DOMContentLoaded', function() {
             loadGroups();
         }
     };
+    
+    // Add event listener for modal close to refresh groups list
+    const groupMembersModal = document.getElementById('groupMembersModal');
+    if (groupMembersModal) {
+        groupMembersModal.addEventListener('hidden.bs.modal', function() {
+            loadGroups(); // Odśwież listę grup po zamknięciu modala członków
+        });
+    }
+    
+    // Add event listener for main group modal close
+    const groupModal = document.getElementById('groupModal');
+    if (groupModal) {
+        groupModal.addEventListener('hidden.bs.modal', function() {
+            loadGroups(); // Odśwież listę grup po zamknięciu modala grupy
+        });
+    }
 });
 
 
@@ -89,7 +105,7 @@ function displayGroups(groups) {
             <td>${group.group_type}</td>
             <td>${group.member_count}</td>
             <td><span class="admin-badge admin-badge-${group.is_active ? 'success' : 'secondary'}">${group.is_active ? 'Aktywna' : 'Nieaktywna'}</span></td>
-            <td>${new Date(group.created_at).toLocaleDateString()}</td>
+            <td>${new Date(group.created_at + 'Z').toLocaleDateString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'})}</td>
             <td>${actionButtonsHtml}</td>
         `;
         
@@ -139,6 +155,8 @@ window.deleteGroup = deleteGroup;
 window.viewGroupMembers = viewGroupMembers;
 window.toggleGroupTypeFields = toggleGroupTypeFields;
 window.syncSystemGroups = syncSystemGroups;
+window.updateMemberCountPreview = updateMemberCountPreview;
+window.loadGroupMembersForEdit = loadGroupMembersForEdit;
 
 // Save group
 function saveGroup() {
@@ -209,6 +227,14 @@ function editGroup(groupId) {
                 document.getElementById('group_description').value = group.description || '';
                 document.getElementById('group_type').value = group.group_type;
                 document.getElementById('group_is_active').checked = group.is_active;
+                
+                // Load group type specific fields
+                toggleGroupTypeFields();
+                
+                // If it's a manual group, load current members and pre-select them
+                if (group.group_type === 'manual') {
+                    loadGroupMembersForEdit(groupId);
+                }
                 
                 const modal = new bootstrap.Modal(document.getElementById('groupModal'));
                 modal.show();
@@ -341,6 +367,7 @@ function addGroupMember(userId) {
             toastManager.success('Członek dodany!');
             loadGroupMembers();
             loadAvailableUsers(document.getElementById('searchUsers').value);
+            loadGroups(); // Odśwież listę grup aby zaktualizować licznik członków
         } else {
             toastManager.error('Błąd dodawania członka: ' + data.error);
         }
@@ -363,6 +390,7 @@ function removeGroupMember(memberId) {
                 toastManager.success('Członek usunięty!');
                 loadGroupMembers();
                 loadAvailableUsers(document.getElementById('searchUsers').value);
+                loadGroups(); // Odśwież listę grup aby zaktualizować licznik członków
             } else {
                 toastManager.error('Błąd usuwania członka: ' + data.error);
             }
@@ -468,13 +496,66 @@ function displayUsersForSelection(users) {
         const item = document.createElement('div');
         item.className = 'form-check';
         item.innerHTML = `
-            <input class="form-check-input" type="checkbox" value="${user.id}" id="user_${user.id}" name="selected_users">
+            <input class="form-check-input" type="checkbox" value="${user.id}" id="user_${user.id}" name="selected_users" onchange="updateMemberCountPreview()">
             <label class="form-check-label" for="user_${user.id}">
                 <strong>${user.name}</strong> - ${user.email}
             </label>
         `;
         container.appendChild(item);
     });
+    
+    // Add member count preview
+    const previewDiv = document.createElement('div');
+    previewDiv.id = 'memberCountPreview';
+    previewDiv.className = 'mt-3 p-2 bg-light rounded';
+    previewDiv.innerHTML = '<strong>Wybrano: <span id="selectedCount">0</span> użytkowników</strong>';
+    container.appendChild(previewDiv);
+    
+    // Update initial count
+    updateMemberCountPreview();
+}
+
+// Update member count preview
+function updateMemberCountPreview() {
+    const checkboxes = document.querySelectorAll('input[name="selected_users"]:checked');
+    const countElement = document.getElementById('selectedCount');
+    if (countElement) {
+        countElement.textContent = checkboxes.length;
+    }
+}
+
+// Load group members for editing (pre-select checkboxes)
+function loadGroupMembersForEdit(groupId) {
+    fetch(`/api/email/groups/${groupId}/members`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Wait a bit for checkboxes to be rendered
+                setTimeout(() => {
+                    // Clear all checkboxes first
+                    const checkboxes = document.querySelectorAll('input[name="selected_users"]');
+                    checkboxes.forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+                    
+                    // Check boxes for current members
+                    data.members.forEach(member => {
+                        const checkbox = document.getElementById(`user_${member.user_id}`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    });
+                    
+                    // Update count preview
+                    updateMemberCountPreview();
+                }, 100);
+            } else {
+                console.log('Nie można załadować członków grupy:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading group members for edit:', error);
+        });
 }
 
 // Search users

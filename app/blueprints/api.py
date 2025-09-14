@@ -97,6 +97,105 @@ def email_process_queue():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@api_bp.route('/email/queue-progress', methods=['GET'])
+@login_required
+def email_queue_progress():
+    """Pobiera postęp przetwarzania kolejki emaili"""
+    try:
+        from models import EmailQueue
+        
+        # Pobierz statystyki kolejki
+        total_pending = EmailQueue.query.filter_by(status='pending').count()
+        total_sent = EmailQueue.query.filter_by(status='sent').count()
+        total_failed = EmailQueue.query.filter_by(status='failed').count()
+        total_processing = EmailQueue.query.filter_by(status='processing').count()
+        
+        # Oblicz postęp
+        total_emails = total_pending + total_sent + total_failed + total_processing
+        processed_emails = total_sent + total_failed
+        
+        if total_emails == 0:
+            progress_percent = 100
+        else:
+            progress_percent = int((processed_emails / total_emails) * 100)
+        
+        return jsonify({
+            'success': True,
+            'progress': {
+                'percent': progress_percent,
+                'processed': processed_emails,
+                'total': total_emails,
+                'pending': total_pending,
+                'sent': total_sent,
+                'failed': total_failed,
+                'processing': total_processing
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@api_bp.route('/email/retry-failed', methods=['POST'])
+@login_required
+def email_retry_failed():
+    """Ponawia nieudane emaile"""
+    try:
+        from app.services.email_service import EmailService
+        email_service = EmailService()
+        stats = email_service.retry_failed_emails()
+        
+        return jsonify({'success': True, 'stats': stats})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@api_bp.route('/email/retry/<int:email_id>', methods=['POST'])
+@login_required
+def email_retry_single(email_id):
+    """Ponawia pojedynczy email"""
+    try:
+        from models import EmailQueue, db
+        from app.services.email_service import EmailService
+        
+        email = EmailQueue.query.get(email_id)
+        if not email:
+            return jsonify({'success': False, 'error': 'Email nie istnieje'}), 404
+            
+        if email.status != 'failed':
+            return jsonify({'success': False, 'error': 'Email nie jest nieudany'}), 400
+        
+        # Reset status
+        email.status = 'pending'
+        email.error_message = None
+        email.retry_count = 0
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Email dodany do ponowienia'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@api_bp.route('/email/delete/<int:email_id>', methods=['DELETE'])
+@login_required
+def email_delete_single(email_id):
+    """Usuwa pojedynczy email z kolejki"""
+    try:
+        from models import EmailQueue, db
+        
+        email = EmailQueue.query.get(email_id)
+        if not email:
+            return jsonify({'success': False, 'error': 'Email nie istnieje'}), 404
+        
+        db.session.delete(email)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Email usunięty'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # All email endpoints removed - will be redesigned from scratch
 
 # All email endpoints removed - will be redesigned from scratch
@@ -3026,6 +3125,8 @@ def api_social():
         try:
             data = request.get_json()
             print(f"Social POST data: {data}")
+            print(f"Social POST data type: {type(data)}")
+            print(f"Social POST target value: {data.get('target') if data else 'No data'}")
             
             if not data:
                 return jsonify({'error': 'Brak danych JSON'}), 400
@@ -3043,16 +3144,23 @@ def api_social():
             if not re.match(r'^https?://', url):
                 return jsonify({'error': 'URL musi zaczynać się od http:// lub https://'}), 400
             
+            # Get target value with validation
+            target_value = data.get('target', '_blank')
+            if not target_value or target_value == 'null' or target_value == 'undefined':
+                target_value = '_blank'
+            print(f"Using target value: {target_value}")
+            
             # Create social link with target field (if column exists)
             try:
                 social_link = SocialLink(
                     platform=data.get('platform').strip(),
                     url=url,
                     icon=data.get('icon', ''),
-                    target=data.get('target', '_blank'),
+                    target=target_value,
                     order=data.get('order', 0),
                     is_active=data.get('is_active', True)
                 )
+                print("Created SocialLink with target field")
             except Exception as target_error:
                 print(f"Target field error, trying without target: {target_error}")
                 # Fallback: create without target field if column doesn't exist
@@ -3063,6 +3171,7 @@ def api_social():
                     order=data.get('order', 0),
                     is_active=data.get('is_active', True)
                 )
+                print("Created SocialLink without target field")
             
             db.session.add(social_link)
             db.session.commit()
@@ -3890,14 +3999,14 @@ def api_bulk_delete_email_campaigns():
         from models import EmailCampaign
         # Don't allow deleting sent campaigns
         campaigns = EmailCampaign.query.filter(EmailCampaign.id.in_(campaign_ids)).all()
-        sent_campaigns = [c for c in campaigns if c.status in ['sent', 'completed']]
+        sent_campaigns = [c for c in campaigns if c.status in ['sending', 'sent', 'completed']]
         
         if sent_campaigns:
             return jsonify({'error': f'Nie można usunąć wysłanych kampanii: {", ".join([c.name for c in sent_campaigns])}'}), 400
         
         deleted_count = EmailCampaign.query.filter(
             EmailCampaign.id.in_(campaign_ids),
-            ~EmailCampaign.status.in_(['sent', 'completed'])
+            ~EmailCampaign.status.in_(['sending', 'sent', 'completed'])
         ).delete(synchronize_session=False)
         db.session.commit()
         

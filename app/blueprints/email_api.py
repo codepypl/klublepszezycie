@@ -257,6 +257,8 @@ def email_campaign_templates():
                 'name': template.name,
                 'subject': template.subject,
                 'template_type': template.template_type,
+                'html_content': template.html_content,
+                'text_content': template.text_content,
                 'variables': variables,
                 'created_at': template.created_at.isoformat() if template.created_at else None
             })
@@ -298,6 +300,19 @@ def email_campaigns():
         
         campaign_list = []
         for campaign in pagination.items:
+            # Update total_recipients if it's 0 and campaign has groups
+            if campaign.total_recipients == 0 and campaign.recipient_groups:
+                try:
+                    recipient_groups = json.loads(campaign.recipient_groups)
+                    total_recipients = 0
+                    for group_id in recipient_groups:
+                        group_members = UserGroupMember.query.filter_by(group_id=group_id, is_active=True).count()
+                        total_recipients += group_members
+                    campaign.total_recipients = total_recipients
+                    db.session.commit()
+                except json.JSONDecodeError:
+                    pass
+            
             campaign_list.append({
                 'id': campaign.id,
                 'name': campaign.name,
@@ -340,6 +355,15 @@ def email_create_campaign():
         )
         
         db.session.add(campaign)
+        db.session.flush()  # Flush to get campaign ID
+        
+        # Calculate total recipients
+        total_recipients = 0
+        for group_id in data['recipient_groups']:
+            group_members = UserGroupMember.query.filter_by(group_id=group_id, is_active=True).count()
+            total_recipients += group_members
+        
+        campaign.total_recipients = total_recipients
         db.session.commit()
         
         return jsonify({'success': True, 'message': 'Kampania utworzona pomyślnie'})
@@ -382,7 +406,6 @@ def email_get_campaign(campaign_id):
                 'subject': campaign.subject,
                 'template_id': campaign.template_id,
                 'content_variables': content_variables,
-                'text_content': campaign.text_content,
                 'recipient_groups': recipient_groups,
                 'status': campaign.status,
                 'scheduled_at': campaign.scheduled_at.isoformat() if campaign.scheduled_at else None,
@@ -423,6 +446,27 @@ def email_update_campaign(campaign_id):
         if 'recipient_groups' in data:
             import json
             campaign.recipient_groups = json.dumps(data['recipient_groups'])
+            
+            # Recalculate total recipients when groups change
+            total_recipients = 0
+            for group_id in data['recipient_groups']:
+                group_members = UserGroupMember.query.filter_by(group_id=group_id, is_active=True).count()
+                total_recipients += group_members
+            campaign.total_recipients = total_recipients
+        else:
+            # Always recalculate total recipients even if groups don't change
+            # This ensures the count is up-to-date with current group members
+            if campaign.recipient_groups:
+                try:
+                    recipient_groups = json.loads(campaign.recipient_groups)
+                    total_recipients = 0
+                    for group_id in recipient_groups:
+                        group_members = UserGroupMember.query.filter_by(group_id=group_id, is_active=True).count()
+                        total_recipients += group_members
+                    campaign.total_recipients = total_recipients
+                except json.JSONDecodeError:
+                    pass
+            
         if 'status' in data:
             campaign.status = data['status']
         if 'scheduled_at' in data and data['scheduled_at']:
@@ -445,6 +489,11 @@ def email_delete_campaign(campaign_id):
         campaign = EmailCampaign.query.get(campaign_id)
         if not campaign:
             return jsonify({'success': False, 'error': 'Kampania nie istnieje'}), 404
+        
+        # Don't allow deleting sent campaigns
+        if campaign.status in ['sending', 'sent', 'completed']:
+            return jsonify({'success': False, 'error': f'Nie można usunąć kampanii ze statusem "{campaign.status}"'}), 400
+        
         db.session.delete(campaign)
         db.session.commit()
         
@@ -529,7 +578,7 @@ def email_groups():
         )
         
         # Lista domyślnych grup (nie można ich usuwać)
-        default_groups = ['club_members', 'all_users']
+        default_groups = ['club_members']
         
         group_list = []
         for group in pagination.items:
@@ -673,7 +722,7 @@ def email_delete_group(group_id):
             return jsonify({'success': False, 'error': 'Grupa nie istnieje'}), 404
         
         # Lista domyślnych grup (nie można ich usuwać)
-        default_groups = ['club_members', 'all_users']
+        default_groups = ['club_members']
         
         if group.group_type in default_groups:
             return jsonify({'success': False, 'error': 'Nie można usunąć grupy domyślnej'}), 400
@@ -778,7 +827,7 @@ def email_add_group_member(group_id):
         )
         
         db.session.add(member)
-        group.member_count = UserGroupMember.query.filter_by(group_id=group_id).count()
+        group.member_count = UserGroupMember.query.filter_by(group_id=group_id, is_active=True).count()
         db.session.commit()
         
         return jsonify({'success': True, 'message': 'Członek dodany pomyślnie'})
@@ -803,7 +852,7 @@ def email_remove_group_member(member_id):
         # Update member count
         group = UserGroup.query.get(group_id)
         if group:
-            group.member_count = UserGroupMember.query.filter_by(group_id=group_id).count()
+            group.member_count = UserGroupMember.query.filter_by(group_id=group_id, is_active=True).count()
         
         db.session.commit()
         

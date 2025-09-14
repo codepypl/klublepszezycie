@@ -24,6 +24,14 @@ document.addEventListener('DOMContentLoaded', function() {
             loadCampaigns();
         }
     };
+    
+    // Add event listener for campaign modal close to refresh campaigns list
+    const campaignModal = document.getElementById('campaignModal');
+    if (campaignModal) {
+        campaignModal.addEventListener('hidden.bs.modal', function() {
+            loadCampaigns(); // Odśwież listę kampanii po zamknięciu modala
+        });
+    }
 });
 
 
@@ -76,14 +84,14 @@ function displayCampaigns(campaigns) {
         
         row.innerHTML = `
             <td>
-                <input type="checkbox" name="itemIds" value="${campaign.id}">
+                ${campaign.status !== 'sending' && campaign.status !== 'sent' && campaign.status !== 'completed' ? `<input type="checkbox" name="itemIds" value="${campaign.id}">` : ''}
             </td>
             <td>${campaign.name}</td>
             <td>${campaign.subject}</td>
             <td><span class="admin-badge admin-badge-${statusClass}">${campaign.status}</span></td>
             <td>${campaign.total_recipients}</td>
             <td>${campaign.sent_count}</td>
-            <td>${new Date(campaign.created_at).toLocaleDateString()}</td>
+            <td>${new Date(campaign.created_at + 'Z').toLocaleDateString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'})}</td>
             <td>
                 <div class="btn-group" role="group">
                     <button class="btn btn-sm admin-btn-outline" onclick="editCampaign(${campaign.id})" title="Edytuj kampanię">
@@ -92,9 +100,9 @@ function displayCampaigns(campaigns) {
                     ${campaign.status === 'draft' ? `<button class="btn btn-sm admin-btn-info" onclick="sendCampaign(${campaign.id})" title="Wyślij kampanię">
                         <i class="fas fa-paper-plane"></i>
                     </button>` : ''}
-                    <button class="btn btn-sm admin-btn-danger" onclick="deleteCampaign(${campaign.id})" title="Usuń kampanię">
+                    ${campaign.status !== 'sending' && campaign.status !== 'sent' && campaign.status !== 'completed' ? `<button class="btn btn-sm admin-btn-danger" onclick="deleteCampaign(${campaign.id})" title="Usuń kampanię">
                         <i class="fas fa-trash"></i>
-                    </button>
+                    </button>` : ''}
                 </div>
             </td>
         `;
@@ -202,8 +210,24 @@ function editCampaign(campaignId) {
                 document.getElementById('campaign_id').value = campaign.id;
                 document.getElementById('campaign_name').value = campaign.name;
                 document.getElementById('campaign_subject').value = campaign.subject;
-                document.getElementById('campaign_html_content').value = campaign.html_content;
-                document.getElementById('campaign_text_content').value = campaign.text_content || '';
+                
+                // Set template
+                if (campaign.template_id) {
+                    document.getElementById('campaign_template').value = campaign.template_id;
+                    handleTemplateChange();
+                    
+                    // Set content variables
+                    if (campaign.content_variables) {
+                        setTimeout(() => {
+                            Object.keys(campaign.content_variables).forEach(key => {
+                                const input = document.getElementById(`var_${key}`);
+                                if (input) {
+                                    input.value = campaign.content_variables[key];
+                                }
+                            });
+                        }, 100);
+                    }
+                }
                 
                 // Load groups and select current ones
                 loadGroupsForCampaign().then(() => {
@@ -339,7 +363,7 @@ function handleTemplateChange() {
     
     if (templateId) {
         const template = availableTemplates.find(t => t.id == templateId);
-        if (template && template.variables.length > 0) {
+        if (template && template.variables && Array.isArray(template.variables) && template.variables.length > 0) {
             variablesContainer.innerHTML = '';
             template.variables.forEach(variable => {
                 const div = document.createElement('div');
@@ -370,17 +394,19 @@ function updateEmailPreview() {
     
     if (templateId) {
         const template = availableTemplates.find(t => t.id == templateId);
-        if (template) {
+        if (template && template.html_content) {
             let htmlContent = template.html_content;
-            let subject = template.subject;
+            let subject = template.subject || '';
             
             // Replace variables with form values
-            template.variables.forEach(variable => {
-                const input = document.getElementById(`var_${variable}`);
-                const value = input ? input.value : `{{${variable}}}`;
-                htmlContent = htmlContent.replace(new RegExp(`{{${variable}}}`, 'g'), value);
-                subject = subject.replace(new RegExp(`{{${variable}}}`, 'g'), value);
-            });
+            if (template.variables && Array.isArray(template.variables)) {
+                template.variables.forEach(variable => {
+                    const input = document.getElementById(`var_${variable}`);
+                    const value = input ? input.value : `{{${variable}}}`;
+                    htmlContent = htmlContent.replace(new RegExp(`{{${variable}}}`, 'g'), value);
+                    subject = subject.replace(new RegExp(`{{${variable}}}`, 'g'), value);
+                });
+            }
             
             preview.innerHTML = `
                 <div class="mb-2">

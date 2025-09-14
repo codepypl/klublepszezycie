@@ -183,50 +183,6 @@ class GroupManager:
         except Exception as e:
             return False, f"Błąd tworzenia grupy: {str(e)}"
     
-    def sync_all_users_group(self):
-        """Synchronizuje grupę 'Wszyscy użytkownicy' z aktywnymi użytkownikami"""
-        try:
-            # Znajdź lub utwórz grupę
-            group = UserGroup.query.filter_by(
-                name="Wszyscy użytkownicy",
-                group_type='all_users'
-            ).first()
-            
-            if not group:
-                group = UserGroup(
-                    name="Wszyscy użytkownicy",
-                    description="Grupa wszystkich użytkowników systemu",
-                    group_type='all_users'
-                )
-                db.session.add(group)
-                db.session.commit()
-            
-            # Pobierz wszystkich aktywnych użytkowników
-            active_users = User.query.filter_by(is_active=True).all()
-            
-            # Usuń wszystkich obecnych członków
-            UserGroupMember.query.filter_by(group_id=group.id).delete()
-            
-            # Dodaj wszystkich aktywnych użytkowników
-            for user in active_users:
-                member = UserGroupMember(
-                    group_id=group.id,
-                    user_id=user.id,
-                    email=user.email,
-                    name=user.name
-                )
-                db.session.add(member)
-            
-            # Aktualizuj liczbę członków
-            group.member_count = len(active_users)
-            
-            db.session.commit()
-            
-            return True, f"Zsynchronizowano grupę 'Wszyscy użytkownicy' z {len(active_users)} użytkownikami"
-            
-        except Exception as e:
-            return False, f"Błąd synchronizacji grupy wszystkich użytkowników: {str(e)}"
-    
     def sync_club_members_group(self):
         """Synchronizuje grupę 'Członkowie klubu' z aktywnymi członkami klubu"""
         try:
@@ -245,46 +201,51 @@ class GroupManager:
                 db.session.add(group)
                 db.session.commit()
             
-            # Pobierz wszystkich aktywnych członków klubu
-            club_members = User.query.filter_by(is_active=True, club_member=True).all()
+            # Pobierz wszystkich aktywnych użytkowników (członkowie klubu = wszyscy aktywni użytkownicy)
+            active_users = User.query.filter_by(is_active=True).all()
             
-            # Usuń wszystkich obecnych członków
-            UserGroupMember.query.filter_by(group_id=group.id).delete()
+            # Pobierz obecnych członków grupy
+            current_members = UserGroupMember.query.filter_by(group_id=group.id).all()
+            current_user_ids = {member.user_id for member in current_members}
             
-            # Dodaj wszystkich aktywnych członków klubu
-            for user in club_members:
-                member = UserGroupMember(
-                    group_id=group.id,
-                    user_id=user.id,
-                    email=user.email,
-                    name=user.name
-                )
-                db.session.add(member)
+            # Dodaj nowych użytkowników (którzy nie są jeszcze w grupie)
+            new_members = []
+            for user in active_users:
+                if user.id not in current_user_ids:
+                    member = UserGroupMember(
+                        group_id=group.id,
+                        user_id=user.id,
+                        email=user.email,
+                        name=user.name
+                    )
+                    db.session.add(member)
+                    new_members.append(member)
+            
+            # Usuń nieaktywnych użytkowników z grupy
+            inactive_user_ids = {user.id for user in active_users}
+            members_to_remove = [member for member in current_members 
+                               if member.user_id not in inactive_user_ids]
+            
+            for member in members_to_remove:
+                db.session.delete(member)
             
             # Aktualizuj liczbę członków
-            group.member_count = len(club_members)
+            group.member_count = len(active_users)
             
             db.session.commit()
             
-            return True, f"Zsynchronizowano grupę 'Członkowie klubu' z {len(club_members)} członkami"
+            return True, f"Zsynchronizowano grupę 'Członkowie klubu' z {len(active_users)} członkami"
             
         except Exception as e:
             return False, f"Błąd synchronizacji grupy członków klubu: {str(e)}"
     
     def sync_system_groups(self):
-        """Synchronizuje wszystkie grupy systemowe"""
+        """Synchronizuje grupy systemowe"""
         try:
-            results = []
-            
-            # Synchronizuj grupę wszystkich użytkowników
-            success, message = self.sync_all_users_group()
-            results.append(f"Wszyscy użytkownicy: {message}")
-            
-            # Synchronizuj grupę członków klubu
+            # Synchronizuj tylko grupę członków klubu (wszyscy aktywni użytkownicy)
             success, message = self.sync_club_members_group()
-            results.append(f"Członkowie klubu: {message}")
             
-            return True, " | ".join(results)
+            return success, message
             
         except Exception as e:
             return False, f"Błąd synchronizacji grup systemowych: {str(e)}"
@@ -295,6 +256,14 @@ class GroupManager:
             group = UserGroup.query.get(group_id)
             if not group:
                 return False, "Grupa nie została znaleziona"
+            
+            # Nie aktualizuj grup manual - są zarządzane ręcznie
+            if group.group_type == 'manual':
+                return True, "Grupa ręczna - nie wymaga synchronizacji"
+            
+            # Nie aktualizuj grupy club_members - ma własną logikę synchronizacji
+            if group.group_type == 'club_members':
+                return True, "Grupa członków klubu - synchronizowana przez sync_club_members_group"
             
             # Usuń wszystkich członków
             UserGroupMember.query.filter_by(group_id=group_id).delete()
@@ -317,18 +286,6 @@ class GroupManager:
                         )
                         db.session.add(member)
             
-            elif group.group_type == 'club_members':
-                # Pobierz wszystkich członków klubu
-                club_members = User.query.filter_by(club_member=True, is_active=True).all()
-                
-                for user in club_members:
-                    member = UserGroupMember(
-                        group_id=group_id,
-                        user_id=user.id,
-                        email=user.email,
-                        name=user.name
-                    )
-                    db.session.add(member)
             
             # Aktualizuj liczbę członków
             group.member_count = UserGroupMember.query.filter_by(group_id=group_id, is_active=True).count()
