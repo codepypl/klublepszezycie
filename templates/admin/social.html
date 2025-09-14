@@ -320,6 +320,7 @@
         const jsonData = {
             platform: formData.get('platform'),
             url: formData.get('url'),
+            target: formData.get('target'),
             icon: formData.get('icon') || '',
             order: parseInt(formData.get('order')) || 0,
             is_active: formData.get('is_active') === 'true'
@@ -360,6 +361,7 @@
         const jsonData = {
             platform: formData.get('platform'),
             url: formData.get('url'),
+            target: formData.get('target'),
             icon: formData.get('icon') || '',
             order: parseInt(formData.get('order')) || 0,
             is_active: document.getElementById('editLinkActive').checked
