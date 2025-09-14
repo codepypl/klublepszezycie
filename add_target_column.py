@@ -1,71 +1,95 @@
 #!/usr/bin/env python3
 """
-Skrypt do dodania kolumny 'target' do tabeli social_links
+Skrypt do dodania kolumny 'target' do tabeli social_links (PostgreSQL)
 Uruchom na serwerze: python add_target_column.py
 """
 
-import sqlite3
 import os
+import sys
+from sqlalchemy import create_engine, text
+from dotenv import load_dotenv
+
+# Załaduj zmienne środowiskowe
+load_dotenv()
+
+def get_database_url():
+    """Pobiera URL bazy danych z zmiennych środowiskowych"""
+    # Sprawdź różne możliwe nazwy zmiennych
+    db_url = os.getenv('DATABASE_URL') or os.getenv('DEV_DATABASE_URL') or os.getenv('TEST_DATABASE_URL')
+    
+    if not db_url:
+        print("❌ Błąd: Nie znaleziono DATABASE_URL w zmiennych środowiskowych")
+        print("Sprawdź czy plik .env istnieje i zawiera DATABASE_URL")
+        return None
+    
+    return db_url
 
 def add_target_column():
     """Dodaje kolumnę target do tabeli social_links"""
     
-    # Ścieżka do bazy danych
-    db_path = 'instance/klublepszezycie.db'
-    
-    if not os.path.exists(db_path):
-        print(f"❌ Błąd: Baza danych nie istnieje: {db_path}")
+    # Pobierz URL bazy danych
+    db_url = get_database_url()
+    if not db_url:
         return False
     
     try:
-        # Połączenie z bazą danych
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
+        # Połączenie z bazą danych PostgreSQL
+        engine = create_engine(db_url)
+        conn = engine.connect()
         
-        print("=== DODAWANIE KOLUMNY 'target' DO TABELI social_links ===")
+        print("=== DODAWANIE KOLUMNY 'target' DO TABELI social_links (PostgreSQL) ===")
         
         # Sprawdź czy kolumna target już istnieje
-        cursor.execute("PRAGMA table_info(social_links)")
-        columns = cursor.fetchall()
+        result = conn.execute(text("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'social_links' AND column_name = 'target'
+        """))
         
-        column_names = [col[1] for col in columns]
-        print(f"Obecne kolumny: {', '.join(column_names)}")
+        target_exists = result.fetchone() is not None
         
-        if 'target' in column_names:
+        if target_exists:
             print("✅ Kolumna 'target' już istnieje!")
             return True
         
+        # Pobierz listę obecnych kolumn
+        result = conn.execute(text("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'social_links'
+            ORDER BY ordinal_position
+        """))
+        
+        columns = [row[0] for row in result.fetchall()]
+        print(f"Obecne kolumny: {', '.join(columns)}")
+        
         # Dodaj kolumnę target
         print("➕ Dodawanie kolumny 'target'...")
-        cursor.execute("""
+        conn.execute(text("""
             ALTER TABLE social_links 
             ADD COLUMN target VARCHAR(20) DEFAULT '_blank'
-        """)
-        
-        # Ustaw domyślną wartość dla istniejących rekordów
-        print("🔄 Ustawianie domyślnej wartości '_blank' dla istniejących rekordów...")
-        cursor.execute("""
-            UPDATE social_links 
-            SET target = '_blank' 
-            WHERE target IS NULL
-        """)
+        """))
         
         # Zatwierdź zmiany
         conn.commit()
         
         # Sprawdź wynik
-        cursor.execute("PRAGMA table_info(social_links)")
-        columns_after = cursor.fetchall()
-        column_names_after = [col[1] for col in columns_after]
+        result = conn.execute(text("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'social_links'
+            ORDER BY ordinal_position
+        """))
         
-        print(f"✅ Kolumny po zmianie: {', '.join(column_names_after)}")
+        columns_after = [row[0] for row in result.fetchall()]
+        print(f"✅ Kolumny po zmianie: {', '.join(columns_after)}")
         
-        if 'target' in column_names_after:
+        if 'target' in columns_after:
             print("🎉 Kolumna 'target' została pomyślnie dodana!")
             
-            # Sprawdź ile rekordów zostało zaktualizowanych
-            cursor.execute("SELECT COUNT(*) FROM social_links")
-            count = cursor.fetchone()[0]
+            # Sprawdź ile rekordów jest w tabeli
+            result = conn.execute(text("SELECT COUNT(*) FROM social_links"))
+            count = result.fetchone()[0]
             print(f"📊 Liczba rekordów w tabeli: {count}")
             
             return True
@@ -73,9 +97,6 @@ def add_target_column():
             print("❌ Błąd: Kolumna 'target' nie została dodana!")
             return False
             
-    except sqlite3.Error as e:
-        print(f"❌ Błąd SQLite: {e}")
-        return False
     except Exception as e:
         print(f"❌ Błąd: {e}")
         return False
@@ -86,25 +107,34 @@ def add_target_column():
 def verify_changes():
     """Sprawdza czy zmiany zostały poprawnie zastosowane"""
     
-    db_path = 'instance/klublepszezycie.db'
+    # Pobierz URL bazy danych
+    db_url = get_database_url()
+    if not db_url:
+        return False
     
     try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
+        engine = create_engine(db_url)
+        conn = engine.connect()
         
         print("\n=== WERYFIKACJA ZMIAN ===")
         
         # Sprawdź strukturę tabeli
-        cursor.execute("PRAGMA table_info(social_links)")
-        columns = cursor.fetchall()
+        result = conn.execute(text("""
+            SELECT column_name, data_type, is_nullable, column_default
+            FROM information_schema.columns 
+            WHERE table_name = 'social_links'
+            ORDER BY ordinal_position
+        """))
+        
+        columns = result.fetchall()
         
         print("Struktura tabeli social_links:")
         for col in columns:
-            print(f"  - {col[1]}: {col[2]} (nullable: {not col[3]}, default: {col[4]})")
+            print(f"  - {col[0]}: {col[1]} (nullable: {col[2]}, default: {col[3]})")
         
         # Sprawdź przykładowe dane
-        cursor.execute("SELECT id, platform, url, target FROM social_links LIMIT 3")
-        records = cursor.fetchall()
+        result = conn.execute(text("SELECT id, platform, url, target FROM social_links LIMIT 3"))
+        records = result.fetchall()
         
         if records:
             print(f"\nPrzykładowe rekordy:")
