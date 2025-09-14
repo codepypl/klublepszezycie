@@ -16,7 +16,7 @@ def create_crm_tables():
         import os
         sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
         
-        from app import create_app
+        from app import create_app, db
         from crm.models import Contact, Call, CallQueue, ImportLog, BlacklistEntry
         
         # Create app
@@ -25,7 +25,7 @@ def create_crm_tables():
         with app.app_context():
             # Check if tables already exist
             from sqlalchemy import inspect
-            inspector = inspect(app.extensions['sqlalchemy'].db.engine)
+            inspector = inspect(db.engine)
             existing_tables = inspector.get_table_names()
             
             crm_tables = ['crm_contacts', 'crm_calls', 'crm_call_queue', 'crm_import_logs', 'crm_blacklist']
@@ -36,8 +36,7 @@ def create_crm_tables():
             
             # Create tables
             print("🔄 Creating CRM tables...")
-            from crm.models import Contact, Call, CallQueue, ImportLog, BlacklistEntry
-            app.extensions['sqlalchemy'].db.create_all()
+            db.create_all()
             
             print("✅ CRM tables created successfully!")
             print("   - crm_contacts")
