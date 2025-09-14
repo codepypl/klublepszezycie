@@ -49,12 +49,16 @@ def index():
                              })
     except Exception as e:
         flash(f'Błąd podczas ładowania użytkowników: {str(e)}', 'error')
-        return render_template('admin/users.html', users=[], edit_user=None, pagination=None, stats={
-            'total_users': 0,
-            'active_users': 0,
-            'admin_users': 0,
-            'never_logged_users': 0
-        })
+        return render_template('admin/users.html', 
+                             users=[], 
+                             edit_user=None, 
+                             pagination=None, 
+                             stats={
+                                 'total_users': 0,
+                                 'active_users': 0,
+                                 'admin_users': 0,
+                                 'never_logged_users': 0
+                             })
 
 @users_bp.route('/users/groups')
 @login_required
