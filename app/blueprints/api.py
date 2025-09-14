@@ -1,7 +1,7 @@
 """
 API routes blueprint
 """
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, render_template
 from flask_login import login_required, current_user
 from models import db, EventSchedule, EventRegistration, User, UserGroup, EventRecipientGroup, Section, BenefitItem, Testimonial, FAQ, MenuItem, SocialLink, SEOSettings
 from app.services.email_service import EmailService
@@ -3363,25 +3363,36 @@ def unsubscribe(email, token):
     except Exception as e:
         return jsonify({'success': False, 'message': f'Błąd wypisywania: {str(e)}'}), 500
 
-@api_bp.route('/delete-account/<email>/<token>', methods=['DELETE'])
+@api_bp.route('/delete-account/<email>/<token>', methods=['GET', 'DELETE'])
 def delete_account(email, token):
     """Usunięcie konta użytkownika"""
     try:
         if not verify_unsubscribe_token(email, 'delete_account', token):
-            return jsonify({'success': False, 'message': 'Nieprawidłowy lub wygasły token'}), 400
+            return render_template('email/delete_account_error.html', 
+                                 error_message='Nieprawidłowy lub wygasły token')
         
-        # Find user by email
-        user = User.query.filter_by(email=email).first()
-        if user:
-            # Delete user account
-            db.session.delete(user)
-            db.session.commit()
-            return jsonify({'success': True, 'message': 'Konto zostało pomyślnie usunięte'})
-        else:
-            return jsonify({'success': False, 'message': 'Użytkownik nie został znaleziony'}), 404
+        if request.method == 'GET':
+            # Show confirmation page
+            return render_template('email/delete_account_confirm.html', 
+                                 email=email, token=token)
+        
+        elif request.method == 'DELETE':
+            # Find user by email
+            user = User.query.filter_by(email=email).first()
+            if user:
+                # Delete user account
+                db.session.delete(user)
+                db.session.commit()
+                return jsonify({'success': True, 'message': 'Konto zostało pomyślnie usunięte'})
+            else:
+                return jsonify({'success': False, 'message': 'Użytkownik nie został znaleziony'}), 404
         
     except Exception as e:
-        return jsonify({'success': False, 'message': f'Błąd usuwania konta: {str(e)}'}), 500
+        if request.method == 'GET':
+            return render_template('email/delete_account_error.html', 
+                                 error_message=f'Błąd: {str(e)}')
+        else:
+            return jsonify({'success': False, 'message': f'Błąd usuwania konta: {str(e)}'}), 500
 
 # Blog Comments API
 @api_bp.route('/blog/comments', methods=['GET'])
