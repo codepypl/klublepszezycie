@@ -198,6 +198,24 @@
             </form>
         </div>
 
+        <!-- Security Settings -->
+        <div class="profile-card">
+            <h3 class="mb-4">
+                <i class="fas fa-shield-alt me-2 text-warning"></i>
+                Ustawienia bezpieczeństwa
+            </h3>
+            
+            <div class="info-item">
+                <div>
+                    <span class="info-label">Hasło</span>
+                    <p class="text-muted mb-0">Zmień hasło do swojego konta</p>
+                </div>
+                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-warning">
+                    <i class="fas fa-key me-1"></i>Zmień hasło
+                </a>
+            </div>
+        </div>
+
         <!-- Club Benefits -->
         <div class="profile-card" id="clubBenefitsCard" style="display: none;">
             <h3 class="mb-4">

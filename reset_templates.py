@@ -551,6 +551,109 @@ Wypisz się z klubu: {{unsubscribe_url}}
 Usuń konto: {{delete_account_url}}''',
             'variables': json.dumps(['message_subject', 'recipient_name', 'message_content', 'highlight_title', 'highlight_content', 'cta_text', 'cta_url', 'additional_info', 'unsubscribe_url', 'delete_account_url']),
             'is_active': True
+        },
+        {
+            'name': 'password_reset',
+            'template_type': 'system',
+            'subject': 'Resetowanie hasła - Klub Lepsze Życie',
+            'html_content': '''<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Resetowanie hasła - Klub Lepsze Życie</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #e74c3c; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background: #f8f9fa; }
+        .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        .btn { display: inline-block; padding: 15px 30px; background: #e74c3c; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        .warning { background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 15px 0; }
+        .security-tips { background: #e8f4f8; padding: 15px; border-radius: 5px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Resetowanie hasła</h1>
+        </div>
+        <div class="content">
+            <p>Cześć {{user_name}},</p>
+            
+            <p>Otrzymaliśmy prośbę o resetowanie hasła do Twojego konta w Klubie Lepsze Życie.</p>
+            
+            <div class="warning">
+                <h3>⚠️ Ważne informacje:</h3>
+                <ul>
+                    <li>Ten link jest ważny przez {{expires_hours}} godzin</li>
+                    <li>Link można użyć tylko raz</li>
+                    <li>Jeśli nie prosiłeś o resetowanie hasła, zignoruj ten email</li>
+                </ul>
+            </div>
+            
+            <p style="text-align: center; margin: 30px 0;">
+                <a href="{{reset_url}}" class="btn">Zresetuj hasło</a>
+            </p>
+            
+            <p>Jeśli przycisk nie działa, skopiuj i wklej poniższy link do przeglądarki:</p>
+            <p style="word-break: break-all; background: #f1f1f1; padding: 10px; border-radius: 3px;">
+                {{reset_url}}
+            </p>
+            
+            <div class="security-tips">
+                <h3>💡 Wskazówki dotyczące bezpieczeństwa:</h3>
+                <ul>
+                    <li>Używaj silnego hasła z wielkimi i małymi literami, cyframi i znakami specjalnymi</li>
+                    <li>Nie udostępniaj swojego hasła nikomu</li>
+                    <li>Regularnie zmieniaj hasło</li>
+                    <li>Jeśli podejrzewasz, że Twoje konto zostało naruszone, skontaktuj się z nami</li>
+                </ul>
+            </div>
+            
+            <p>Jeśli masz problemy z dostępem do konta lub masz pytania, skontaktuj się z naszym zespołem wsparcia.</p>
+            
+            <p>Pozdrawiamy,<br>Zespół Klubu Lepsze Życie</p>
+        </div>
+        <div class="footer">
+            <p>
+                <a href="{{unsubscribe_url}}">Wypisz się z klubu</a> | 
+                <a href="{{delete_account_url}}">Usuń konto</a>
+            </p>
+            <p>Klub Lepsze Życie - Rozwijaj się z nami!</p>
+        </div>
+    </div>
+</body>
+</html>''',
+            'text_content': '''Resetowanie hasła - Klub Lepsze Życie
+
+Cześć {{user_name}},
+
+Otrzymaliśmy prośbę o resetowanie hasła do Twojego konta w Klubie Lepsze Życie.
+
+WAŻNE INFORMACJE:
+- Ten link jest ważny przez {{expires_hours}} godzin
+- Link można użyć tylko raz
+- Jeśli nie prosiłeś o resetowanie hasła, zignoruj ten email
+
+Link do resetowania hasła:
+{{reset_url}}
+
+WSKAZÓWKI DOTYCZĄCE BEZPIECZEŃSTWA:
+- Używaj silnego hasła z wielkimi i małymi literami, cyframi i znakami specjalnymi
+- Nie udostępniaj swojego hasła nikomu
+- Regularnie zmieniaj hasło
+- Jeśli podejrzewasz, że Twoje konto zostało naruszone, skontaktuj się z nami
+
+Jeśli masz problemy z dostępem do konta lub masz pytania, skontaktuj się z naszym zespołem wsparcia.
+
+Pozdrawiamy,
+Zespół Klubu Lepsze Życie
+
+---
+Wypisz się z klubu: {{unsubscribe_url}}
+Usuń konto: {{delete_account_url}}''',
+            'variables': json.dumps(['user_name', 'reset_url', 'expires_hours', 'unsubscribe_url', 'delete_account_url']),
+            'is_active': True
         }
     ]
 

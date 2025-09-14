@@ -26,6 +26,23 @@ class User(UserMixin, db.Model):
         from werkzeug.security import check_password_hash
         return check_password_hash(self.password_hash, password)
 
+class PasswordResetToken(db.Model):
+    __tablename__ = 'password_reset_tokens'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    token = db.Column(db.String(255), nullable=False, unique=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship
+    user = db.relationship('User', backref='password_reset_tokens')
+    
+    def is_valid(self):
+        """Check if token is valid (not used and not expired)"""
+        return not self.used and self.expires_at > datetime.utcnow()
+
 class MenuItem(db.Model):
     __tablename__ = 'menu_items'
     

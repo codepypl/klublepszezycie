@@ -98,7 +98,7 @@ def email_templates():
         default_templates = [
             'welcome', 'event_registration', 'event_reminder_24h', 
             'event_reminder_1h', 'event_reminder_5min', 'admin_notification', 
-            'admin_message'
+            'admin_message', 'password_reset'
         ]
         
         template_list = []
@@ -221,7 +221,7 @@ def email_delete_template(template_id):
         default_templates = [
             'welcome', 'event_registration', 'event_reminder_24h', 
             'event_reminder_1h', 'event_reminder_5min', 'admin_notification', 
-            'admin_message'
+            'admin_message', 'password_reset'
         ]
         
         if template.name in default_templates:

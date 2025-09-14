@@ -45,7 +45,7 @@ def create_app():
     # Import models in app context
     logger.info("📊 Loading database models...")
     with app.app_context():
-        from models import User, EventSchedule, EventRegistration, UserGroup, EventRecipientGroup, BlogCategory, BlogPost, BlogTag, BlogComment, SEOSettings, SocialLink, FooterSettings, LegalDocument, EmailTemplate, UserGroupMember, EmailCampaign, EmailQueue, EmailLog
+        from models import User, EventSchedule, EventRegistration, UserGroup, EventRecipientGroup, BlogCategory, BlogPost, BlogTag, BlogComment, SEOSettings, SocialLink, FooterSettings, LegalDocument, EmailTemplate, UserGroupMember, EmailCampaign, EmailQueue, EmailLog, PasswordResetToken
     
     # Register blueprints
     logger.info("🛣️ Registering routes...")
