@@ -122,7 +122,8 @@ class EmailService:
                     html_content=html_content,
                     text_content=text_content,
                     template_id=template.id,
-                    context=context
+                    context=context,
+                    to_name=to_name
                 )
                 if success:
                     return True, "Email dodany do kolejki"
@@ -138,7 +139,7 @@ class EmailService:
     def add_to_queue(self, to_email: str, subject: str, html_content: str, 
                     text_content: str = None, template_id: int = None, 
                     campaign_id: int = None, context: Dict = None, 
-                    scheduled_at: datetime = None) -> bool:
+                    scheduled_at: datetime = None, to_name: str = None) -> bool:
         """
         Dodaje email do kolejki
         
@@ -151,6 +152,7 @@ class EmailService:
             campaign_id: ID kampanii (opcjonalne)
             context: Kontekst dla zmiennych (opcjonalne)
             scheduled_at: Data wysłania (opcjonalne)
+            to_name: Nazwa odbiorcy (opcjonalna)
             
         Returns:
             bool: True jeśli dodano pomyślnie
@@ -158,6 +160,7 @@ class EmailService:
         try:
             queue_item = EmailQueue(
                 to_email=to_email,
+                to_name=to_name,
                 subject=subject,
                 html_content=html_content,
                 text_content=text_content,
