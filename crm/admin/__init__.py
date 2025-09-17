@@ -1,3 +1,0 @@
-"""
-CRM Admin module
-"""

@@ -4,7 +4,7 @@ Users API endpoints
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from app.models import User, UserGroup, db
-from app.utils.auth import admin_required
+from app.utils.auth_utils import admin_required
 import logging
 
 users_api_bp = Blueprint('users_api', __name__)
@@ -341,7 +341,7 @@ def api_profile():
             
             # Validate email if provided
             if 'email' in data and user.email:
-                from app.utils.validation import validate_email
+                from app.utils.validation_utils import validate_email
                 if not validate_email(user.email):
                     return jsonify({'success': False, 'message': 'Nieprawidłowy format adresu e-mail'}), 400
                 
@@ -352,7 +352,7 @@ def api_profile():
             
             # Validate phone if provided
             if 'phone' in data and user.phone:
-                from app.utils.validation import validate_phone
+                from app.utils.validation_utils import validate_phone
                 if not validate_phone(user.phone):
                     return jsonify({'success': False, 'message': 'Nieprawidłowy format numeru telefonu'}), 400
             

@@ -4,7 +4,7 @@ Benefits API endpoints
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
 from app.models import BenefitItem, db
-from app.utils.auth import admin_required
+from app.utils.auth_utils import admin_required
 import logging
 
 benefits_api_bp = Blueprint('benefits_api', __name__)

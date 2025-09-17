@@ -1,5 +1,5 @@
 """
-Ankieter routes blueprint
+CRM Controller - Business logic for CRM functionality
 """
 import sys
 import os
@@ -7,12 +7,13 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from app.utils.auth import ankieter_required
+from app.utils.auth_utils import ankieter_required
 from app.models import db, User
 
+# Create blueprint for backward compatibility
 ankieter_bp = Blueprint('ankieter', __name__, template_folder='templates')
 
-@ankieter_bp.route('/')
+# CRM Controller Functions (exportable)
 @login_required
 @ankieter_required
 def dashboard():
@@ -25,14 +26,13 @@ def dashboard():
         flash(f'Błąd podczas ładowania dashboardu: {str(e)}', 'error')
         return redirect(url_for('public.index'))
 
-@ankieter_bp.route('/calls')
 @login_required
 @ankieter_required
 def calls():
     """Calls management page"""
     try:
-        from crm.services.queue_manager import QueueManager
-        from crm.services.event_integration import EventIntegrationService
+        from app.services.crm_queue_manager import QueueManager
+        from app.services.crm_event_integration import EventIntegrationService
         
         # Get next contact for ankieter
         next_contact = QueueManager.get_next_contact_for_ankieter(current_user.id)
@@ -53,14 +53,13 @@ def calls():
         return redirect(url_for('ankieter.dashboard'))
 
 
-@ankieter_bp.route('/contacts')
 @login_required
 @ankieter_required
 def contacts():
     """Contacts management page"""
     try:
-        from crm.models import Contact
-        from crm.services.import_service import ImportService
+        from app.models.crm_model import Contact
+        from app.services.crm_import_service import ImportService
         
         # Get pagination parameters
         from flask import request
@@ -91,7 +90,7 @@ def contacts():
         
         # Get last call status for each contact
         from sqlalchemy import func
-        from crm.models import Call
+        from app.models.crm_model import Call
         from app.models import db
         
         contact_analyses = []
@@ -117,7 +116,6 @@ def contacts():
         flash(f'Błąd podczas ładowania strony kontaktów: {str(e)}', 'error')
         return redirect(url_for('ankieter.dashboard'))
 
-@ankieter_bp.route('/work')
 @login_required
 @ankieter_required
 def work():
@@ -128,3 +126,28 @@ def work():
     except Exception as e:
         flash(f'Błąd podczas ładowania ekranu pracy: {str(e)}', 'error')
         return redirect(url_for('ankieter.dashboard'))
+
+# Register routes with blueprint for backward compatibility
+@ankieter_bp.route('/')
+@login_required
+@ankieter_required
+def ankieter_dashboard():
+    return dashboard()
+
+@ankieter_bp.route('/calls')
+@login_required
+@ankieter_required
+def ankieter_calls():
+    return calls()
+
+@ankieter_bp.route('/contacts')
+@login_required
+@ankieter_required
+def ankieter_contacts():
+    return contacts()
+
+@ankieter_bp.route('/work')
+@login_required
+@ankieter_required
+def ankieter_work():
+    return work()

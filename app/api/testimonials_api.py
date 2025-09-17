@@ -4,7 +4,7 @@ Testimonials API endpoints
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
 from app.models import Testimonial, db
-from app.utils.auth import admin_required
+from app.utils.auth_utils import admin_required
 import logging
 
 testimonials_api_bp = Blueprint('testimonials_api', __name__)

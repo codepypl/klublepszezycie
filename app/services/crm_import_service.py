@@ -8,8 +8,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 import pandas as pd
 from datetime import datetime
 from app.models import db
-from crm.models import Contact, ImportFile
-from crm.config import CSV_COLUMNS, DEFAULT_MAX_CALL_ATTEMPTS
+from app.models.crm_model import Contact, ImportFile
+from app.config.crm_config import CSV_COLUMNS, DEFAULT_MAX_CALL_ATTEMPTS
 
 class ImportService:
     """Service for importing contacts from XLSX files"""

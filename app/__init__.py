@@ -49,11 +49,8 @@ def create_app():
     
     # Register blueprints
     logger.info("🛣️ Registering routes...")
-    from app.routes import public_bp, admin_bp, auth_bp, blog_bp, seo_bp, social_bp, events_bp, users_bp, footer_bp
-    from app.api import email_bp, users_api_bp, testimonials_api_bp, sections_api_bp, menu_api_bp, faq_api_bp, benefits_api_bp, events_api_bp, blog_api_bp, seo_api_bp, social_api_bp
-    from app.blueprints import ankieter_bp
-    from crm.crm_api import crm_api_bp
-    from crm.agent_api import agent_api_bp
+    from app.routes import public_bp, admin_bp, auth_bp, blog_bp, seo_bp, social_bp, events_bp, users_bp, footer_bp, crm_bp
+    from app.api import email_bp, users_api_bp, testimonials_api_bp, sections_api_bp, menu_api_bp, faq_api_bp, benefits_api_bp, events_api_bp, blog_api_bp, seo_api_bp, social_api_bp, crm_api_bp, agent_api_bp
     
     app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -76,13 +73,13 @@ def create_app():
     app.register_blueprint(events_bp, url_prefix='/admin')
     app.register_blueprint(users_bp, url_prefix='/admin')
     app.register_blueprint(footer_bp, url_prefix='/admin')
-    app.register_blueprint(ankieter_bp, url_prefix='/crm')
+    app.register_blueprint(crm_bp, url_prefix='/crm')
     app.register_blueprint(crm_api_bp, url_prefix='/api/crm')
     app.register_blueprint(agent_api_bp, url_prefix='/api/crm/agent')
     
     # Import user loader
     logger.info("👤 Setting up user authentication...")
-    from app.utils.auth import load_user
+    from app.utils.auth_utils import load_user
     login_manager.user_loader(load_user)
     
     # Add custom Jinja2 filters
@@ -103,27 +100,27 @@ def create_app():
     def inject_seo():
         """Inject SEO utilities into all templates"""
         def get_seo_settings(page_type, fallback=True):
-            from app.utils.seo import SEOManager
+            from app.utils.seo_utils import SEOManager
             return SEOManager.get_seo_settings(page_type, fallback)
         
         def get_blog_post_seo(post):
-            from app.utils.seo import SEOManager
+            from app.utils.seo_utils import SEOManager
             return SEOManager.generate_blog_post_seo(post)
         
         def get_blog_category_seo(category):
-            from app.utils.seo import SEOManager
+            from app.utils.seo_utils import SEOManager
             return SEOManager.generate_blog_category_seo(category)
         
         def get_blog_tag_seo(tag):
-            from app.utils.seo import SEOManager
+            from app.utils.seo_utils import SEOManager
             return SEOManager.generate_blog_tag_seo(tag)
         
         def get_event_seo(event):
-            from app.utils.seo import SEOManager
+            from app.utils.seo_utils import SEOManager
             return SEOManager.generate_event_seo(event)
         
         def get_section_seo(section):
-            from app.utils.seo import SEOManager
+            from app.utils.seo_utils import SEOManager
             return SEOManager.generate_section_seo(section)
         
         return {

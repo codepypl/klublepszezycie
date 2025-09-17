@@ -9,8 +9,8 @@ import os
 import hmac
 import hashlib
 from datetime import datetime
-from app.utils.validation import validate_email, validate_phone, validate_event_date
-from app.utils.timezone import get_local_now, convert_to_local
+from app.utils.validation_utils import validate_email, validate_phone, validate_event_date
+from app.utils.timezone_utils import get_local_now, convert_to_local
 from app.utils.blog_utils import generate_blog_link
 import json
 import logging

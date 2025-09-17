@@ -5,7 +5,7 @@ from flask import request, jsonify, flash, redirect, url_for
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from app.models import db, User, PasswordResetToken
-from app.utils.validation import validate_email
+from app.utils.validation_utils import validate_email
 from datetime import datetime, timedelta
 import secrets
 import re

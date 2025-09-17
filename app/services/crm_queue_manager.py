@@ -7,8 +7,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from datetime import datetime, timedelta
 from app.models import db
-from crm.models import Contact, Call, BlacklistEntry
-from crm.config import DEFAULT_MAX_CALL_ATTEMPTS
+from app.models.crm_model import Contact, Call, BlacklistEntry
+from app.config.crm_config import DEFAULT_MAX_CALL_ATTEMPTS
 
 class QueueManager:
     """Service for managing call queue and contact assignment"""

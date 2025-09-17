@@ -4,7 +4,7 @@ Group Manager - zarządzanie grupami użytkowników
 import json
 from datetime import datetime
 from app.models import db, UserGroup, UserGroupMember, User, EventSchedule, EventRegistration
-from app.utils.timezone import get_local_now
+from app.utils.timezone_utils import get_local_now
 
 class GroupManager:
     """Menedżer grup użytkowników"""

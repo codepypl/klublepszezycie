@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from app.models import db, User, EventSchedule, EventRegistration, UserGroup, UserGroupMember
 from app.services.email_service import EmailService
 from app.services.group_manager import GroupManager
-from app.utils.timezone import get_local_now
+from app.utils.timezone_utils import get_local_now
 
 class EmailAutomation:
     """Automatyzacje emailowe"""
@@ -140,7 +140,7 @@ class EmailAutomation:
             
             # Convert event date to timezone-aware for comparison
             if event.event_date.tzinfo is None:
-                from app.utils.timezone import convert_to_local
+                from app.utils.timezone_utils import convert_to_local
                 event_date_aware = convert_to_local(event.event_date)
             else:
                 event_date_aware = event.event_date

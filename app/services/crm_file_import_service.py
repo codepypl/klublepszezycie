@@ -9,8 +9,8 @@ import pandas as pd
 import json
 from datetime import datetime
 from app.models import db
-from crm.models import ImportFile, ImportRecord, Contact
-from crm.config import DEFAULT_MAX_CALL_ATTEMPTS
+from app.models.crm_model import ImportFile, ImportRecord, Contact
+from app.config.crm_config import DEFAULT_MAX_CALL_ATTEMPTS
 
 class FileImportService:
     """Service for importing and processing XLSX files line by line"""

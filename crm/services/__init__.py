@@ -1,3 +1,0 @@
-"""
-CRM services module
-"""

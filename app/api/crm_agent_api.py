@@ -5,7 +5,7 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from functools import wraps
 from app.models import User, db
-from crm.models import Contact, Call
+from app.models.crm_model import Contact, Call
 from datetime import datetime
 
 # Create Agent API blueprint

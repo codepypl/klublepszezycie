@@ -5,12 +5,12 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from functools import wraps
 from app.models import User, db
-from crm.models import Contact, Call, ImportFile, ImportRecord
-from crm.services.queue_manager import QueueManager
-from crm.services.event_integration import EventIntegrationService
-from crm.services.import_service import ImportService
-from crm.services.file_import_service import FileImportService
-from crm.utils.file_utils import generate_import_file_path
+from app.models.crm_model import Contact, Call, ImportFile, ImportRecord
+from app.services.crm_queue_manager import QueueManager
+from app.services.crm_event_integration import EventIntegrationService
+from app.services.crm_import_service import ImportService
+from app.services.crm_file_import_service import FileImportService
+from app.utils.crm_file_utils import generate_import_file_path
 import os
 import uuid
 from werkzeug.utils import secure_filename

@@ -3,7 +3,7 @@ Public routes
 """
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, send_from_directory
 from app.blueprints.public_controller import PublicController, generate_unsubscribe_token
-from app.utils.timezone import get_local_now
+from app.utils.timezone_utils import get_local_now
 from app.utils.blog_utils import generate_blog_link
 from app.models import db, EventSchedule
 import logging

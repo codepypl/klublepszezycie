@@ -5,7 +5,7 @@ from flask import request
 from flask_login import login_required, current_user
 from app.models import db, EventSchedule, EventRegistration, User
 from datetime import datetime, timedelta
-from app.utils.timezone import get_local_now
+from app.utils.timezone_utils import get_local_now
 
 class EventsController:
     """Events business logic controller"""

@@ -6,7 +6,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from app.models import db, UserGroup, UserGroupMember, EventSchedule, EventRegistration
-from crm.models import Contact, Call
+from app.models.crm_model import Contact, Call
 from app.services.email_automation import EmailService
 
 class EventIntegrationService:

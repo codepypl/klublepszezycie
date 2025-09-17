@@ -4,7 +4,7 @@ Social Media API endpoints
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
 from app.models import SocialLink, db
-from app.utils.auth import admin_required
+from app.utils.auth_utils import admin_required
 import logging
 
 social_api_bp = Blueprint('social_api', __name__)

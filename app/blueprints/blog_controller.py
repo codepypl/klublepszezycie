@@ -126,7 +126,7 @@ class BlogController:
     def create_blog_comment(post_id, name, email, content, parent_id=None):
         """Create blog comment with user tracking"""
         try:
-            from app.utils.user_info import get_user_info
+            from app.utils.user_info_utils import get_user_info
             
             post = BlogPost.query.get(post_id)
             if not post:

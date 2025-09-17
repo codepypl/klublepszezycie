@@ -4,8 +4,8 @@ Admin business logic controller
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app.models import db, EventSchedule, EventRegistration, User, UserGroup, Section
-from app.utils.timezone import get_local_now
-from app.utils.auth import admin_required
+from app.utils.timezone_utils import get_local_now
+from app.utils.auth_utils import admin_required
 import json
 
 class AdminController:
@@ -70,7 +70,7 @@ class AdminController:
         """Get CRM settings data"""
         try:
             # Get CRM statistics
-            from crm.models import Contact, Call, ImportFile, BlacklistEntry
+            from app.models.crm_model import Contact, Call, ImportFile, BlacklistEntry
             
             total_contacts = Contact.query.count()
             total_calls = Call.query.count()
@@ -78,7 +78,7 @@ class AdminController:
             total_blacklist = BlacklistEntry.query.count()
             
             # Get call statistics
-            from crm.models import Call
+            from app.models.crm_model import Call
             from datetime import datetime, timedelta
             
             today = datetime.now().date()
@@ -119,7 +119,7 @@ class AdminController:
     def clear_crm_data():
         """Clear all CRM data"""
         try:
-            from crm.models import Contact, Call, ImportFile, ImportRecord, BlacklistEntry
+            from app.models.crm_model import Contact, Call, ImportFile, ImportRecord, BlacklistEntry
             
             # Get counts before deletion
             contacts_count = Contact.query.count()
@@ -151,7 +151,7 @@ class AdminController:
     def get_crm_export_data():
         """Get CRM export data"""
         try:
-            from crm.models import Contact, Call, ImportFile, ImportRecord, BlacklistEntry
+            from app.models.crm_model import Contact, Call, ImportFile, ImportRecord, BlacklistEntry
             
             total_contacts = Contact.query.count()
             total_calls = Call.query.count()
@@ -199,7 +199,7 @@ class AdminController:
     def get_crm_analysis_data(page=1, per_page=20, search=''):
         """Get CRM analysis data"""
         try:
-            from crm.models import Contact, Call
+            from app.models.crm_model import Contact, Call
             from sqlalchemy import func, desc
             from datetime import datetime
             

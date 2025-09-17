@@ -4,7 +4,7 @@ SEO API endpoints
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
 from app.models import SEOSettings, db
-from app.utils.auth import admin_required
+from app.utils.auth_utils import admin_required
 import logging
 
 seo_api_bp = Blueprint('seo_api', __name__)
