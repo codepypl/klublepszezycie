@@ -3,6 +3,8 @@
 // Global variables
 let pillarsData = [];
 let floatingCardsData = [];
+let maxPillarsCount = 4;
+let maxFloatingCardsCount = 3;
 
 // Toast manager is loaded globally from utils/toast.js
 
@@ -338,6 +340,9 @@ async function editPillars(sectionId) {
             const section = data.section;
             document.getElementById('editPillarsSectionId').value = section.id;
             
+            // Set max pillars count
+            maxPillarsCount = section.pillars_count || 4;
+            
             // Parse existing pillars data
             pillarsData = section.pillars_data ? JSON.parse(section.pillars_data) : [];
             
@@ -366,6 +371,9 @@ async function editFloatingCards(sectionId) {
         if (data.success) {
             const section = data.section;
             document.getElementById('editFloatingCardsSectionId').value = section.id;
+            
+            // Set max floating cards count
+            maxFloatingCardsCount = section.floating_cards_count || 3;
             
             // Parse existing floating cards data
             floatingCardsData = section.floating_cards_data ? JSON.parse(section.floating_cards_data) : [];
@@ -396,6 +404,12 @@ async function renderPillars() {
         const pillarElement = await createPillarElement(pillar, i);
         container.appendChild(pillarElement);
     }
+    
+    // Update count info
+    const countInfo = document.getElementById('pillarsCountInfo');
+    if (countInfo) {
+        countInfo.textContent = `${pillarsData.length}/${maxPillarsCount} filarów`;
+    }
 }
 
 async function renderFloatingCards() {
@@ -406,6 +420,12 @@ async function renderFloatingCards() {
         const card = floatingCardsData[i];
         const cardElement = await createFloatingCardElement(card, i);
         container.appendChild(cardElement);
+    }
+    
+    // Update count info
+    const countInfo = document.getElementById('floatingCardsCountInfo');
+    if (countInfo) {
+        countInfo.textContent = `${floatingCardsData.length}/${maxFloatingCardsCount} kart`;
     }
 }
 
@@ -515,6 +535,11 @@ async function createFloatingCardElement(card, index) {
 }
 
 async function addPillar() {
+    if (pillarsData.length >= maxPillarsCount) {
+        window.toastManager.error(`Nie można dodać więcej filarów. Maksymalna liczba to ${maxPillarsCount}.`);
+        return;
+    }
+    
     pillarsData.push({ 
         title: '', 
         description: '', 
@@ -526,6 +551,11 @@ async function addPillar() {
 }
 
 async function addFloatingCard() {
+    if (floatingCardsData.length >= maxFloatingCardsCount) {
+        window.toastManager.error(`Nie można dodać więcej kart unoszących się. Maksymalna liczba to ${maxFloatingCardsCount}.`);
+        return;
+    }
+    
     floatingCardsData.push({ 
         title: '', 
         description: '', 

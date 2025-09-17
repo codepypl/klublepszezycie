@@ -10,7 +10,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from unidecode import unidecode
 
 from app import db
-from models import EmailTemplate, EmailQueue, EmailLog, UserGroup, UserGroupMember, User, EmailCampaign
+from app.models import EmailTemplate, EmailQueue, EmailLog, UserGroup, UserGroupMember, User, EmailCampaign
 
 
 class EmailService:
@@ -393,7 +393,7 @@ class EmailService:
             bool: True jeśli zaplanowano pomyślnie
         """
         try:
-            from models import EventSchedule
+            from app.models import EventSchedule
             
             event = EventSchedule.query.get(event_id)
             if not event:
@@ -419,7 +419,7 @@ class EmailService:
                 return False
             
             # Pobierz zarejestrowanych użytkowników
-            from models import EventRegistration
+            from app.models import EventRegistration
             registrations = EventRegistration.query.filter_by(event_id=event_id).all()
             
             for registration in registrations:

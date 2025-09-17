@@ -1,0 +1,208 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Praca agenta - {{ super() }}{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-headset me-2"></i>Praca agenta
+    <div id="callbackCountdownHeader">
+        <i class="fas fa-clock me-1"></i>
+        <span id="countdownText">-</span>
+    </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.admin-header {
+    position: relative;
+}
+#callbackCountdownHeader {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #dc3545;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: 2px solid #dc3545;
+    display: none;
+}
+</style>
+{% endblock %}
+
+<!-- Callback Countdown Alert -->
+<div class="row mb-3" id="callbackAlert" style="display: none;">
+    <div class="col-12">
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="fas fa-clock me-2"></i>
+            <strong>Zaplanowane oddzwonienie!</strong>
+            <span id="callbackInfo">-</span>
+            <span class="badge bg-warning ms-2" id="callbackCountdown">-</span>
+        </div>
+    </div>
+</div>
+
+{% block content %}
+    <!-- Agent Status Panel -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-user-tie me-2"></i>Status agenta</h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="status-indicator me-3" id="statusIndicator">
+                                    <i class="fas fa-circle text-danger"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Status: <span id="agentStatus">Nieaktywny</span></h6>
+                                    <small class="text-muted">Kliknij aby zmienić status</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-lg" id="statusToggleBtn" onclick="toggleAgentStatus()">
+                                <i class="fas fa-play me-2"></i>Rozpocznij pracę
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Call Panel -->
+    <div class="row mb-4" id="currentCallPanel" style="display: none;">
+        <div class="col-12">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-phone me-2"></i>Aktualne połączenie</h5>
+                </div>
+                <div class="admin-card-body">
+                    <!-- Contact Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Dane kontaktu:</h6>
+                            <div class="contact-info">
+                                <p><strong>Imię i nazwisko:</strong> <span id="contactName">-</span></p>
+                                <p><strong>Telefon:</strong> <span id="contactPhone">-</span></p>
+                                <p><strong>Firma:</strong> <span id="contactCompany">-</span></p>
+                                <p><strong>Email:</strong> <span id="contactEmail">-</span></p>
+                                <p><strong>Notatki:</strong> <span id="contactNotes">-</span></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Historia połączeń:</h6>
+                            <div id="callHistory" class="call-history">
+                                <p class="text-muted">Brak historii połączeń</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Call Script -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6>Tekst do przeczytania:</h6>
+                            <div class="call-script">
+                                <p id="callScript">Dzień dobry, dzwonię z Klubu Lepsze Życie. Czy mogę rozmawiać z Panem/Panią <span id="scriptName">[IMIĘ]</span>?</p>
+                                <p>Nazywam się <span id="agentName">[IMIĘ AGENTA]</span> i chciałbym zaprosić Pana/Panią na nasze bezpłatne wydarzenie dotyczące rozwoju osobistego.</p>
+                                <p>Czy byłby Pan/Pani zainteresowany/a udziałem w takim wydarzeniu?</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Call Actions -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex gap-2">
+                                <button class="btn admin-btn" onclick="makeCall()" id="makeCallBtn">
+                                    <i class="fas fa-phone me-2"></i>Zadzwoń
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call Outcome Panel -->
+    <div class="row mb-4" id="outcomePanel" style="display: none;">
+        <div class="col-12">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-clipboard-check me-2"></i>Klasyfikacja rozmowy</h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6>Wybierz wynik rozmowy:</h6>
+                            <div class="outcome-buttons">
+                                <button class="btn btn-success btn-lg me-2 mb-2" onclick="saveCallOutcome('lead')">
+                                    <i class="fas fa-star me-2"></i>Lead (Zainteresowany)
+                                </button>
+                                <button class="btn btn-warning btn-lg me-2 mb-2" onclick="showCallbackScheduling()">
+                                    <i class="fas fa-calendar-plus me-2"></i>Przełożenie
+                                </button>
+                                <button class="btn btn-danger btn-lg me-2 mb-2" onclick="saveCallOutcome('rejection')">
+                                    <i class="fas fa-times me-2"></i>Odmowa
+                                </button>
+                                <button class="btn btn-secondary btn-lg me-2 mb-2" onclick="saveCallOutcome('no_answer')">
+                                    <i class="fas fa-phone-slash me-2"></i>Nie odebrał
+                                </button>
+                                <button class="btn btn-info btn-lg me-2 mb-2" onclick="saveCallOutcome('busy')">
+                                    <i class="fas fa-phone-busy me-2"></i>Zajęte
+                                </button>
+                                <button class="btn btn-dark btn-lg me-2 mb-2" onclick="saveCallOutcome('wrong_number')">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Błędny numer
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Notatki:</h6>
+                            <textarea class="form-control" id="callNotes" rows="4" placeholder="Dodaj notatki z rozmowy..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Callback Scheduling (for callback outcome) -->
+                    <div class="row mt-3" id="callbackScheduling" style="display: none;">
+                        <div class="col-12">
+                            <h6>Zaplanuj oddzwonienie:</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Data oddzwonienia <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="callbackDate" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Godzina oddzwonienia <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control" id="callbackTime" required>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <button class="btn btn-warning" onclick="saveCallbackOutcome()">
+                                        <i class="fas fa-calendar-check me-2"></i>Zapisz przełożenie
+                                    </button>
+                                    <button class="btn btn-secondary ms-2" onclick="hideCallbackScheduling()">
+                                        <i class="fas fa-times me-2"></i>Anuluj
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/utils/fetch-helper.js') }}"></script>
+<script src="{{ url_for('static', filename='js/crm/agent_work.js') }}"></script>
+{% endblock %}

@@ -4,7 +4,7 @@ Authentication utility functions
 from functools import wraps
 from flask import redirect, url_for, flash, request
 from flask_login import current_user
-from models import User
+from app.models import User
 
 def load_user(user_id):
     """Load user for Flask-Login"""

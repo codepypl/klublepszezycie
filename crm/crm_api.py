@@ -4,11 +4,13 @@ CRM API Endpoints
 from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from functools import wraps
-from models import User, db
-from crm.models import Contact, Call, CallQueue, BlacklistEntry, ImportLog
+from app.models import User, db
+from crm.models import Contact, Call, ImportFile, ImportRecord
 from crm.services.queue_manager import QueueManager
 from crm.services.event_integration import EventIntegrationService
 from crm.services.import_service import ImportService
+from crm.services.file_import_service import FileImportService
+from crm.utils.file_utils import generate_import_file_path
 import os
 import uuid
 from werkzeug.utils import secure_filename
@@ -148,12 +150,12 @@ def import_contacts():
                 os.remove(file_path)
             except:
                 pass
-            
+        
             return jsonify({
                 'success': True,
-                'message': f"Successfully imported {result['imported_count']} contacts",
-                'imported_count': result['imported_count'],
-                'failed_count': result['failed_count']
+                'message': f"Successfully imported {result['imported']} contacts",
+                'imported_count': result['imported'],
+                'failed_count': result['skipped']
             })
         else:
             return jsonify({'success': False, 'error': result['error']}), 400
@@ -331,7 +333,7 @@ def get_contact_calls(contact_id):
 def get_events():
     """Get available events for lead registration"""
     try:
-        from models import EventSchedule
+        from app.models import EventSchedule
         
         events = EventSchedule.query.filter_by(is_active=True).all()
         
@@ -449,4 +451,279 @@ def get_import_history():
         })
         
     except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@crm_api_bp.route('/analyze-file', methods=['POST'])
+@login_required
+@ankieter_required
+def analyze_file():
+    """Analyze uploaded file and return column information"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file uploaded'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No file selected'}), 400
+        
+        # Generate unique file path with new directory structure
+        filename = secure_filename(file.filename)
+        upload_folder = os.path.abspath(current_app.config['UPLOAD_FOLDER'])
+        file_path = generate_import_file_path(filename, upload_folder)
+        file.save(file_path)
+        
+        # Determine file type
+        file_extension = filename.split('.')[-1].lower()
+        file_type = 'xlsx' if file_extension in ['xlsx', 'xls'] else 'csv'
+        
+        # Get CSV separator from form data (default to comma)
+        csv_separator = request.form.get('csv_separator', ',')
+        
+        # Analyze file
+        file_import_service = FileImportService()
+        result = file_import_service.analyze_file(file_path, file_type, csv_separator)
+        
+        if not result.get('success', False):
+            os.remove(file_path)
+            return jsonify({'success': False, 'error': result.get('error', 'Unknown error')}), 400
+        
+        # Store file info in session or return it
+        return jsonify({
+            'success': True,
+            'file_data': result['sample_data'],
+            'columns': result['columns'],
+            'file_info': {
+                'filename': filename,
+                'file_path': file_path,
+                'file_type': file_type,
+                'csv_separator': csv_separator,
+                'total_rows': result['total_rows']
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@crm_api_bp.route('/preview-mapping', methods=['POST'])
+@login_required
+@ankieter_required
+def preview_mapping():
+    """Preview mapping results with sample data"""
+    try:
+        data = request.get_json()
+        file_info = data.get('file_info')
+        mapping = data.get('mapping')
+        rows_count = data.get('rows_count', 20)
+        
+        if not file_info or not mapping:
+            return jsonify({'success': False, 'error': 'Missing file_info or mapping data'}), 400
+        
+        # Read the file and apply mapping
+        file_import_service = FileImportService()
+        result = file_import_service.preview_mapping(
+            file_info['file_path'],
+            file_info['file_type'],
+            file_info['csv_separator'],
+            mapping,
+            rows_count
+        )
+        
+        if not result.get('success', False):
+            return jsonify({'success': False, 'error': result.get('error', 'Unknown error')}), 400
+        
+        return jsonify({
+            'success': True,
+            'preview_data': result['preview_data'],
+            'total_rows': result['total_rows']
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@crm_api_bp.route('/extract-file', methods=['POST'])
+@login_required
+@ankieter_required
+def extract_file():
+    """Extract file data and create ImportFile record"""
+    try:
+        data = request.get_json()
+        file_info = data.get('file_info')
+        file_data = data.get('file_data')
+        
+        if not file_info or not file_data:
+            return jsonify({'success': False, 'error': 'Missing file_info or file_data'}), 400
+        
+        # Create ImportFile record
+        import_file = ImportFile(
+            filename=file_info['filename'],
+            file_path=file_info['file_path'],
+            file_type=file_info['file_type'],
+            csv_separator=file_info['csv_separator'],
+            total_rows=file_info['total_rows'],
+            processed_rows=0,
+            import_status='analyzed',
+            imported_by=current_user.id
+        )
+        
+        db.session.add(import_file)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'import_file_id': import_file.id
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@crm_api_bp.route('/process-import', methods=['POST'])
+@login_required
+@ankieter_required
+def process_import():
+    """Process import and create contacts"""
+    try:
+        data = request.get_json()
+        import_file_id = data.get('import_file_id')
+        mapping = data.get('mapping')
+        
+        if not import_file_id or not mapping:
+            return jsonify({'success': False, 'error': 'Missing import_file_id or mapping'}), 400
+        
+        # Get import file
+        import_file = ImportFile.query.get(import_file_id)
+        if not import_file:
+            return jsonify({'success': False, 'error': 'Import file not found'}), 404
+        
+        # Process import using FileImportService
+        file_import_service = FileImportService()
+        
+        # First, create ImportRecord entries from file (if not already done)
+        if not ImportRecord.query.filter_by(import_file_id=import_file.id).first():
+            extract_result = file_import_service.create_import_records_from_file(
+                import_file.id,
+                import_file.file_path,
+                import_file.file_type,
+                import_file.csv_separator
+            )
+            
+            if not extract_result.get('success', False):
+                return jsonify({'success': False, 'error': extract_result.get('error', 'Failed to extract file data')}), 400
+        
+        # Then, process records to contacts using existing ImportFile
+        result = file_import_service.process_records_to_contacts(
+            import_file.id,
+            mapping,
+            current_user.id
+        )
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'imported_count': result['imported'],
+                'failed_count': result.get('skipped', 0)
+            })
+        else:
+            return jsonify({'success': False, 'error': result['error']}), 400
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@crm_api_bp.route('/imports/<int:import_id>', methods=['DELETE'])
+@login_required
+@ankieter_required
+def delete_import(import_id):
+    """Delete import and associated contacts"""
+    try:
+        # Get import file
+        import_file = ImportFile.query.get(import_id)
+        if not import_file:
+            return jsonify({'success': False, 'error': 'Import not found'}), 404
+        
+        # Check if user can delete this import (only admin or owner)
+        if current_user.role != 'admin' and import_file.imported_by != current_user.id:
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+        
+        # Delete associated contacts first
+        contacts_deleted = 0
+        contacts = Contact.query.join(ImportRecord).filter(ImportRecord.import_file_id == import_id).all()
+        for contact in contacts:
+            db.session.delete(contact)
+            contacts_deleted += 1
+        
+        # Delete import records
+        ImportRecord.query.filter_by(import_file_id=import_id).delete()
+        
+        # Delete physical file if exists
+        if import_file.file_path and os.path.exists(import_file.file_path):
+            try:
+                os.remove(import_file.file_path)
+            except Exception as e:
+                print(f"Error deleting file {import_file.file_path}: {e}")
+        
+        # Delete import file
+        db.session.delete(import_file)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'contacts_deleted': contacts_deleted
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@crm_api_bp.route('/imports/bulk-delete', methods=['POST'])
+@login_required
+@ankieter_required
+def bulk_delete_imports():
+    """Bulk delete imports and associated contacts"""
+    try:
+        data = request.get_json()
+        import_ids = data.get('itemIds', [])
+        
+        if not import_ids:
+            return jsonify({'success': False, 'error': 'No imports selected'}), 400
+        
+        total_contacts_deleted = 0
+        
+        for import_id in import_ids:
+            # Get import file
+            import_file = ImportFile.query.get(import_id)
+            if not import_file:
+                continue
+                
+            # Check if user can delete this import (only admin or owner)
+            if current_user.role != 'admin' and import_file.imported_by != current_user.id:
+                continue
+            
+            # Delete associated contacts first
+            contacts = Contact.query.join(ImportRecord).filter(ImportRecord.import_file_id == import_id).all()
+            for contact in contacts:
+                db.session.delete(contact)
+                total_contacts_deleted += 1
+            
+            # Delete import records
+            ImportRecord.query.filter_by(import_file_id=import_id).delete()
+            
+            # Delete physical file if exists
+            if import_file.file_path and os.path.exists(import_file.file_path):
+                try:
+                    os.remove(import_file.file_path)
+                except Exception as e:
+                    print(f"Error deleting file {import_file.file_path}: {e}")
+            
+            # Delete import file
+            db.session.delete(import_file)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'deleted_count': len(import_ids),
+            'contacts_deleted': total_contacts_deleted
+        })
+        
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500

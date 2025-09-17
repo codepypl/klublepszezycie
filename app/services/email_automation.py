@@ -2,7 +2,7 @@
 Email Automation - automatyzacje emailowe
 """
 from datetime import datetime, timedelta
-from models import db, User, EventSchedule, EventRegistration, UserGroup, UserGroupMember
+from app.models import db, User, EventSchedule, EventRegistration, UserGroup, UserGroupMember
 from app.services.email_service import EmailService
 from app.services.group_manager import GroupManager
 from app.utils.timezone import get_local_now
@@ -21,7 +21,7 @@ class EmailAutomation:
             user = User.query.get(user_id)
             if user:
                 # Generate unsubscribe and delete account URLs
-                from app.blueprints.api import generate_unsubscribe_token
+                from app.blueprints.public_controller import generate_unsubscribe_token
                 import os
                 
                 unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
@@ -59,8 +59,8 @@ class EmailAutomation:
                 return False, "Rejestracja nie została znaleziona"
             
             # Dodaj do grupy wydarzenia (jeśli użytkownik ma konto)
-            if registration.user_id:
-                self.group_manager.add_user_to_event_group(registration.user_id, registration.event_id)
+            # Note: user_id field no longer exists in event_registrations table
+            # This functionality would need to be reimplemented if needed
             
             # Email potwierdzenia jest już wysyłany w register_event()
             # Ta funkcja może być używana do dodatkowych akcji w przyszłości
@@ -83,7 +83,7 @@ class EmailAutomation:
             user = User.query.get(user_id)
             if user:
                 # Generate unsubscribe and delete account URLs
-                from app.blueprints.api import generate_unsubscribe_token
+                from app.blueprints.public_controller import generate_unsubscribe_token
                 import os
                 
                 unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
@@ -149,7 +149,7 @@ class EmailAutomation:
             
             for member in members:
                 # Generate unsubscribe and delete account URLs
-                from app.blueprints.api import generate_unsubscribe_token
+                from app.blueprints.public_controller import generate_unsubscribe_token
                 import os
                 
                 unsubscribe_token = generate_unsubscribe_token(member.email, 'unsubscribe')

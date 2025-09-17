@@ -1,85 +1,112 @@
-{% extends "base.html" %}
+{% extends "admin/base.html" %}
 
-{% block title %}CRM Dashboard - {{ super() }}{% endblock %}
+{% block title %}Statystyki CRM - {{ super() }}{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-chart-bar me-2"></i>Statystyki CRM
+{% endblock %}
+
+{% block page_actions %}
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn-outline" onclick="refreshDashboard()" id="refreshBtn">
+            <i class="fas fa-sync me-2"></i>Odśwież
+        </button>
+    </div>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0">
-                    <i class="fas fa-chart-line me-2"></i>CRM Dashboard
-                </h1>
-                <div class="text-muted">
-                    Witaj, <strong>{{ stats.ankieter_info.name }}</strong>
-                </div>
+    <!-- Stats Cards - Dzienne (zerowanie każdego dnia) -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-star"></i>
+                <h3 id="leadsToday">0</h3>
+                <p>Leady (dzisiaj)</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-phone"></i>
+                <h3 id="answeredToday">0</h3>
+                <p>Odebrane (dzisiaj)</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-phone-slash"></i>
+                <h3 id="notAnsweredToday">0</h3>
+                <p>Nieodebrane (dzisiaj)</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-calendar-plus"></i>
+                <h3 id="callbacksToday">0</h3>
+                <p>Przełożenia (dzisiaj)</p>
             </div>
         </div>
     </div>
 
-    <!-- Statistics Cards -->
+    <!-- Stats Cards - Łączne -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card admin-card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-users fa-2x text-primary"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h5 class="card-title mb-0">Wszyscy użytkownicy</h5>
-                            <h3 class="mb-0">{{ stats.total_users }}</h3>
-                        </div>
-                    </div>
-                </div>
+            <div class="admin-stats-card">
+                <i class="fas fa-phone-alt"></i>
+                <h3 id="totalAnswered">0</h3>
+                <p>Odebrane łącznie</p>
             </div>
         </div>
-        
         <div class="col-md-3">
-            <div class="card admin-card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-user-check fa-2x text-success"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h5 class="card-title mb-0">Aktywni użytkownicy</h5>
-                            <h3 class="mb-0">{{ stats.active_users }}</h3>
-                        </div>
-                    </div>
-                </div>
+            <div class="admin-stats-card">
+                <i class="fas fa-phone-slash"></i>
+                <h3 id="totalNotAnswered">0</h3>
+                <p>Nieodebrane łącznie</p>
             </div>
         </div>
-        
         <div class="col-md-3">
-            <div class="card admin-card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-phone fa-2x text-info"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h5 class="card-title mb-0">Dzisiejsze połączenia</h5>
-                            <h3 class="mb-0">0</h3>
-                        </div>
-                    </div>
-                </div>
+            <div class="admin-stats-card">
+                <i class="fas fa-redo"></i>
+                <h3 id="totalCallbacks">0</h3>
+                <p>Łączna liczba recalli</p>
             </div>
         </div>
-        
         <div class="col-md-3">
-            <div class="card admin-card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-calendar fa-2x text-warning"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h5 class="card-title mb-0">Zaplanowane</h5>
-                            <h3 class="mb-0">0</h3>
-                        </div>
-                    </div>
-                </div>
+            <div class="admin-stats-card">
+                <i class="fas fa-clock"></i>
+                <h3 id="longestCallToday">0:00</h3>
+                <p>Najdłuższa rozmowa (dzisiaj)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards - Czasowe -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-stopwatch"></i>
+                <h3 id="avgCallTime">0:00</h3>
+                <p>Średnia rozmowa (dzisiaj)</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-chart-line"></i>
+                <h3 id="successRate">0%</h3>
+                <p>Wskaźnik sukcesu</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-list"></i>
+                <h3 id="queueCount">0</h3>
+                <p>W kolejce</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-users"></i>
+                <h3 id="totalContacts">0</h3>
+                <p>Wszystkie kontakty</p>
             </div>
         </div>
     </div>
@@ -87,13 +114,11 @@
     <!-- Quick Actions -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card admin-card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-bolt me-2"></i>Funkcje CRM
-                    </h5>
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-bolt me-2"></i>Funkcje CRM</h5>
                 </div>
-                <div class="card-body">
+                <div class="admin-card-body">
                     <div class="row">
                         <div class="col-md-3 mb-3">
                             <a href="{{ url_for('ankieter.calls') }}" class="btn admin-btn w-100">
@@ -120,24 +145,114 @@
             </div>
         </div>
     </div>
+{% endblock %}
 
-    <!-- Recent Activity -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card admin-card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-history me-2"></i>Ostatnia aktywność
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="text-center text-muted py-4">
-                        <i class="fas fa-info-circle fa-2x mb-3"></i>
-                        <p>Brak ostatniej aktywności. System CRM będzie dostępny wkrótce.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+{% block extra_js %}
+<script>
+// Global variables
+let dashboardRefreshInterval;
+
+// Load statistics from API
+async function loadDashboardStats() {
+    try {
+        const response = await fetch('/api/crm/agent/queue-status');
+        const data = await response.json();
+        
+        if (data.success) {
+            // Today's statistics
+            document.getElementById('leadsToday').textContent = data.today_stats.leads || 0;
+            document.getElementById('answeredToday').textContent = (data.today_stats.leads || 0) + (data.today_stats.rejections || 0) + (data.today_stats.callbacks || 0);
+            document.getElementById('notAnsweredToday').textContent = (data.today_stats.no_answer || 0) + (data.today_stats.busy || 0) + (data.today_stats.wrong_number || 0);
+            document.getElementById('callbacksToday').textContent = data.today_stats.callbacks || 0;
+            
+            // Total statistics
+            document.getElementById('totalAnswered').textContent = (data.total_stats.leads || 0) + (data.total_stats.rejections || 0) + (data.total_stats.callbacks || 0);
+            document.getElementById('totalNotAnswered').textContent = (data.total_stats.no_answer || 0) + (data.total_stats.busy || 0) + (data.total_stats.wrong_number || 0);
+            document.getElementById('totalCallbacks').textContent = data.total_stats.callbacks || 0;
+            
+            // Time statistics
+            document.getElementById('longestCallToday').textContent = formatDuration(data.today_stats.longest_call_seconds || 0);
+            document.getElementById('avgCallTime').textContent = formatDuration(data.today_stats.avg_call_time_seconds || 0);
+            
+            // Calculate success rate
+            const totalCalls = (data.today_stats.leads || 0) + (data.today_stats.rejections || 0) + 
+                              (data.today_stats.callbacks || 0) + (data.today_stats.no_answer || 0) + 
+                              (data.today_stats.busy || 0) + (data.today_stats.wrong_number || 0);
+            const successRate = totalCalls > 0 ? Math.round((data.today_stats.leads || 0) / totalCalls * 100) : 0;
+            document.getElementById('successRate').textContent = successRate + '%';
+            
+            // Queue count
+            const queueCount = (data.queue.callbacks || 0) + (data.queue.potentials || 0) + (data.queue.new_contacts || 0);
+            document.getElementById('queueCount').textContent = queueCount;
+            
+            // Total contacts
+            document.getElementById('totalContacts').textContent = data.total_contacts || 0;
+        } else {
+            console.error('Error loading dashboard stats:', data.error);
+        }
+    } catch (error) {
+        console.error('Error loading dashboard stats:', error);
+    }
+}
+
+function formatDuration(seconds) {
+    if (!seconds || seconds < 0) return '0:00';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    } else {
+        return `${minutes}:${secs.toString().padStart(2, '0')}`;
+    }
+}
+
+// Refresh dashboard manually
+function refreshDashboard() {
+    loadDashboardStats();
+}
+
+// Setup auto-refresh like email queue
+function setupDashboardAutoRefresh() {
+    // Refresh every 30 seconds
+    dashboardRefreshInterval = setInterval(() => {
+        // Don't refresh if import is in progress
+        if (typeof isImporting !== 'undefined' && isImporting) {
+            return;
+        }
+        
+        loadDashboardStats();
+    }, 30000); // 30 seconds
+}
+
+// Load stats on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Load initial data
+    loadDashboardStats();
+    
+    // Check if import is in progress first (localStorage)
+    const importInProgress = localStorage.getItem('crm_import_in_progress') === 'true';
+    if (importInProgress) {
+        console.log('Import in progress (localStorage), auto-refresh disabled');
+        return;
+    }
+    
+    // Check if import is in progress by looking for step 3
+    const importStep3 = document.getElementById('importStep3');
+    if (importStep3) {
+        const isVisible = importStep3.style.display !== 'none' && 
+                         window.getComputedStyle(importStep3).display !== 'none';
+        if (isVisible) {
+            // Import is in progress, don't start auto-refresh
+            console.log('Import in progress (step 3 visible), auto-refresh disabled');
+            return;
+        }
+    }
+    
+    // Setup auto refresh only if no import is running
+    setupDashboardAutoRefresh();
+});
+</script>
 {% endblock %}

@@ -1,0 +1,182 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Analiza CRM - {{ super() }}{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-chart-line me-2"></i>Analiza CRM
+{% endblock %}
+
+{% block content %}
+    <!-- Search and Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="admin-card">
+                <div class="admin-card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-8">
+                            <label for="search" class="form-label">Wyszukaj</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search }}" placeholder="Imię, telefon, email...">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn admin-btn me-2">
+                                <i class="fas fa-search me-1"></i>Szukaj
+                            </button>
+                            {% if search %}
+                            <a href="{{ url_for('admin.crm_analysis') }}" class="btn admin-btn-outline">
+                                <i class="fas fa-times me-1"></i>Wyczyść
+                            </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Results -->
+    <div class="row">
+        <div class="col-12">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>Analiza rekordów ({{ contacts.total }})
+                    </h5>
+                </div>
+                <div class="admin-card-body">
+                    {% if contact_analyses %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Kontakt</th>
+                                    <th>Status</th>
+                                    <th>Dlaczego wyświetlany</th>
+                                    <th>Historia połączeń</th>
+                                    <th>Próby</th>
+                                    <th>Data utworzenia</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for analysis in contact_analyses %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ analysis.contact.name }}</strong><br>
+                                        <small class="text-muted">{{ analysis.contact.phone }}</small>
+                                        {% if analysis.contact.email %}
+                                        <br><small class="text-muted">{{ analysis.contact.email }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if analysis.contact.is_blacklisted %}
+                                        <span class="badge bg-danger">Czarna lista</span>
+                                        {% elif analysis.contact.call_attempts >= analysis.contact.max_call_attempts %}
+                                        <span class="badge bg-warning">Limit prób</span>
+                                        {% elif analysis.contact.can_be_called() %}
+                                        <span class="badge bg-success">Gotowy</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Nieaktywny</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ analysis.why_shown }}</span>
+                                    </td>
+                                    <td>
+                                        {% if analysis.calls %}
+                                            <div class="call-history-mini">
+                                                {% for call in analysis.calls[:3] %}
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="badge {{ 'bg-success' if call.status == 'lead' else 'bg-danger' if call.status == 'rejection' else 'bg-warning' if call.status == 'callback' else 'bg-secondary' }}">
+                                                        {{ call.status|title }}
+                                                    </span>
+                                                    <small class="text-muted">{{ call.call_date.strftime('%d.%m %H:%M') }}</small>
+                                                </div>
+                                                {% endfor %}
+                                                {% if analysis.calls|length > 3 %}
+                                                <small class="text-muted">+{{ analysis.calls|length - 3 }} więcej</small>
+                                                {% endif %}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">Brak połączeń</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ analysis.contact.call_attempts }}/{{ analysis.contact.max_call_attempts }}</span>
+                                    </td>
+                                    <td>{{ analysis.contact.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if contacts.pages > 1 %}
+                    <nav aria-label="Paginacja">
+                        <ul class="pagination justify-content-center">
+                            {% if contacts.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.crm_analysis', page=contacts.prev_num, search=search) }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for page_num in contacts.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != contacts.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.crm_analysis', page=page_num, search=search) }}">{{ page_num }}</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if contacts.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.crm_analysis', page=contacts.next_num, search=search) }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-chart-line fa-2x mb-3"></i>
+                        <p>Brak rekordów do analizy.</p>
+                        {% if search %}
+                        <p>Spróbuj zmienić kryteria wyszukiwania.</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.call-history-mini {
+    max-width: 200px;
+}
+.call-history-mini .badge {
+    font-size: 0.75em;
+}
+</style>
+{% endblock %}
+
+
+
+
+

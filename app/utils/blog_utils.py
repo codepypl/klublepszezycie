@@ -2,7 +2,7 @@
 Blog utilities - helper functions for blog functionality
 """
 from flask import url_for
-from models import BlogCategory, BlogPost
+from app.models import BlogCategory, BlogPost
 import logging
 
 def generate_blog_link(link_data):

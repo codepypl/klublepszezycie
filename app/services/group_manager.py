@@ -3,7 +3,7 @@ Group Manager - zarządzanie grupami użytkowników
 """
 import json
 from datetime import datetime
-from models import db, UserGroup, UserGroupMember, User, EventSchedule, EventRegistration
+from app.models import db, UserGroup, UserGroupMember, User, EventSchedule, EventRegistration
 from app.utils.timezone import get_local_now
 
 class GroupManager:
@@ -183,6 +183,49 @@ class GroupManager:
         except Exception as e:
             return False, f"Błąd tworzenia grupy: {str(e)}"
     
+    def cleanup_orphaned_groups(self):
+        """Czyści nieużywane grupy wydarzeń (gdy wydarzenia nie istnieją)"""
+        try:
+            # Znajdź wszystkie grupy wydarzeń
+            event_groups = UserGroup.query.filter_by(group_type='event_based').all()
+            orphaned_groups = []
+            
+            for group in event_groups:
+                try:
+                    # Sprawdź czy criteria zawiera event_id
+                    criteria = json.loads(group.criteria) if group.criteria else {}
+                    event_id = criteria.get('event_id')
+                    
+                    if event_id:
+                        # Sprawdź czy wydarzenie nadal istnieje
+                        event = EventSchedule.query.get(event_id)
+                        if not event:
+                            orphaned_groups.append(group)
+                except (json.JSONDecodeError, TypeError):
+                    # Jeśli criteria jest nieprawidłowe, usuń grupę
+                    orphaned_groups.append(group)
+            
+            # Usuń nieużywane grupy
+            deleted_count = 0
+            for group in orphaned_groups:
+                # Usuń wszystkich członków
+                UserGroupMember.query.filter_by(group_id=group.id).delete()
+                
+                # Usuń grupę
+                db.session.delete(group)
+                deleted_count += 1
+                print(f"🗑️ Usunięto nieużywaną grupę: {group.name}")
+            
+            if deleted_count > 0:
+                db.session.commit()
+                return True, f"Usunięto {deleted_count} nieużywanych grup"
+            else:
+                return True, "Brak nieużywanych grup do usunięcia"
+                
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Błąd czyszczenia grup: {str(e)}"
+    
     def sync_club_members_group(self):
         """Synchronizuje grupę 'Członkowie klubu' z aktywnymi członkami klubu"""
         try:
@@ -280,9 +323,10 @@ class GroupManager:
                     for registration in registrations:
                         member = UserGroupMember(
                             group_id=group_id,
-                            user_id=registration.user_id,
+                            user_id=None,  # user_id field no longer exists in event_registrations
                             email=registration.email,
-                            name=registration.name
+                            name=registration.name,
+                            member_type='external'  # All event registrations are external members
                         )
                         db.session.add(member)
             

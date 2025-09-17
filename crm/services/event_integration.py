@@ -5,7 +5,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from models import db, UserGroup, UserGroupMember, EventSchedule, EventRegistration
+from app.models import db, UserGroup, UserGroupMember, EventSchedule, EventRegistration
 from crm.models import Contact, Call
 from app.services.email_automation import EmailService
 

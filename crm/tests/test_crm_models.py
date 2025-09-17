@@ -4,13 +4,14 @@ Tests for CRM models
 import pytest
 import sys
 import os
+from datetime import datetime
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from app import create_app, db
-from crm.models import Contact, Call, CallQueue, ImportLog
-from models import User
+from crm.models import Contact, Call, ImportFile
+from app.models import User
 
 @pytest.fixture
 def app():
@@ -106,24 +107,26 @@ def test_call_queue_creation(app):
         db.session.add(contact)
         db.session.commit()
         
-        # Create queue entry
-        queue_entry = CallQueue(
+        # Create call entry
+        call_entry = Call(
             contact_id=contact.id,
+            ankieter_id=1,  # Assuming user with ID 1 exists
             priority='high',
-            scheduled_date='2024-01-01 10:00:00',
-            status='pending'
+            scheduled_date=datetime(2024, 1, 1, 10, 0, 0),
+            queue_status='pending',
+            call_date=datetime.utcnow()
         )
         
-        db.session.add(queue_entry)
+        db.session.add(call_entry)
         db.session.commit()
         
-        assert queue_entry.id is not None
-        assert queue_entry.contact_id == contact.id
-        assert queue_entry.priority == 'high'
-        assert queue_entry.status == 'pending'
+        assert call_entry.id is not None
+        assert call_entry.contact_id == contact.id
+        assert call_entry.priority == 'high'
+        assert call_entry.queue_status == 'pending'
 
-def test_import_log_creation(app):
-    """Test import log model creation"""
+def test_import_file_creation(app):
+    """Test import file model creation"""
     with app.app_context():
         # Create user first
         user = User(
@@ -134,26 +137,27 @@ def test_import_log_creation(app):
         db.session.add(user)
         db.session.commit()
         
-        # Create import log
-        import_log = ImportLog(
+        # Create import file
+        import_file = ImportFile(
             filename='contacts.csv',
             file_size=1024,
-            rows_imported=50,
-            rows_skipped=5,
+            file_type='csv',
+            total_rows=55,
+            processed_rows=50,
             import_status='completed',
             imported_by=user.id
         )
         
-        db.session.add(import_log)
+        db.session.add(import_file)
         db.session.commit()
         
-        assert import_log.id is not None
-        assert import_log.filename == 'contacts.csv'
-        assert import_log.file_size == 1024
-        assert import_log.rows_imported == 50
-        assert import_log.rows_skipped == 5
-        assert import_log.import_status == 'completed'
-        assert import_log.imported_by == user.id
+        assert import_file.id is not None
+        assert import_file.filename == 'contacts.csv'
+        assert import_file.file_size == 1024
+        assert import_file.total_rows == 55
+        assert import_file.processed_rows == 50
+        assert import_file.import_status == 'completed'
+        assert import_file.imported_by == user.id
 
 def test_contact_relationships(app):
     """Test contact relationships"""

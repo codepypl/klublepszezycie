@@ -15,8 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadQueueStats() {
-    fetch('/api/crm/queue/stats')
-        .then(response => response.json())
+    fetch('/api/crm/queue/stats', {
+        credentials: 'include'
+    })
+        .then(response => safeJsonParse(response))
         .then(data => {
             if (data.success) {
                 updateQueueStats(data.stats);
@@ -28,8 +30,10 @@ function loadQueueStats() {
 }
 
 function loadNextContact() {
-    fetch('/api/crm/queue/next')
-        .then(response => response.json())
+    fetch('/api/crm/queue/next', {
+        credentials: 'include'
+    })
+        .then(response => safeJsonParse(response))
         .then(data => {
             if (data.success) {
                 updateNextContact(data.contact);
@@ -128,9 +132,10 @@ function handleCallSubmission(e) {
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
+    .then(response => safeJsonParse(response))
     .then(data => {
         if (data.success) {
             // Show success message
@@ -219,8 +224,8 @@ function refreshQueueData() {
     
     // Load both stats and next contact
     Promise.all([
-        fetch('/api/crm/queue/stats').then(response => response.json()),
-        fetch('/api/crm/queue/next').then(response => response.json())
+        fetch('/api/crm/queue/stats', { credentials: 'include' }).then(response => safeJsonParse(response)),
+        fetch('/api/crm/queue/next', { credentials: 'include' }).then(response => safeJsonParse(response))
     ])
     .then(([statsData, contactData]) => {
         if (statsData.success) {

@@ -2,7 +2,7 @@
 SEO Utilities - funkcje pomocnicze do zarządzania SEO
 """
 from flask import current_app
-from models import db, SEOSettings, BlogPost, BlogCategory, BlogTag, EventSchedule, Section, MenuItem
+from app.models import db, BlogPost, BlogCategory, BlogTag, EventSchedule, Section, MenuItem, SEOSettings
 from datetime import datetime
 import json
 import re

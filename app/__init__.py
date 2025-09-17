@@ -11,7 +11,7 @@ import json
 load_dotenv()
 
 # Import db from models to avoid conflicts
-from models import db
+from app.models import db
 
 # Initialize extensions
 login_manager = LoginManager()
@@ -45,17 +45,30 @@ def create_app():
     # Import models in app context
     logger.info("📊 Loading database models...")
     with app.app_context():
-        from models import User, EventSchedule, EventRegistration, UserGroup, EventRecipientGroup, BlogCategory, BlogPost, BlogTag, BlogComment, SEOSettings, SocialLink, FooterSettings, LegalDocument, EmailTemplate, UserGroupMember, EmailCampaign, EmailQueue, EmailLog, PasswordResetToken
+        from app.models import User, EventSchedule, EventRegistration, UserGroup, BlogCategory, BlogPost, BlogTag, BlogComment, SocialLink, EmailTemplate, UserGroupMember, EmailCampaign, EmailQueue, EmailLog, PasswordResetToken, SEOSettings, FooterSettings, LegalDocument
     
     # Register blueprints
     logger.info("🛣️ Registering routes...")
-    from app.blueprints import public_bp, admin_bp, api_bp, auth_bp, blog_bp, seo_bp, social_bp, events_bp, users_bp, footer_bp, email_api_bp, ankieter_bp
+    from app.routes import public_bp, admin_bp, auth_bp, blog_bp, seo_bp, social_bp, events_bp, users_bp, footer_bp
+    from app.api import email_bp, users_api_bp, testimonials_api_bp, sections_api_bp, menu_api_bp, faq_api_bp, benefits_api_bp, events_api_bp, blog_api_bp, seo_api_bp, social_api_bp
+    from app.blueprints import ankieter_bp
     from crm.crm_api import crm_api_bp
+    from crm.agent_api import agent_api_bp
     
     app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
-    app.register_blueprint(api_bp, url_prefix='/api')
-    app.register_blueprint(email_api_bp, url_prefix='/api')
+    # Main API blueprint removed - individual API modules are registered separately
+    app.register_blueprint(email_bp, url_prefix='/api')
+    app.register_blueprint(users_api_bp, url_prefix='/api')
+    app.register_blueprint(testimonials_api_bp, url_prefix='/api')
+    app.register_blueprint(sections_api_bp, url_prefix='/api')
+    app.register_blueprint(menu_api_bp, url_prefix='/api')
+    app.register_blueprint(faq_api_bp, url_prefix='/api')
+    app.register_blueprint(benefits_api_bp, url_prefix='/api')
+    app.register_blueprint(events_api_bp, url_prefix='/api')
+    app.register_blueprint(blog_api_bp, url_prefix='/api')
+    app.register_blueprint(seo_api_bp, url_prefix='/api')
+    app.register_blueprint(social_api_bp, url_prefix='/api')
     app.register_blueprint(auth_bp)
     app.register_blueprint(blog_bp)
     app.register_blueprint(seo_bp, url_prefix='/admin')
@@ -64,7 +77,8 @@ def create_app():
     app.register_blueprint(users_bp, url_prefix='/admin')
     app.register_blueprint(footer_bp, url_prefix='/admin')
     app.register_blueprint(ankieter_bp, url_prefix='/crm')
-    app.register_blueprint(crm_api_bp)
+    app.register_blueprint(crm_api_bp, url_prefix='/api/crm')
+    app.register_blueprint(agent_api_bp, url_prefix='/api/crm/agent')
     
     # Import user loader
     logger.info("👤 Setting up user authentication...")

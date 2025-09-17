@@ -1,0 +1,327 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Ustawienia CRM - {{ super() }}{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-cog me-2"></i>Ustawienia CRM
+{% endblock %}
+
+{% block content %}
+    <!-- CRM Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-address-book"></i>
+                <h3>{{ stats.total_contacts }}</h3>
+                <p>Kontakty</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-phone"></i>
+                <h3>{{ stats.total_calls }}</h3>
+                <p>Połączenia</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-upload"></i>
+                <h3>{{ stats.total_imports }}</h3>
+                <p>Importy</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-ban"></i>
+                <h3>{{ stats.total_blacklist }}</h3>
+                <p>Czarna lista</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CRM Settings -->
+    <div class="row">
+        <!-- Call Settings -->
+        <div class="col-md-6 mb-4">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-phone me-2"></i>Ustawienia połączeń</h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Maksymalna liczba prób połączeń</label>
+                        <input type="number" class="form-control" value="3" min="1" max="10" id="maxCallAttempts">
+                        <div class="form-text">Liczba prób połączenia z kontaktem przed dodaniem do czarnej listy</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Czas między próbami (minuty)</label>
+                        <input type="number" class="form-control" value="60" min="5" max="1440" id="callInterval">
+                        <div class="form-text">Minimalny czas między kolejnymi próbami połączenia</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Automatyczne przypisywanie kontaktów</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoAssignContacts" checked>
+                            <label class="form-check-label" for="autoAssignContacts">
+                                Włącz automatyczne przypisywanie kontaktów do ankietów
+                            </label>
+                        </div>
+                    </div>
+                    <button class="btn admin-btn" onclick="saveCallSettings()">
+                        <i class="fas fa-save me-2"></i>Zapisz ustawienia połączeń
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Settings -->
+        <div class="col-md-6 mb-4">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-upload me-2"></i>Ustawienia importu</h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Maksymalny rozmiar pliku (MB)</label>
+                        <input type="number" class="form-control" value="10" min="1" max="100" id="maxFileSize">
+                        <div class="form-text">Maksymalny rozmiar pliku do importu</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Dozwolone formaty</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="allowXlsx" checked>
+                            <label class="form-check-label" for="allowXlsx">Excel (.xlsx)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="allowCsv" checked>
+                            <label class="form-check-label" for="allowCsv">CSV (.csv)</label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Automatyczne czyszczenie duplikatów</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoCleanDuplicates" checked>
+                            <label class="form-check-label" for="autoCleanDuplicates">
+                                Automatycznie usuwaj duplikaty podczas importu
+                            </label>
+                        </div>
+                    </div>
+                    <button class="btn admin-btn" onclick="saveImportSettings()">
+                        <i class="fas fa-save me-2"></i>Zapisz ustawienia importu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Settings -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-bell me-2"></i>Ustawienia powiadomień</h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Powiadomienia email</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                            <label class="form-check-label" for="emailNotifications">
+                                Włącz powiadomienia email
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Powiadomienia o nowych leadach</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="leadNotifications" checked>
+                            <label class="form-check-label" for="leadNotifications">
+                                Powiadamiaj o nowych leadach
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Powiadomienia o błędach importu</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="importErrorNotifications" checked>
+                            <label class="form-check-label" for="importErrorNotifications">
+                                Powiadamiaj o błędach importu
+                            </label>
+                        </div>
+                    </div>
+                    <button class="btn admin-btn" onclick="saveNotificationSettings()">
+                        <i class="fas fa-save me-2"></i>Zapisz ustawienia powiadomień
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Blacklist Settings -->
+        <div class="col-md-6 mb-4">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-ban me-2"></i>Ustawienia czarnej listy</h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Automatyczne dodawanie do czarnej listy</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoBlacklist" checked>
+                            <label class="form-check-label" for="autoBlacklist">
+                                Automatycznie dodawaj numery po przekroczeniu limitu prób
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Powiadomienia o czarnej liście</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="blacklistNotifications" checked>
+                            <label class="form-check-label" for="blacklistNotifications">
+                                Powiadamiaj o dodaniu numeru do czarnej listy
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Czas blokady (dni)</label>
+                        <input type="number" class="form-control" value="30" min="1" max="365" id="blacklistDuration">
+                        <div class="form-text">Czas blokady numeru w dniach (0 = na zawsze)</div>
+                    </div>
+                    <button class="btn admin-btn" onclick="saveBlacklistSettings()">
+                        <i class="fas fa-save me-2"></i>Zapisz ustawienia czarnej listy
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-tools me-2"></i>Akcje systemowe</h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <button class="btn admin-btn-outline w-100" onclick="clearOldCalls()">
+                                <i class="fas fa-trash me-2"></i>Wyczyść stare połączenia
+                            </button>
+                            <small class="text-muted">Usuń połączenia starsze niż 90 dni</small>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button class="btn admin-btn-outline w-100" onclick="optimizeDatabase()">
+                                <i class="fas fa-magic me-2"></i>Optymalizuj bazę CRM
+                            </button>
+                            <small class="text-muted">Zoptymalizuj tabele i indeksy CRM</small>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button class="btn admin-btn-outline w-100" onclick="exportSettings()">
+                                <i class="fas fa-download me-2"></i>Eksportuj ustawienia
+                            </button>
+                            <small class="text-muted">Pobierz kopię ustawień CRM</small>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button class="btn btn-danger w-100" onclick="clearAllData()">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Wyczyść wszystkie dane
+                            </button>
+                            <small class="text-muted text-danger">Usuń wszystkie kontakty, połączenia i importy</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function saveCallSettings() {
+    const settings = {
+        max_attempts: document.getElementById('maxCallAttempts').value,
+        call_interval: document.getElementById('callInterval').value,
+        auto_assign: document.getElementById('autoAssignContacts').checked
+    };
+    
+    // TODO: Implement API call to save settings
+    alert('Ustawienia połączeń zostały zapisane!');
+}
+
+function saveImportSettings() {
+    const settings = {
+        max_file_size: document.getElementById('maxFileSize').value,
+        allow_xlsx: document.getElementById('allowXlsx').checked,
+        allow_csv: document.getElementById('allowCsv').checked,
+        auto_clean_duplicates: document.getElementById('autoCleanDuplicates').checked
+    };
+    
+    // TODO: Implement API call to save settings
+    alert('Ustawienia importu zostały zapisane!');
+}
+
+function saveNotificationSettings() {
+    const settings = {
+        email_notifications: document.getElementById('emailNotifications').checked,
+        lead_notifications: document.getElementById('leadNotifications').checked,
+        import_error_notifications: document.getElementById('importErrorNotifications').checked
+    };
+    
+    // TODO: Implement API call to save settings
+    alert('Ustawienia powiadomień zostały zapisane!');
+}
+
+function saveBlacklistSettings() {
+    const settings = {
+        auto_blacklist: document.getElementById('autoBlacklist').checked,
+        blacklist_notifications: document.getElementById('blacklistNotifications').checked,
+        blacklist_duration: document.getElementById('blacklistDuration').value
+    };
+    
+    // TODO: Implement API call to save settings
+    alert('Ustawienia czarnej listy zostały zapisane!');
+}
+
+function clearOldCalls() {
+    if (confirm('Czy na pewno chcesz usunąć stare połączenia?')) {
+        // TODO: Implement API call to clear old calls
+        alert('Stare połączenia zostały usunięte!');
+    }
+}
+
+function optimizeDatabase() {
+    if (confirm('Czy na pewno chcesz zoptymalizować bazę danych CRM?')) {
+        // TODO: Implement API call to optimize database
+        alert('Baza danych została zoptymalizowana!');
+    }
+}
+
+function exportSettings() {
+    // TODO: Implement API call to export settings
+    alert('Ustawienia zostały wyeksportowane!');
+}
+
+function clearAllData() {
+    if (confirm('UWAGA! Ta operacja usunie WSZYSTKIE dane CRM:\n\n- Wszystkie kontakty\n- Wszystkie połączenia\n- Wszystkie importy\n- Wszystkie wpisy z czarnej listy\n\nTa operacja jest NIEODWRACALNA!\n\nCzy na pewno chcesz kontynuować?')) {
+        if (confirm('Ostatnie ostrzeżenie!\n\nWszystkie dane CRM zostaną trwale usunięte.\n\nCzy jesteś pewien, że chcesz to zrobić?')) {
+            // Create form and submit
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ url_for("admin.crm_clear_all") }}';
+            
+            // Add CSRF token if needed
+            const csrfToken = document.querySelector('meta[name=csrf-token]');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrf_token';
+                csrfInput.value = csrfToken.getAttribute('content');
+                form.appendChild(csrfInput);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -17,7 +17,7 @@ def check_database():
         sys.path.insert(0, project_root)
         
         from app import create_app, db
-        from models import User
+        from app.models import User
         
         # Create app
         app = create_app()
@@ -40,7 +40,7 @@ def check_database():
             
             # Check CRM tables
             existing_tables = inspector.get_table_names()
-            crm_tables = ['crm_contacts', 'crm_calls', 'crm_call_queue', 'crm_import_logs', 'crm_blacklist']
+            crm_tables = ['crm_contacts', 'crm_calls', 'crm_blacklist', 'crm_import_files', 'crm_import_records']
             
             print(f"\n📊 CRM tables:")
             for table in crm_tables:

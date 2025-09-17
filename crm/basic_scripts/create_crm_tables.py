@@ -17,7 +17,7 @@ def create_crm_tables():
         sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
         
         from app import create_app, db
-        from crm.models import Contact, Call, CallQueue, ImportLog, BlacklistEntry
+        from crm.models import Contact, Call, BlacklistEntry, ImportFile, ImportRecord
         
         # Create app
         app = create_app()
@@ -28,7 +28,7 @@ def create_crm_tables():
             inspector = inspect(db.engine)
             existing_tables = inspector.get_table_names()
             
-            crm_tables = ['crm_contacts', 'crm_calls', 'crm_call_queue', 'crm_import_logs', 'crm_blacklist']
+            crm_tables = ['crm_contacts', 'crm_calls', 'crm_blacklist', 'crm_import_files', 'crm_import_records']
             
             if all(table in existing_tables for table in crm_tables):
                 print("✅ CRM tables already exist!")
@@ -42,7 +42,8 @@ def create_crm_tables():
             print("   - crm_contacts")
             print("   - crm_calls") 
             print("   - crm_call_queue")
-            print("   - crm_import_logs")
+            print("   - crm_import_files")
+            print("   - crm_import_records")
             
     except Exception as e:
         print(f"❌ Error creating CRM tables: {e}")

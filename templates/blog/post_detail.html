@@ -48,7 +48,7 @@
                         </li>
                         {% endif %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.profile') }}">
+                            <a class="nav-link" href="{{ url_for('users.profile') }}">
                                 <i class="fas fa-user me-1"></i>Profil
                             </a>
                         </li>
@@ -102,10 +102,10 @@
                                 <i class="fas fa-calendar me-1"></i>
                                 {{ post.published_at.strftime('%d.%m.%Y') if post.published_at else post.created_at.strftime('%d.%m.%Y') }}
                             </span>
-                            {% if post.comments_count > 0 %}
+                            {% if post.comments.count() > 0 %}
                             <span class="me-3">
                                 <i class="fas fa-comments me-1"></i>
-                                {{ post.comments_count }} komentarzy
+                                {{ post.comments.count() }} komentarzy
                             </span>
                             {% endif %}
                         </div>
@@ -244,7 +244,7 @@
                 <!-- Comments Section -->
                 {% if post.allow_comments %}
                 <div class="comments-section">
-                    <h5 class="mb-4">Komentarze ({{ post.comments_count }})</h5>
+                    <h5 class="mb-4">Komentarze ({{ post.comments.count() }})</h5>
                     
                     <!-- Add Comment Form -->
                     <div class="card mb-4">
@@ -254,17 +254,13 @@
                                 <input type="hidden" name="post_id" value="{{ post.id }}">
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="author_name" class="form-label">Imię i nazwisko *</label>
+                                        <label for="author_name" class="form-label">Nick lub imię *</label>
                                         <input type="text" class="form-control" id="author_name" name="author_name" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="author_email" class="form-label">Email *</label>
                                         <input type="email" class="form-control" id="author_email" name="author_email" required>
                                     </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="author_website" class="form-label">Strona internetowa</label>
-                                    <input type="url" class="form-control" id="author_website" name="author_website">
                                 </div>
                                 <div class="mb-3">
                                     <label for="content" class="form-label">Komentarz *</label>
@@ -279,22 +275,69 @@
                     {% if comments %}
                     <div class="comments-list">
                         {% for comment in comments %}
-                        <div class="card mb-3">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 class="card-title mb-0">{{ comment.author_name }}</h6>
-                                    <small class="text-muted">{{ comment.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                        {% if not comment.parent_id %}
+                        <div class="comment-item mb-3" data-comment-id="{{ comment.id }}">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">{{ comment.author_name }}</h6>
+                                        <small class="text-muted">{{ comment.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                                    </div>
+                                    <p class="card-text">{{ comment.content }}</p>
+                                    <div class="comment-actions mt-2">
+                                        <button class="btn btn-sm btn-outline-primary reply-btn" data-comment-id="{{ comment.id }}">
+                                            <i class="fas fa-reply me-1"></i>Odpowiedz
+                                        </button>
+                                    </div>
                                 </div>
-                                {% if comment.author_website %}
-                                <p class="text-muted small mb-2">
-                                    <a href="{{ comment.author_website }}" target="_blank" class="text-decoration-none">
-                                        {{ comment.author_website }}
-                                    </a>
-                                </p>
-                                {% endif %}
-                                <p class="card-text">{{ comment.content }}</p>
+                            </div>
+                            
+                            <!-- Replies -->
+                            {% if comment.replies %}
+                            <div class="replies ms-4 mt-2">
+                                {% for reply in comment.replies %}
+                                <div class="card mb-2">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="card-title mb-0 small">{{ reply.author_name }}</h6>
+                                            <small class="text-muted">{{ reply.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                                        </div>
+                                        <p class="card-text small">{{ reply.content }}</p>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Reply Form (hidden by default) -->
+                            <div class="reply-form mt-2" style="display: none;">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Odpowiedz na komentarz</h6>
+                                        <form class="reply-comment-form">
+                                            <input type="hidden" name="post_id" value="{{ post.id }}">
+                                            <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                                            <div class="row">
+                                                <div class="col-md-6 mb-2">
+                                                    <input type="text" class="form-control form-control-sm" name="author_name" placeholder="Nick lub imię" required>
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <input type="email" class="form-control form-control-sm" name="author_email" placeholder="Email" required>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
+                                                <textarea class="form-control form-control-sm" name="content" rows="2" placeholder="Twoja odpowiedź..." required></textarea>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <button type="submit" class="btn btn-primary btn-sm">Wyślij odpowiedź</button>
+                                                <button type="button" class="btn btn-secondary btn-sm cancel-reply">Anuluj</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                        {% endif %}
                         {% endfor %}
                     </div>
                     {% else %}
@@ -500,22 +543,61 @@
 // Comment form handling
 document.getElementById('commentForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    submitComment(this);
+});
+
+// Reply form handling
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('reply-btn')) {
+        const commentId = e.target.getAttribute('data-comment-id');
+        const replyForm = document.querySelector(`[data-comment-id="${commentId}"] .reply-form`);
+        replyForm.style.display = replyForm.style.display === 'none' ? 'block' : 'none';
+    }
     
-    const formData = new FormData(this);
+    if (e.target.classList.contains('cancel-reply')) {
+        const replyForm = e.target.closest('.reply-form');
+        replyForm.style.display = 'none';
+    }
+});
+
+document.addEventListener('submit', function(e) {
+    if (e.target.classList.contains('reply-comment-form')) {
+        e.preventDefault();
+        submitComment(e.target);
+    }
+});
+
+function submitComment(form) {
+    const formData = new FormData(form);
     const data = Object.fromEntries(formData);
+    
+    // Map form field names to expected API names
+    const apiData = {
+        post_id: data.post_id,
+        name: data.author_name,
+        email: data.author_email,
+        content: data.content,
+        parent_id: data.parent_id || null
+    };
     
     fetch('{{ url_for("blog.add_comment") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(apiData)
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             alert(data.message);
-            this.reset();
+            form.reset();
+            // Hide reply form if it's a reply
+            if (form.classList.contains('reply-comment-form')) {
+                form.closest('.reply-form').style.display = 'none';
+            }
+            // Reload page to show new comment
+            setTimeout(() => location.reload(), 1000);
         } else {
             alert('Błąd: ' + data.message);
         }
@@ -524,7 +606,7 @@ document.getElementById('commentForm').addEventListener('submit', function(e) {
         console.error('Error:', error);
         alert('Wystąpił błąd podczas dodawania komentarza');
     });
-});
+}
 
 // Copy to clipboard function
 function copyToClipboard(text) {

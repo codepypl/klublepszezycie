@@ -1,0 +1,324 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Eksport CRM - {{ super() }}{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-download me-2"></i>Eksport danych CRM
+{% endblock %}
+
+{% block content %}
+    <!-- CRM Export Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-address-book"></i>
+                <h3>{{ stats.total_contacts }}</h3>
+                <p>Kontakty</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-phone"></i>
+                <h3>{{ stats.total_calls }}</h3>
+                <p>Połączenia</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-upload"></i>
+                <h3>{{ stats.total_imports }}</h3>
+                <p>Importy</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-ban"></i>
+                <h3>{{ stats.total_blacklist }}</h3>
+                <p>Czarna lista</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    <div class="row">
+        <!-- Contacts Export -->
+        <div class="col-md-6 mb-4">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-address-book me-2"></i>Eksport kontaktów</h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Filtry kontaktów</label>
+                        <select class="form-select" id="contactFilter">
+                            <option value="all">Wszystkie kontakty</option>
+                            <option value="active">Aktywne kontakty</option>
+                            <option value="leads">Tylko leady</option>
+                            <option value="no_calls">Bez połączeń</option>
+                            <option value="blacklisted">Z czarnej listy</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Zakres dat</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="date" class="form-control" id="contactDateFrom">
+                            </div>
+                            <div class="col-6">
+                                <input type="date" class="form-control" id="contactDateTo">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Format eksportu</label>
+                        <select class="form-select" id="contactFormat">
+                            <option value="xlsx">Excel (.xlsx)</option>
+                            <option value="csv">CSV (.csv)</option>
+                            <option value="json">JSON (.json)</option>
+                        </select>
+                    </div>
+                    <button class="btn admin-btn" onclick="exportContacts()">
+                        <i class="fas fa-download me-2"></i>Eksportuj kontakty
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calls Export -->
+        <div class="col-md-6 mb-4">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-phone me-2"></i>Eksport połączeń</h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Filtry połączeń</label>
+                        <select class="form-select" id="callFilter">
+                            <option value="all">Wszystkie połączenia</option>
+                            <option value="answered">Odebrane</option>
+                            <option value="not_answered">Nieodebrane</option>
+                            <option value="interested">Zainteresowani</option>
+                            <option value="not_interested">Niezainteresowani</option>
+                            <option value="rescheduled">Przełożone</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Zakres dat</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="date" class="form-control" id="callDateFrom">
+                            </div>
+                            <div class="col-6">
+                                <input type="date" class="form-control" id="callDateTo">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Format eksportu</label>
+                        <select class="form-select" id="callFormat">
+                            <option value="xlsx">Excel (.xlsx)</option>
+                            <option value="csv">CSV (.csv)</option>
+                            <option value="json">JSON (.json)</option>
+                        </select>
+                    </div>
+                    <button class="btn admin-btn" onclick="exportCalls()">
+                        <i class="fas fa-download me-2"></i>Eksportuj połączenia
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Export Options -->
+    <div class="row">
+        <!-- Complete CRM Export -->
+        <div class="col-md-6 mb-4">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-database me-2"></i>Pełny eksport CRM</h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Typ eksportu</label>
+                        <select class="form-select" id="fullExportType">
+                            <option value="all">Wszystkie dane CRM</option>
+                            <option value="contacts_calls">Kontakty + Połączenia</option>
+                            <option value="imports">Historia importów</option>
+                            <option value="blacklist">Czarna lista</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Format eksportu</label>
+                        <select class="form-select" id="fullExportFormat">
+                            <option value="xlsx">Excel (.xlsx)</option>
+                            <option value="csv">CSV (.csv)</option>
+                            <option value="json">JSON (.json)</option>
+                            <option value="sql">SQL (.sql)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Opcje eksportu</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeMetadata" checked>
+                            <label class="form-check-label" for="includeMetadata">
+                                Uwzględnij metadane
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="compressFile" checked>
+                            <label class="form-check-label" for="compressFile">
+                                Skompresuj plik
+                            </label>
+                        </div>
+                    </div>
+                    <button class="btn admin-btn" onclick="exportFullCRM()">
+                        <i class="fas fa-download me-2"></i>Eksportuj pełne dane
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import History -->
+        <div class="col-md-6 mb-4">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-history me-2"></i>Historia importów</h5>
+                </div>
+                <div class="admin-card-body">
+                    {% if recent_imports %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Plik</th>
+                                        <th>Data</th>
+                                        <th>Status</th>
+                                        <th>Akcje</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for import in recent_imports %}
+                                    <tr>
+                                        <td>{{ import.filename }}</td>
+                                        <td>{{ import.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                                        <td>
+                                            {% if import.import_status == 'completed' %}
+                                                <span class="badge bg-success">Zakończony</span>
+                                            {% elif import.import_status == 'processing' %}
+                                                <span class="badge bg-warning">Przetwarzanie</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Błąd</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm admin-btn-outline" onclick="exportImportData({{ import.id }})">
+                                                <i class="fas fa-download"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Brak historii importów</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call Statistics -->
+    <div class="row">
+        <div class="col-12">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-chart-bar me-2"></i>Statystyki połączeń</h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="row">
+                        {% for status, count in stats.call_outcomes.items() %}
+                        <div class="col-md-2 mb-3">
+                            <div class="text-center">
+                                <h4>{{ count }}</h4>
+                                <p class="text-muted">
+                                    {% if status == 'lead' %}
+                                        Leady
+                                    {% elif status == 'rejection' %}
+                                        Odrzucenia
+                                    {% elif status == 'callback' %}
+                                        Przełożone
+                                    {% elif status == 'no_answer' %}
+                                        Nieodebrane
+                                    {% elif status == 'busy' %}
+                                        Zajęte
+                                    {% elif status == 'wrong_number' %}
+                                        Błędny numer
+                                    {% else %}
+                                        {{ status|title }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportContacts() {
+    const filter = document.getElementById('contactFilter').value;
+    const format = document.getElementById('contactFormat').value;
+    const dateFrom = document.getElementById('contactDateFrom').value;
+    const dateTo = document.getElementById('contactDateTo').value;
+    
+    // Create download URL
+    let url = `/api/crm/export/contacts?filter=${filter}&format=${format}`;
+    if (dateFrom) url += `&date_from=${dateFrom}`;
+    if (dateTo) url += `&date_to=${dateTo}`;
+    
+    // Trigger download
+    window.open(url, '_blank');
+}
+
+function exportCalls() {
+    const filter = document.getElementById('callFilter').value;
+    const format = document.getElementById('callFormat').value;
+    const dateFrom = document.getElementById('callDateFrom').value;
+    const dateTo = document.getElementById('callDateTo').value;
+    
+    // Create download URL
+    let url = `/api/crm/export/calls?filter=${filter}&format=${format}`;
+    if (dateFrom) url += `&date_from=${dateFrom}`;
+    if (dateTo) url += `&date_to=${dateTo}`;
+    
+    // Trigger download
+    window.open(url, '_blank');
+}
+
+function exportFullCRM() {
+    const type = document.getElementById('fullExportType').value;
+    const format = document.getElementById('fullExportFormat').value;
+    const includeMetadata = document.getElementById('includeMetadata').checked;
+    const compressFile = document.getElementById('compressFile').checked;
+    
+    // Create download URL
+    let url = `/api/crm/export/full?type=${type}&format=${format}&metadata=${includeMetadata}&compress=${compressFile}`;
+    
+    // Trigger download
+    window.open(url, '_blank');
+}
+
+function exportImportData(importId) {
+    // Create download URL
+    let url = `/api/crm/export/import/${importId}`;
+    
+    // Trigger download
+    window.open(url, '_blank');
+}
+</script>
+{% endblock %}

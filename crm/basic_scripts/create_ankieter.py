@@ -14,7 +14,7 @@ def create_ankieter():
     """Create an ankieter user"""
     try:
         from app import create_app
-        from models import User, db
+        from app.models import User, db
         
         # Create app
         app = create_app()

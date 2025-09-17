@@ -10,21 +10,25 @@
     </div>
     
     <ul class="nav nav-pills flex-column mb-auto">
+        <!-- Dashboard - Tylko dla administratorów -->
+        {% if current_user.is_admin_role() %}
         <li class="nav-item">
             <a href="{{ url_for('admin.dashboard') }}" class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
                 <i class="fas fa-tachometer-alt"></i>
                 <span class="nav-link-text">Dashboard</span>
             </a>
         </li>
+        {% endif %}
         
-        <!-- Grupa: Mailing -->
+        <!-- Grupa: Mailing - Tylko dla administratorów -->
+        {% if current_user.is_admin_role() %}
         <li class="nav-item">
-            <a href="#mailingSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['admin.email_templates', 'admin.email_campaigns', 'admin.email_groups', 'admin.email_queue'] %}true{% else %}false{% endif %}">
+            <a href="#mailingSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['admin.email_templates', 'admin.email_campaigns', 'admin.email_groups', 'admin.email_queue', 'admin.email_logs'] %}true{% else %}false{% endif %}">
                 <i class="fas fa-envelope me-2"></i>
                 <span class="nav-link-text">Mailing</span>
                 <i class="fas fa-chevron-down ms-auto"></i>
             </a>
-            <div class="collapse{% if request.endpoint in ['admin.email_templates', 'admin.email_campaigns', 'admin.email_groups', 'admin.email_queue'] %} show{% endif %}" id="mailingSubmenu">
+            <div class="collapse{% if request.endpoint in ['admin.email_templates', 'admin.email_campaigns', 'admin.email_groups', 'admin.email_queue', 'admin.email_logs'] %} show{% endif %}" id="mailingSubmenu">
                 <ul class="nav flex-column ms-3">
                     <li class="nav-item">
                         <a href="{{ url_for('admin.email_templates') }}" class="nav-link {% if request.endpoint == 'admin.email_templates' %}active{% endif %}">
@@ -50,11 +54,19 @@
                             <span class="nav-link-text">Kolejka</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin.email_logs') }}" class="nav-link {% if request.endpoint == 'admin.email_logs' %}active{% endif %}">
+                            <i class="fas fa-file-alt"></i>
+                            <span class="nav-link-text">Log</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
         </li>
+        {% endif %}
         
-        <!-- Grupa: Zarządzanie treścią -->
+        <!-- Grupa: Zarządzanie treścią - Tylko dla administratorów -->
+        {% if current_user.is_admin_role() %}
         <li class="nav-item">
             <a href="#contentSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['admin.menu', 'admin.sections', 'admin.benefits', 'admin.testimonials', 'admin.faq', 'footer.index'] %}true{% else %}false{% endif %}">
                 <i class="fas fa-edit me-2"></i>
@@ -102,18 +114,20 @@
                 </ul>
             </div>
         </li>
+        {% endif %}
         
-        <!-- Grupa: Blog -->
+        <!-- Grupa: Blog - Tylko dla administratorów -->
+        {% if current_user.is_admin_role() %}
         <li class="nav-item">
-            <a href="#blogSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['blog.admin_posts', 'blog.admin_categories', 'blog.admin_tags', 'blog.admin_comments'] %}true{% else %}false{% endif %}">
+            <a href="#blogSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['blog.admin_index', 'blog.admin_categories', 'blog.admin_tags', 'blog.admin_comments'] %}true{% else %}false{% endif %}">
                 <i class="fas fa-blog me-2"></i>
                 <span class="nav-link-text">Blog</span>
                 <i class="fas fa-chevron-down ms-auto"></i>
             </a>
-            <div class="collapse{% if request.endpoint in ['blog.admin_posts', 'blog.admin_categories', 'blog.admin_tags', 'blog.admin_comments'] %} show{% endif %}" id="blogSubmenu">
+            <div class="collapse{% if request.endpoint in ['blog.admin_index', 'blog.admin_categories', 'blog.admin_tags', 'blog.admin_comments'] %} show{% endif %}" id="blogSubmenu">
                 <ul class="nav flex-column ms-3">
                     <li class="nav-item">
-                        <a href="{{ url_for('blog.admin_posts') }}" class="nav-link {% if request.endpoint == 'blog.admin_posts' %}active{% endif %}">
+                        <a href="{{ url_for('blog.admin_index') }}" class="nav-link {% if request.endpoint == 'blog.admin_index' %}active{% endif %}">
                             <i class="fas fa-newspaper"></i>
                             <span class="nav-link-text">Artykuły</span>
                         </a>
@@ -139,8 +153,10 @@
                 </ul>
             </div>
         </li>
+        {% endif %}
         
-        <!-- Grupa: Wydarzenia i użytkownicy -->
+        <!-- Grupa: Wydarzenia i użytkownicy - Tylko dla administratorów -->
+        {% if current_user.is_admin_role() %}
         <li class="nav-item">
             <a href="#eventsSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['events.index', 'events.registrations', 'users.index'] %}true{% else %}false{% endif %}">
                 <i class="fas fa-calendar me-2"></i>
@@ -170,8 +186,10 @@
                 </ul>
             </div>
         </li>
+        {% endif %}
         
-        <!-- Grupa: SEO i social media -->
+        <!-- Grupa: SEO i social media - Tylko dla administratorów -->
+        {% if current_user.is_admin_role() %}
         <li class="nav-item">
             <a href="#seoSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['seo.index', 'social.index'] %}true{% else %}false{% endif %}">
                 <i class="fas fa-search me-2"></i>
@@ -195,6 +213,68 @@
                 </ul>
             </div>
         </li>
+        {% endif %}
+        
+        <!-- Grupa: CRM - Tylko dla administratorów -->
+        {% if current_user.is_admin_role() %}
+        <li class="nav-item">
+            <a href="#crmSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['ankieter.contacts', 'admin.crm_settings', 'admin.crm_export'] %}true{% else %}false{% endif %}">
+                <i class="fas fa-chart-line me-2"></i>
+                <span class="nav-link-text">CRM</span>
+                <i class="fas fa-chevron-down ms-auto"></i>
+            </a>
+            <div class="collapse{% if request.endpoint in ['ankieter.contacts', 'admin.crm_settings', 'admin.crm_export'] %} show{% endif %}" id="crmSubmenu">
+                <ul class="nav flex-column ms-3">
+                    <li class="nav-item">
+                        <a href="{{ url_for('ankieter.contacts') }}" class="nav-link {% if request.endpoint == 'ankieter.contacts' %}active{% endif %}">
+                            <i class="fas fa-address-book"></i>
+                            <span class="nav-link-text">Rekordy</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin.crm_settings') }}" class="nav-link {% if request.endpoint == 'admin.crm_settings' %}active{% endif %}">
+                            <i class="fas fa-cog"></i>
+                            <span class="nav-link-text">Ustawienia</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin.crm_export') }}" class="nav-link {% if request.endpoint == 'admin.crm_export' %}active{% endif %}">
+                            <i class="fas fa-download"></i>
+                            <span class="nav-link-text">Eksport</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin.crm_analysis') }}" class="nav-link {% if request.endpoint == 'admin.crm_analysis' %}active{% endif %}">
+                            <i class="fas fa-chart-line"></i>
+                            <span class="nav-link-text">Analiza</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        {% endif %}
+        
+        <!-- Dla ankieterów - Statystyki, Praca i Połączenia -->
+        {% if current_user.is_ankieter_role() and not current_user.is_admin_role() %}
+        <li class="nav-item">
+            <a href="{{ url_for('ankieter.dashboard') }}" class="nav-link {% if request.endpoint == 'ankieter.dashboard' %}active{% endif %}">
+                <i class="fas fa-chart-bar"></i>
+                <span class="nav-link-text">Statystyki</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('ankieter.work') }}" class="nav-link {% if request.endpoint == 'ankieter.work' %}active{% endif %}">
+                <i class="fas fa-headset"></i>
+                <span class="nav-link-text">Praca</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ url_for('ankieter.calls') }}" class="nav-link {% if request.endpoint == 'ankieter.calls' %}active{% endif %}">
+                <i class="fas fa-phone"></i>
+                <span class="nav-link-text">Połączenia</span>
+            </a>
+        </li>
+        {% endif %}
 
     </ul>
     

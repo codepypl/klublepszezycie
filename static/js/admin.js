@@ -136,14 +136,14 @@ function collectContentUpdates() {
 }
 
 function saveContentSection(updateData) {
-    return fetch('/admin/api/update-content', {
+    return fetch('/api/sections', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(updateData)
     })
-    .then(response => response.json())
+    .then(response => safeJsonParse(response))
     .then(data => {
         if (data.success) {
             console.log(`Content section ${updateData.section_name} updated successfully`);
@@ -170,14 +170,14 @@ function addTestimonial() {
         member_since: formData.get('member_since')
     };
     
-    fetch('/admin/api/testimonials', {
+    fetch('/api/testimonials', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(testimonialData)
     })
-    .then(response => response.json())
+    .then(response => safeJsonParse(response))
     .then(data => {
         if (data.success) {
             showSuccessMessage('Opinia została dodana pomyślnie!');
@@ -212,7 +212,7 @@ function updateTestimonial(testimonialId) {
         },
         body: JSON.stringify(testimonialData)
     })
-    .then(response => response.json())
+    .then(response => safeJsonParse(response))
     .then(data => {
         if (data.success) {
             showSuccessMessage('Opinia została zaktualizowana pomyślnie!');
@@ -261,7 +261,7 @@ function performDeleteTestimonial(testimonialId) {
     fetch(`/admin/api/testimonials/${testimonialId}`, {
         method: 'DELETE'
     })
-    .then(response => response.json())
+    .then(response => safeJsonParse(response))
     .then(data => {
         if (data.success) {
             showSuccessMessage('Opinia została usunięta pomyślnie!');

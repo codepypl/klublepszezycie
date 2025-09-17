@@ -7,28 +7,31 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import pandas as pd
 from datetime import datetime
-from models import db
-from crm.models import Contact, ImportLog
+from app.models import db
+from crm.models import Contact, ImportFile
 from crm.config import CSV_COLUMNS, DEFAULT_MAX_CALL_ATTEMPTS
 
 class ImportService:
     """Service for importing contacts from XLSX files"""
     
     @staticmethod
-    def import_xlsx_file(file_path, ankieter_id, filename):
+    def import_xlsx_file(file_path, ankieter_id, filename, csv_separator=','):
         """Import contacts from XLSX file"""
         try:
             # Read XLSX file
             df = pd.read_excel(file_path)
             
-            # Create import log
-            import_log = ImportLog(
+            # Create import file record
+            import_file = ImportFile(
                 filename=filename,
+                file_path=file_path,
                 file_size=os.path.getsize(file_path),
+                file_type='xlsx',
+                csv_separator=csv_separator,
                 imported_by=ankieter_id,
                 import_status='processing'
             )
-            db.session.add(import_log)
+            db.session.add(import_file)
             db.session.commit()
             
             # Map columns
@@ -79,10 +82,10 @@ class ImportService:
                     skipped_count += 1
                     continue
             
-            # Update import log
-            import_log.rows_imported = imported_count
-            import_log.rows_skipped = skipped_count
-            import_log.import_status = 'completed'
+            # Update import file record
+            import_file.processed_rows = imported_count
+            import_file.total_rows = imported_count + skipped_count
+            import_file.import_status = 'completed'
             
             db.session.commit()
             
@@ -90,14 +93,14 @@ class ImportService:
                 'success': True,
                 'imported': imported_count,
                 'skipped': skipped_count,
-                'import_log_id': import_log.id
+                'import_file_id': import_file.id
             }
             
         except Exception as e:
-            # Update import log with error
-            if 'import_log' in locals():
-                import_log.import_status = 'failed'
-                import_log.error_message = str(e)
+            # Update import file with error
+            if 'import_file' in locals():
+                import_file.import_status = 'failed'
+                import_file.error_message = str(e)
                 db.session.commit()
             
             return {
@@ -176,12 +179,12 @@ class ImportService:
     @staticmethod
     def get_import_history(ankieter_id=None):
         """Get import history"""
-        query = ImportLog.query
+        query = ImportFile.query
         
         if ankieter_id:
             query = query.filter_by(imported_by=ankieter_id)
         
-        imports = query.order_by(ImportLog.created_at.desc()).all()
+        imports = query.order_by(ImportFile.created_at.desc()).all()
         
         return imports
     
@@ -196,14 +199,10 @@ class ImportService:
             if df.empty:
                 return False, "Plik jest pusty"
             
-            # Check for required columns (name and phone)
+            # Check for required columns (only phone is required)
             columns = [col.lower().strip() for col in df.columns]
             
-            has_name = any('imię' in col or 'nazwisko' in col or 'name' in col for col in columns)
             has_phone = any('telefon' in col or 'phone' in col or 'numer' in col for col in columns)
-            
-            if not has_name:
-                return False, "Brak kolumny z imieniem/nazwiskiem"
             
             if not has_phone:
                 return False, "Brak kolumny z numerem telefonu"

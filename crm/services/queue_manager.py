@@ -6,8 +6,8 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from datetime import datetime, timedelta
-from models import db
-from crm.models import Contact, Call, CallQueue, BlacklistEntry
+from app.models import db
+from crm.models import Contact, Call, BlacklistEntry
 from crm.config import DEFAULT_MAX_CALL_ATTEMPTS
 
 class QueueManager:
@@ -17,31 +17,31 @@ class QueueManager:
     def get_next_contact_for_ankieter(ankieter_id):
         """Get next contact for ankieter based on priority"""
         # First try high priority (callbacks)
-        high_priority = CallQueue.query.filter_by(
+        high_priority = Call.query.filter_by(
             ankieter_id=ankieter_id,
             priority='high',
-            status='pending'
-        ).order_by(CallQueue.scheduled_date.asc()).first()
+            queue_status='pending'
+        ).order_by(Call.scheduled_date.asc()).first()
         
         if high_priority and high_priority.contact.can_be_called():
             return high_priority.contact
         
         # Then medium priority (leads)
-        medium_priority = CallQueue.query.filter_by(
+        medium_priority = Call.query.filter_by(
             ankieter_id=ankieter_id,
             priority='medium',
-            status='pending'
-        ).order_by(CallQueue.created_at.asc()).first()
+            queue_status='pending'
+        ).order_by(Call.created_at.asc()).first()
         
         if medium_priority and medium_priority.contact.can_be_called():
             return medium_priority.contact
         
         # Finally low priority (new contacts)
-        low_priority = CallQueue.query.filter_by(
+        low_priority = Call.query.filter_by(
             ankieter_id=ankieter_id,
             priority='low',
-            status='pending'
-        ).order_by(CallQueue.created_at.asc()).first()
+            queue_status='pending'
+        ).order_by(Call.created_at.asc()).first()
         
         if low_priority and low_priority.contact.can_be_called():
             return low_priority.contact
@@ -52,27 +52,28 @@ class QueueManager:
     def assign_contact_to_ankieter(contact_id, ankieter_id, priority='low'):
         """Assign contact to ankieter"""
         # Check if already assigned
-        existing = CallQueue.query.filter_by(
+        existing = Call.query.filter_by(
             contact_id=contact_id,
             ankieter_id=ankieter_id,
-            status='pending'
+            queue_status='pending'
         ).first()
         
         if existing:
             return existing
         
-        # Create new queue entry
-        queue_entry = CallQueue(
+        # Create new call entry
+        call_entry = Call(
             contact_id=contact_id,
             ankieter_id=ankieter_id,
             priority=priority,
-            status='pending'
+            queue_status='pending',
+            call_date=datetime.utcnow()
         )
         
-        db.session.add(queue_entry)
+        db.session.add(call_entry)
         db.session.commit()
         
-        return queue_entry
+        return call_entry
     
     @staticmethod
     def auto_assign_contacts_to_ankieter(ankieter_id, limit=10):
@@ -90,16 +91,17 @@ class QueueManager:
             # Assign to ankieter
             contact.assigned_ankieter_id = ankieter_id
             
-            # Create queue entry
-            queue_entry = CallQueue(
+            # Create call entry
+            call_entry = Call(
                 contact_id=contact.id,
                 ankieter_id=ankieter_id,
                 priority='low',
-                status='pending',
-                queue_type='new'
+                queue_status='pending',
+                queue_type='new',
+                call_date=datetime.utcnow()
             )
             
-            db.session.add(queue_entry)
+            db.session.add(call_entry)
             assigned_count += 1
         
         db.session.commit()
@@ -108,17 +110,18 @@ class QueueManager:
     @staticmethod
     def schedule_callback(contact_id, ankieter_id, callback_date, notes=None):
         """Schedule a callback for contact"""
-        # Create high priority queue entry
-        queue_entry = CallQueue(
+        # Create high priority call entry
+        call_entry = Call(
             contact_id=contact_id,
             ankieter_id=ankieter_id,
             priority='high',
             scheduled_date=callback_date,
-            status='pending',
-            queue_type='callback'
+            queue_status='pending',
+            queue_type='callback',
+            call_date=datetime.utcnow()
         )
         
-        db.session.add(queue_entry)
+        db.session.add(call_entry)
         
         # Update contact
         contact = Contact.query.get(contact_id)
@@ -127,7 +130,7 @@ class QueueManager:
         
         db.session.commit()
         
-        return queue_entry
+        return call_entry
     
     @staticmethod
     def process_call_result(contact_id, ankieter_id, call_status, notes=None, 
@@ -197,14 +200,14 @@ class QueueManager:
     @staticmethod
     def _mark_queue_completed(contact_id, ankieter_id):
         """Mark queue entry as completed"""
-        queue_entry = CallQueue.query.filter_by(
+        call_entry = Call.query.filter_by(
             contact_id=contact_id,
             ankieter_id=ankieter_id,
-            status='pending'
+            queue_status='pending'
         ).first()
         
-        if queue_entry:
-            queue_entry.status = 'completed'
+        if call_entry:
+            call_entry.queue_status = 'completed'
     
     @staticmethod
     def _add_to_blacklist(contact_id, ankieter_id, reason):
@@ -237,24 +240,24 @@ class QueueManager:
     def get_ankieter_queue_stats(ankieter_id):
         """Get queue statistics for ankieter"""
         stats = {
-            'pending_high': CallQueue.query.filter_by(
+            'pending_high': Call.query.filter_by(
                 ankieter_id=ankieter_id,
                 priority='high',
-                status='pending'
+                queue_status='pending'
             ).count(),
-            'pending_medium': CallQueue.query.filter_by(
+            'pending_medium': Call.query.filter_by(
                 ankieter_id=ankieter_id,
                 priority='medium',
-                status='pending'
+                queue_status='pending'
             ).count(),
-            'pending_low': CallQueue.query.filter_by(
+            'pending_low': Call.query.filter_by(
                 ankieter_id=ankieter_id,
                 priority='low',
-                status='pending'
+                queue_status='pending'
             ).count(),
-            'total_pending': CallQueue.query.filter_by(
+            'total_pending': Call.query.filter_by(
                 ankieter_id=ankieter_id,
-                status='pending'
+                queue_status='pending'
             ).count()
         }
         

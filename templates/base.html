@@ -62,7 +62,7 @@
                                 {{ current_user.name or current_user.email }}
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">Profil</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('users.profile') }}">Profil</a></li>
                                 {% if current_user.is_admin_role() %}
                                 <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">Panel Admin</a></li>
                                 {% endif %}

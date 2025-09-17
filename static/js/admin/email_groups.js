@@ -111,6 +111,20 @@ function displayGroups(groups) {
         
         tbody.appendChild(row);
     });
+    
+    // Reinitialize bulk delete after loading groups
+    const table = document.getElementById('groupsTable');
+    if (table) {
+        const deleteEndpoint = table.dataset.deleteEndpoint;
+        if (deleteEndpoint) {
+            // Remove existing bulk delete instance if any
+            if (window.groupsBulkDelete) {
+                window.groupsBulkDelete = null;
+            }
+            // Create new bulk delete instance
+            window.groupsBulkDelete = new BulkDelete('groupsTable', deleteEndpoint);
+        }
+    }
 }
 
 // Show group modal

@@ -126,9 +126,11 @@ function displayQueue(emails) {
                     ${email.status === 'failed' ? `<button class="btn btn-sm admin-btn-warning" onclick="retryEmail(${email.id})" title="Ponów email">
                         <i class="fas fa-redo"></i>
                     </button>` : ''}
-                    <button class="btn btn-sm admin-btn-danger" onclick="deleteEmail(${email.id})" title="Usuń email">
+                    ${email.status === 'sent' ? `<button class="btn btn-sm admin-btn-outline" disabled title="Nie można usuwać wysłanych e-maili">
+                        <i class="fas fa-lock"></i>
+                    </button>` : `<button class="btn btn-sm admin-btn-danger" onclick="deleteEmail(${email.id})" title="Usuń email">
                         <i class="fas fa-trash"></i>
-                    </button>
+                    </button>`}
                 </div>
             </td>
         `;
@@ -341,7 +343,13 @@ function refreshEmailQueueData() {
         }
         if (queueData.success) {
             displayQueue(queueData.emails);
-            updatePagination(queueData.pagination);
+            // Update pagination if it exists
+            if (queueData.pagination) {
+                const paginationElement = document.getElementById('pagination');
+                if (paginationElement && paginationElement.paginationInstance) {
+                    paginationElement.paginationInstance.setData(queueData.pagination);
+                }
+            }
         }
         hideEmailQueueRefreshIndicator();
     })

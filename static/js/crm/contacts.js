@@ -15,8 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadContacts() {
-    fetch('/api/crm/contacts')
-        .then(response => response.json())
+    fetch('/api/crm/contacts', {
+        credentials: 'include'
+    })
+        .then(response => safeJsonParse(response))
         .then(data => {
             if (data.success) {
                 updateContactsTable(data.contacts);
@@ -28,8 +30,10 @@ function loadContacts() {
 }
 
 function loadImportHistory() {
-    fetch('/api/crm/imports')
-        .then(response => response.json())
+    fetch('/api/crm/imports', {
+        credentials: 'include'
+    })
+        .then(response => safeJsonParse(response))
         .then(data => {
             if (data.success) {
                 updateImportHistory(data.imports);
@@ -131,9 +135,10 @@ function handleImportSubmission(e) {
     
     fetch('/api/crm/contacts/import', {
         method: 'POST',
-        body: formData
+        body: formData,
+        credentials: 'include'
     })
-    .then(response => response.json())
+    .then(response => safeJsonParse(response))
     .then(data => {
         if (data.success) {
             if (window.toastManager) {
@@ -210,8 +215,8 @@ function refreshContactsData() {
     
     // Load both contacts and import history
     Promise.all([
-        fetch('/api/crm/contacts').then(response => response.json()),
-        fetch('/api/crm/imports').then(response => response.json())
+        fetch('/api/crm/contacts', { credentials: 'include' }).then(response => safeJsonParse(response)),
+        fetch('/api/crm/imports', { credentials: 'include' }).then(response => safeJsonParse(response))
     ])
     .then(([contactsData, importsData]) => {
         if (contactsData.success) {

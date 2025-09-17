@@ -44,7 +44,7 @@ class BlogCommentsManager {
         const commentId = data.id;
         
         // Convert boolean fields
-        data.is_approved = document.getElementById('editCommentIsApproved').checked;
+        data.is_approved = document.getElementById('editIsApproved').checked;
 
         try {
             const response = await fetch(`/api/blog/comments/${commentId}`, {
@@ -80,11 +80,11 @@ class BlogCommentsManager {
                 
                 // Fill edit form
                 document.getElementById('editCommentId').value = comment.id;
-                document.getElementById('editCommentAuthorName').value = comment.author_name;
-                document.getElementById('editCommentAuthorEmail').value = comment.author_email;
-                document.getElementById('editCommentAuthorWebsite').value = comment.author_website || '';
-                document.getElementById('editCommentContent').value = comment.content;
-                document.getElementById('editCommentIsApproved').checked = comment.is_approved;
+                document.getElementById('editAuthorName').value = comment.author_name;
+                document.getElementById('editAuthorEmail').value = comment.author_email;
+                document.getElementById('editAuthorWebsite').value = comment.author_website || '';
+                document.getElementById('editContent').value = comment.content;
+                document.getElementById('editIsApproved').checked = comment.is_approved;
                 
                 // Show modal
                 const modal = new bootstrap.Modal(document.getElementById('editCommentModal'));

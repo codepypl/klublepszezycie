@@ -13,6 +13,116 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
     
     {% block extra_css %}{% endblock %}
+    
+    <!-- Lightbox CSS for import processing -->
+    <style>
+        .lightbox-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .lightbox-content {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .lightbox-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .lightbox-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .lightbox-message {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .lightbox-progress {
+            width: 100%;
+            height: 8px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .lightbox-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .lightbox-progress-text {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        /* Drag & Drop Styles */
+        .drop-zone {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            background-color: #fafafa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .drop-zone:hover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        
+        .drop-zone.dragover {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+            transform: scale(1.02);
+        }
+        
+        .drop-zone-content {
+            pointer-events: none;
+        }
+        
+        .drop-zone.has-file {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        
+        .drop-zone.has-file .drop-zone-content {
+            display: none;
+        }
+    </style>
 </head>
 <body class="admin-body">
     <div class="container-fluid">
@@ -96,8 +206,14 @@
     <script src="{{ url_for('static', filename='js/utils/paginate.js') }}"></script>
     
     <!-- Custom Admin JS -->
+    <script src="{{ url_for('static', filename='js/utils/fetch-helper.js') }}"></script>
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
     <script src="https://cdn.tiny.cloud/1/nzk6x47f5uoxs3thrhw5hjtjhrby1u3skrpld6z2z032z7tv/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    
+    <!-- Initialize Toast Manager -->
+    <script>
+        window.toastManager = new ToastManager();
+    </script>
     
     <!-- TinyMCE Initialization -->
     <script>
@@ -121,6 +237,54 @@
     });
     </script>
     
+    <!-- Global Progress Bar and Realtime Refresh -->
+    <script src="{{ url_for('static', filename='js/utils/progress-bar.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/utils/realtime-refresh.js') }}"></script>
+    
     {% block extra_js %}{% endblock %}
+    
+    <!-- Lightbox HTML for import processing -->
+    <div class="lightbox-overlay" id="importLightbox">
+        <div class="lightbox-content">
+            <div class="lightbox-spinner"></div>
+            <div class="lightbox-title">Importowanie kontaktów</div>
+            <div class="lightbox-message" id="lightboxMessage">Proszę czekać, trwa przetwarzanie pliku...</div>
+            <div class="lightbox-progress">
+                <div class="lightbox-progress-bar" id="lightboxProgressBar"></div>
+            </div>
+            <div class="lightbox-progress-text" id="lightboxProgressText">0%</div>
+        </div>
+    </div>
+    
+    <script>
+        // Lightbox functions for import processing
+        function showImportLightbox() {
+            document.getElementById('importLightbox').style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        }
+        
+        function hideImportLightbox() {
+            document.getElementById('importLightbox').style.display = 'none';
+            document.body.style.overflow = 'auto'; // Restore scrolling
+        }
+        
+        function updateImportLightbox(percentage, message) {
+            const progressBar = document.getElementById('lightboxProgressBar');
+            const messageEl = document.getElementById('lightboxMessage');
+            const progressText = document.getElementById('lightboxProgressText');
+            
+            if (progressBar) {
+                progressBar.style.width = percentage + '%';
+            }
+            
+            if (messageEl) {
+                messageEl.textContent = message;
+            }
+            
+            if (progressText) {
+                progressText.textContent = Math.round(percentage) + '%';
+            }
+        }
+    </script>
 </body>
 </html>

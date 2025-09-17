@@ -6,6 +6,7 @@ class EventsManager {
         this.currentEventId = null;
         this.initializeEventListeners();
         this.loadEvents();
+        this.setMinDates();
     }
 
     initializeEventListeners() {
@@ -117,6 +118,13 @@ class EventsManager {
             is_published: formData.get('is_published') === 'on'
         };
 
+        // Validate dates
+        const validationErrors = this.validateEventDates(eventData);
+        if (validationErrors.length > 0) {
+            window.toastManager.error(validationErrors.join('<br>'));
+            return;
+        }
+
         // Remove null/empty values
         Object.keys(eventData).forEach(key => {
             if (eventData[key] === null || eventData[key] === '') {
@@ -165,6 +173,13 @@ class EventsManager {
             is_active: formData.get('is_active') === 'on',
             is_published: formData.get('is_published') === 'on'
         };
+
+        // Validate dates
+        const validationErrors = this.validateEventDates(eventData);
+        if (validationErrors.length > 0) {
+            window.toastManager.error(validationErrors.join('<br>'));
+            return;
+        }
 
         // Remove null/empty values
         Object.keys(eventData).forEach(key => {
@@ -387,6 +402,52 @@ class EventsManager {
     combineDateTime(date, time) {
         if (!date || !time) return null;
         return `${date}T${time}`;
+    }
+    
+    validateEventDates(eventData) {
+        const now = new Date();
+        const errors = [];
+        
+        // Validate event date
+        if (eventData.event_date) {
+            const eventDate = new Date(eventData.event_date);
+            if (eventDate < now) {
+                errors.push('Data rozpoczęcia wydarzenia nie może być w przeszłości');
+            }
+        }
+        
+        // Validate end date
+        if (eventData.end_date) {
+            const endDate = new Date(eventData.end_date);
+            if (endDate < now) {
+                errors.push('Data zakończenia wydarzenia nie może być w przeszłości');
+            }
+            
+            // Check if end date is after event date
+            if (eventData.event_date) {
+                const eventDate = new Date(eventData.event_date);
+                if (endDate < eventDate) {
+                    errors.push('Data zakończenia wydarzenia nie może być wcześniejsza niż data rozpoczęcia');
+                }
+            }
+        }
+        
+        return errors;
+    }
+    
+    setMinDates() {
+        // Set minimum date to today for all date inputs
+        const today = new Date().toISOString().split('T')[0];
+        const dateInputs = [
+            'eventDate', 'endDate', 'editEventDate', 'editEndDate'
+        ];
+        
+        dateInputs.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.min = today;
+            }
+        });
     }
 }
 

@@ -1,21 +1,16 @@
-{% extends "base.html" %}
+{% extends "admin/base.html" %}
 
-{% block title %}CRM - Zarządzanie kontaktami - {{ super() }}{% endblock %}
+{% block title %}Zarządzanie kontaktami - {{ super() }}{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-address-book me-2"></i>Zarządzanie kontaktami
+{% endblock %}
+
+{% block page_actions %}
+    <!-- Auto-refresh is enabled, no manual refresh button needed -->
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0">
-                    <i class="fas fa-address-book me-2"></i>Zarządzanie kontaktami
-                </h1>
-                <a href="{{ url_for('ankieter.dashboard') }}" class="btn admin-btn-outline">
-                    <i class="fas fa-arrow-left me-2"></i>Powrót do CRM
-                </a>
-            </div>
-        </div>
-    </div>
 
     <!-- Import Section -->
     <div class="row mb-4">
@@ -27,15 +22,207 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form id="importForm" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label for="importFile" class="form-label">Wybierz plik XLSX</label>
-                            <input type="file" class="form-control" id="importFile" name="file" accept=".xlsx,.xls" required>
-                            <div class="form-text">Obsługiwane formaty: .xlsx, .xls</div>
+                    <!-- Step 1: File Upload -->
+                    <div id="importStep1">
+                        <form id="importForm" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label class="form-label">Wybierz plik do importu</label>
+                                <div id="dropZone" class="drop-zone">
+                                    <div class="drop-zone-content">
+                                        <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                        <h6>Przeciągnij i upuść plik tutaj</h6>
+                                        <p class="text-muted mb-3">lub kliknij aby wybrać plik</p>
+                                        <button type="button" class="btn admin-btn-outline" id="selectFileBtn">
+                                            <i class="fas fa-folder-open me-2"></i>Przeglądaj pliki
+                                        </button>
+                                    </div>
+                                    <input type="file" class="form-control d-none" id="importFile" name="file" accept=".xlsx,.xls,.csv">
+                                </div>
+                                <div id="fileInfo" class="mt-2" style="display: none;">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-file me-2"></i>
+                                        <span id="fileName"></span>
+                                        <span class="text-muted ms-2">(<span id="fileSize"></span>)</span>
+                                        <button type="button" class="btn btn-sm btn-outline-danger ms-2" id="removeFile">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="form-text">Obsługiwane formaty: .xlsx, .xls, .csv</div>
+                            </div>
+                            
+                            <div class="mb-3" id="csvSeparatorGroup" style="display: none;">
+                                <label for="csvSeparator" class="form-label">Separator kolumn (dla plików CSV)</label>
+                                <select class="form-select" id="csvSeparator" name="csv_separator">
+                                    <option value=",">Przecinek (,)</option>
+                                    <option value=";">Średnik (;)</option>
+                                    <option value="\t">Tabulator</option>
+                                    <option value="|">Pionowa kreska (|)</option>
+                                </select>
+                                <div class="form-text">Wybierz separator używany w pliku CSV</div>
+                            </div>
+                            
+                            <button type="submit" class="btn admin-btn" id="analyzeBtn" disabled>
+                                <i class="fas fa-search me-2"></i>Przeanalizuj plik
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Step 2: Column Mapping -->
+                    <div id="importStep2" style="display: none;">
+                        <h6 class="mb-3">Mapowanie kolumn</h6>
+                        <p class="text-muted mb-3">Przypisz kolumny z pliku do pól w systemie CRM</p>
+                        
+                        <form id="mappingForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="nameColumn" class="form-label">Imię i nazwisko</label>
+                                        <select class="form-select" id="nameColumn" name="name">
+                                            <option value="">Wybierz kolumnę (opcjonalne)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="phoneColumn" class="form-label">Telefon *</label>
+                                        <select class="form-select" id="phoneColumn" name="phone" required>
+                                            <option value="">Wybierz kolumnę</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="emailColumn" class="form-label">Email</label>
+                                        <select class="form-select" id="emailColumn" name="email">
+                                            <option value="">Pomiń</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="companyColumn" class="form-label">Firma</label>
+                                        <select class="form-select" id="companyColumn" name="company">
+                                            <option value="">Pomiń</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="notesColumn" class="form-label">Notatki</label>
+                                        <select class="form-select" id="notesColumn" name="notes">
+                                            <option value="">Pomiń</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="tagsColumn" class="form-label">Tagi</label>
+                                        <select class="form-select" id="tagsColumn" name="tags">
+                                            <option value="">Pomiń</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn admin-btn-outline" id="backToStep1">
+                                    <i class="fas fa-arrow-left me-2"></i>Wróć
+                                </button>
+                                <button type="submit" class="btn admin-btn">
+                                    <i class="fas fa-eye me-2"></i>Podgląd mapowania
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Step 3: Preview Mapping -->
+                    <div id="importStep3" style="display: none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-eye me-2"></i>Podgląd mapowania
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="previewRowsCount" class="form-label">Liczba rekordów do wyświetlenia:</label>
+                                        <select class="form-select" id="previewRowsCount">
+                                            <option value="10">10 rekordów</option>
+                                            <option value="20" selected>20 rekordów</option>
+                                            <option value="50">50 rekordów</option>
+                                            <option value="100">100 rekordów</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 d-flex align-items-end">
+                                        <button type="button" class="btn admin-btn-outline" id="refreshPreview">
+                                            <i class="fas fa-refresh me-2"></i>Odśwież podgląd
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div id="previewContent">
+                                    <!-- Preview data will be loaded here -->
+                                </div>
+                                
+                                <div class="d-flex gap-2 mt-3">
+                                    <button type="button" class="btn admin-btn-outline" id="backToStep2">
+                                        <i class="fas fa-arrow-left me-2"></i>Wróć do mapowania
+                                    </button>
+                                    <button type="button" class="btn admin-btn" id="startImport">
+                                        <i class="fas fa-upload me-2"></i>Rozpocznij import
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <button type="submit" class="btn admin-btn">
-                            <i class="fas fa-upload me-2"></i>Importuj kontakty
-                        </button>
+                    </div>
+
+                    <!-- Step 4: Import Progress -->
+                    <div id="importStep4" style="display: none;">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Importowanie...</span>
+                            </div>
+                            <h6 id="importStatus">Importowanie kontaktów...</h6>
+                            <p class="text-muted" id="importMessage">Proszę czekać, trwa przetwarzanie pliku</p>
+                            <div class="progress mt-3" style="height: 6px;">
+                                <div class="progress-bar" id="importProgressBar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="admin-card">
+                <div class="admin-card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-8">
+                            <label for="search" class="form-label">Wyszukaj</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search }}" placeholder="Imię, telefon, email...">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn admin-btn me-2">
+                                <i class="fas fa-search me-1"></i>Szukaj
+                            </button>
+                            {% if search %}
+                            <a href="{{ url_for('ankieter.contacts') }}" class="btn admin-btn-outline">
+                                <i class="fas fa-times me-1"></i>Wyczyść
+                            </a>
+                            {% endif %}
+                        </div>
                     </form>
                 </div>
             </div>
@@ -48,11 +235,11 @@
             <div class="card admin-card">
                 <div class="card-header">
                     <h5 class="card-title mb-0">
-                        <i class="fas fa-list me-2"></i>Lista kontaktów ({{ contacts|length }})
+                        <i class="fas fa-list me-2"></i>Lista kontaktów ({{ contacts.total }})
                     </h5>
                 </div>
                 <div class="card-body">
-                    {% if contacts %}
+                    {% if contact_analyses %}
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
@@ -61,13 +248,14 @@
                                     <th>Telefon</th>
                                     <th>Email</th>
                                     <th>Firma</th>
-                                    <th>Status</th>
+                                    <th>Ostatni status</th>
+                                    <th>Zdrowie rekordu</th>
                                     <th>Próby</th>
                                     <th>Data utworzenia</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for contact in contacts %}
+                                {% for contact in contact_analyses %}
                                 <tr>
                                     <td>
                                         <strong>{{ contact.name }}</strong>
@@ -95,6 +283,30 @@
                                     </td>
                                     <td>{{ contact.company or 'Brak' }}</td>
                                     <td>
+                                        {% if contact.last_status %}
+                                            {% if contact.last_status == 'lead' %}
+                                                <span class="badge bg-success">Lead</span>
+                                            {% elif contact.last_status == 'rejection' %}
+                                                <span class="badge bg-danger">Odmowa</span>
+                                            {% elif contact.last_status == 'callback' %}
+                                                <span class="badge bg-warning">Przełożenie</span>
+                                            {% elif contact.last_status == 'no_answer' %}
+                                                <span class="badge bg-secondary">Nie odebrał</span>
+                                            {% elif contact.last_status == 'busy' %}
+                                                <span class="badge bg-info">Zajęte</span>
+                                            {% elif contact.last_status == 'wrong_number' %}
+                                                <span class="badge bg-dark">Błędny numer</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ contact.last_status|title }}</span>
+                                            {% endif %}
+                                            {% if contact.last_call_date %}
+                                                <br><small class="text-muted">{{ contact.last_call_date.strftime('%d.%m.%Y %H:%M') }}</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-light text-dark">Brak połączeń</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
                                         {% if contact.is_blacklisted %}
                                         <span class="badge bg-danger">Czarna lista</span>
                                         {% elif contact.call_attempts >= contact.max_call_attempts %}
@@ -114,6 +326,47 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Pagination -->
+                    {% if contacts.pages > 1 %}
+                    <nav aria-label="Paginacja">
+                        <ul class="pagination justify-content-center">
+                            {% if contacts.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('ankieter.contacts', page=contacts.prev_num, search=search) }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for page_num in contacts.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != contacts.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('ankieter.contacts', page=page_num, search=search) }}">{{ page_num }}</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if contacts.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('ankieter.contacts', page=contacts.next_num, search=search) }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
                     {% else %}
                     <div class="text-center text-muted py-4">
                         <i class="fas fa-address-book fa-2x mb-3"></i>
@@ -131,38 +384,55 @@
     <div class="row mt-4">
         <div class="col-12">
             <div class="card admin-card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">
                         <i class="fas fa-history me-2"></i>Historia importów
                     </h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-danger" id="bulkDeleteBtn" disabled>
+                            <i class="fas fa-trash me-1"></i>Usuń wybrane
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-sm">
+                        <table class="table table-sm" id="importsTable">
                             <thead>
                                 <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAll" class="form-check-input">
+                                    </th>
                                     <th>Plik</th>
                                     <th>Data importu</th>
                                     <th>Zaimportowano</th>
                                     <th>Pominięto</th>
                                     <th>Status</th>
+                                    <th>Akcje</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for import_log in import_history %}
+                                {% for import_file in import_history %}
                                 <tr>
-                                    <td>{{ import_log.filename }}</td>
-                                    <td>{{ import_log.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
-                                    <td class="text-success">{{ import_log.rows_imported }}</td>
-                                    <td class="text-warning">{{ import_log.rows_skipped }}</td>
                                     <td>
-                                        {% if import_log.import_status == 'completed' %}
+                                        <input type="checkbox" name="itemIds" value="{{ import_file.id }}" class="form-check-input">
+                                    </td>
+                                    <td>{{ import_file.filename }}</td>
+                                    <td>{{ import_file.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                                    <td class="text-success">{{ import_file.processed_rows }}</td>
+                                    <td class="text-warning">{{ import_file.total_rows - import_file.processed_rows }}</td>
+                                    <td>
+                                        {% if import_file.import_status == 'completed' %}
                                         <span class="badge bg-success">Zakończony</span>
-                                        {% elif import_log.import_status == 'failed' %}
+                                        {% elif import_file.import_status == 'failed' %}
                                         <span class="badge bg-danger">Błąd</span>
                                         {% else %}
                                         <span class="badge bg-warning">W trakcie</span>
                                         {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteImport({{ import_file.id }})" title="Usuń import">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -176,62 +446,118 @@
     {% endif %}
 </div>
 
+<!-- External JavaScript -->
+<script src="{{ url_for('static', filename='js/utils/fetch-helper.js') }}"></script>
+<script src="{{ url_for('static', filename='js/crm/import.js') }}"></script>
+
 <script>
-// Import form handling
-document.getElementById('importForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const fileInput = document.getElementById('importFile');
-    const file = fileInput.files[0];
-    
-    if (!file) {
-        alert('Wybierz plik do importu');
+// Global variables
+let contactsRefreshInterval;
+
+// Refresh contacts page
+function refreshContacts() {
+    // Reload the page to get fresh data
+    window.location.reload();
+}
+
+// Setup auto-refresh ONLY during import step 4 (Import Progress)
+function setupContactsAutoRefresh() {
+    // Only refresh if we're in import step 4 (Import Progress)
+    const importStep4 = document.getElementById('importStep4');
+    if (!importStep4) {
+        console.log('No import step 4 found, auto-refresh disabled');
         return;
     }
     
-    // Validate file type
-    const allowedTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
-    if (!allowedTypes.includes(file.type)) {
-        alert('Wybierz plik XLSX lub XLS');
+    const isVisible = importStep4.style.display !== 'none' && 
+                     window.getComputedStyle(importStep4).display !== 'none';
+    
+    if (!isVisible) {
+        console.log('Import step 4 not visible, auto-refresh disabled');
         return;
     }
     
-    // Show loading
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Importowanie...';
-    submitBtn.disabled = true;
+    console.log('Import step 4 visible, starting auto-refresh');
+    // Refresh every 30 seconds ONLY during step 4 (Import Progress)
+    contactsRefreshInterval = setInterval(() => {
+        window.location.reload();
+    }, 30000); // 30 seconds
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Only setup auto-refresh if we're in import step 3
+    // Auto-refresh is NOT needed for normal contacts page viewing
+    setupContactsAutoRefresh();
     
-    // Create form data
-    const formData = new FormData();
-    formData.append('file', file);
+    // Setup import history functionality using bulk-delete.js
+    if (document.getElementById('importsTable')) {
+        new BulkDelete('importsTable', '/api/crm/imports/bulk-delete', {
+            selectAllId: 'selectAll',
+            deleteButtonId: 'bulkDeleteBtn',
+            confirmMessage: 'Czy na pewno chcesz usunąć wybrane importy?',
+            successMessage: 'Importy zostały usunięte pomyślnie',
+            errorMessage: 'Wystąpił błąd podczas usuwania importów'
+        });
+    }
+});
+
+function deleteImport(importId) {
+    // Use Bootstrap modal instead of custom toast
+    const modal = document.getElementById('bulkDeleteModal');
+    const messageElement = document.getElementById('bulkDeleteMessage');
+    const confirmButton = document.getElementById('confirmBulkDelete');
     
-    fetch('/api/crm/contacts/import', {
-        method: 'POST',
-        body: formData
+    if (modal && messageElement && confirmButton) {
+        // Update message
+        messageElement.textContent = 'Czy na pewno chcesz usunąć ten import? Tej operacji nie można cofnąć.';
+        
+        // Remove existing event listeners
+        const newConfirmButton = confirmButton.cloneNode(true);
+        confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+        const updatedConfirmButton = newConfirmButton;
+        
+        // Add new event listener
+        updatedConfirmButton.addEventListener('click', () => {
+            bootstrap.Modal.getInstance(modal).hide();
+            confirmDeleteImport(importId);
+        });
+        
+        // Show modal
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+    } else {
+        // Fallback to confirm() if modal not available
+        if (confirm('Czy na pewno chcesz usunąć ten import? Tej operacji nie można cofnąć.')) {
+            confirmDeleteImport(importId);
+        }
+    }
+}
+
+function confirmDeleteImport(importId) {
+    // Proceed with deletion
+    fetch(`/api/crm/imports/${importId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert(`Import zakończony pomyślnie!\nZaimportowano: ${data.imported}\nPominięto: ${data.skipped}`);
-            // Reload page to show new contacts
-            window.location.reload();
+            const message = data.contacts_deleted > 0 
+                ? `Import usunięty pomyślnie. Usunięto ${data.contacts_deleted} kontaktów.`
+                : 'Import usunięty pomyślnie.';
+            window.toastManager.show(message, 'success');
+            location.reload();
         } else {
-            alert('Błąd importu: ' + data.error);
+            window.toastManager.show('Błąd usuwania importu: ' + data.error, 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Wystąpił błąd podczas importu');
-    })
-    .finally(() => {
-        // Reset button
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
+        window.toastManager.show('Błąd usuwania importu', 'error');
     });
-});
-
-<!-- External JavaScript -->
-<script src="{{ url_for('static', filename='js/crm/contacts.js') }}"></script>
+}
 </script>
 {% endblock %}

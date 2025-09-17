@@ -76,7 +76,7 @@
                                 </td>
                                 <td>{{ post.published_at.strftime('%d.%m.%Y %H:%M') if post.published_at else 'Brak daty' }}</td>
                                 <td>
-                                    <span class="badge admin-badge admin-badge-info">{{ post.comments_count }}</span>
+                                    <span class="badge admin-badge admin-badge-info">{{ post.comments.count() }}</span>
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
@@ -368,10 +368,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     window.paginationHandlers = {
         onPageChange: (page) => {
-            window.location.href = `{{ url_for('blog.admin_posts') }}?page=${page}&per_page={{ posts.per_page if posts else 10 }}`;
+            window.location.href = `{{ url_for('blog.admin_index') }}?page=${page}&per_page={{ posts.per_page if posts else 10 }}`;
         },
         onPerPageChange: (newPage, perPage) => {
-            window.location.href = `{{ url_for('blog.admin_posts') }}?page=${newPage}&per_page=${perPage}`;
+            window.location.href = `{{ url_for('blog.admin_index') }}?page=${newPage}&per_page=${perPage}`;
         }
     };
     {% endif %}

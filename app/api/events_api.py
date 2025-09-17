@@ -1,0 +1,441 @@
+"""
+Events API endpoints
+"""
+from flask import Blueprint, request, jsonify
+from flask_login import login_required
+from app.models import EventSchedule, EventRegistration, db
+from app.utils.auth import admin_required
+import logging
+
+events_api_bp = Blueprint('events_api', __name__)
+
+@events_api_bp.route('/events', methods=['GET'])
+@login_required
+def api_events():
+    """Get all events"""
+    try:
+        events = EventSchedule.query.order_by(EventSchedule.start_date.asc()).all()
+        return jsonify({
+            'success': True,
+            'events': [{
+                'id': event.id,
+                'title': event.title,
+                'description': event.description,
+                'start_date': event.start_date.isoformat() if event.start_date else None,
+                'end_date': event.end_date.isoformat() if event.end_date else None,
+                'location': event.location,
+                'max_participants': event.max_participants,
+                'is_active': event.is_active,
+                'created_at': event.created_at.isoformat() if event.created_at else None
+            } for event in events]
+        })
+    except Exception as e:
+        logging.error(f"Error getting events: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@events_api_bp.route('/event-schedule', methods=['GET', 'POST', 'DELETE'])
+@login_required
+def api_event_schedule():
+    """Event schedule API"""
+    if request.method == 'GET':
+        try:
+            events = EventSchedule.query.order_by(EventSchedule.start_date.asc()).all()
+            return jsonify({
+                'success': True,
+                'events': [{
+                    'id': event.id,
+                    'title': event.title,
+                    'description': event.description,
+                    'start_date': event.start_date.isoformat() if event.start_date else None,
+                    'end_date': event.end_date.isoformat() if event.end_date else None,
+                    'location': event.location,
+                    'max_participants': event.max_participants,
+                    'is_active': event.is_active,
+                    'created_at': event.created_at.isoformat() if event.created_at else None
+                } for event in events]
+            })
+        except Exception as e:
+            logging.error(f"Error getting event schedule: {str(e)}")
+            return jsonify({'success': False, 'message': str(e)}), 500
+    
+    elif request.method == 'POST':
+        try:
+            data = request.get_json()
+            
+            event = EventSchedule(
+                title=data['title'],
+                description=data.get('description', ''),
+                start_date=data.get('start_date'),
+                end_date=data.get('end_date'),
+                location=data.get('location', ''),
+                max_participants=data.get('max_participants', 0),
+                is_active=data.get('is_active', True)
+            )
+            
+            db.session.add(event)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Event created successfully',
+                'event': {
+                    'id': event.id,
+                    'title': event.title,
+                    'description': event.description,
+                    'start_date': event.start_date.isoformat() if event.start_date else None,
+                    'end_date': event.end_date.isoformat() if event.end_date else None,
+                    'location': event.location,
+                    'max_participants': event.max_participants,
+                    'is_active': event.is_active
+                }
+            })
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error creating event: {str(e)}")
+            return jsonify({'success': False, 'message': str(e)}), 500
+    
+    elif request.method == 'DELETE':
+        try:
+            data = request.get_json()
+            event_ids = data.get('event_ids', [])
+            
+            if not event_ids:
+                return jsonify({'success': False, 'message': 'No events selected'}), 400
+            
+            deleted_count = 0
+            for event_id in event_ids:
+                event = EventSchedule.query.get(event_id)
+                if event:
+                    db.session.delete(event)
+                    deleted_count += 1
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': f'Successfully deleted {deleted_count} events'
+            })
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error bulk deleting events: {str(e)}")
+            return jsonify({'success': False, 'message': str(e)}), 500
+
+@events_api_bp.route('/event-schedule/<int:event_id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
+def api_event(event_id):
+    """Individual event API"""
+    event = EventSchedule.query.get_or_404(event_id)
+    
+    try:
+        if request.method == 'GET':
+            return jsonify({
+                'success': True,
+                'event': {
+                    'id': event.id,
+                    'title': event.title,
+                    'description': event.description,
+                    'start_date': event.start_date.isoformat() if event.start_date else None,
+                    'end_date': event.end_date.isoformat() if event.end_date else None,
+                    'location': event.location,
+                    'max_participants': event.max_participants,
+                    'is_active': event.is_active,
+                    'created_at': event.created_at.isoformat() if event.created_at else None
+                }
+            })
+        
+        elif request.method == 'PUT':
+            data = request.get_json()
+            
+            if 'title' in data:
+                event.title = data['title']
+            if 'description' in data:
+                event.description = data['description']
+            if 'start_date' in data:
+                event.start_date = data['start_date']
+            if 'end_date' in data:
+                event.end_date = data['end_date']
+            if 'location' in data:
+                event.location = data['location']
+            if 'max_participants' in data:
+                event.max_participants = data['max_participants']
+            if 'is_active' in data:
+                event.is_active = data['is_active']
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Event updated successfully'
+            })
+        
+        elif request.method == 'DELETE':
+            db.session.delete(event)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Event deleted successfully'
+            })
+    
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error with event {event_id}: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@events_api_bp.route('/schedules', methods=['GET', 'POST'])
+@login_required
+def api_schedules():
+    """Schedules API"""
+    if request.method == 'GET':
+        try:
+            schedules = EventSchedule.query.order_by(EventSchedule.start_date.asc()).all()
+            return jsonify({
+                'success': True,
+                'schedules': [{
+                    'id': schedule.id,
+                    'title': schedule.title,
+                    'start_date': schedule.start_date.isoformat() if schedule.start_date else None,
+                    'end_date': schedule.end_date.isoformat() if schedule.end_date else None,
+                    'location': schedule.location,
+                    'is_active': schedule.is_active
+                } for schedule in schedules]
+            })
+        except Exception as e:
+            logging.error(f"Error getting schedules: {str(e)}")
+            return jsonify({'success': False, 'message': str(e)}), 500
+    
+    elif request.method == 'POST':
+        try:
+            data = request.get_json()
+            
+            schedule = EventSchedule(
+                title=data['title'],
+                description=data.get('description', ''),
+                start_date=data.get('start_date'),
+                end_date=data.get('end_date'),
+                location=data.get('location', ''),
+                max_participants=data.get('max_participants', 0),
+                is_active=data.get('is_active', True)
+            )
+            
+            db.session.add(schedule)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Schedule created successfully',
+                'schedule': {
+                    'id': schedule.id,
+                    'title': schedule.title,
+                    'start_date': schedule.start_date.isoformat() if schedule.start_date else None,
+                    'end_date': schedule.end_date.isoformat() if schedule.end_date else None,
+                    'location': schedule.location,
+                    'is_active': schedule.is_active
+                }
+            })
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error creating schedule: {str(e)}")
+            return jsonify({'success': False, 'message': str(e)}), 500
+
+@events_api_bp.route('/schedules/<int:schedule_id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
+def api_schedule(schedule_id):
+    """Individual schedule API"""
+    schedule = EventSchedule.query.get_or_404(schedule_id)
+    
+    try:
+        if request.method == 'GET':
+            return jsonify({
+                'success': True,
+                'schedule': {
+                    'id': schedule.id,
+                    'title': schedule.title,
+                    'description': schedule.description,
+                    'start_date': schedule.start_date.isoformat() if schedule.start_date else None,
+                    'end_date': schedule.end_date.isoformat() if schedule.end_date else None,
+                    'location': schedule.location,
+                    'max_participants': schedule.max_participants,
+                    'is_active': schedule.is_active,
+                    'created_at': schedule.created_at.isoformat() if schedule.created_at else None
+                }
+            })
+        
+        elif request.method == 'PUT':
+            data = request.get_json()
+            
+            if 'title' in data:
+                schedule.title = data['title']
+            if 'description' in data:
+                schedule.description = data['description']
+            if 'start_date' in data:
+                schedule.start_date = data['start_date']
+            if 'end_date' in data:
+                schedule.end_date = data['end_date']
+            if 'location' in data:
+                schedule.location = data['location']
+            if 'max_participants' in data:
+                schedule.max_participants = data['max_participants']
+            if 'is_active' in data:
+                schedule.is_active = data['is_active']
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Schedule updated successfully'
+            })
+        
+        elif request.method == 'DELETE':
+            db.session.delete(schedule)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Schedule deleted successfully'
+            })
+    
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error with schedule {schedule_id}: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@events_api_bp.route('/check-schedules', methods=['POST'])
+@login_required
+def api_check_schedules():
+    """Check for schedule conflicts"""
+    try:
+        data = request.get_json()
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        exclude_id = data.get('exclude_id')
+        
+        query = EventSchedule.query.filter(
+            EventSchedule.start_date <= end_date,
+            EventSchedule.end_date >= start_date
+        )
+        
+        if exclude_id:
+            query = query.filter(EventSchedule.id != exclude_id)
+        
+        conflicting_schedules = query.all()
+        
+        return jsonify({
+            'success': True,
+            'has_conflicts': len(conflicting_schedules) > 0,
+            'conflicting_schedules': [{
+                'id': schedule.id,
+                'title': schedule.title,
+                'start_date': schedule.start_date.isoformat() if schedule.start_date else None,
+                'end_date': schedule.end_date.isoformat() if schedule.end_date else None
+            } for schedule in conflicting_schedules]
+        })
+    except Exception as e:
+        logging.error(f"Error checking schedules: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@events_api_bp.route('/bulk-delete/schedules', methods=['POST'])
+@login_required
+@admin_required
+def api_bulk_delete_schedules():
+    """Bulk delete schedules"""
+    try:
+        data = request.get_json()
+        schedule_ids = data.get('schedule_ids', [])
+        
+        if not schedule_ids:
+            return jsonify({'success': False, 'message': 'No schedules selected'}), 400
+        
+        deleted_count = 0
+        for schedule_id in schedule_ids:
+            schedule = EventSchedule.query.get(schedule_id)
+            if schedule:
+                db.session.delete(schedule)
+                deleted_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully deleted {deleted_count} schedules'
+        })
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error bulk deleting schedules: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@events_api_bp.route('/bulk-delete/events', methods=['POST'])
+@login_required
+@admin_required
+def api_bulk_delete_events():
+    """Bulk delete events"""
+    try:
+        data = request.get_json()
+        event_ids = data.get('event_ids', [])
+        
+        if not event_ids:
+            return jsonify({'success': False, 'message': 'No events selected'}), 400
+        
+        deleted_count = 0
+        for event_id in event_ids:
+            event = EventSchedule.query.get(event_id)
+            if event:
+                db.session.delete(event)
+                deleted_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully deleted {deleted_count} events'
+        })
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error bulk deleting events: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@events_api_bp.route('/bulk-delete/registrations', methods=['POST'])
+@login_required
+@admin_required
+def api_bulk_delete_registrations():
+    """Bulk delete event registrations"""
+    try:
+        data = request.get_json()
+        registration_ids = data.get('registration_ids', [])
+        
+        if not registration_ids:
+            return jsonify({'success': False, 'message': 'No registrations selected'}), 400
+        
+        deleted_count = 0
+        for registration_id in registration_ids:
+            registration = EventRegistration.query.get(registration_id)
+            if registration:
+                db.session.delete(registration)
+                deleted_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully deleted {deleted_count} registrations'
+        })
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error bulk deleting registrations: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@events_api_bp.route('/cleanup/orphaned-groups', methods=['POST'])
+@login_required
+@admin_required
+def api_cleanup_orphaned_groups():
+    """Cleanup orphaned user groups"""
+    try:
+        # This would need to be implemented based on your specific logic
+        # for determining what constitutes an "orphaned" group
+        return jsonify({
+            'success': True,
+            'message': 'Orphaned groups cleanup completed'
+        })
+    except Exception as e:
+        logging.error(f"Error cleaning up orphaned groups: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500

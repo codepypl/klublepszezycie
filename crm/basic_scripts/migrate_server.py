@@ -20,8 +20,8 @@ def migrate_server():
         
         # Import after path setup
         from app import create_app, db
-        from models import User
-        from crm.models import Contact, Call, CallQueue, ImportLog, BlacklistEntry
+        from app.models import User
+        from crm.models import Contact, Call, BlacklistEntry, ImportFile, ImportRecord
         
         # Create app
         app = create_app()
@@ -48,7 +48,7 @@ def migrate_server():
             
             # Check CRM tables
             existing_tables = inspector.get_table_names()
-            crm_tables = ['crm_contacts', 'crm_calls', 'crm_call_queue', 'crm_import_logs', 'crm_blacklist']
+            crm_tables = ['crm_contacts', 'crm_calls', 'crm_blacklist', 'crm_import_files', 'crm_import_records']
             
             missing_tables = [table for table in crm_tables if table not in existing_tables]
             

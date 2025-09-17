@@ -5,8 +5,8 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from models import db
-from app.utils.timezone import get_local_datetime
+from app.models import db
+# Import moved to avoid circular dependency
 from datetime import datetime, timedelta
 
 class Contact(db.Model):
@@ -27,8 +27,8 @@ class Contact(db.Model):
     max_call_attempts = db.Column(db.Integer, default=3)  # Max attempts before blacklisting
     assigned_ankieter_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # Assigned ankieter
     last_call_date = db.Column(db.DateTime)  # Last call attempt
-    created_at = db.Column(db.DateTime, default=get_local_datetime)
-    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     calls = db.relationship('Call', backref='contact', cascade='all, delete-orphan')
@@ -82,15 +82,23 @@ class Call(db.Model):
     contact_id = db.Column(db.Integer, db.ForeignKey('crm_contacts.id'), nullable=False)
     ankieter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     call_date = db.Column(db.DateTime, nullable=False)
+    call_start_time = db.Column(db.DateTime)  # When call actually started
+    call_end_time = db.Column(db.DateTime)  # When call ended
     status = db.Column(db.String(50), nullable=False)  # lead, rejection, callback, no_answer, busy, wrong_number
     priority = db.Column(db.String(20), default='low')  # high, medium, low
     notes = db.Column(db.Text)
     next_call_date = db.Column(db.DateTime)  # For callback scheduling
     duration_minutes = db.Column(db.Integer)  # Call duration in minutes
+    duration_seconds = db.Column(db.Integer)  # Call duration in seconds for precise tracking
     event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'))  # Event for lead registration
     is_lead_registered = db.Column(db.Boolean, default=False)  # Whether lead was registered for event
-    created_at = db.Column(db.DateTime, default=get_local_datetime)
-    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
+    
+    # Queue management fields (moved from CallQueue)
+    queue_status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed, cancelled
+    queue_type = db.Column(db.String(20), default='new')  # new, callback, retry
+    scheduled_date = db.Column(db.DateTime)  # When to call
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     ankieter = db.relationship('User', backref='calls')
@@ -110,28 +118,8 @@ class Call(db.Model):
     def is_callback_status(self):
         """Check if call needs callback"""
         return self.status == 'callback'
-
-class CallQueue(db.Model):
-    """Call queue for managing call priorities"""
-    __tablename__ = 'crm_call_queue'
     
-    id = db.Column(db.Integer, primary_key=True)
-    contact_id = db.Column(db.Integer, db.ForeignKey('crm_contacts.id'), nullable=False)
-    ankieter_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # Assigned ankieter
-    priority = db.Column(db.String(20), nullable=False)  # high, medium, low
-    scheduled_date = db.Column(db.DateTime)  # When to call
-    status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed, cancelled
-    queue_type = db.Column(db.String(20), default='new')  # new, callback, retry
-    created_at = db.Column(db.DateTime, default=get_local_datetime)
-    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
-    
-    # Relationships
-    contact = db.relationship('Contact', backref='queue_entries')
-    ankieter = db.relationship('User', backref='queue_assignments')
-    
-    def __repr__(self):
-        return f'<CallQueue {self.contact.name} - {self.priority}>'
-    
+    # Queue management methods (moved from CallQueue)
     def is_high_priority(self):
         """Check if this is high priority (callbacks)"""
         return self.priority == 'high'
@@ -152,6 +140,8 @@ class CallQueue(db.Model):
         """Check if this is a retry"""
         return self.queue_type == 'retry'
 
+# Call Queue removed - functionality moved to Call model
+
 class BlacklistEntry(db.Model):
     """Blacklist for phone numbers that should not be called"""
     __tablename__ = 'crm_blacklist'
@@ -162,8 +152,8 @@ class BlacklistEntry(db.Model):
     blacklisted_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     contact_id = db.Column(db.Integer, db.ForeignKey('crm_contacts.id'))  # Original contact
     is_active = db.Column(db.Boolean, default=True)  # Can be reactivated by admin
-    created_at = db.Column(db.DateTime, default=get_local_datetime)
-    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     blacklister = db.relationship('User', backref='blacklist_entries')
@@ -172,22 +162,63 @@ class BlacklistEntry(db.Model):
     def __repr__(self):
         return f'<BlacklistEntry {self.phone} - {self.reason}>'
 
-class ImportLog(db.Model):
-    """Log for file imports"""
-    __tablename__ = 'crm_import_logs'
+# Import Log removed - functionality moved to ImportFile
+
+class ImportFile(db.Model):
+    """Raw import file data storage"""
+    __tablename__ = 'crm_import_files'
     
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(200), nullable=False)
-    file_size = db.Column(db.Integer)
-    rows_imported = db.Column(db.Integer, default=0)
-    rows_skipped = db.Column(db.Integer, default=0)
-    import_status = db.Column(db.String(20), default='processing')  # processing, completed, failed
-    error_message = db.Column(db.Text)
+    file_path = db.Column(db.String(500), nullable=False)  # Full path to file on disk
+    file_size = db.Column(db.Integer)  # File size in bytes
+    file_type = db.Column(db.String(10), nullable=False)  # xlsx, xls, csv
+    csv_separator = db.Column(db.String(5), default=',')  # CSV separator character
     imported_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    import_status = db.Column(db.String(20), default='uploaded')  # uploaded, processing, completed, failed
+    total_rows = db.Column(db.Integer, default=0)
+    processed_rows = db.Column(db.Integer, default=0)
+    error_message = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    processed_at = db.Column(db.DateTime)
     
     # Relationships
-    importer = db.relationship('User', backref='import_logs')
+    importer = db.relationship('User', backref='import_files')
+    raw_records = db.relationship('ImportRecord', backref='import_file', cascade='all, delete-orphan')
     
     def __repr__(self):
-        return f'<ImportLog {self.filename} - {self.import_status}>'
+        return f'<ImportFile {self.filename} ({self.import_status})>'
+
+class ImportRecord(db.Model):
+    """Individual record from imported file"""
+    __tablename__ = 'crm_import_records'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    import_file_id = db.Column(db.Integer, db.ForeignKey('crm_import_files.id'), nullable=False)
+    row_number = db.Column(db.Integer, nullable=False)  # Row number in original file
+    raw_data = db.Column(db.Text, nullable=False)  # JSON string with all column data
+    processed = db.Column(db.Boolean, default=False)  # Whether record was processed into Contact
+    contact_id = db.Column(db.Integer, db.ForeignKey('crm_contacts.id'))  # Link to created contact
+    error_message = db.Column(db.Text)  # Error during processing
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    contact = db.relationship('Contact', backref='import_record')
+    
+    def __repr__(self):
+        return f'<ImportRecord {self.row_number} from {self.import_file_id}>'
+    
+    def get_raw_data(self):
+        """Get raw data as dictionary"""
+        import json
+        if self.raw_data:
+            try:
+                return json.loads(self.raw_data)
+            except (json.JSONDecodeError, TypeError):
+                return {}
+        return {}
+    
+    def set_raw_data(self, data_dict):
+        """Set raw data from dictionary"""
+        import json
+        self.raw_data = json.dumps(data_dict, ensure_ascii=False)

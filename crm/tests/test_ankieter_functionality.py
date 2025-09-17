@@ -4,13 +4,14 @@ Tests for ankieter functionality
 import pytest
 import sys
 import os
+from datetime import datetime
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from app import create_app, db
-from crm.models import Contact, Call, CallQueue
-from models import User
+from crm.models import Contact, Call
+from app.models import User
 
 @pytest.fixture
 def app():
@@ -137,34 +138,40 @@ def test_ankieter_contacts_page(client, app, ankieter_user):
 def test_call_queue_priority_system(app, ankieter_user, sample_contacts):
     """Test call queue priority system"""
     with app.app_context():
-        # Create call queue entries with different priorities
-        high_priority = CallQueue(
+        # Create call entries with different priorities
+        high_priority = Call(
             contact_id=sample_contacts[0].id,
+            ankieter_id=user.id,
             priority='high',
-            status='pending'
+            queue_status='pending',
+            call_date=datetime.utcnow()
         )
         
-        medium_priority = CallQueue(
+        medium_priority = Call(
             contact_id=sample_contacts[1].id,
+            ankieter_id=user.id,
             priority='medium',
-            status='pending'
+            queue_status='pending',
+            call_date=datetime.utcnow()
         )
         
-        low_priority = CallQueue(
+        low_priority = Call(
             contact_id=sample_contacts[2].id,
+            ankieter_id=user.id,
             priority='low',
-            status='pending'
+            queue_status='pending',
+            call_date=datetime.utcnow()
         )
         
         db.session.add_all([high_priority, medium_priority, low_priority])
         db.session.commit()
         
         # Test priority ordering
-        queue_entries = CallQueue.query.order_by(
+        queue_entries = Call.query.order_by(
             db.case(
-                (CallQueue.priority == 'high', 1),
-                (CallQueue.priority == 'medium', 2),
-                (CallQueue.priority == 'low', 3)
+                (Call.priority == 'high', 1),
+                (Call.priority == 'medium', 2),
+                (Call.priority == 'low', 3)
             )
         ).all()
         

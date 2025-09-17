@@ -4,7 +4,7 @@ Skrypt do resetowania szablonów emaili do stanu domyślnego
 """
 import json
 from app import create_app
-from models import db, EmailTemplate
+from app.models import db, EmailTemplate
 
 def get_default_templates():
     """Zwraca domyślne szablony emaili"""
@@ -662,7 +662,7 @@ def reset_templates():
     app = create_app()
     with app.app_context():
         try:
-            from models import EmailLog, EmailQueue, EmailCampaign
+            from app.models import EmailLog, EmailQueue, EmailCampaign
             
             # Pobierz domyślne szablony
             default_templates = get_default_templates()
