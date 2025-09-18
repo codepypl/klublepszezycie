@@ -480,8 +480,7 @@
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRFToken': getCsrfToken()
+                'Accept': 'application/json'
             },
             body: JSON.stringify({ ids: linkIds })
         })
@@ -634,8 +633,7 @@
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRFToken': getCsrfToken()
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify({ ids: linkIds })
             })
