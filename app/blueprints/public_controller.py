@@ -31,24 +31,14 @@ class PublicController:
             except RuntimeError:
                 has_request_context = False
             
-            # Menu items - filter by blog column for blog pages
-            if has_request_context and request.endpoint.startswith('blog.'):
-                # For blog pages, only show items marked for blog
-                menu_items_db = MenuItem.query.filter_by(is_active=True, blog=True).order_by(MenuItem.order.asc()).all()
-            else:
-                # For other pages, show all active items
-                menu_items_db = MenuItem.query.filter_by(is_active=True).order_by(MenuItem.order.asc()).all()
+            # Menu items - show all active items
+            menu_items_db = MenuItem.query.filter_by(is_active=True).order_by(MenuItem.order.asc()).all()
             
             menu_items = []
             for item in menu_items_db:
-                # Use blog_url if available and we're on blog pages, otherwise use regular url
-                if has_request_context and request.endpoint.startswith('blog.') and item.blog_url:
-                    url = item.blog_url
-                else:
-                    url = item.url
                 menu_items.append({
                     'title': item.title, 
-                    'url': url, 
+                    'url': item.url, 
                     'is_active': item.is_active
                 })
             
