@@ -375,6 +375,20 @@ class GroupManager:
         except Exception as e:
             return False, f"Błąd usuwania z grupy: {str(e)}"
     
+    def remove_user_from_club_members(self, user_id):
+        """Usuwa użytkownika z grupy członków klubu"""
+        try:
+            # Znajdź grupę członków klubu
+            club_group = UserGroup.query.filter_by(group_type='club_members').first()
+            if not club_group:
+                return False, "Grupa członków klubu nie została znaleziona"
+            
+            # Usuń użytkownika z grupy
+            return self.remove_user_from_group(club_group.id, user_id)
+            
+        except Exception as e:
+            return False, f"Błąd usuwania z grupy członków klubu: {str(e)}"
+    
     def delete_group(self, group_id):
         """Usuwa grupę"""
         try:
@@ -442,21 +456,36 @@ class GroupManager:
         try:
             event = EventSchedule.query.get(event_id)
             if not event:
+                print(f"❌ Wydarzenie {event_id} nie zostało znalezione")
                 return False, "Wydarzenie nie zostało znalezione"
+            
+            group_name = f"Wydarzenie: {event.title}"
+            print(f"🔍 Szukam grupy: {group_name}")
             
             # Znajdź grupę wydarzenia
             group = UserGroup.query.filter_by(
-                name=f"Wydarzenie: {event.title}",
+                name=group_name,
                 group_type='event_based'
             ).first()
             
             if not group:
-                return False, "Grupa wydarzenia nie została znaleziona"
+                print(f"❌ Grupa wydarzenia '{group_name}' nie została znaleziona")
+                # Sprawdź czy istnieją inne grupy dla tego wydarzenia
+                all_event_groups = UserGroup.query.filter_by(group_type='event_based').all()
+                print(f"🔍 Dostępne grupy wydarzeń: {[g.name for g in all_event_groups]}")
+                
+                # Jeśli grupa nie istnieje, to użytkownik prawdopodobnie nie był w grupie
+                # Zwróć sukces, bo cel (usunięcie z grupy) został osiągnięty
+                print(f"✅ Grupa nie istnieje - użytkownik {user_id} nie był w grupie wydarzenia {event_id}")
+                return True, "Użytkownik nie był w grupie wydarzenia"
+            
+            print(f"✅ Znaleziono grupę: {group.name} (ID: {group.id})")
             
             # Usuń użytkownika z grupy
             return self.remove_user_from_group(group.id, user_id)
             
         except Exception as e:
+            print(f"❌ Błąd usuwania z grupy wydarzenia: {str(e)}")
             return False, f"Błąd usuwania z grupy wydarzenia: {str(e)}"
     
     def remove_email_from_event_group(self, email, event_id):
@@ -464,16 +493,30 @@ class GroupManager:
         try:
             event = EventSchedule.query.get(event_id)
             if not event:
+                print(f"❌ Wydarzenie {event_id} nie zostało znalezione")
                 return False, "Wydarzenie nie zostało znalezione"
+            
+            group_name = f"Wydarzenie: {event.title}"
+            print(f"🔍 Szukam grupy: {group_name}")
             
             # Znajdź grupę wydarzenia
             group = UserGroup.query.filter_by(
-                name=f"Wydarzenie: {event.title}",
+                name=group_name,
                 group_type='event_based'
             ).first()
             
             if not group:
-                return False, "Grupa wydarzenia nie została znaleziona"
+                print(f"❌ Grupa wydarzenia '{group_name}' nie została znaleziona")
+                # Sprawdź czy istnieją inne grupy dla tego wydarzenia
+                all_event_groups = UserGroup.query.filter_by(group_type='event_based').all()
+                print(f"🔍 Dostępne grupy wydarzeń: {[g.name for g in all_event_groups]}")
+                
+                # Jeśli grupa nie istnieje, to email prawdopodobnie nie był w grupie
+                # Zwróć sukces, bo cel (usunięcie z grupy) został osiągnięty
+                print(f"✅ Grupa nie istnieje - email {email} nie był w grupie wydarzenia {event_id}")
+                return True, "Email nie był w grupie wydarzenia"
+            
+            print(f"✅ Znaleziono grupę: {group.name} (ID: {group.id})")
             
             # Znajdź członka grupy po emailu
             member = UserGroupMember.query.filter_by(
@@ -482,7 +525,10 @@ class GroupManager:
             ).first()
             
             if not member:
+                print(f"❌ Email {email} nie jest w grupie wydarzenia {group.name}")
                 return False, "Email nie jest w grupie wydarzenia"
+            
+            print(f"✅ Znaleziono członka: {email} w grupie {group.name}")
             
             # Usuń członka
             member.is_active = False
@@ -492,8 +538,10 @@ class GroupManager:
             group.member_count = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).count()
             db.session.commit()
             
+            print(f"✅ Email {email} usunięty z grupy wydarzenia {group.name}")
             return True, "Email usunięty z grupy wydarzenia"
             
         except Exception as e:
+            print(f"❌ Błąd usuwania z grupy wydarzenia: {str(e)}")
             return False, f"Błąd usuwania z grupy wydarzenia: {str(e)}"
 

@@ -120,6 +120,9 @@ def api_user(user_id):
                 user.phone = data['phone']
             if 'is_active' in data:
                 user.is_active = data['is_active']
+            # Store old club_member status for group management
+            old_club_member = user.club_member
+            
             if 'club_member' in data:
                 user.club_member = data['club_member']
             if 'role' in data:
@@ -133,6 +136,50 @@ def api_user(user_id):
                 user.password_hash = generate_password_hash(new_password)
             
             db.session.commit()
+            
+            # Update groups if club_member status changed
+            if 'club_member' in data and old_club_member != data['club_member']:
+                from app.services.group_manager import GroupManager
+                group_manager = GroupManager()
+                
+                if data['club_member']:
+                    # User became club member - add to club group
+                    print(f"🔍 Dodawanie użytkownika {user.email} do grupy członków klubu")
+                    success, message = group_manager.add_user_to_club_members(user.id)
+                    if success:
+                        print(f"✅ Użytkownik {user.email} dodany do grupy członków klubu")
+                    else:
+                        print(f"❌ Błąd dodawania do grupy członków klubu: {message}")
+                else:
+                    # User is no longer club member - remove from club group and all event groups
+                    print(f"🔍 Usuwanie użytkownika {user.email} z grupy członków klubu")
+                    
+                    # Remove from club group
+                    success, message = group_manager.remove_user_from_club_members(user.id)
+                    if success:
+                        print(f"✅ Użytkownik {user.email} usunięty z grupy członków klubu")
+                    else:
+                        print(f"❌ Błąd usuwania z grupy członków klubu: {message}")
+                    
+                    # Remove from all event groups
+                    from app.models import UserGroupMember, UserGroup
+                    event_memberships = UserGroupMember.query.join(UserGroup).filter(
+                        UserGroupMember.user_id == user.id,
+                        UserGroupMember.is_active == True,
+                        UserGroup.group_type == 'event_based'
+                    ).all()
+                    
+                    print(f"🔍 Usuwanie użytkownika {user.email} z {len(event_memberships)} grup wydarzeń")
+                    
+                    for membership in event_memberships:
+                        group = membership.group
+                        if group:
+                            print(f"🔍 Usuwanie z grupy wydarzenia: {group.name}")
+                            success, message = group_manager.remove_user_from_group(group.id, user.id)
+                            if success:
+                                print(f"✅ Usunięto z grupy wydarzenia: {group.name}")
+                            else:
+                                print(f"❌ Błąd usuwania z grupy wydarzenia {group.name}: {message}")
             
             # Wyślij email z nowym hasłem jeśli zostało ustawione
             if new_password:

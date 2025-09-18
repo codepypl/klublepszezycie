@@ -321,10 +321,35 @@ class PublicController:
                     if member:
                         db.session.delete(member)
                         db.session.commit()
+                        print(f"✅ Usunięto użytkownika {user.email} z grupy członków klubu")
+                
+                # Remove from all event groups
+                from app.services.group_manager import GroupManager
+                group_manager = GroupManager()
+                
+                # Get all event groups where user is a member
+                event_memberships = UserGroupMember.query.join(UserGroup).filter(
+                    UserGroupMember.user_id == user.id,
+                    UserGroupMember.is_active == True,
+                    UserGroup.group_type == 'event_based'
+                ).all()
+                
+                print(f"🔍 Usuwanie użytkownika {user.email} z {len(event_memberships)} grup wydarzeń")
+                
+                # Remove from each event group
+                for membership in event_memberships:
+                    group = membership.group
+                    if group:
+                        print(f"🔍 Usuwanie z grupy wydarzenia: {group.name}")
+                        success, message = group_manager.remove_user_from_group(group.id, user.id)
+                        if success:
+                            print(f"✅ Usunięto z grupy wydarzenia: {group.name}")
+                        else:
+                            print(f"❌ Błąd usuwania z grupy wydarzenia {group.name}: {message}")
                 
                 return {
                     'success': True,
-                    'message': 'Zostałeś wypisany z listy mailingowej'
+                    'message': 'Zostałeś wypisany z listy mailingowej i usunięty z wszystkich grup wydarzeń'
                 }
             else:
                 return {
@@ -358,9 +383,35 @@ class PublicController:
                         'error': 'Nie można usunąć konta administratora'
                     }
                 
+                # Remove user from all groups before deleting
+                from app.services.group_manager import GroupManager
+                group_manager = GroupManager()
+                
+                # Get all groups where user is a member
+                from app.models import UserGroupMember
+                user_memberships = UserGroupMember.query.filter_by(
+                    user_id=user.id,
+                    is_active=True
+                ).all()
+                
+                print(f"🔍 Usuwanie użytkownika {user.email} (ID: {user.id}) z {len(user_memberships)} grup")
+                
+                # Remove from each group
+                for membership in user_memberships:
+                    group = membership.group
+                    if group:
+                        print(f"🔍 Usuwanie z grupy: {group.name}")
+                        success, message = group_manager.remove_user_from_group(group.id, user.id)
+                        if success:
+                            print(f"✅ Usunięto z grupy: {group.name}")
+                        else:
+                            print(f"❌ Błąd usuwania z grupy {group.name}: {message}")
+                
                 # Delete user
                 db.session.delete(user)
                 db.session.commit()
+                
+                print(f"✅ Użytkownik {user.email} został usunięty z systemu")
                 
                 return {
                     'success': True,
