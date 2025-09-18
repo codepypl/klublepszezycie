@@ -132,7 +132,13 @@ def register():
             # If user exists and event_id is provided, just register for the event
             if data.get('event_id'):
                 return register_for_event(existing_user, data['event_id'])
-            return jsonify({'success': False, 'message': 'Użytkownik z tym emailem już istnieje'}), 400
+            
+            # If user exists and no event_id, just add to club and return success
+            if not existing_user.club_member:
+                existing_user.club_member = True
+                db.session.commit()
+            
+            return jsonify({'success': True, 'message': 'Witamy z powrotem! Zostałeś dodany do klubu'})
         
         # Create new user
         from werkzeug.security import generate_password_hash
@@ -151,8 +157,22 @@ def register():
             club_member=True  # CTA form always joins the club
         )
         
-        db.session.add(user)
-        db.session.commit()
+        try:
+            db.session.add(user)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            # Check if it's a duplicate key error
+            if 'duplicate key' in str(e) or 'UNIQUE constraint' in str(e):
+                # User was created by another process, try to get it
+                existing_user = User.query.filter_by(email=data['email']).first()
+                if existing_user:
+                    if not existing_user.club_member:
+                        existing_user.club_member = True
+                        db.session.commit()
+                    return jsonify({'success': True, 'message': 'Witamy z powrotem! Zostałeś dodany do klubu'})
+            # Re-raise the exception if it's not a duplicate key error
+            raise e
         
         # Add user to system groups
         from app.services.group_manager import GroupManager
@@ -431,9 +451,25 @@ def register_event(event_id):
                         club_member=True
                     )
                     
-                    db.session.add(new_user)
-                    db.session.commit()
-                    user_created = True
+                    try:
+                        db.session.add(new_user)
+                        db.session.commit()
+                        user_created = True
+                    except Exception as user_creation_error:
+                        db.session.rollback()
+                        # Check if it's a duplicate key error
+                        if 'duplicate key' in str(user_creation_error) or 'UNIQUE constraint' in str(user_creation_error):
+                            # User was created by another process, get existing user
+                            existing_user = User.query.filter_by(email=registration.email).first()
+                            if existing_user:
+                                if not existing_user.club_member:
+                                    existing_user.club_member = True
+                                    db.session.commit()
+                                new_user = existing_user  # Use existing user for further processing
+                                user_created = True  # Still consider it as "created" for email purposes
+                        else:
+                            # Re-raise the exception if it's not a duplicate key error
+                            raise user_creation_error
                     
                     # Add new user to system groups
                     from app.services.group_manager import GroupManager
