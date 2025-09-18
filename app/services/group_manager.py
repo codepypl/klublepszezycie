@@ -327,7 +327,7 @@ class GroupManager:
                             group_id=group_id,
                             user_id=None,  # user_id field no longer exists in event_registrations
                             email=registration.email,
-                            name=registration.name,
+                            first_name=registration.first_name,
                             member_type='external'  # All event registrations are external members
                         )
                         db.session.add(member)

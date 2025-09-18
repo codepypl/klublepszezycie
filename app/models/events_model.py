@@ -56,7 +56,7 @@ class EventRegistration(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=False)
-    name = db.Column(db.String(100), nullable=False)
+    first_name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), nullable=False)
     phone = db.Column(db.String(20))
     status = db.Column(db.String(20), default='pending')  # pending, confirmed, cancelled
@@ -69,4 +69,4 @@ class EventRegistration(db.Model):
     event = db.relationship('EventSchedule', back_populates='registrations')
     
     def __repr__(self):
-        return f'<EventRegistration {self.name} for {self.event.title}>'
+        return f'<EventRegistration {self.first_name} for {self.event.title}>'

@@ -73,7 +73,7 @@ class AuthController:
             
             # Create user
             user = User(
-                name=name,
+                first_name=name,
                 email=email,
                 phone=phone,
                 password_hash=generate_password_hash(password),

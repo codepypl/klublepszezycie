@@ -204,7 +204,7 @@ class PublicController:
             # Create registration
             registration = EventRegistration(
                 event_id=event_id,
-                name=name,
+                first_name=name,
                 email=email,
                 phone=phone,
                 notes=notes,
@@ -270,7 +270,7 @@ class PublicController:
             else:
                 # Create new user
                 user = User(
-                    name=name or email.split('@')[0],
+                    first_name=name or email.split('@')[0],
                     email=email,
                     role='user',
                     is_active=True

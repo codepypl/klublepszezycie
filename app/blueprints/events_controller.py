@@ -258,9 +258,13 @@ class EventsController:
                 }
             
             # Create registration
+            user = User.query.get(user_id)
             registration = EventRegistration(
                 event_id=event_id,
                 user_id=user_id,
+                first_name=user.first_name,
+                email=user.email,
+                phone=user.phone,
                 notes=notes,
                 status='confirmed'
             )

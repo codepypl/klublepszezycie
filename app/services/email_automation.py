@@ -266,7 +266,7 @@ class EmailAutomation:
             for admin in admins:
                 context = {
                     'admin_name': admin.name or 'Administratorze',
-                    'user_name': registration.name,
+                    'user_name': registration.first_name,
                     'user_email': registration.email,
                     'event_title': event.title,
                     'event_date': event.event_date.strftime('%d.%m.%Y %H:%M')

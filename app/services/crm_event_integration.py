@@ -59,7 +59,7 @@ class EventIntegrationService:
         # Create event registration
         registration = EventRegistration(
             event_id=event_id,
-            name=contact.name,
+            first_name=contact.name,
             email=contact.email,
             phone=contact.phone,
             registration_source='crm_lead'

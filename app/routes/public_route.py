@@ -117,7 +117,7 @@ def register():
         data = request.get_json()
         
         # Validate input
-        if not data.get('name') or not data.get('email'):
+        if not data.get('first_name') or not data.get('email'):
             return jsonify({'success': False, 'message': 'Imię i email są wymagane'}), 400
         
         if not validate_email(data['email']):
@@ -142,7 +142,7 @@ def register():
         temp_password = str(uuid.uuid4())[:8]
         
         user = User(
-            first_name=data['name'],
+            first_name=data['first_name'],
             email=data['email'],
             phone=data.get('phone', ''),
             password_hash=generate_password_hash(temp_password),  # Use same password
@@ -332,7 +332,7 @@ def register_event(event_id):
         data = request.get_json()
         
         # Validate input
-        if not data.get('name') or not data.get('email'):
+        if not data.get('first_name') or not data.get('email'):
             return jsonify({'success': False, 'message': 'Imię i email są wymagane'}), 400
         
         if not validate_email(data['email']):
@@ -376,7 +376,7 @@ def register_event(event_id):
         # Create registration
         registration = EventRegistration(
             event_id=event_id,
-            name=data['name'],
+            first_name=data['first_name'],
             email=data['email'],
             phone=data.get('phone', ''),
             wants_club_news=data.get('wants_club_news', False),
@@ -392,7 +392,7 @@ def register_event(event_id):
         
         success, message = group_manager.add_email_to_event_group(
             email=registration.email,
-            name=registration.name,
+            first_name=registration.first_name,
             event_id=event_id
         )
         if success:
@@ -424,7 +424,7 @@ def register_event(event_id):
                     from werkzeug.security import generate_password_hash
                     new_user = User(
                         email=registration.email,
-                        name=registration.name,
+                        first_name=registration.first_name,
                         password_hash=generate_password_hash(temp_password),
                         is_active=True,
                         is_temporary_password=True,
@@ -466,7 +466,7 @@ def register_event(event_id):
                     delete_token = generate_unsubscribe_token(registration.email, 'delete_account')
                     
                     welcome_context = {
-                        'user_name': registration.name,
+                        'user_name': registration.first_name,
                         'user_email': registration.email,
                         'temporary_password': temp_password,
                         'login_url': request.url_root + 'login',
@@ -526,7 +526,7 @@ def register_event(event_id):
         delete_token = generate_unsubscribe_token(registration.email, 'delete_account')
         
         context = {
-            'user_name': registration.name,
+            'user_name': registration.first_name,
             'user_email': registration.email,
             'event_title': event.title,  # Fixed: was event_name, should be event_title
             'event_date': event.event_date.strftime('%d.%m.%Y') if event.event_date else '',
@@ -663,6 +663,9 @@ def register_for_event(user, event_id):
         registration = EventRegistration(
             user_id=user.id,
             event_id=event_id,
+            first_name=user.first_name,
+            email=user.email,
+            phone=user.phone,
             registration_date=get_local_now(),
             status='confirmed'
         )

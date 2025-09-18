@@ -411,7 +411,7 @@ class EmailService:
                     'event_date': event.start_time.strftime('%d.%m.%Y'),
                     'event_time': event.start_time.strftime('%H:%M'),
                     'event_location': event.location or 'Nie podano',
-                    'recipient_name': registration.name
+                    'recipient_name': registration.first_name
                 }
                 
                 self.add_to_queue(
