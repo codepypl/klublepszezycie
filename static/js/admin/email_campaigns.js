@@ -415,7 +415,7 @@ function handleTemplateChange() {
                     div.innerHTML = `
                         <label for="var_${variable}" class="form-label">${variable}</label>
                         <input type="text" class="form-control" id="var_${variable}" name="var_${variable}" 
-                               placeholder="Wpisz treść dla ${variable}" oninput="updateEmailPreview()">
+                               placeholder="Wpisz treść dla ${variable}" oninput="debounceUpdatePreview()">
                         <div class="form-text">${variables[variable]}</div>
                     `;
                     variablesContainer.appendChild(div);
@@ -436,6 +436,35 @@ function handleTemplateChange() {
     }
 }
 
+// Sanitize email preview HTML to prevent CSS leakage
+function sanitizeEmailPreview(htmlContent) {
+    // Create a temporary div to parse the HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    
+    // Remove style tags and style attributes that could affect the page
+    const styleTags = tempDiv.querySelectorAll('style');
+    styleTags.forEach(style => style.remove());
+    
+    // Remove style attributes from all elements
+    const allElements = tempDiv.querySelectorAll('*');
+    allElements.forEach(element => {
+        element.removeAttribute('style');
+    });
+    
+    // Add scoped styles to prevent CSS leakage
+    const scopedContent = tempDiv.innerHTML;
+    
+    return scopedContent;
+}
+
+// Debounced update email preview
+let previewTimeout;
+function debounceUpdatePreview() {
+    clearTimeout(previewTimeout);
+    previewTimeout = setTimeout(updateEmailPreview, 300);
+}
+
 // Update email preview
 function updateEmailPreview() {
     const templateId = document.getElementById('campaign_template').value;
@@ -448,21 +477,47 @@ function updateEmailPreview() {
             let subject = template.subject || '';
             
             // Replace variables with form values
-            if (template.variables && Array.isArray(template.variables)) {
-                template.variables.forEach(variable => {
-                    const input = document.getElementById(`var_${variable}`);
-                    const value = input ? input.value : `{{${variable}}}`;
-                    htmlContent = htmlContent.replace(new RegExp(`{{${variable}}}`, 'g'), value);
-                    subject = subject.replace(new RegExp(`{{${variable}}}`, 'g'), value);
-                });
+            if (template.variables) {
+                let variables = template.variables;
+                // Parse variables if it's a string
+                if (typeof variables === 'string') {
+                    try {
+                        variables = JSON.parse(variables);
+                    } catch (e) {
+                        console.error('Error parsing template variables:', e);
+                        variables = {};
+                    }
+                }
+                
+                // Handle both array and object formats
+                if (Array.isArray(variables)) {
+                    variables.forEach(variable => {
+                        const input = document.getElementById(`var_${variable}`);
+                        const value = input ? input.value : `{{${variable}}}`;
+                        htmlContent = htmlContent.replace(new RegExp(`{{${variable}}}`, 'g'), value);
+                        subject = subject.replace(new RegExp(`{{${variable}}}`, 'g'), value);
+                    });
+                } else if (typeof variables === 'object' && variables !== null) {
+                    Object.keys(variables).forEach(variable => {
+                        const input = document.getElementById(`var_${variable}`);
+                        const value = input ? input.value : `{{${variable}}}`;
+                        htmlContent = htmlContent.replace(new RegExp(`{{${variable}}}`, 'g'), value);
+                        subject = subject.replace(new RegExp(`{{${variable}}}`, 'g'), value);
+                    });
+                }
             }
+            
+            // Sanitize HTML content to prevent CSS leakage
+            const sanitizedContent = sanitizeEmailPreview(htmlContent);
             
             preview.innerHTML = `
                 <div class="mb-2">
                     <strong>Temat:</strong> ${subject}
                 </div>
-                <div class="border-top pt-2">
-                    ${htmlContent}
+                <div class="border-top pt-2" style="max-height: 400px; overflow-y: auto;">
+                    <div class="email-preview-container" style="isolation: isolate; contain: layout style;">
+                        ${sanitizedContent}
+                    </div>
                 </div>
             `;
         }
