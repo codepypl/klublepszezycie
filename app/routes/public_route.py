@@ -350,15 +350,24 @@ def register_event(event_id):
     """Register for event"""
     try:
         data = request.get_json()
+        print(f"🔍 Event registration data: {data}")
+        
+        # Check if data is valid JSON
+        if not data:
+            print("❌ No data received")
+            return jsonify({'success': False, 'message': 'Nieprawidłowe dane JSON'}), 400
         
         # Validate input
         if not data.get('first_name') or not data.get('email'):
+            print(f"❌ Missing required fields: first_name={data.get('first_name')}, email={data.get('email')}")
             return jsonify({'success': False, 'message': 'Imię i email są wymagane'}), 400
         
         if not validate_email(data['email']):
+            print(f"❌ Invalid email format: {data['email']}")
             return jsonify({'success': False, 'message': 'Nieprawidłowy format email'}), 400
         
         if data.get('phone') and not validate_phone(data['phone']):
+            print(f"❌ Invalid phone format: {data['phone']}")
             return jsonify({'success': False, 'message': 'Nieprawidłowy format telefonu'}), 400
         
         # Get event

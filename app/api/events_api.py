@@ -422,8 +422,33 @@ def api_delete_registration(registration_id):
         if not registration:
             return jsonify({'success': False, 'message': 'Registration not found'}), 404
         
+        # Store data before deletion for group cleanup
+        event_id = registration.event_id
+        user_id = registration.user_id
+        email = registration.email
+        
+        # Delete registration
         db.session.delete(registration)
         db.session.commit()
+        
+        # Remove from event group
+        from app.services.group_manager import GroupManager
+        group_manager = GroupManager()
+        
+        if user_id:
+            # User has account - remove from group by user_id
+            success, message = group_manager.remove_user_from_event_group(user_id, event_id)
+            if success:
+                print(f"✅ Usunięto użytkownika {user_id} z grupy wydarzenia {event_id}")
+            else:
+                print(f"❌ Błąd usuwania użytkownika z grupy wydarzenia: {message}")
+        else:
+            # No user account - remove by email
+            success, message = group_manager.remove_email_from_event_group(email, event_id)
+            if success:
+                print(f"✅ Usunięto email {email} z grupy wydarzenia {event_id}")
+            else:
+                print(f"❌ Błąd usuwania emailu z grupy wydarzenia: {message}")
         
         return jsonify({
             'success': True,
@@ -447,6 +472,19 @@ def api_bulk_delete_registrations():
         if not registration_ids:
             return jsonify({'success': False, 'message': 'No registrations selected'}), 400
         
+        # Store registration data before deletion for group cleanup
+        registrations_to_delete = []
+        for registration_id in registration_ids:
+            registration = EventRegistration.query.get(registration_id)
+            if registration:
+                registrations_to_delete.append({
+                    'id': registration.id,
+                    'event_id': registration.event_id,
+                    'user_id': registration.user_id,
+                    'email': registration.email
+                })
+        
+        # Delete registrations
         deleted_count = 0
         for registration_id in registration_ids:
             registration = EventRegistration.query.get(registration_id)
@@ -455,6 +493,26 @@ def api_bulk_delete_registrations():
                 deleted_count += 1
         
         db.session.commit()
+        
+        # Remove from event groups
+        from app.services.group_manager import GroupManager
+        group_manager = GroupManager()
+        
+        for reg_data in registrations_to_delete:
+            if reg_data['user_id']:
+                # User has account - remove from group by user_id
+                success, message = group_manager.remove_user_from_event_group(reg_data['user_id'], reg_data['event_id'])
+                if success:
+                    print(f"✅ Usunięto użytkownika {reg_data['user_id']} z grupy wydarzenia {reg_data['event_id']}")
+                else:
+                    print(f"❌ Błąd usuwania użytkownika z grupy wydarzenia: {message}")
+            else:
+                # No user account - remove by email
+                success, message = group_manager.remove_email_from_event_group(reg_data['email'], reg_data['event_id'])
+                if success:
+                    print(f"✅ Usunięto email {reg_data['email']} z grupy wydarzenia {reg_data['event_id']}")
+                else:
+                    print(f"❌ Błąd usuwania emailu z grupy wydarzenia: {message}")
         
         return jsonify({
             'success': True,

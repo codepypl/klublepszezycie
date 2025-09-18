@@ -337,7 +337,7 @@ async function editSchedule(id) {
 async function deleteSchedule(id) {
     if (confirm('Czy na pewno chcesz usunąć ten harmonogram?')) {
         try {
-            const response = await fetch(`/admin/api/schedules/${id}`, {
+            const response = await fetch(`/api/schedules/${id}`, {
                 method: 'DELETE'
             });
             

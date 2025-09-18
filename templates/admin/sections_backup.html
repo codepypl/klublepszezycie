@@ -425,7 +425,7 @@
             if (confirm('Czy na pewno chcesz usunąć tę sekcję?')) {
                 const formData = new FormData();
                 formData.append('id', id);
-                fetch('/admin/api/sections', {
+                fetch('/api/sections', {
                     method: 'DELETE',
                     body: formData
                 })

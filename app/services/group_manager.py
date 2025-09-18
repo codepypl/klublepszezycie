@@ -436,4 +436,64 @@ class GroupManager:
             
         except Exception as e:
             return False, f"Błąd dodawania do grupy wydarzenia: {str(e)}"
+    
+    def remove_user_from_event_group(self, user_id, event_id):
+        """Usuwa użytkownika z grupy wydarzenia"""
+        try:
+            event = EventSchedule.query.get(event_id)
+            if not event:
+                return False, "Wydarzenie nie zostało znalezione"
+            
+            # Znajdź grupę wydarzenia
+            group = UserGroup.query.filter_by(
+                name=f"Wydarzenie: {event.title}",
+                group_type='event_based'
+            ).first()
+            
+            if not group:
+                return False, "Grupa wydarzenia nie została znaleziona"
+            
+            # Usuń użytkownika z grupy
+            return self.remove_user_from_group(group.id, user_id)
+            
+        except Exception as e:
+            return False, f"Błąd usuwania z grupy wydarzenia: {str(e)}"
+    
+    def remove_email_from_event_group(self, email, event_id):
+        """Usuwa email z grupy wydarzenia (bez konta użytkownika)"""
+        try:
+            event = EventSchedule.query.get(event_id)
+            if not event:
+                return False, "Wydarzenie nie zostało znalezione"
+            
+            # Znajdź grupę wydarzenia
+            group = UserGroup.query.filter_by(
+                name=f"Wydarzenie: {event.title}",
+                group_type='event_based'
+            ).first()
+            
+            if not group:
+                return False, "Grupa wydarzenia nie została znaleziona"
+            
+            # Znajdź członka grupy po emailu
+            member = UserGroupMember.query.filter_by(
+                group_id=group.id,
+                email=email
+            ).first()
+            
+            if not member:
+                return False, "Email nie jest w grupie wydarzenia"
+            
+            # Usuń członka
+            member.is_active = False
+            db.session.commit()
+            
+            # Aktualizuj liczbę członków
+            group.member_count = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).count()
+            db.session.commit()
+            
+            return True, "Email usunięty z grupy wydarzenia"
+            
+        except Exception as e:
+            return False, f"Błąd usuwania z grupy wydarzenia: {str(e)}"
 

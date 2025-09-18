@@ -255,12 +255,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Usuń rejestrację
 function deleteRegistration(registrationId) {
+    console.log('deleteRegistration called with ID:', registrationId);
+    
     if (confirm('Czy na pewno chcesz usunąć tę rejestrację? Tej operacji nie można cofnąć.')) {
-        fetch(`/admin/api/event-registration/${registrationId}`, {
+        console.log('User confirmed deletion');
+        
+        // Find the button and disable it
+        const button = document.querySelector(`button[onclick="deleteRegistration(${registrationId})"]`);
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+        
+        fetch(`/api/registrations/${registrationId}`, {
             method: 'DELETE'
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Delete response:', data);
             if (data.success) {
                 showNotification('Rejestracja została usunięta', 'success');
                 // Usuń wiersz z tabeli
@@ -269,13 +287,25 @@ function deleteRegistration(registrationId) {
                     row.remove();
                 }
             } else {
-                showNotification('Błąd podczas usuwania: ' + data.error, 'error');
+                showNotification('Błąd podczas usuwania: ' + (data.message || data.error), 'error');
+                // Re-enable button on error
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-trash"></i>';
+                }
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showNotification('Wystąpił błąd podczas usuwania', 'error');
+            showNotification('Wystąpił błąd podczas usuwania: ' + error.message, 'error');
+            // Re-enable button on error
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-trash"></i>';
+            }
         });
+    } else {
+        console.log('User cancelled deletion');
     }
 }
 
