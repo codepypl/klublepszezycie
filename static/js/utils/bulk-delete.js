@@ -139,12 +139,15 @@ class BulkDelete {
         
         // Handle confirm button click
         const handleConfirm = () => {
-            this.performDelete();
             bootstrapModal.hide();
             // Remove event listeners
             confirmBtn.removeEventListener('click', handleConfirm);
             cancelBtn.removeEventListener('click', handleCancel);
             closeBtn.removeEventListener('click', handleCancel);
+            // Perform delete after modal is hidden
+            setTimeout(() => {
+                this.performDelete();
+            }, 300); // Wait for modal animation to complete
         };
         
         // Handle cancel button click

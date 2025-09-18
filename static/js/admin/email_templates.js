@@ -348,6 +348,25 @@ function displayTemplates(templates) {
         
         tbody.appendChild(row);
     });
+    
+    // Initialize bulk delete after loading templates
+    initializeBulkDelete();
+}
+
+// Initialize bulk delete functionality
+function initializeBulkDelete() {
+    const table = document.getElementById('templatesTable');
+    const deleteEndpoint = table.dataset.deleteEndpoint;
+    
+    if (table && deleteEndpoint) {
+        // Remove existing bulk delete instance if any
+        if (window.templatesBulkDelete) {
+            window.templatesBulkDelete = null;
+        }
+        
+        // Create new bulk delete instance
+        window.templatesBulkDelete = new BulkDelete('templatesTable', deleteEndpoint);
+    }
 }
 
 // Show template modal

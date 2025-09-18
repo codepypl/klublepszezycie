@@ -24,13 +24,13 @@ def validate_file_type(file):
     if not allowed_file(file.filename):
         return False, f"Nieprawidłowy typ pliku. Dozwolone: {', '.join(ALLOWED_EXTENSIONS)}"
     
-    # Check file size (16MB max)
+    # Check file size (50MB max)
     file.seek(0, 2)  # Seek to end
     file_size = file.tell()
     file.seek(0)  # Reset to beginning
     
-    if file_size > 16 * 1024 * 1024:  # 16MB
-        return False, "Plik jest za duży. Maksymalny rozmiar: 16MB"
+    if file_size > 50 * 1024 * 1024:  # 50MB
+        return False, "Plik jest za duży. Maksymalny rozmiar: 50MB"
     
     return True, "OK"
 

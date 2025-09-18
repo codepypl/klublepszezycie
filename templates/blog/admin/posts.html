@@ -310,8 +310,8 @@
                     
                     <div class="mb-3">
                         <label for="imageFile" class="form-label">Upload Obrazu</label>
-                        <input type="file" class="form-control" id="imageFile" name="image_file" accept="image/*">
-                        <div class="form-text">Lub wklej URL poniżej</div>
+                        <input type="file" class="form-control" id="imageFile" name="image_file" accept="image/*" onchange="validateImageFile()">
+                        <div class="form-text">Lub wklej URL poniżej. Maksymalny rozmiar: 50MB</div>
                     </div>
                     
                     <div class="mb-3">
@@ -407,5 +407,31 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     {% endif %}
 });
+
+// Validate image file size
+function validateImageFile() {
+    const fileInput = document.getElementById('imageFile');
+    if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const maxSize = 50 * 1024 * 1024; // 50MB
+        
+        if (file.size > maxSize) {
+            window.toastManager.error('Plik jest za duży. Maksymalny rozmiar: 50MB');
+            fileInput.value = ''; // Clear the input
+            return false;
+        }
+        
+        // Check file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            window.toastManager.error('Nieprawidłowy typ pliku. Dozwolone: JPG, PNG, GIF, WEBP');
+            fileInput.value = ''; // Clear the input
+            return false;
+        }
+        
+        window.toastManager.success('Plik został zaakceptowany');
+    }
+    return true;
+}
 </script>
 {% endblock %}

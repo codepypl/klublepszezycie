@@ -397,6 +397,7 @@ def email_templates():
                 'template_type': template.template_type,
                 'is_active': template.is_active,
                 'is_default': template.is_default,
+                'variables': template.variables,
                 'created_at': template.created_at.isoformat()
             })
         
@@ -548,12 +549,12 @@ def email_campaign_templates():
         
         templates_data = []
         for template in templates:
-            variables = []
+            variables = {}
             if template.variables:
                 try:
                     variables = json.loads(template.variables)
                 except json.JSONDecodeError:
-                    variables = []
+                    variables = {}
             
             templates_data.append({
                 'id': template.id,
@@ -1021,7 +1022,7 @@ def email_update_group(group_id):
             return jsonify({'success': False, 'error': 'Grupa nie istnieje'}), 404
         
         # Lista domyślnych grup i grup wydarzeń (nie można ich edytować)
-        default_groups = ['club_members', 'all_users']
+        default_groups = ['club_members']
         system_groups = default_groups + ['event_based']
         
         if group.group_type in system_groups:
@@ -1102,7 +1103,7 @@ def email_get_group_members(group_id):
             return jsonify({'success': False, 'error': 'Grupa nie istnieje'}), 404
         
         # Lista domyślnych grup (członkowie zarządzani automatycznie)
-        default_groups = ['club_members', 'all_users']
+        default_groups = ['club_members']
         
         if group.group_type in default_groups:
             return jsonify({'success': False, 'error': 'Członkowie grup systemowych są zarządzani automatycznie'}), 400

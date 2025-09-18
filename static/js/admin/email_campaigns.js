@@ -109,6 +109,25 @@ function displayCampaigns(campaigns) {
         
         tbody.appendChild(row);
     });
+    
+    // Initialize bulk delete after loading campaigns
+    initializeBulkDelete();
+}
+
+// Initialize bulk delete functionality
+function initializeBulkDelete() {
+    const table = document.getElementById('campaignsTable');
+    const deleteEndpoint = table.dataset.deleteEndpoint;
+    
+    if (table && deleteEndpoint) {
+        // Remove existing bulk delete instance if any
+        if (window.campaignsBulkDelete) {
+            window.campaignsBulkDelete = null;
+        }
+        
+        // Create new bulk delete instance
+        window.campaignsBulkDelete = new BulkDelete('campaignsTable', deleteEndpoint);
+    }
 }
 
 // Show campaign modal
