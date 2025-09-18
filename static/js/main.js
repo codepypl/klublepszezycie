@@ -119,11 +119,12 @@ function initializeFormHandling() {
             submitButton.disabled = true;
             
             // Get form data as JSON
+            const wantsClubNewsInput = this.querySelector('input[name="wants_club_news"]');
             const jsonData = {
                 name: this.querySelector('input[name="name"]').value,
                 email: this.querySelector('input[name="email"]').value,
                 phone: this.querySelector('input[name="phone"]').value || '',
-                wants_club_news: this.querySelector('input[name="wants_club_news"]').checked
+                wants_club_news: wantsClubNewsInput ? wantsClubNewsInput.checked : false
             };
             
             // Send AJAX request

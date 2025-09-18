@@ -242,17 +242,38 @@ function showAddTagModal() {
 function editTag(tagId) {
     if (window.blogTagsManager) {
         window.blogTagsManager.editTag(tagId);
+    } else {
+        console.error('blogTagsManager not initialized yet');
+        // Retry after a short delay
+        setTimeout(() => {
+            if (window.blogTagsManager) {
+                window.blogTagsManager.editTag(tagId);
+            } else {
+                showError('Błąd: Menedżer tagów nie jest jeszcze załadowany. Spróbuj ponownie.');
+            }
+        }, 100);
     }
 }
 
 function deleteTag(tagId) {
     if (window.blogTagsManager) {
         window.blogTagsManager.deleteTag(tagId);
+    } else {
+        console.error('blogTagsManager not initialized yet');
+        // Retry after a short delay
+        setTimeout(() => {
+            if (window.blogTagsManager) {
+                window.blogTagsManager.deleteTag(tagId);
+            } else {
+                showError('Błąd: Menedżer tagów nie jest jeszcze załadowany. Spróbuj ponownie.');
+            }
+        }, 100);
     }
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     window.blogTagsManager = new BlogTagsManager();
+    console.log('BlogTagsManager initialized:', window.blogTagsManager);
 });
 

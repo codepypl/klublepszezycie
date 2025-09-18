@@ -72,17 +72,21 @@ class EventsManager {
         document.getElementById('editEventTitle').value = event.title || '';
         document.getElementById('editEventType').value = event.event_type || '';
         
-        // Format dates
+        // Format dates - handle both ISO strings and Date objects
         if (event.event_date) {
             const eventDate = new Date(event.event_date);
-            document.getElementById('editEventDate').value = eventDate.toISOString().split('T')[0];
-            document.getElementById('editEventTime').value = eventDate.toTimeString().slice(0, 5);
+            if (!isNaN(eventDate.getTime())) {
+                document.getElementById('editEventDate').value = eventDate.toISOString().split('T')[0];
+                document.getElementById('editEventTime').value = eventDate.toTimeString().slice(0, 5);
+            }
         }
         
         if (event.end_date) {
             const endDate = new Date(event.end_date);
-            document.getElementById('editEndDate').value = endDate.toISOString().split('T')[0];
-            document.getElementById('editEndTime').value = endDate.toTimeString().slice(0, 5);
+            if (!isNaN(endDate.getTime())) {
+                document.getElementById('editEndDate').value = endDate.toISOString().split('T')[0];
+                document.getElementById('editEndTime').value = endDate.toTimeString().slice(0, 5);
+            }
         }
         
         document.getElementById('editEventLocation').value = event.location || '';
@@ -90,8 +94,11 @@ class EventsManager {
         document.getElementById('editMaxParticipants').value = event.max_participants || '';
         document.getElementById('editHeroBackgroundType').value = event.hero_background_type || 'image';
         document.getElementById('editEventDescription').value = event.description || '';
-        document.getElementById('editEventActive').checked = event.is_active || false;
-        document.getElementById('editEventPublished').checked = event.is_published || false;
+        document.getElementById('editEventActive').checked = event.is_active === true;
+        document.getElementById('editEventPublished').checked = event.is_published === true;
+        
+        // Set minimum dates for date inputs
+        this.setMinDates();
     }
 
     deleteEvent(eventId) {
@@ -125,10 +132,13 @@ class EventsManager {
             return;
         }
 
-        // Remove null/empty values
+        // Remove null/empty values, but keep required fields
+        const requiredFields = ['event_type']; // Fields that should not be removed even if empty
         Object.keys(eventData).forEach(key => {
             if (eventData[key] === null || eventData[key] === '') {
-                delete eventData[key];
+                if (!requiredFields.includes(key)) {
+                    delete eventData[key];
+                }
             }
         });
 
@@ -181,10 +191,13 @@ class EventsManager {
             return;
         }
 
-        // Remove null/empty values
+        // Remove null/empty values, but keep required fields
+        const requiredFields = ['event_type']; // Fields that should not be removed even if empty
         Object.keys(eventData).forEach(key => {
             if (eventData[key] === null || eventData[key] === '') {
-                delete eventData[key];
+                if (!requiredFields.includes(key)) {
+                    delete eventData[key];
+                }
             }
         });
 
@@ -244,8 +257,13 @@ class EventsManager {
                 }
                 return response.json();
             })
-            .then(events => {
-                this.displayEvents(events);
+            .then(data => {
+                if (data.success && data.events) {
+                    this.displayEvents(data.events);
+                } else {
+                    console.error('API returned error:', data.message);
+                    this.displayError(data.message || 'Wystąpił błąd podczas ładowania wydarzeń');
+                }
             })
             .catch(error => {
                 console.error('Error loading events:', error);
@@ -383,7 +401,7 @@ class EventsManager {
             'conference': 'Konferencja',
             'other': 'Inne'
         };
-        return types[type] || type;
+        return types[type] || (type || 'Nieokreślony');
     }
 
     displayError(message) {
@@ -438,14 +456,36 @@ class EventsManager {
     setMinDates() {
         // Set minimum date to today for all date inputs
         const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const currentTime = now.toTimeString().slice(0, 5);
+        
         const dateInputs = [
             'eventDate', 'endDate', 'editEventDate', 'editEndDate'
+        ];
+        
+        const timeInputs = [
+            'eventTime', 'endTime', 'editEventTime', 'editEndTime'
         ];
         
         dateInputs.forEach(id => {
             const input = document.getElementById(id);
             if (input) {
                 input.min = today;
+            }
+        });
+        
+        // Set minimum time for time inputs
+        timeInputs.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                // For today's date, set minimum time to current time
+                const dateInput = input.id.replace('Time', 'Date').replace('edit', 'edit');
+                const dateInputElement = document.getElementById(dateInput);
+                if (dateInputElement && dateInputElement.value === today) {
+                    input.min = currentTime;
+                } else {
+                    input.min = '00:00';
+                }
             }
         });
     }

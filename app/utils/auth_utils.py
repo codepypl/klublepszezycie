@@ -2,7 +2,7 @@
 Authentication utility functions
 """
 from functools import wraps
-from flask import redirect, url_for, flash, request
+from flask import redirect, url_for, flash, request, jsonify
 from flask_login import current_user
 from app.models import User
 
@@ -19,6 +19,26 @@ def admin_required(f):
         if not current_user.is_admin_role():
             flash('Brak uprawnień administratora do tej strony', 'error')
             return redirect(url_for('public.index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def login_required_api(f):
+    """Decorator to require login for API endpoints"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return jsonify({'success': False, 'message': 'Authentication required'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+def admin_required_api(f):
+    """Decorator to require admin role for API endpoints"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return jsonify({'success': False, 'message': 'Authentication required'}), 401
+        if not current_user.is_admin_role():
+            return jsonify({'success': False, 'message': 'Admin privileges required'}), 403
         return f(*args, **kwargs)
     return decorated_function
 

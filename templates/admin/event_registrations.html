@@ -235,7 +235,8 @@ document.addEventListener('DOMContentLoaded', function() {
             onPageChange: (page) => {
                 const url = new URL(window.location);
                 url.searchParams.set('page', page);
-                url.searchParams.set('per_page', {{ pagination.per_page if pagination else 10 }});
+                const perPage = {{ pagination.per_page if pagination else 10 }};
+                url.searchParams.set('per_page', perPage);
                 window.location.href = url.toString();
             },
             onPerPageChange: (newPage, perPage) => {

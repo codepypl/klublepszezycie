@@ -2,15 +2,14 @@
 Benefits API endpoints
 """
 from flask import Blueprint, request, jsonify
-from flask_login import login_required
 from app.models import BenefitItem, db
-from app.utils.auth_utils import admin_required
+from app.utils.auth_utils import admin_required_api, login_required_api
 import logging
 
 benefits_api_bp = Blueprint('benefits_api', __name__)
 
 @benefits_api_bp.route('/benefits', methods=['GET', 'POST', 'PUT', 'DELETE'])
-@login_required
+@login_required_api
 def api_benefits():
     """Benefits API"""
     if request.method == 'GET':
@@ -35,6 +34,13 @@ def api_benefits():
     elif request.method == 'POST':
         try:
             data = request.get_json()
+            logging.info(f"Creating benefit with data: {data}")
+            
+            if not data:
+                return jsonify({'success': False, 'message': 'No data provided'}), 400
+            
+            if not data.get('title'):
+                return jsonify({'success': False, 'message': 'Title is required'}), 400
             
             benefit = BenefitItem(
                 title=data['title'],
@@ -126,7 +132,7 @@ def api_benefits():
             return jsonify({'success': False, 'message': str(e)}), 500
 
 @benefits_api_bp.route('/benefits/<int:benefit_id>', methods=['GET', 'PUT', 'DELETE'])
-@login_required
+@login_required_api
 def api_benefit(benefit_id):
     """Individual benefit API"""
     benefit = BenefitItem.query.get_or_404(benefit_id)
@@ -182,13 +188,13 @@ def api_benefit(benefit_id):
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @benefits_api_bp.route('/bulk-delete/benefits', methods=['POST'])
-@login_required
-@admin_required
+@login_required_api
+@admin_required_api
 def api_bulk_delete_benefits():
     """Bulk delete benefits"""
     try:
         data = request.get_json()
-        benefit_ids = data.get('benefit_ids', [])
+        benefit_ids = data.get('benefit_ids', data.get('ids', []))
         
         if not benefit_ids:
             return jsonify({'success': False, 'message': 'No benefits selected'}), 400

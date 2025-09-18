@@ -28,9 +28,7 @@
                                     <input type="checkbox" id="selectAll">
                                 </th>
                                 <th>Autor</th>
-                                <th>Email</th>
                                 <th>Artykuł</th>
-                                <th>Komentarz</th>
                                 <th>Status</th>
                                 <th>Data</th>
                                 <th>Akcje</th>
@@ -49,26 +47,17 @@
                                         </div>
                                         <div>
                                             <strong>{{ comment.author_name }}</strong>
-                                            {% if comment.author_website %}
-                                            <br><small class="text-muted">{{ comment.author_website }}</small>
-                                            {% endif %}
+                                            <br>
+                                            <small class="text-muted">{{ comment.author_email }}</small>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <a href="mailto:{{ comment.author_email }}" class="text-decoration-none">
-                                        {{ comment.author_email }}
-                                    </a>
-                                </td>
-                                <td>
                                     <a href="{{ url_for('blog.post_detail', slug=comment.post.slug) }}" class="text-decoration-none" target="_blank">
-                                        {{ comment.post.title[:50] }}{% if comment.post.title|length > 50 %}...{% endif %}
+                                        <span class="badge bg-primary">ID: {{ comment.post.id }}</span>
                                     </a>
-                                </td>
-                                <td>
-                                    <div class="comment-preview">
-                                        {{ comment.content[:100] }}{% if comment.content|length > 100 %}...{% endif %}
-                                    </div>
+                                    <br>
+                                    <small class="text-muted">{{ comment.post.title[:50] }}{% if comment.post.title|length > 50 %}...{% endif %}</small>
                                 </td>
                                 <td>
                                     {% if comment.is_approved %}
@@ -78,18 +67,25 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {{ comment.created_at.strftime('%d.%m.%Y %H:%M') if comment.created_at else 'Brak' }}
+                                    <small class="text-muted">
+                                        {{ comment.created_at.strftime('%d.%m.%Y') if comment.created_at else 'Brak' }}<br>
+                                        {{ comment.created_at.strftime('%H:%M') if comment.created_at else '' }}
+                                    </small>
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
+                                        <button class="btn btn-sm admin-btn-outline" onclick="viewComment({{ comment.id }})" title="Podgląd">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
                                         {% if not comment.is_approved %}
                                         <button class="btn btn-sm admin-btn-success" onclick="approveComment({{ comment.id }})" title="Zatwierdź">
                                             <i class="fas fa-check"></i>
                                         </button>
-                                        {% endif %}
-                                        <button class="btn btn-sm admin-btn-outline" onclick="editComment({{ comment.id }})" title="Edytuj">
-                                            <i class="fas fa-edit"></i>
+                                        {% else %}
+                                        <button class="btn btn-sm admin-btn-warning" onclick="rejectComment({{ comment.id }})" title="Odrzuć">
+                                            <i class="fas fa-times"></i>
                                         </button>
+                                        {% endif %}
                                         <button class="btn btn-sm admin-btn-danger" onclick="deleteComment({{ comment.id }})" title="Usuń">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -116,52 +112,52 @@
         </div>
     </div>
 
-    <!-- Edit Comment Modal -->
-    <div class="modal fade" id="editCommentModal" tabindex="-1">
+
+    <!-- View Comment Modal -->
+    <div class="modal fade" id="viewCommentModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Edytuj komentarz</h5>
+                    <h5 class="modal-title">Szczegóły komentarza</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="editCommentForm">
-                        <input type="hidden" id="editCommentId" name="comment_id">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="editAuthorName" class="form-label">Imię i nazwisko *</label>
-                                <input type="text" class="form-control" id="editAuthorName" name="author_name" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="editAuthorEmail" class="form-label">Email *</label>
-                                <input type="email" class="form-control" id="editAuthorEmail" name="author_email" required>
-                            </div>
-                        </div>
+                    <div id="commentDetails">
+                        <!-- Zostanie wypełnione przez JavaScript -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Comment Modal -->
+    <div class="modal fade" id="rejectCommentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Odrzuć komentarz</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="rejectCommentForm">
+                        <input type="hidden" id="rejectCommentId" name="comment_id">
                         <div class="mb-3">
-                            <label for="editAuthorWebsite" class="form-label">Strona internetowa</label>
-                            <input type="url" class="form-control" id="editAuthorWebsite" name="author_website">
-                        </div>
-                        <div class="mb-3">
-                            <label for="editContent" class="form-label">Komentarz *</label>
-                            <textarea class="form-control" id="editContent" name="content" rows="4" required></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="editIsApproved" name="is_approved">
-                                <label class="form-check-label" for="editIsApproved">
-                                    Zatwierdzony
-                                </label>
-                            </div>
+                            <label for="rejectReason" class="form-label">Powód odrzucenia *</label>
+                            <textarea class="form-control" id="rejectReason" name="reason" rows="3" required placeholder="Podaj powód odrzucenia komentarza..."></textarea>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                    <button type="button" class="btn admin-btn" onclick="saveComment()">Zapisz</button>
+                    <button type="button" class="btn admin-btn-warning" onclick="confirmReject()">Odrzuć komentarz</button>
                 </div>
             </div>
         </div>
     </div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -180,7 +176,8 @@
         
         window.paginationHandlers = {
             onPageChange: (page) => {
-                window.location.href = `{{ url_for('blog.admin_comments') }}?page=${page}&per_page={{ comments.per_page if comments else 10 }}`;
+                const perPage = {{ comments.per_page if comments else 10 }};
+                window.location.href = `{{ url_for('blog.admin_comments') }}?page=${page}&per_page=${perPage}`;
             },
             onPerPageChange: (newPage, perPage) => {
                 window.location.href = `{{ url_for('blog.admin_comments') }}?page=${newPage}&per_page=${perPage}`;

@@ -111,15 +111,15 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('Konto zostało pomyślnie usunięte!');
+                        showSuccess('Konto zostało pomyślnie usunięte!');
                         window.location.href = '/';
                     } else {
-                        alert('Błąd: ' + (data.message || 'Nie udało się usunąć konta'));
+                        showError('Błąd: ' + (data.message || 'Nie udało się usunąć konta'));
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Wystąpił błąd podczas usuwania konta');
+                    showError('Wystąpił błąd podczas usuwania konta');
                 });
             }
         });

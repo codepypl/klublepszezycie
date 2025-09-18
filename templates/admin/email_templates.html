@@ -2,6 +2,11 @@
 
 {% block title %}Szablony Emaili - Panel Admin{% endblock %}
 
+{% block extra_head %}
+<!-- TinyMCE CDN -->
+<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+{% endblock %}
+
 {% block page_title %}
     <i class="fas fa-envelope me-2"></i>Szablony Emaili
 {% endblock %}
@@ -112,15 +117,30 @@
                     </div>
                     
                         <div class="mb-3">
-                        <label for="template_variables" class="form-label">Dostępne zmienne (oddzielone przecinkami)</label>
-                        <input type="text" class="form-control" id="template_variables" name="template_variables" placeholder="np. {{user_name}}, {{event_title}}, {{club_name}}">
+                            <label class="form-label">Dostępne zmienne</label>
+                            <div id="variablesContainer" class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                <div class="text-muted">Kliknij na zmienną, aby wstawić ją do treści HTML</div>
+                            </div>
+                            <input type="hidden" id="template_variables" name="template_variables">
                         </div>
                     
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="template_is_active" name="template_is_active" checked>
-                        <label class="form-check-label" for="template_is_active">
-                            Szablon aktywny
-                        </label>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="template_is_active" name="template_is_active" checked>
+                                <label class="form-check-label" for="template_is_active">
+                                    Szablon aktywny
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="template_is_default" name="template_is_default">
+                                <label class="form-check-label" for="template_is_default">
+                                    Szablon domyślny
+                                </label>
+                            </div>
+                        </div>
                     </div>
                     </div>
                     <div class="modal-footer">
@@ -131,6 +151,19 @@
         </div>
     </div>
 
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.cursor-pointer {
+    cursor: pointer;
+}
+.cursor-pointer:hover {
+    background-color: #f8f9fa;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}

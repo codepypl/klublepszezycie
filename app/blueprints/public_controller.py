@@ -2,7 +2,7 @@
 Public business logic controller
 """
 from flask import request, jsonify, flash, redirect, url_for
-from app.models import db, EventSchedule, EventRegistration, User, Section, MenuItem, FAQ, BenefitItem, Testimonial, SocialLink
+from app.models import db, EventSchedule, EventRegistration, User, Section, MenuItem, FAQ, BenefitItem, Testimonial, SocialLink, FooterSettings
 from app.services.email_service import EmailService
 from app.api.email_api import add_user_to_event_group
 import os
@@ -24,8 +24,15 @@ class PublicController:
     def get_database_data():
         """Pobiera wszystkie dane z bazy danych w sposób dynamiczny"""
         try:
+            # Check if we have request context
+            has_request_context = False
+            try:
+                has_request_context = request.endpoint is not None
+            except RuntimeError:
+                has_request_context = False
+            
             # Menu items - filter by blog column for blog pages
-            if request.endpoint and request.endpoint.startswith('blog.'):
+            if has_request_context and request.endpoint.startswith('blog.'):
                 # For blog pages, only show items marked for blog
                 menu_items_db = MenuItem.query.filter_by(is_active=True, blog=True).order_by(MenuItem.order.asc()).all()
             else:
@@ -35,7 +42,7 @@ class PublicController:
             menu_items = []
             for item in menu_items_db:
                 # Use blog_url if available and we're on blog pages, otherwise use regular url
-                if request.endpoint and request.endpoint.startswith('blog.') and item.blog_url:
+                if has_request_context and request.endpoint.startswith('blog.') and item.blog_url:
                     url = item.blog_url
                 else:
                     url = item.url
@@ -77,12 +84,12 @@ class PublicController:
             # Social links
             social_links = SocialLink.query.filter_by(is_active=True).order_by(SocialLink.order.asc()).all()
             
-            # Footer settings (if exists)
-            footer_settings = {
-                'copyright_text': '© 2024 Klub Lepsze Życie. Wszystkie prawa zastrzeżone.',
-                'contact_email': 'kontakt@klublepszezycie.pl',
-                'contact_phone': '+48 123 456 789'
-            }
+            # Footer settings from database
+            footer_settings = FooterSettings.query.first()
+            if not footer_settings:
+                footer_settings = FooterSettings()
+                db.session.add(footer_settings)
+                db.session.commit()
             
             return {
                 'success': True,

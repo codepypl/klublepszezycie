@@ -5,56 +5,71 @@ import re
 import requests
 from flask import request
 from user_agents import parse
+from .user_agent_parser import UserAgentParser
+from .ip_geolocation import IPGeolocation
 
 def get_user_info():
     """Extract user information from request"""
     user_agent_string = request.headers.get('User-Agent', '')
     ip_address = get_client_ip()
     
-    # Parse user agent
-    user_agent = parse(user_agent_string)
+    # Parse user agent with our custom parser
+    ua_parser = UserAgentParser()
+    parsed_ua = ua_parser.parse(user_agent_string)
     
     # Get location from IP
-    location_info = get_location_from_ip(ip_address)
+    location_info = IPGeolocation.get_location(ip_address)
     
     return {
         'ip_address': ip_address,
         'user_agent': user_agent_string,
-        'browser': f"{user_agent.browser.family} {user_agent.browser.version_string}".strip(),
-        'operating_system': f"{user_agent.os.family} {user_agent.os.version_string}".strip(),
+        'browser': ua_parser.get_browser_display_name(parsed_ua['browser'], parsed_ua['browser_version']),
+        'operating_system': ua_parser.get_os_display_name(parsed_ua['os'], parsed_ua['os_version']),
         'location_country': location_info.get('country', ''),
         'location_city': location_info.get('city', '')
     }
 
 def get_client_ip():
     """Get client IP address"""
-    # Check for forwarded headers first
+    # Check for forwarded headers first (for reverse proxies)
     if request.headers.get('X-Forwarded-For'):
-        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+        # X-Forwarded-For can contain multiple IPs, take the first one
+        ip = request.headers.get('X-Forwarded-For').split(',')[0].strip()
+        if ip and not is_private_ip(ip):
+            return ip
     elif request.headers.get('X-Real-IP'):
-        return request.headers.get('X-Real-IP')
-    else:
-        return request.remote_addr
-
-def get_location_from_ip(ip_address):
-    """Get location information from IP address"""
-    try:
-        # Skip private IPs
-        if is_private_ip(ip_address):
-            return {'country': '', 'city': ''}
-        
-        # Use ipapi.co service (free, no API key required)
-        response = requests.get(f'http://ipapi.co/{ip_address}/json/', timeout=5)
-        if response.status_code == 200:
-            data = response.json()
-            return {
-                'country': data.get('country_name', ''),
-                'city': data.get('city', '')
-            }
-    except Exception as e:
-        print(f"Error getting location for IP {ip_address}: {e}")
+        ip = request.headers.get('X-Real-IP')
+        if ip and not is_private_ip(ip):
+            return ip
+    elif request.headers.get('CF-Connecting-IP'):  # Cloudflare
+        ip = request.headers.get('CF-Connecting-IP')
+        if ip and not is_private_ip(ip):
+            return ip
+    elif request.headers.get('X-Forwarded'):
+        ip = request.headers.get('X-Forwarded')
+        if ip and not is_private_ip(ip):
+            return ip
     
-    return {'country': '', 'city': ''}
+    # Fallback to remote_addr
+    ip = request.remote_addr
+    if ip and not is_private_ip(ip):
+        return ip
+    
+    # If all else fails and we have a private IP, try to get external IP
+    if ip and is_private_ip(ip):
+        try:
+            import requests
+            response = requests.get('https://api.ipify.org', timeout=3)
+            if response.status_code == 200:
+                external_ip = response.text.strip()
+                if external_ip and not is_private_ip(external_ip):
+                    return external_ip
+        except:
+            pass
+    
+    return ip or 'Nieznany'
+
+# Location function moved to ip_geolocation.py
 
 def is_private_ip(ip):
     """Check if IP is private/local"""

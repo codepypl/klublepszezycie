@@ -305,7 +305,7 @@ def register():
             delete_token = generate_unsubscribe_token(user.email, 'delete_account')
             
             context = {
-                'user_name': user.name,
+                'user_name': user.first_name,
                 'user_email': user.email,
                 'temporary_password': temp_password,  # Use same password
                 'login_url': request.url_root + 'login',
@@ -332,7 +332,7 @@ def register():
             from config import config
             admin_email = config['development'].ADMIN_EMAIL
             admin_context = {
-                'user_name': user.name,
+                'user_name': user.first_name,
                 'user_email': user.email,
                 'user_phone': user.phone or 'Nie podano',
                 'registration_date': datetime.now().strftime('%d.%m.%Y %H:%M'),
@@ -613,7 +613,7 @@ def register_event(event_id):
                         from config import config
                         admin_email = config['development'].ADMIN_EMAIL
                         admin_context = {
-                            'user_name': new_user.name,
+                            'user_name': new_user.first_name,
                             'user_email': new_user.email,
                             'user_phone': new_user.phone or 'Nie podano',
                             'registration_date': datetime.now().strftime('%d.%m.%Y %H:%M'),
@@ -797,7 +797,7 @@ def register_for_event(user, event_id):
             from config import config
             admin_email = config['development'].ADMIN_EMAIL
             admin_context = {
-                'user_name': user.name,
+                'user_name': user.first_name,
                 'user_email': user.email,
                 'event_title': event.title,
                 'event_date': event.event_date.strftime('%d.%m.%Y %H:%M') if event.event_date else 'Nie podano',

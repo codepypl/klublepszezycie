@@ -195,7 +195,7 @@ class EventsController:
             
             if search:
                 query = query.join(User).filter(
-                    User.name.ilike(f'%{search}%') |
+                    User.first_name.ilike(f'%{search}%') |
                     User.email.ilike(f'%{search}%')
                 )
             

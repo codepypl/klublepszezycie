@@ -2,11 +2,13 @@
 Blog API endpoints
 """
 from flask import Blueprint, request, jsonify, current_app
-from flask_login import login_required
-from app.models import BlogPost, BlogCategory, BlogTag, BlogComment, db
+from flask_login import login_required, current_user
+from app.models import BlogPost, BlogCategory, BlogTag, BlogComment, BlogPostImage, db
 from app.utils.auth_utils import admin_required
 import logging
 import os
+import json
+from datetime import datetime
 from werkzeug.utils import secure_filename
 
 blog_api_bp = Blueprint('blog_api', __name__)
@@ -42,7 +44,7 @@ def api_blog_posts():
         query = BlogPost.query.filter_by(is_published=True)
         
         if category_id:
-            query = query.filter_by(category_id=category_id)
+            query = query.join(BlogPost.categories).filter(BlogCategory.id == category_id)
         
         if tag_id:
             query = query.join(BlogPost.tags).filter(BlogTag.id == tag_id)
@@ -60,12 +62,8 @@ def api_blog_posts():
                 'excerpt': post.excerpt,
                 'content': post.content,
                 'published_at': post.published_at.isoformat() if post.published_at else None,
-                'author': post.author.first_name + ' ' + post.author.last_name if post.author else 'Unknown',
-                'category': {
-                    'id': post.category.id,
-                    'title': post.category.title,
-                    'slug': post.category.slug
-                } if post.category else None,
+                'author': post.author.name if post.author else 'Unknown',
+                'categories': [{'id': cat.id, 'title': cat.title, 'slug': cat.slug} for cat in post.categories],
                 'tags': [{'id': tag.id, 'name': tag.name, 'slug': tag.slug} for tag in post.tags],
                 'featured_image': post.featured_image
             } for post in posts.items],
@@ -105,7 +103,7 @@ def api_blog_admin_posts():
                 )
             
             if category_id:
-                query = query.filter_by(category_id=category_id)
+                query = query.join(BlogPost.categories).filter(BlogCategory.id == category_id)
             
             if status == 'published':
                 query = query.filter_by(is_published=True)
@@ -126,11 +124,8 @@ def api_blog_admin_posts():
                     'is_published': post.is_published,
                     'published_at': post.published_at.isoformat() if post.published_at else None,
                     'created_at': post.created_at.isoformat() if post.created_at else None,
-                    'author': post.author.first_name + ' ' + post.author.last_name if post.author else 'Unknown',
-                    'category': {
-                        'id': post.category.id,
-                        'title': post.category.title
-                    } if post.category else None,
+                'author': post.author.name if post.author else 'Unknown',
+                'categories': [{'id': cat.id, 'title': cat.title} for cat in post.categories],
                     'tags': [{'id': tag.id, 'name': tag.name} for tag in post.tags],
                     'featured_image': post.featured_image
                 } for post in posts.items],
@@ -149,25 +144,92 @@ def api_blog_admin_posts():
     
     elif request.method == 'POST':
         try:
-            data = request.get_json()
+            # Handle both JSON and FormData
+            if request.content_type == 'application/json':
+                data = request.get_json()
+            else:
+                # Handle FormData
+                data = request.form.to_dict()
+                
+                # Parse JSON fields from FormData
+                if data.get('categories'):
+                    try:
+                        data['categories'] = json.loads(data['categories'])
+                    except (json.JSONDecodeError, TypeError):
+                        data['categories'] = []
+                
+                if data.get('tags'):
+                    try:
+                        data['tags'] = json.loads(data['tags'])
+                    except (json.JSONDecodeError, TypeError):
+                        data['tags'] = []
+                
+                # Convert boolean fields
+                # Don't override status if it's already set from form
+                if 'status' not in data:
+                    data['status'] = 'published' if data.get('is_published') == 'true' else 'draft'
+                data['allow_comments'] = data.get('allow_comments') == 'true'
+                
+                # Handle featured_image file upload
+                featured_image_url = data.get('featured_image', '')
+                if 'featured_image' in request.files:
+                    file = request.files['featured_image']
+                    if file and file.filename and allowed_file(file.filename):
+                        filename = secure_filename(file.filename)
+                        import time
+                        filename = f"{int(time.time())}_{filename}"
+                        
+                        upload_folder = os.path.join(current_app.static_folder, 'uploads')
+                        os.makedirs(upload_folder, exist_ok=True)
+                        
+                        file_path = os.path.join(upload_folder, filename)
+                        file.save(file_path)
+                        featured_image_url = f'/static/uploads/{filename}'
             
             post = BlogPost(
                 title=data['title'],
                 slug=data.get('slug', ''),
                 excerpt=data.get('excerpt', ''),
                 content=data['content'],
-                is_published=data.get('is_published', False),
-                category_id=data.get('category_id'),
-                author_id=data.get('author_id'),
-                featured_image=data.get('featured_image', '')
+                status=data.get('status', 'draft'),
+                author_id=current_user.id,
+                featured_image=featured_image_url,
+                allow_comments=data.get('allow_comments', True)
             )
             
             if data.get('published_at'):
                 post.published_at = data['published_at']
+            elif data.get('status') == 'published' and not post.published_at:
+                from datetime import datetime
+                post.published_at = datetime.utcnow()
             
-            # Add tags
-            if data.get('tag_ids'):
-                tags = BlogTag.query.filter(BlogTag.id.in_(data['tag_ids'])).all()
+            # Add categories
+            if data.get('categories') and len(data['categories']) > 0:
+                categories = BlogCategory.query.filter(BlogCategory.id.in_(data['categories'])).all()
+                post.categories = categories
+            
+            # Add tags - handle both tag names and IDs
+            if data.get('tags') and len(data['tags']) > 0:
+                tags = []
+                for tag_data in data['tags']:
+                    if isinstance(tag_data, str):
+                        # Tag name provided, find or create tag
+                        tag = BlogTag.query.filter_by(name=tag_data).first()
+                        if not tag:
+                            # Create new tag
+                            tag = BlogTag(
+                                name=tag_data,
+                                slug=tag_data.lower().replace(' ', '-'),
+                                is_active=True
+                            )
+                            db.session.add(tag)
+                            db.session.flush()  # Flush to get the ID
+                        tags.append(tag)
+                    elif isinstance(tag_data, int):
+                        # Tag ID provided, find by ID
+                        tag = BlogTag.query.get(tag_data)
+                        if tag:
+                            tags.append(tag)
                 post.tags = tags
             
             db.session.add(post)
@@ -204,18 +266,59 @@ def api_blog_admin_post(post_id):
                     'slug': post.slug,
                     'excerpt': post.excerpt,
                     'content': post.content,
+                    'status': post.status,
                     'is_published': post.is_published,
+                    'allow_comments': post.allow_comments,
                     'published_at': post.published_at.isoformat() if post.published_at else None,
                     'created_at': post.created_at.isoformat() if post.created_at else None,
                     'author_id': post.author_id,
-                    'category_id': post.category_id,
+                    'categories': [{'id': cat.id, 'title': cat.title} for cat in post.categories],
                     'featured_image': post.featured_image,
                     'tags': [{'id': tag.id, 'name': tag.name} for tag in post.tags]
                 }
             })
         
         elif request.method == 'PUT':
-            data = request.get_json()
+            # Handle both JSON and FormData
+            if request.content_type == 'application/json':
+                data = request.get_json()
+            else:
+                # Handle FormData
+                data = request.form.to_dict()
+                
+                # Parse JSON fields from FormData
+                if data.get('categories'):
+                    try:
+                        data['categories'] = json.loads(data['categories'])
+                    except (json.JSONDecodeError, TypeError):
+                        data['categories'] = []
+                
+                if data.get('tags'):
+                    try:
+                        data['tags'] = json.loads(data['tags'])
+                    except (json.JSONDecodeError, TypeError):
+                        data['tags'] = []
+                
+                # Convert boolean fields
+                # Don't override status if it's already set from form
+                if 'status' not in data:
+                    data['status'] = 'published' if data.get('is_published') == 'true' else 'draft'
+                data['allow_comments'] = data.get('allow_comments') == 'true'
+                
+                # Handle featured_image file upload
+                if 'featured_image' in request.files:
+                    file = request.files['featured_image']
+                    if file and file.filename and allowed_file(file.filename):
+                        filename = secure_filename(file.filename)
+                        import time
+                        filename = f"{int(time.time())}_{filename}"
+                        
+                        upload_folder = os.path.join(current_app.static_folder, 'uploads')
+                        os.makedirs(upload_folder, exist_ok=True)
+                        
+                        file_path = os.path.join(upload_folder, filename)
+                        file.save(file_path)
+                        data['featured_image'] = f'/static/uploads/{filename}'
             
             if 'title' in data:
                 post.title = data['title']
@@ -225,21 +328,53 @@ def api_blog_admin_post(post_id):
                 post.excerpt = data['excerpt']
             if 'content' in data:
                 post.content = data['content']
-            if 'is_published' in data:
-                post.is_published = data['is_published']
-            if 'category_id' in data:
-                post.category_id = data['category_id']
-            if 'author_id' in data:
-                post.author_id = data['author_id']
+            if 'status' in data:
+                post.status = data['status']
+                # Set published_at when status changes to published
+                if data['status'] == 'published' and not post.published_at:
+                    from datetime import datetime
+                    post.published_at = datetime.utcnow()
+            if 'allow_comments' in data:
+                post.allow_comments = data['allow_comments']
+            # Update categories
+            if 'categories' in data:
+                if data['categories'] and len(data['categories']) > 0:
+                    categories = BlogCategory.query.filter(BlogCategory.id.in_(data['categories'])).all()
+                    post.categories = categories
+                else:
+                    post.categories = []
+            # Don't allow changing author_id in updates
             if 'featured_image' in data:
                 post.featured_image = data['featured_image']
             if 'published_at' in data:
                 post.published_at = data['published_at']
             
-            # Update tags
-            if 'tag_ids' in data:
-                tags = BlogTag.query.filter(BlogTag.id.in_(data['tag_ids'])).all()
-                post.tags = tags
+            # Update tags - handle both tag names and IDs
+            if 'tags' in data:
+                if data['tags'] and len(data['tags']) > 0:
+                    tags = []
+                    for tag_data in data['tags']:
+                        if isinstance(tag_data, str):
+                            # Tag name provided, find or create tag
+                            tag = BlogTag.query.filter_by(name=tag_data).first()
+                            if not tag:
+                                # Create new tag
+                                tag = BlogTag(
+                                    name=tag_data,
+                                    slug=tag_data.lower().replace(' ', '-'),
+                                    is_active=True
+                                )
+                                db.session.add(tag)
+                                db.session.flush()  # Flush to get the ID
+                            tags.append(tag)
+                        elif isinstance(tag_data, int):
+                            # Tag ID provided, find by ID
+                            tag = BlogTag.query.get(tag_data)
+                            if tag:
+                                tags.append(tag)
+                    post.tags = tags
+                else:
+                    post.tags = []
             
             db.session.commit()
             
@@ -307,7 +442,12 @@ def api_blog_admin_categories():
                     'slug': category.slug,
                     'description': category.description,
                     'parent_id': category.parent_id,
+                    'parent': {
+                        'id': category.parent.id,
+                        'title': category.parent.title
+                    } if category.parent else None,
                     'is_active': category.is_active,
+                    'posts_count': category.posts_count,
                     'created_at': category.created_at.isoformat() if category.created_at else None
                 } for category in categories]
             })
@@ -324,7 +464,8 @@ def api_blog_admin_categories():
                 slug=data.get('slug', ''),
                 description=data.get('description', ''),
                 parent_id=data.get('parent_id'),
-                is_active=data.get('is_active', True)
+                is_active=data.get('is_active', True),
+                sort_order=data.get('sort_order', 0)
             )
             
             db.session.add(category)
@@ -431,6 +572,24 @@ def api_blog_admin_categories_bulk_delete():
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error bulk deleting blog categories: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@blog_api_bp.route('/blog/tags/all', methods=['GET'])
+@login_required
+def api_blog_tags_all():
+    """Get all blog tags for selectors"""
+    try:
+        tags = BlogTag.query.filter_by(is_active=True).order_by(BlogTag.name).all()
+        return jsonify({
+            'success': True,
+            'tags': [{
+                'id': tag.id,
+                'name': tag.name,
+                'slug': tag.slug
+            } for tag in tags]
+        })
+    except Exception as e:
+        logging.error(f"Error getting all blog tags: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @blog_api_bp.route('/blog/tags', methods=['GET', 'POST'])
@@ -576,56 +735,113 @@ def api_blog_tags_bulk_delete():
         logging.error(f"Error bulk deleting blog tags: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@blog_api_bp.route('/blog/comments', methods=['GET'])
+@blog_api_bp.route('/blog/comments', methods=['GET', 'POST'])
 @login_required
 def api_blog_comments():
     """Blog comments API"""
-    try:
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 20, type=int)
-        post_id = request.args.get('post_id', type=int)
-        status = request.args.get('status', '', type=str)
-        
-        query = BlogComment.query
-        
-        if post_id:
-            query = query.filter_by(post_id=post_id)
-        
-        if status == 'approved':
-            query = query.filter_by(is_approved=True)
-        elif status == 'pending':
-            query = query.filter_by(is_approved=False)
-        
-        comments = query.order_by(BlogComment.created_at.desc()).paginate(
-            page=page, per_page=per_page, error_out=False
-        )
-        
-        return jsonify({
-            'success': True,
-            'comments': [{
-                'id': comment.id,
-                'author_name': comment.author_name,
-                'author_email': comment.author_email,
-                'content': comment.content,
-                'is_approved': comment.is_approved,
-                'created_at': comment.created_at.isoformat() if comment.created_at else None,
-                'post': {
-                    'id': comment.post.id,
-                    'title': comment.post.title
-                } if comment.post else None
-            } for comment in comments.items],
-            'pagination': {
-                'page': comments.page,
-                'pages': comments.pages,
-                'per_page': comments.per_page,
-                'total': comments.total,
-                'has_next': comments.has_next,
-                'has_prev': comments.has_prev
-            }
-        })
-    except Exception as e:
-        logging.error(f"Error getting blog comments: {str(e)}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+    if request.method == 'GET':
+        try:
+            page = request.args.get('page', 1, type=int)
+            per_page = request.args.get('per_page', 20, type=int)
+            post_id = request.args.get('post_id', type=int)
+            status = request.args.get('status', '', type=str)
+            
+            query = BlogComment.query
+            
+            if post_id:
+                query = query.filter_by(post_id=post_id)
+            
+            if status == 'approved':
+                query = query.filter_by(is_approved=True)
+            elif status == 'pending':
+                query = query.filter_by(is_approved=False)
+            
+            comments = query.order_by(BlogComment.created_at.desc()).paginate(
+                page=page, per_page=per_page, error_out=False
+            )
+            
+            return jsonify({
+                'success': True,
+                'comments': [{
+                    'id': comment.id,
+                    'author_name': comment.author_name,
+                    'author_email': comment.author_email,
+                    'content': comment.content,
+                    'is_approved': comment.is_approved,
+                    'is_spam': comment.is_spam,
+                    'moderation_reason': comment.moderation_reason,
+                    'moderated_by': comment.moderated_by,
+                    'moderated_at': comment.moderated_at.isoformat() if comment.moderated_at else None,
+                    'ip_address': comment.ip_address,
+                    'browser': comment.browser,
+                    'operating_system': comment.operating_system,
+                    'location_country': comment.location_country,
+                    'location_city': comment.location_city,
+                    'created_at': comment.created_at.isoformat() if comment.created_at else None,
+                    'post': {
+                        'id': comment.post.id,
+                        'title': comment.post.title
+                    } if comment.post else None,
+                    'moderator': {
+                        'id': comment.moderator.id,
+                        'name': comment.moderator.name
+                    } if comment.moderator else None
+                } for comment in comments.items],
+                'pagination': {
+                    'page': comments.page,
+                    'pages': comments.pages,
+                    'per_page': comments.per_page,
+                    'total': comments.total,
+                    'has_next': comments.has_next,
+                    'has_prev': comments.has_prev
+                }
+            })
+        except Exception as e:
+            logging.error(f"Error getting blog comments: {str(e)}")
+            return jsonify({'success': False, 'message': str(e)}), 500
+    
+    elif request.method == 'POST':
+        try:
+            data = request.get_json()
+            
+            # Validate required fields
+            required_fields = ['post_id', 'author_name', 'author_email', 'content']
+            for field in required_fields:
+                if not data.get(field):
+                    return jsonify({'success': False, 'message': f'Pole {field} jest wymagane'}), 400
+            
+            # Create comment using the controller
+            from app.blueprints.blog_controller import BlogController
+            result = BlogController.create_blog_comment(
+                post_id=data['post_id'],
+                name=data['author_name'],
+                email=data['author_email'],
+                content=data['content'],
+                parent_id=data.get('parent_id')
+            )
+            
+            if result['success']:
+                # If it's a reply and should be auto-approved
+                if data.get('parent_id') and data.get('is_approved', False):
+                    comment = BlogComment.query.get(result['comment_id'])
+                    if comment:
+                        comment.is_approved = True
+                        comment.moderated_by = current_user.id
+                        comment.moderated_at = datetime.utcnow()
+                        db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': result['message'],
+                    'comment_id': result['comment_id']
+                })
+            else:
+                return jsonify({'success': False, 'message': result['error']}), 400
+                
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error creating blog comment: {str(e)}")
+            return jsonify({'success': False, 'message': str(e)}), 500
 
 @blog_api_bp.route('/blog/comments/<int:comment_id>', methods=['GET', 'PUT', 'DELETE'])
 @login_required
@@ -643,8 +859,20 @@ def api_blog_comment(comment_id):
                     'author_email': comment.author_email,
                     'content': comment.content,
                     'is_approved': comment.is_approved,
+                    'is_spam': comment.is_spam,
+                    'parent_id': comment.parent_id,
+                    'ip_address': comment.ip_address,
+                    'browser': comment.browser,
+                    'operating_system': comment.operating_system,
+                    'location_country': comment.location_country,
+                    'location_city': comment.location_city,
                     'created_at': comment.created_at.isoformat() if comment.created_at else None,
-                    'post_id': comment.post_id
+                    'post_id': comment.post_id,
+                    'post': {
+                        'id': comment.post.id,
+                        'title': comment.post.title,
+                        'slug': comment.post.slug
+                    } if comment.post else None
                 }
             })
         
@@ -655,8 +883,9 @@ def api_blog_comment(comment_id):
                 comment.author_name = data['author_name']
             if 'author_email' in data:
                 comment.author_email = data['author_email']
+            # Content is not editable - remove from data if present
             if 'content' in data:
-                comment.content = data['content']
+                del data['content']
             if 'is_approved' in data:
                 comment.is_approved = data['is_approved']
             
@@ -690,6 +919,9 @@ def api_blog_comment_approve(comment_id):
     
     try:
         comment.is_approved = True
+        comment.moderated_by = current_user.id
+        comment.moderated_at = datetime.utcnow()
+        comment.moderation_reason = None  # Clear any previous reason
         db.session.commit()
         
         return jsonify({
@@ -699,6 +931,62 @@ def api_blog_comment_approve(comment_id):
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error approving comment {comment_id}: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@blog_api_bp.route('/blog/comments/<int:comment_id>/reject', methods=['POST'])
+@login_required
+@admin_required
+def api_blog_comment_reject(comment_id):
+    """Reject blog comment with reason"""
+    comment = BlogComment.query.get_or_404(comment_id)
+    
+    try:
+        data = request.get_json()
+        reason = data.get('reason', '').strip()
+        
+        if not reason:
+            return jsonify({'success': False, 'message': 'Uzasadnienie jest wymagane'}), 400
+        
+        comment.is_approved = False
+        comment.moderated_by = current_user.id
+        comment.moderated_at = datetime.utcnow()
+        comment.moderation_reason = reason
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Comment rejected successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error rejecting comment {comment_id}: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@blog_api_bp.route('/blog/comments/<int:comment_id>/spam', methods=['POST'])
+@login_required
+@admin_required
+def api_blog_comment_spam(comment_id):
+    """Mark comment as spam"""
+    comment = BlogComment.query.get_or_404(comment_id)
+    
+    try:
+        data = request.get_json()
+        reason = data.get('reason', 'Oznaczono jako spam').strip()
+        
+        comment.is_spam = True
+        comment.is_approved = False
+        comment.moderated_by = current_user.id
+        comment.moderated_at = datetime.utcnow()
+        comment.moderation_reason = reason
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Comment marked as spam successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error marking comment {comment_id} as spam: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @blog_api_bp.route('/blog/comments/bulk-delete', methods=['POST'])
@@ -782,20 +1070,72 @@ def api_blog_post_images(post_id):
     
     try:
         if request.method == 'GET':
-            # This would need to be implemented based on your image storage model
+            images = BlogPostImage.query.filter_by(post_id=post_id, is_active=True).order_by(BlogPostImage.order.asc()).all()
             return jsonify({
                 'success': True,
-                'images': []
+                'images': [{
+                    'id': image.id,
+                    'image_url': image.image_url,
+                    'alt_text': image.alt_text,
+                    'caption': image.caption,
+                    'order': image.order,
+                    'created_at': image.created_at.isoformat() if image.created_at else None
+                } for image in images]
             })
         
         elif request.method == 'POST':
-            # This would need to be implemented based on your image storage model
+            # Handle both JSON and FormData
+            if request.content_type == 'application/json':
+                data = request.get_json()
+            else:
+                # Handle FormData
+                data = request.form.to_dict()
+                
+                # Handle image file upload
+                if 'image_file' in request.files:
+                    file = request.files['image_file']
+                    if file and file.filename and allowed_file(file.filename):
+                        filename = secure_filename(file.filename)
+                        import time
+                        filename = f"{int(time.time())}_{filename}"
+                        
+                        upload_folder = os.path.join(current_app.static_folder, 'uploads')
+                        os.makedirs(upload_folder, exist_ok=True)
+                        
+                        file_path = os.path.join(upload_folder, filename)
+                        file.save(file_path)
+                        data['image_url'] = f'/static/uploads/{filename}'
+            
+            # Validate required fields
+            if not data.get('image_url'):
+                return jsonify({'success': False, 'message': 'Image URL is required'}), 400
+            
+            image = BlogPostImage(
+                post_id=post_id,
+                image_url=data['image_url'],
+                alt_text=data.get('alt_text', ''),
+                caption=data.get('caption', ''),
+                order=data.get('order', 0),
+                is_active=True
+            )
+            
+            db.session.add(image)
+            db.session.commit()
+            
             return jsonify({
                 'success': True,
-                'message': 'Image added successfully'
+                'message': 'Image added successfully',
+                'image': {
+                    'id': image.id,
+                    'image_url': image.image_url,
+                    'alt_text': image.alt_text,
+                    'caption': image.caption,
+                    'order': image.order
+                }
             })
     
     except Exception as e:
+        db.session.rollback()
         logging.error(f"Error with blog post images: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -804,22 +1144,67 @@ def api_blog_post_images(post_id):
 def api_blog_post_image(post_id, image_id):
     """Individual blog post image API"""
     post = BlogPost.query.get_or_404(post_id)
+    image = BlogPostImage.query.filter_by(id=image_id, post_id=post_id).first_or_404()
     
     try:
         if request.method == 'PUT':
-            # This would need to be implemented based on your image storage model
+            # Handle both JSON and FormData
+            if request.content_type == 'application/json':
+                data = request.get_json()
+            else:
+                # Handle FormData
+                data = request.form.to_dict()
+                
+                # Handle image file upload
+                if 'image_file' in request.files:
+                    file = request.files['image_file']
+                    if file and file.filename and allowed_file(file.filename):
+                        filename = secure_filename(file.filename)
+                        import time
+                        filename = f"{int(time.time())}_{filename}"
+                        
+                        upload_folder = os.path.join(current_app.static_folder, 'uploads')
+                        os.makedirs(upload_folder, exist_ok=True)
+                        
+                        file_path = os.path.join(upload_folder, filename)
+                        file.save(file_path)
+                        data['image_url'] = f'/static/uploads/{filename}'
+            
+            # Update image fields
+            if 'image_url' in data:
+                image.image_url = data['image_url']
+            if 'alt_text' in data:
+                image.alt_text = data['alt_text']
+            if 'caption' in data:
+                image.caption = data['caption']
+            if 'order' in data:
+                image.order = data['order']
+            
+            db.session.commit()
+            
             return jsonify({
                 'success': True,
-                'message': 'Image updated successfully'
+                'message': 'Image updated successfully',
+                'image': {
+                    'id': image.id,
+                    'image_url': image.image_url,
+                    'alt_text': image.alt_text,
+                    'caption': image.caption,
+                    'order': image.order
+                }
             })
         
         elif request.method == 'DELETE':
-            # This would need to be implemented based on your image storage model
+            # Soft delete - set is_active to False
+            image.is_active = False
+            db.session.commit()
+            
             return jsonify({
                 'success': True,
                 'message': 'Image deleted successfully'
             })
     
     except Exception as e:
+        db.session.rollback()
         logging.error(f"Error with blog post image: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500

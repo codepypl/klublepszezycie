@@ -221,8 +221,9 @@
                     </div>
                 </form>
             </div>
-        </div>
     </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -309,7 +310,9 @@
     }
 
     // Form submissions
-    document.getElementById('addLinkForm').addEventListener('submit', function(e) {
+    const addLinkForm = document.getElementById('addLinkForm');
+    if (addLinkForm) {
+        addLinkForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
         const formData = new FormData(this);
@@ -365,8 +368,11 @@
             window.toastManager.error('Wystąpił błąd podczas dodawania linku: ' + error.message);
         });
     });
+    }
 
-    document.getElementById('editLinkForm').addEventListener('submit', function(e) {
+    const editLinkForm = document.getElementById('editLinkForm');
+    if (editLinkForm) {
+        editLinkForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
         const formData = new FormData(this);
@@ -408,6 +414,7 @@
             window.toastManager.error('Wystąpił błąd podczas aktualizacji linku');
         });
     });
+    }
     
     // Bulk delete functionality
     function updateBulkDeleteUI() {
@@ -505,11 +512,14 @@
     // Event listeners for checkboxes
     document.addEventListener('DOMContentLoaded', function() {
         // Select all checkbox
-        document.getElementById('selectAll').addEventListener('change', function() {
+        const selectAllCheckbox = document.getElementById('selectAll');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
             const checkboxes = document.querySelectorAll('.item-checkbox');
             checkboxes.forEach(cb => cb.checked = this.checked);
             updateBulkDeleteUI();
         });
+        }
         
         // Individual checkboxes
         document.addEventListener('change', function(e) {
@@ -520,5 +530,134 @@
         
         updateBulkDeleteUI();
     });
+    
+    // Global functions for edit and delete
+    function editLink(linkId) {
+        // Find the link data from the table row
+        const row = document.querySelector(`tr[data-link-id="${linkId}"]`);
+        if (!row) {
+            console.error('Link row not found for ID:', linkId);
+            return;
+        }
+        
+        // Extract data from the row
+        const platform = row.querySelector('td:nth-child(3) strong').textContent.trim(); // Platform is 3rd column, get text from strong tag
+        const url = row.querySelector('td:nth-child(4) a').href; // URL is 4th column, get href from link
+        const order = row.querySelector('td:nth-child(2) .badge').textContent.trim(); // Order is 2nd column, get text from badge
+        
+        // Extract target value from badge text
+        const targetBadge = row.querySelector('td:nth-child(5) .badge');
+        let target = '_blank'; // default
+        if (targetBadge) {
+            const targetText = targetBadge.textContent.trim();
+            if (targetText.includes('Ta sama karta')) {
+                target = '_self';
+            } else if (targetText.includes('Ramka nadrzędna')) {
+                target = '_parent';
+            } else if (targetText.includes('Najwyższe okno')) {
+                target = '_top';
+            }
+        }
+        
+        // Extract active status from badge
+        const statusBadge = row.querySelector('td:nth-child(6) .badge');
+        const isActive = statusBadge ? statusBadge.textContent.includes('Aktywny') : false;
+        
+        // Populate the edit form
+        const editLinkId = document.getElementById('editLinkId');
+        const editLinkPlatform = document.getElementById('editLinkPlatform');
+        const editLinkUrl = document.getElementById('editLinkUrl');
+        const editLinkTarget = document.getElementById('editLinkTarget');
+        const editLinkOrder = document.getElementById('editLinkOrder');
+        const editLinkActive = document.getElementById('editLinkActive');
+        
+        if (editLinkId) editLinkId.value = linkId;
+        if (editLinkPlatform) editLinkPlatform.value = platform;
+        if (editLinkUrl) editLinkUrl.value = url;
+        if (editLinkTarget) editLinkTarget.value = target;
+        if (editLinkOrder) editLinkOrder.value = order;
+        if (editLinkActive) editLinkActive.checked = isActive;
+        
+        // Show the edit modal
+        const modal = new bootstrap.Modal(document.getElementById('editLinkModal'));
+        modal.show();
+    }
+    
+    function deleteLink(linkId) {
+        if (confirm('Czy na pewno chcesz usunąć ten link? Tej operacji nie można cofnąć.')) {
+            fetch(`/api/social/${linkId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.toastManager.success('Link został usunięty pomyślnie!');
+                    // Remove the row from the table
+                    const row = document.querySelector(`tr[data-link-id="${linkId}"]`);
+                    if (row) {
+                        row.remove();
+                    }
+                    updateBulkDeleteUI();
+                } else {
+                    window.toastManager.error('Błąd podczas usuwania: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.toastManager.error('Wystąpił błąd podczas usuwania linku');
+            });
+        }
+    }
+    
+    function showAddLinkModal() {
+        document.getElementById('addLinkForm').reset();
+        const modal = new bootstrap.Modal(document.getElementById('addLinkModal'));
+        modal.show();
+    }
+    
+    function confirmBulkDelete() {
+        const selectedCheckboxes = document.querySelectorAll('.item-checkbox:checked');
+        if (selectedCheckboxes.length === 0) {
+            window.toastManager.error('Nie wybrano żadnych linków do usunięcia');
+            return;
+        }
+        
+        if (confirm(`Czy na pewno chcesz usunąć ${selectedCheckboxes.length} wybranych linków? Tej operacji nie można cofnąć.`)) {
+            const linkIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+            
+            fetch('/api/social/bulk-delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ link_ids: linkIds })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.toastManager.success(`Usunięto ${data.deleted_count} linków pomyślnie!`);
+                    // Remove selected rows
+                    selectedCheckboxes.forEach(cb => {
+                        const row = cb.closest('tr');
+                        if (row) {
+                            row.remove();
+                        }
+                    });
+                    updateBulkDeleteUI();
+                } else {
+                    window.toastManager.error('Błąd podczas usuwania: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.toastManager.error('Wystąpił błąd podczas usuwania linków');
+            });
+        }
+    }
 </script>
 {% endblock %}

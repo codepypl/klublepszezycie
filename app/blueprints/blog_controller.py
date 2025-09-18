@@ -127,6 +127,8 @@ class BlogController:
         """Create blog comment with user tracking"""
         try:
             from app.utils.user_info_utils import get_user_info
+            from app.utils.user_agent_parser import UserAgentParser
+            from app.utils.ip_geolocation import IPGeolocation
             
             post = BlogPost.query.get(post_id)
             if not post:
@@ -138,6 +140,13 @@ class BlogController:
             # Get user information
             user_info = get_user_info()
             
+            # Parse user agent for better browser/OS detection
+            ua_parser = UserAgentParser()
+            parsed_ua = ua_parser.parse(user_info['user_agent'])
+            
+            # Get location information
+            location_info = IPGeolocation.get_location(user_info['ip_address'])
+            
             comment = BlogComment(
                 post_id=post_id,
                 parent_id=parent_id,
@@ -146,15 +155,58 @@ class BlogController:
                 content=content,
                 ip_address=user_info['ip_address'],
                 user_agent=user_info['user_agent'],
-                browser=user_info['browser'],
-                operating_system=user_info['operating_system'],
-                location_country=user_info['location_country'],
-                location_city=user_info['location_city'],
+                browser=ua_parser.get_browser_display_name(parsed_ua['browser'], parsed_ua['browser_version']),
+                operating_system=ua_parser.get_os_display_name(parsed_ua['os'], parsed_ua['os_version']),
+                location_country=location_info['country'],
+                location_city=location_info['city'],
                 is_approved=False
             )
             
             db.session.add(comment)
             db.session.commit()
+            
+            # Send notification email to admin about new comment
+            try:
+                from app.services.email_service import EmailService
+                from app.utils.timezone_utils import get_local_now
+                import os
+                
+                email_service = EmailService()
+                
+                # Get admin emails (users with admin role)
+                from app.models import User
+                admin_users = User.query.filter_by(role='admin', is_active=True).all()
+                
+                if admin_users:
+                    # Prepare email context
+                    base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
+                    moderation_url = f"{base_url}/admin/blog/comments"
+                    post_url = f"{base_url}/blog/{post.slug}"
+                    
+                    context = {
+                        'post_title': post.title,
+                        'post_url': post_url,
+                        'comment_author': name,
+                        'comment_email': email,
+                        'comment_content': content,
+                        'comment_date': get_local_now().strftime('%d.%m.%Y %H:%M'),
+                        'comment_ip': user_info['ip_address'],
+                        'comment_browser': ua_parser.get_browser_display_name(parsed_ua['browser'], parsed_ua['browser_version']),
+                        'moderation_url': moderation_url
+                    }
+                    
+                    # Send to all admin users
+                    for admin in admin_users:
+                        email_service.send_template_email(
+                            to_email=admin.email,
+                            template_name='comment_moderation',
+                            context=context,
+                            to_name=admin.name or 'Administratorze'
+                        )
+                        
+            except Exception as email_error:
+                # Don't fail comment creation if email fails
+                print(f"Błąd wysyłania powiadomienia o komentarzu: {str(email_error)}")
             
             return {
                 'success': True,
@@ -353,10 +405,33 @@ class BlogController:
             }
     
     @staticmethod
+    def get_categories_paginated(page=1, per_page=10):
+        """Get categories with pagination"""
+        try:
+            categories = BlogCategory.query.order_by(BlogCategory.title).paginate(
+                page=page, per_page=per_page, error_out=False
+            )
+            return {
+                'success': True,
+                'categories': categories
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'categories': None
+            }
+    
+    @staticmethod
     def get_tags():
         """Get all tags"""
         try:
             tags = BlogTag.query.filter_by(is_active=True).order_by(BlogTag.name).all()
+            
+            # Add posts count for each tag
+            for tag in tags:
+                tag.posts_count = tag.posts.count()
+            
             return {
                 'success': True,
                 'tags': tags
@@ -421,6 +496,17 @@ class BlogController:
             
             # Get only top-level comments (no parent)
             comments = query.filter(BlogComment.parent_id.is_(None)).order_by(BlogComment.created_at.asc()).all()
+            
+            # For each comment, get its approved replies
+            for comment in comments:
+                if approved_only:
+                    comment.replies = query.filter(
+                        BlogComment.parent_id == comment.id
+                    ).order_by(BlogComment.created_at.asc()).all()
+                else:
+                    comment.replies = BlogComment.query.filter(
+                        BlogComment.parent_id == comment.id
+                    ).order_by(BlogComment.created_at.asc()).all()
             
             return {
                 'success': True,

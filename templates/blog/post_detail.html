@@ -276,15 +276,19 @@
                     <div class="comments-list">
                         {% for comment in comments %}
                         {% if not comment.parent_id %}
-                        <div class="comment-item mb-3" data-comment-id="{{ comment.id }}">
-                            <div class="card">
+                        <div class="comment-item mb-4" data-comment-id="{{ comment.id }}">
+                            <div class="card shadow-sm">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h6 class="card-title mb-0">{{ comment.author_name }}</h6>
-                                        <small class="text-muted">{{ comment.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="card-title mb-0 text-dark">
+                                            <i class="fas fa-user me-2 text-muted"></i>{{ comment.author_name }}
+                                        </h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>{{ comment.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                        </small>
                                     </div>
-                                    <p class="card-text">{{ comment.content }}</p>
-                                    <div class="comment-actions mt-2">
+                                    <p class="card-text mb-3">{{ comment.content }}</p>
+                                    <div class="comment-actions">
                                         <button class="btn btn-sm btn-outline-primary reply-btn" data-comment-id="{{ comment.id }}">
                                             <i class="fas fa-reply me-1"></i>Odpowiedz
                                         </button>
@@ -296,13 +300,17 @@
                             {% if comment.replies %}
                             <div class="replies ms-4 mt-2">
                                 {% for reply in comment.replies %}
-                                <div class="card mb-2">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <h6 class="card-title mb-0 small">{{ reply.author_name }}</h6>
-                                            <small class="text-muted">{{ reply.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                                <div class="reply-item mb-2">
+                                    <div class="card border-start border-3 border-primary">
+                                        <div class="card-body py-2">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <h6 class="card-title mb-0 small text-primary">
+                                                    <i class="fas fa-reply me-1"></i>{{ reply.author_name }}
+                                                </h6>
+                                                <small class="text-muted">{{ reply.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                                            </div>
+                                            <p class="card-text small mb-0">{{ reply.content }}</p>
                                         </div>
-                                        <p class="card-text small">{{ reply.content }}</p>
                                     </div>
                                 </div>
                                 {% endfor %}
@@ -310,10 +318,14 @@
                             {% endif %}
                             
                             <!-- Reply Form (hidden by default) -->
-                            <div class="reply-form mt-2" style="display: none;">
-                                <div class="card">
+                            <div class="reply-form mt-3" style="display: none;">
+                                <div class="card border-primary">
+                                    <div class="card-header bg-light">
+                                        <h6 class="card-title mb-0 text-primary">
+                                            <i class="fas fa-reply me-2"></i>Odpowiedz na komentarz
+                                        </h6>
+                                    </div>
                                     <div class="card-body">
-                                        <h6 class="card-title">Odpowiedz na komentarz</h6>
                                         <form class="reply-comment-form">
                                             <input type="hidden" name="post_id" value="{{ post.id }}">
                                             <input type="hidden" name="parent_id" value="{{ comment.id }}">
@@ -329,8 +341,10 @@
                                                 <textarea class="form-control form-control-sm" name="content" rows="2" placeholder="Twoja odpowiedź..." required></textarea>
                                             </div>
                                             <div class="d-flex gap-2">
-                                                <button type="submit" class="btn btn-primary btn-sm">Wyślij odpowiedź</button>
-                                                <button type="button" class="btn btn-secondary btn-sm cancel-reply">Anuluj</button>
+                                                <button type="submit" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-paper-plane me-1"></i>Wyślij odpowiedź
+                                                </button>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm cancel-reply">Anuluj</button>
                                             </div>
                                         </form>
                                     </div>
@@ -491,14 +505,18 @@
                 </div>
                 <div class="col-lg-4 mb-4">
                     <h5 class="fw-bold mb-3">{{ footer_settings.contact_title or 'Kontakt' }}</h5>
+                    {% if footer_settings.contact_email %}
                     <p class="text-light mb-2">
                         <i class="fas fa-envelope me-2"></i>
-                        {{ footer_settings.contact_email or 'kontakt@klublepszezycie.pl' }}
+                        {{ footer_settings.contact_email }}
                     </p>
+                    {% endif %}
+                    {% if footer_settings.contact_phone %}
                     <p class="text-light mb-2">
                         <i class="fas fa-phone me-2"></i>
-                        {{ footer_settings.contact_phone or '+48 123 456 789' }}
+                        {{ footer_settings.contact_phone }}
                     </p>
+                    {% endif %}
                 </div>
                 <div class="col-lg-4 mb-4">
                     <h5 class="fw-bold mb-3">{{ footer_settings.social_title or 'Śledź nas' }}</h5>
@@ -590,7 +608,7 @@ function submitComment(form) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert(data.message);
+            showSuccess(data.message);
             form.reset();
             // Hide reply form if it's a reply
             if (form.classList.contains('reply-comment-form')) {
@@ -599,12 +617,12 @@ function submitComment(form) {
             // Reload page to show new comment
             setTimeout(() => location.reload(), 1000);
         } else {
-            alert('Błąd: ' + data.message);
+            showError('Błąd: ' + data.message);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Wystąpił błąd podczas dodawania komentarza');
+        showError('Wystąpił błąd podczas dodawania komentarza');
     });
 }
 
@@ -768,4 +786,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
 

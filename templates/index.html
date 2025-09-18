@@ -109,7 +109,7 @@
                     
                     <!-- Countdown Timer or Live Status -->
                     {% if event_status == 'upcoming' %}
-                    <div class="countdown-timer mb-4" data-event-date="{{ next_event.event_date.isoformat() }}" data-event-end="{% if next_event.end_date %}{{ next_event.end_date.isoformat() }}{% endif %}">
+                    <div class="countdown-timer mb-4" data-event-date="{% if next_event.event_date %}{{ next_event.event_date.isoformat() }}{% endif %}" data-event-end="{% if next_event.end_date %}{{ next_event.end_date.isoformat() }}{% endif %}">
                         <div class="row text-center">
                             <div class="col-3">
                                 <div class="countdown-item">
@@ -149,7 +149,7 @@
                                 </div>
                                 <p class="text-white mt-3">
                                     <i class="fas fa-clock me-2"></i>
-                                    Zakończenie: {{ next_event.end_date.strftime('%d.%m.%Y o %H:%M') if next_event.end_date else 'Nie określono' }}
+                                    Zakończenie: {% if next_event.end_date %}{{ next_event.end_date.strftime('%d.%m.%Y o %H:%M') }}{% else %}Nie określono{% endif %}
                                 </p>
                             </div>
                         </div>
@@ -168,7 +168,7 @@
                         </button>
                         <p class="text-light small">
                             <i class="fas fa-clock me-1"></i>
-                            {{ next_event.event_date.strftime('%d.%m.%Y o %H:%M') }}
+                            {% if next_event.event_date %}{{ next_event.event_date.strftime('%d.%m.%Y o %H:%M') }}{% else %}Data nie określona{% endif %}
                         </p>
                         {% endif %}
                     </div>
@@ -719,14 +719,18 @@
                 </div>
                 <div class="col-lg-4 mb-4">
                     <h5 class="fw-bold mb-3">{{ footer_settings.contact_title or 'Kontakt' }}</h5>
+                    {% if footer_settings.contact_email %}
                     <p class="text-light mb-2">
                         <i class="fas fa-envelope me-2"></i>
-                        {{ footer_settings.contact_email or 'kontakt@klublepszezycie.pl' }}
+                        {{ footer_settings.contact_email }}
                     </p>
+                    {% endif %}
+                    {% if footer_settings.contact_phone %}
                     <p class="text-light mb-2">
                         <i class="fas fa-phone me-2"></i>
-                        {{ footer_settings.contact_phone or '+48 123 456 789' }}
+                        {{ footer_settings.contact_phone }}
                     </p>
+                    {% endif %}
                 </div>
                 <div class="col-lg-4 mb-4">
                     <h5 class="fw-bold mb-3">{{ footer_settings.social_title or 'Śledź nas' }}</h5>
@@ -800,11 +804,12 @@
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Rejestracja...';
                     
                     // Get form data as JSON
+                    const wantsClubNewsInput = this.querySelector('input[name="wants_club_news"]');
                     const jsonData = {
                         name: this.querySelector('input[name="name"]').value,
                         email: this.querySelector('input[name="email"]').value,
                         phone: this.querySelector('input[name="phone"]').value || '',
-                        wants_club_news: this.querySelector('input[name="wants_club_news"]').checked
+                        wants_club_news: wantsClubNewsInput ? wantsClubNewsInput.checked : false
                     };
                     
                     // Check if already registered first
@@ -829,7 +834,7 @@
                     .then(checkData => {
                         if (checkData.is_registered) {
                             // User is already registered
-                            alert('Błąd: ' + checkData.message);
+                            showError('Błąd: ' + checkData.message);
                             submitBtn.disabled = false;
                             submitBtn.innerHTML = originalText;
                             return;
@@ -876,12 +881,12 @@
                         } else {
                             // Show error message
                             const errorMessage = data.message || data.error || 'Nieznany błąd';
-alert('Błąd: ' + errorMessage);
+                            showError('Błąd: ' + errorMessage);
                         }
                     })
                     .catch(error => {
                         console.error('❌ Error:', error);
-                        alert('Wystąpił błąd podczas zapisu. Spróbuj ponownie.');
+                        showError('Wystąpił błąd podczas zapisu. Spróbuj ponownie.');
                     })
                     .finally(() => {
                         // Re-enable submit button
@@ -891,7 +896,7 @@ alert('Błąd: ' + errorMessage);
                     })
                     .catch(error => {
                         console.error('❌ Error checking registration:', error);
-                        alert('Wystąpił błąd podczas sprawdzania rejestracji. Spróbuj ponownie.');
+                        showError('Wystąpił błąd podczas sprawdzania rejestracji. Spróbuj ponownie.');
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = originalText;
                     });
@@ -967,12 +972,12 @@ alert('Błąd: ' + errorMessage);
                         } else {
                             // Show error message
                             const errorMessage = data.message || data.error || 'Nieznany błąd';
-alert('Błąd: ' + errorMessage);
+                            showError('Błąd: ' + errorMessage);
                         }
                     })
                     .catch(error => {
                         console.error('❌ Error:', error);
-                        alert('Wystąpił błąd podczas zapisu. Spróbuj ponownie.');
+                        showError('Wystąpił błąd podczas zapisu. Spróbuj ponownie.');
                     })
                     .finally(() => {
                         // Re-enable submit button
@@ -1273,18 +1278,18 @@ alert('Błąd: ' + errorMessage);
                 .then(data => {
                     if (data.success) {
                         // Show success message
-                        alert('Dziękujemy! Zostałeś zapisany na wydarzenie. Sprawdź swój email.');
+                        showSuccess('Dziękujemy! Zostałeś zapisany na wydarzenie. Sprawdź swój email.');
                         
                         // Close modal
                         const modal = bootstrap.Modal.getInstance(eventRegistrationModal);
                         modal.hide();
                     } else {
-                        alert('Wystąpił błąd: ' + (data.message || 'Spróbuj ponownie.'));
+                        showError('Wystąpił błąd: ' + (data.message || 'Spróbuj ponownie.'));
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Wystąpił błąd podczas zapisywania. Spróbuj ponownie.');
+                    showError('Wystąpił błąd podczas zapisywania. Spróbuj ponownie.');
                 })
                 .finally(() => {
                     // Re-enable submit button
@@ -1294,5 +1299,6 @@ alert('Błąd: ' + errorMessage);
             });
         });
     </script>
+
 </body>
 </html>

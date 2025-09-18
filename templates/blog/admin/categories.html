@@ -240,7 +240,8 @@
         
         window.paginationHandlers = {
             onPageChange: (page) => {
-                window.location.href = `{{ url_for('blog.admin_categories') }}?page=${page}&per_page={{ categories.per_page if categories else 10 }}`;
+                const perPage = {{ categories.per_page if categories else 10 }};
+                window.location.href = `{{ url_for('blog.admin_categories') }}?page=${page}&per_page=${perPage}`;
             },
             onPerPageChange: (newPage, perPage) => {
                 window.location.href = `{{ url_for('blog.admin_categories') }}?page=${newPage}&per_page=${perPage}`;

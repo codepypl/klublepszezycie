@@ -107,7 +107,7 @@
                                                 <td>
                                                     <div class="btn-group" role="group">
                                                         <button class="btn btn-sm admin-btn-outline" 
-                                                                onclick="editSeo({{ seo.id }}, '{{ seo.page_type }}', '{{ seo.page_title or '' }}', '{{ seo.meta_description or '' }}', '{{ seo.og_title or '' }}', '{{ seo.og_description or '' }}', '{{ seo.og_image or '' }}', '{{ seo.twitter_card or '' }}', '{{ seo.twitter_title or '' }}', '{{ seo.twitter_description or '' }}', '{{ seo.structured_data or '' }}')">
+                                                                onclick="editSeo({{ seo.id }}, {{ seo.page_type|tojson }}, {{ (seo.page_title or '')|tojson }}, {{ (seo.meta_description or '')|tojson }}, {{ (seo.og_title or '')|tojson }}, {{ (seo.og_description or '')|tojson }}, {{ (seo.og_image or '')|tojson }}, {{ (seo.twitter_card or '')|tojson }}, {{ (seo.twitter_title or '')|tojson }}, {{ (seo.twitter_description or '')|tojson }}, {{ (seo.structured_data or '')|tojson }})">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
                                                         <button class="btn btn-sm admin-btn-danger" 
@@ -424,19 +424,12 @@
             // Convert FormData to JSON
             const jsonData = {
                 page_type: formData.get('page_type'),
-                page_title: formData.get('page_title'),
-                meta_description: formData.get('meta_description'),
-                meta_keywords: formData.get('meta_keywords'),
+                title: formData.get('page_title'),  // Map page_title to title
+                description: formData.get('meta_description'),  // Map meta_description to description
+                keywords: formData.get('meta_keywords'),  // Map meta_keywords to keywords
                 og_title: formData.get('og_title'),
                 og_description: formData.get('og_description'),
                 og_image: formData.get('og_image'),
-                og_type: formData.get('og_type') || 'website',
-                twitter_card: formData.get('twitter_card'),
-                twitter_title: formData.get('twitter_title'),
-                twitter_description: formData.get('twitter_description'),
-                twitter_image: formData.get('twitter_image'),
-                canonical_url: formData.get('canonical_url'),
-                structured_data: formData.get('structured_data'),
                 is_active: formData.get('is_active') === 'on'
             };
             
@@ -492,19 +485,12 @@
             
             // Convert FormData to JSON
             const jsonData = {
-                page_title: formData.get('page_title'),
-                meta_description: formData.get('meta_description'),
-                meta_keywords: formData.get('meta_keywords'),
+                title: formData.get('page_title'),  // Map page_title to title
+                description: formData.get('meta_description'),  // Map meta_description to description
+                keywords: formData.get('meta_keywords'),  // Map meta_keywords to keywords
                 og_title: formData.get('og_title'),
                 og_description: formData.get('og_description'),
                 og_image: formData.get('og_image'),
-                og_type: formData.get('og_type') || 'website',
-                twitter_card: formData.get('twitter_card'),
-                twitter_title: formData.get('twitter_title'),
-                twitter_description: formData.get('twitter_description'),
-                twitter_image: formData.get('twitter_image'),
-                canonical_url: formData.get('canonical_url'),
-                structured_data: formData.get('structured_data'),
                 is_active: formData.get('is_active') === 'on'
             };
             
@@ -560,37 +546,67 @@
             }
         }
         // Form submissions
-        document.getElementById('addSeoForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            addSeo();
-        });
-        document.getElementById('editSeoForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            saveSeo();
-        });
+        const addSeoForm = document.getElementById('addSeoForm');
+        if (addSeoForm) {
+            addSeoForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                addSeo();
+            });
+        }
+        
+        const editSeoForm = document.getElementById('editSeoForm');
+        if (editSeoForm) {
+            editSeoForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveSeo();
+            });
+        }
+        
         // Character count listeners
-        document.getElementById('page_title').addEventListener('input', function() {
-            updateCount(this, document.getElementById('title_count'), 60);
-        });
-        document.getElementById('meta_description').addEventListener('input', function() {
-            updateCount(this, document.getElementById('desc_count'), 160);
-        });
-        document.getElementById('edit_page_title').addEventListener('input', function() {
-            updateCount(this, document.getElementById('edit_title_count'), 60);
-        });
-        document.getElementById('edit_meta_description').addEventListener('input', function() {
-            updateCount(this, document.getElementById('edit_desc_count'), 160);
-        });
+        const pageTitle = document.getElementById('page_title');
+        if (pageTitle) {
+            pageTitle.addEventListener('input', function() {
+                updateCount(this, document.getElementById('title_count'), 60);
+            });
+        }
+        
+        const metaDescription = document.getElementById('meta_description');
+        if (metaDescription) {
+            metaDescription.addEventListener('input', function() {
+                updateCount(this, document.getElementById('desc_count'), 160);
+            });
+        }
+        
+        const editPageTitle = document.getElementById('edit_page_title');
+        if (editPageTitle) {
+            editPageTitle.addEventListener('input', function() {
+                updateCount(this, document.getElementById('edit_title_count'), 60);
+            });
+        }
+        
+        const editMetaDescription = document.getElementById('edit_meta_description');
+        if (editMetaDescription) {
+            editMetaDescription.addEventListener('input', function() {
+                updateCount(this, document.getElementById('edit_desc_count'), 160);
+            });
+        }
+        
         // Sidebar toggle functionality
-        document.getElementById('sidebarToggle').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('show');
-        });
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', function() {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar) {
+                    sidebar.classList.toggle('show');
+                }
+            });
+        }
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', function(event) {
             const sidebar = document.getElementById('sidebar');
             const sidebarToggle = document.getElementById('sidebarToggle');
             if (window.innerWidth < 992 && 
+                sidebar && sidebarToggle &&
                 !sidebar.contains(event.target) && 
                 !sidebarToggle.contains(event.target)) {
                 sidebar.classList.remove('show');

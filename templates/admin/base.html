@@ -135,7 +135,7 @@
                 <div class="admin-header d-flex justify-content-between align-items-center">
                     <h1>{% block page_title %}Panel Administracyjny{% endblock %}</h1>
                     <div class="d-flex align-items-center">
-                        <span class="text-muted me-3">Witaj, {{ current_user.name or current_user.email }}</span>
+                        <span class="text-muted me-3">Witaj, {{ current_user.first_name or current_user.email }}</span>
                         <a href="{{ url_for('public.index') }}" target="_blank" class="btn btn-outline-primary btn-sm me-2">
                             <i class="fas fa-external-link-alt me-1"></i>
                             Strona główna
@@ -191,12 +191,35 @@
         </div>
     </div>
 
+    <!-- Universal Alert Modal -->
+    <div class="modal fade admin-modal" id="alertModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="alertModalTitle">
+                        <i class="fas fa-info-circle me-2 text-info" id="alertModalIcon"></i>
+                        <span id="alertModalTitleText">Informacja</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="alertModalMessage">Treść wiadomości</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="alertModalOk">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <!-- Toast Manager -->
     <script src="{{ url_for('static', filename='js/utils/toast.js') }}"></script>
+    <!-- Modal Manager -->
+    <script src="{{ url_for('static', filename='js/utils/modal.js') }}"></script>
     <!-- Form Validators -->
     <script src="{{ url_for('static', filename='js/utils/validators.js') }}"></script>
     <!-- Slug generation -->

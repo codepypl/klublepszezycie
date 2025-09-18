@@ -4,7 +4,7 @@ Users API endpoints
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from app.models import User, UserGroup, db
-from app.utils.auth_utils import admin_required
+from app.utils.auth_utils import admin_required_api, login_required_api
 import logging
 
 users_api_bp = Blueprint('users_api', __name__)
@@ -24,7 +24,6 @@ def api_users():
             query = query.filter(
                 db.or_(
                     User.first_name.ilike(f'%{search}%'),
-                    User.last_name.ilike(f'%{search}%'),
                     User.email.ilike(f'%{search}%')
                 )
             )
@@ -40,8 +39,8 @@ def api_users():
             'users': [{
                 'id': user.id,
                 'first_name': user.first_name,
-                'last_name': user.last_name,
                 'email': user.email,
+                'phone': user.phone,
                 'is_active': user.is_active,
                 'created_at': user.created_at.isoformat() if user.created_at else None,
                 'last_login': user.last_login.isoformat() if user.last_login else None
@@ -71,7 +70,6 @@ def api_search_users():
         users = User.query.filter(
             db.or_(
                 User.first_name.ilike(f'%{query}%'),
-                User.last_name.ilike(f'%{query}%'),
                 User.email.ilike(f'%{query}%')
             )
         ).limit(10).all()
@@ -81,8 +79,8 @@ def api_search_users():
             'users': [{
                 'id': user.id,
                 'first_name': user.first_name,
-                'last_name': user.last_name,
                 'email': user.email,
+                'phone': user.phone,
                 'is_active': user.is_active
             } for user in users]
         })
@@ -103,8 +101,8 @@ def api_user(user_id):
                 'user': {
                     'id': user.id,
                     'first_name': user.first_name,
-                    'last_name': user.last_name,
                     'email': user.email,
+                    'phone': user.phone,
                     'is_active': user.is_active,
                     'created_at': user.created_at.isoformat() if user.created_at else None,
                     'last_login': user.last_login.isoformat() if user.last_login else None
@@ -116,14 +114,60 @@ def api_user(user_id):
             
             if 'first_name' in data:
                 user.first_name = data['first_name']
-            if 'last_name' in data:
-                user.last_name = data['last_name']
             if 'email' in data:
                 user.email = data['email']
+            if 'phone' in data:
+                user.phone = data['phone']
             if 'is_active' in data:
                 user.is_active = data['is_active']
+            if 'club_member' in data:
+                user.club_member = data['club_member']
+            if 'role' in data:
+                user.role = data['role']
+            
+            # Obsługa nowego hasła
+            new_password = None
+            if 'password' in data and data['password']:
+                from werkzeug.security import generate_password_hash
+                new_password = data['password']
+                user.password_hash = generate_password_hash(new_password)
             
             db.session.commit()
+            
+            # Wyślij email z nowym hasłem jeśli zostało ustawione
+            if new_password:
+                try:
+                    from app.services.email_service import EmailService
+                    from app.utils.timezone_utils import get_local_now
+                    import os
+                    
+                    email_service = EmailService()
+                    
+                    # Przygotuj kontekst emaila
+                    base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
+                    login_url = f"{base_url}/login"
+                    unsubscribe_url = f"{base_url}/unsubscribe"
+                    delete_account_url = f"{base_url}/delete-account"
+                    
+                    context = {
+                        'user_name': user.first_name or 'Użytkowniku',
+                        'new_password': new_password,
+                        'login_url': login_url,
+                        'unsubscribe_url': unsubscribe_url,
+                        'delete_account_url': delete_account_url
+                    }
+                    
+                    # Wyślij email
+                    email_service.send_template_email(
+                        to_email=user.email,
+                        template_name='admin_password_set',
+                        context=context,
+                        to_name=user.first_name or 'Użytkowniku'
+                    )
+                    
+                except Exception as email_error:
+                    # Nie przerywaj operacji jeśli email się nie wyśle
+                    print(f"Błąd wysyłania emaila z nowym hasłem: {str(email_error)}")
             
             return jsonify({
                 'success': True,
@@ -238,12 +282,16 @@ def api_user_group(group_id):
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @users_api_bp.route('/bulk-delete/users', methods=['POST'])
-@login_required
-@admin_required
+@admin_required_api
 def api_bulk_delete_users():
     """Bulk delete users"""
     try:
         data = request.get_json()
+        logging.info(f"Bulk delete users request data: {data}")
+        
+        if not data:
+            return jsonify({'success': False, 'message': 'No data provided'}), 400
+            
         user_ids = data.get('user_ids', [])
         
         if not user_ids:
@@ -268,8 +316,7 @@ def api_bulk_delete_users():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @users_api_bp.route('/bulk-delete/user-groups', methods=['POST'])
-@login_required
-@admin_required
+@admin_required_api
 def api_bulk_delete_user_groups():
     """Bulk delete user groups"""
     try:
@@ -309,7 +356,7 @@ def api_profile():
                 'success': True,
                 'user': {
                     'id': user.id,
-                    'name': user.name,
+                    'name': user.first_name,
                     'username': user.username,
                     'email': user.email,
                     'phone': user.phone,
@@ -330,14 +377,21 @@ def api_profile():
                 return jsonify({'success': False, 'message': 'No data provided'}), 400
             
             # Update user fields
-            if 'name' in data:
-                user.name = data['name'].strip() if data['name'] else None
+            if 'first_name' in data:
+                user.first_name = data['first_name'].strip() if data['first_name'] else None
             if 'email' in data:
                 user.email = data['email'].strip()
             if 'phone' in data:
                 user.phone = data['phone'].strip() if data['phone'] else None
             if 'club_member' in data:
+                old_club_member = user.club_member
                 user.club_member = bool(data['club_member'])
+                
+                # Synchronize club members group if status changed
+                if old_club_member != user.club_member:
+                    from app.services.group_manager import GroupManager
+                    group_manager = GroupManager()
+                    group_manager.sync_club_members_group()
             
             # Validate email if provided
             if 'email' in data and user.email:
@@ -364,7 +418,7 @@ def api_profile():
                 'message': 'Profil został zaktualizowany',
                 'user': {
                     'id': user.id,
-                    'name': user.name,
+                    'name': user.first_name,
                     'username': user.username,
                     'email': user.email,
                     'phone': user.phone,

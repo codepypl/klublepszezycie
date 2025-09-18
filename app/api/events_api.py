@@ -14,14 +14,14 @@ events_api_bp = Blueprint('events_api', __name__)
 def api_events():
     """Get all events"""
     try:
-        events = EventSchedule.query.order_by(EventSchedule.start_date.asc()).all()
+        events = EventSchedule.query.order_by(EventSchedule.event_date.asc()).all()
         return jsonify({
             'success': True,
             'events': [{
                 'id': event.id,
                 'title': event.title,
                 'description': event.description,
-                'start_date': event.start_date.isoformat() if event.start_date else None,
+                'event_date': event.event_date.isoformat() if event.event_date else None,
                 'end_date': event.end_date.isoformat() if event.end_date else None,
                 'location': event.location,
                 'max_participants': event.max_participants,
@@ -39,18 +39,22 @@ def api_event_schedule():
     """Event schedule API"""
     if request.method == 'GET':
         try:
-            events = EventSchedule.query.order_by(EventSchedule.start_date.asc()).all()
+            events = EventSchedule.query.order_by(EventSchedule.event_date.asc()).all()
             return jsonify({
                 'success': True,
                 'events': [{
                     'id': event.id,
                     'title': event.title,
                     'description': event.description,
-                    'start_date': event.start_date.isoformat() if event.start_date else None,
+                    'event_type': event.event_type,
+                    'event_date': event.event_date.isoformat() if event.event_date else None,
                     'end_date': event.end_date.isoformat() if event.end_date else None,
                     'location': event.location,
+                    'meeting_link': event.meeting_link,
                     'max_participants': event.max_participants,
                     'is_active': event.is_active,
+                    'is_published': event.is_published,
+                    'is_archived': event.is_archived,
                     'created_at': event.created_at.isoformat() if event.created_at else None
                 } for event in events]
             })
@@ -65,7 +69,7 @@ def api_event_schedule():
             event = EventSchedule(
                 title=data['title'],
                 description=data.get('description', ''),
-                start_date=data.get('start_date'),
+                event_date=data.get('event_date'),
                 end_date=data.get('end_date'),
                 location=data.get('location', ''),
                 max_participants=data.get('max_participants', 0),
@@ -82,7 +86,7 @@ def api_event_schedule():
                     'id': event.id,
                     'title': event.title,
                     'description': event.description,
-                    'start_date': event.start_date.isoformat() if event.start_date else None,
+                    'event_date': event.event_date.isoformat() if event.event_date else None,
                     'end_date': event.end_date.isoformat() if event.end_date else None,
                     'location': event.location,
                     'max_participants': event.max_participants,
@@ -134,11 +138,14 @@ def api_event(event_id):
                     'id': event.id,
                     'title': event.title,
                     'description': event.description,
-                    'start_date': event.start_date.isoformat() if event.start_date else None,
+                    'event_type': event.event_type,
+                    'event_date': event.event_date.isoformat() if event.event_date else None,
                     'end_date': event.end_date.isoformat() if event.end_date else None,
                     'location': event.location,
+                    'meeting_link': event.meeting_link,
                     'max_participants': event.max_participants,
                     'is_active': event.is_active,
+                    'is_published': event.is_published,
                     'created_at': event.created_at.isoformat() if event.created_at else None
                 }
             })
@@ -150,16 +157,22 @@ def api_event(event_id):
                 event.title = data['title']
             if 'description' in data:
                 event.description = data['description']
-            if 'start_date' in data:
-                event.start_date = data['start_date']
+            if 'event_type' in data:
+                event.event_type = data['event_type']
+            if 'event_date' in data:
+                event.event_date = data['event_date']
             if 'end_date' in data:
                 event.end_date = data['end_date']
             if 'location' in data:
                 event.location = data['location']
+            if 'meeting_link' in data:
+                event.meeting_link = data['meeting_link']
             if 'max_participants' in data:
                 event.max_participants = data['max_participants']
             if 'is_active' in data:
                 event.is_active = data['is_active']
+            if 'is_published' in data:
+                event.is_published = data['is_published']
             
             db.session.commit()
             
@@ -188,13 +201,13 @@ def api_schedules():
     """Schedules API"""
     if request.method == 'GET':
         try:
-            schedules = EventSchedule.query.order_by(EventSchedule.start_date.asc()).all()
+            schedules = EventSchedule.query.order_by(EventSchedule.event_date.asc()).all()
             return jsonify({
                 'success': True,
                 'schedules': [{
                     'id': schedule.id,
                     'title': schedule.title,
-                    'start_date': schedule.start_date.isoformat() if schedule.start_date else None,
+                    'event_date': schedule.event_date.isoformat() if schedule.event_date else None,
                     'end_date': schedule.end_date.isoformat() if schedule.end_date else None,
                     'location': schedule.location,
                     'is_active': schedule.is_active
@@ -211,7 +224,7 @@ def api_schedules():
             schedule = EventSchedule(
                 title=data['title'],
                 description=data.get('description', ''),
-                start_date=data.get('start_date'),
+                event_date=data.get('event_date'),
                 end_date=data.get('end_date'),
                 location=data.get('location', ''),
                 max_participants=data.get('max_participants', 0),
@@ -227,7 +240,7 @@ def api_schedules():
                 'schedule': {
                     'id': schedule.id,
                     'title': schedule.title,
-                    'start_date': schedule.start_date.isoformat() if schedule.start_date else None,
+                    'event_date': schedule.event_date.isoformat() if schedule.event_date else None,
                     'end_date': schedule.end_date.isoformat() if schedule.end_date else None,
                     'location': schedule.location,
                     'is_active': schedule.is_active
@@ -252,7 +265,7 @@ def api_schedule(schedule_id):
                     'id': schedule.id,
                     'title': schedule.title,
                     'description': schedule.description,
-                    'start_date': schedule.start_date.isoformat() if schedule.start_date else None,
+                    'event_date': schedule.event_date.isoformat() if schedule.event_date else None,
                     'end_date': schedule.end_date.isoformat() if schedule.end_date else None,
                     'location': schedule.location,
                     'max_participants': schedule.max_participants,
@@ -268,8 +281,8 @@ def api_schedule(schedule_id):
                 schedule.title = data['title']
             if 'description' in data:
                 schedule.description = data['description']
-            if 'start_date' in data:
-                schedule.start_date = data['start_date']
+            if 'event_date' in data:
+                schedule.event_date = data['event_date']
             if 'end_date' in data:
                 schedule.end_date = data['end_date']
             if 'location' in data:
@@ -306,13 +319,13 @@ def api_check_schedules():
     """Check for schedule conflicts"""
     try:
         data = request.get_json()
-        start_date = data.get('start_date')
+        event_date = data.get('event_date')
         end_date = data.get('end_date')
         exclude_id = data.get('exclude_id')
         
         query = EventSchedule.query.filter(
-            EventSchedule.start_date <= end_date,
-            EventSchedule.end_date >= start_date
+            EventSchedule.event_date <= end_date,
+            EventSchedule.end_date >= event_date
         )
         
         if exclude_id:
@@ -326,7 +339,7 @@ def api_check_schedules():
             'conflicting_schedules': [{
                 'id': schedule.id,
                 'title': schedule.title,
-                'start_date': schedule.start_date.isoformat() if schedule.start_date else None,
+                'event_date': schedule.event_date.isoformat() if schedule.event_date else None,
                 'end_date': schedule.end_date.isoformat() if schedule.end_date else None
             } for schedule in conflicting_schedules]
         })
@@ -392,6 +405,29 @@ def api_bulk_delete_events():
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error bulk deleting events: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@events_api_bp.route('/registrations/<int:registration_id>', methods=['DELETE'])
+@login_required
+@admin_required
+def api_delete_registration(registration_id):
+    """Delete event registration"""
+    try:
+        registration = EventRegistration.query.get(registration_id)
+        if not registration:
+            return jsonify({'success': False, 'message': 'Registration not found'}), 404
+        
+        db.session.delete(registration)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Registration deleted successfully'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting registration: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @events_api_bp.route('/bulk-delete/registrations', methods=['POST'])

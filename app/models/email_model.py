@@ -17,11 +17,31 @@ class EmailTemplate(db.Model):
     variables = db.Column(db.Text)  # JSON string of template variables
     description = db.Column(db.Text)
     is_active = db.Column(db.Boolean, default=True)
+    is_default = db.Column(db.Boolean, default=False)  # Whether this is a default template
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
         return f'<EmailTemplate {self.name}>'
+
+class DefaultEmailTemplate(db.Model):
+    """Default email templates stored in database"""
+    __tablename__ = 'default_email_templates'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    template_type = db.Column(db.String(50), nullable=False)
+    subject = db.Column(db.String(200), nullable=False)
+    html_content = db.Column(db.Text)
+    text_content = db.Column(db.Text)
+    variables = db.Column(db.Text)  # JSON string of template variables with descriptions
+    description = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<DefaultEmailTemplate {self.name}>'
 
 class UserGroup(db.Model):
     """User groups for email campaigns"""

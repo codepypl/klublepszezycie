@@ -20,7 +20,11 @@ def dashboard():
     """Ankieter dashboard"""
     try:
         # Dashboard now loads statistics via JavaScript API calls
-        return render_template('ankieter/dashboard.html')
+        # Sprawdź rolę użytkownika i wybierz odpowiedni szablon
+        if current_user.is_admin_role():
+            return render_template('admin/crm/dashboard.html')
+        else:
+            return render_template('ankieter/dashboard.html')
         
     except Exception as e:
         flash(f'Błąd podczas ładowania dashboardu: {str(e)}', 'error')
@@ -43,14 +47,14 @@ def calls():
         # Get queue statistics
         queue_stats = QueueManager.get_ankieter_queue_stats(current_user.id)
         
-        return render_template('ankieter/calls.html',
+        return render_template('admin/crm/calls.html',
                              next_contact=next_contact,
                              available_events=available_events,
                              queue_stats=queue_stats)
         
     except Exception as e:
         flash(f'Błąd podczas ładowania strony połączeń: {str(e)}', 'error')
-        return redirect(url_for('ankieter.dashboard'))
+        return redirect(url_for('crm.dashboard'))
 
 
 @login_required
@@ -106,7 +110,7 @@ def contacts():
         # Get import history
         import_history = ImportService.get_import_history(current_user.id)
         
-        return render_template('ankieter/contacts.html',
+        return render_template('admin/crm/contacts.html',
                              contacts=contacts,
                              contact_analyses=contact_analyses,
                              import_history=import_history,
@@ -114,7 +118,7 @@ def contacts():
         
     except Exception as e:
         flash(f'Błąd podczas ładowania strony kontaktów: {str(e)}', 'error')
-        return redirect(url_for('ankieter.dashboard'))
+        return redirect(url_for('crm.dashboard'))
 
 @login_required
 @ankieter_required
@@ -125,7 +129,7 @@ def work():
         
     except Exception as e:
         flash(f'Błąd podczas ładowania ekranu pracy: {str(e)}', 'error')
-        return redirect(url_for('ankieter.dashboard'))
+        return redirect(url_for('crm.dashboard'))
 
 # Register routes with blueprint for backward compatibility
 @ankieter_bp.route('/')

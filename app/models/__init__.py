@@ -13,8 +13,8 @@ db = SQLAlchemy()
 from .user_model import User, PasswordResetToken
 from .content_model import MenuItem, Section, BenefitItem, Testimonial, SocialLink, FAQ
 from .events_model import EventSchedule, EventRegistration
-from .email_model import EmailTemplate, UserGroup, UserGroupMember, EmailCampaign, EmailQueue, EmailLog
-from .blog_model import BlogCategory, BlogTag, BlogPost, BlogComment
+from .email_model import EmailTemplate, DefaultEmailTemplate, UserGroup, UserGroupMember, EmailCampaign, EmailQueue, EmailLog
+from .blog_model import BlogCategory, BlogTag, BlogPost, BlogComment, BlogPostImage
 from .seo_model import SEOSettings, FooterSettings, LegalDocument
 
 # Association tables
@@ -33,6 +33,7 @@ __all__ = [
     'EventSchedule',
     'EventRegistration',
     'EmailTemplate',
+    'DefaultEmailTemplate',
     'UserGroup',
     'UserGroupMember',
     'EmailCampaign',
@@ -42,6 +43,7 @@ __all__ = [
     'BlogTag',
     'BlogPost',
     'BlogComment',
+    'BlogPostImage',
     'SEOSettings',
     'FooterSettings',
     'LegalDocument',

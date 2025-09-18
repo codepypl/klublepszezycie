@@ -184,7 +184,9 @@ function cancelCall() {
 }
 
 // Show/hide callback date field
-document.getElementById('callStatus').addEventListener('change', function() {
+const callStatus = document.getElementById('callStatus');
+if (callStatus) {
+    callStatus.addEventListener('change', function() {
     const callbackDateRow = document.getElementById('callbackDateRow');
     const eventIdField = document.getElementById('eventId');
     
@@ -199,9 +201,12 @@ document.getElementById('callStatus').addEventListener('change', function() {
         eventIdField.required = false;
     }
 });
+}
 
 // Form submission
-document.getElementById('callResultForm').addEventListener('submit', function(e) {
+const callResultForm = document.getElementById('callResultForm');
+if (callResultForm) {
+    callResultForm.addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
@@ -229,16 +234,16 @@ document.getElementById('callResultForm').addEventListener('submit', function(e)
     .then(data => {
         if (data.success) {
             // Show success message
-            alert('Połączenie przetworzone pomyślnie!');
+            showSuccess('Połączenie przetworzone pomyślnie!');
             // Reload page to get next contact
             window.location.reload();
         } else {
-            alert('Błąd: ' + data.error);
+            showError('Błąd: ' + data.error);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Wystąpił błąd podczas przetwarzania połączenia');
+        showError('Wystąpił błąd podczas przetwarzania połączenia');
     })
     .finally(() => {
         // Reset button
@@ -246,6 +251,7 @@ document.getElementById('callResultForm').addEventListener('submit', function(e)
         submitBtn.disabled = false;
     });
 });
+}
 </script>
 
 <!-- External JavaScript -->

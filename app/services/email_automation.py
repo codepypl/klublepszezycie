@@ -31,7 +31,7 @@ class EmailAutomation:
                 base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
                 
                 context = {
-                    'user_name': user.name or 'Użytkowniku',
+                    'user_name': user.first_name or 'Użytkowniku',
                     'user_email': user.email,
                     'temporary_password': 'Sprawdź poprzedni email',  # Password was sent in previous email
                     'login_url': f'{base_url}/login',
@@ -43,7 +43,7 @@ class EmailAutomation:
                     to_email=user.email,
                     template_name='welcome',
                     context=context,
-                    to_name=user.name
+                    to_name=user.first_name
                 )
             
             return True, "Email powitalny wysłany"
@@ -93,7 +93,7 @@ class EmailAutomation:
                 base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
                 
                 context = {
-                    'user_name': user.name or 'Użytkowniku',
+                    'user_name': user.first_name or 'Użytkowniku',
                     'user_email': user.email,
                     'temporary_password': 'Brak hasła tymczasowego',  # No temp password for existing users
                     'login_url': f'{base_url}/login',
@@ -105,7 +105,7 @@ class EmailAutomation:
                     to_email=user.email,
                     template_name='welcome',  # Use welcome template instead
                     context=context,
-                    to_name=user.name
+                    to_name=user.first_name
                 )
             
             return True, "Użytkownik dodany do klubu"

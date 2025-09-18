@@ -69,7 +69,7 @@ class GroupManager:
                 group_id=group_id,
                 user_id=user_id,
                 email=user.email,
-                name=user.name
+                name=user.first_name
             )
             
             db.session.add(member)
@@ -131,7 +131,9 @@ class GroupManager:
                 group_id=group.id,
                 user_id=user_id,
                 email=user.email,
-                name=user.name
+                name=user.first_name,
+                member_type='user',
+                is_active=True
             )
             
             db.session.add(member)
@@ -168,7 +170,7 @@ class GroupManager:
                         group_id=group.id,
                         user_id=user_id,
                         email=user.email,
-                        name=user.name
+                        name=user.first_name
                     )
                     db.session.add(member)
                     added += 1
@@ -244,40 +246,40 @@ class GroupManager:
                 db.session.add(group)
                 db.session.commit()
             
-            # Pobierz wszystkich aktywnych użytkowników (członkowie klubu = wszyscy aktywni użytkownicy)
-            active_users = User.query.filter_by(is_active=True).all()
+            # Pobierz wszystkich członków klubu (club_member=True)
+            club_members = User.query.filter_by(club_member=True, is_active=True).all()
             
             # Pobierz obecnych członków grupy
             current_members = UserGroupMember.query.filter_by(group_id=group.id).all()
             current_user_ids = {member.user_id for member in current_members}
             
-            # Dodaj nowych użytkowników (którzy nie są jeszcze w grupie)
+            # Dodaj nowych członków klubu (którzy nie są jeszcze w grupie)
             new_members = []
-            for user in active_users:
+            for user in club_members:
                 if user.id not in current_user_ids:
                     member = UserGroupMember(
                         group_id=group.id,
                         user_id=user.id,
                         email=user.email,
-                        name=user.name
+                        name=user.first_name
                     )
                     db.session.add(member)
                     new_members.append(member)
             
-            # Usuń nieaktywnych użytkowników z grupy
-            inactive_user_ids = {user.id for user in active_users}
+            # Usuń użytkowników, którzy nie są już członkami klubu
+            club_member_ids = {user.id for user in club_members}
             members_to_remove = [member for member in current_members 
-                               if member.user_id not in inactive_user_ids]
+                               if member.user_id not in club_member_ids]
             
             for member in members_to_remove:
                 db.session.delete(member)
             
             # Aktualizuj liczbę członków
-            group.member_count = len(active_users)
+            group.member_count = len(club_members)
             
             db.session.commit()
             
-            return True, f"Zsynchronizowano grupę 'Członkowie klubu' z {len(active_users)} członkami"
+            return True, f"Zsynchronizowano grupę 'Członkowie klubu' z {len(club_members)} członkami"
             
         except Exception as e:
             return False, f"Błąd synchronizacji grupy członków klubu: {str(e)}"

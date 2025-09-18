@@ -59,7 +59,8 @@ class MenuManager {
                 }
                 return response.json();
             })
-            .then(menuItems => {
+            .then(response => {
+                const menuItems = response.menu_items || [];
                 const menuItem = menuItems.find(item => item.id === menuId);
                 if (menuItem) {
                     document.getElementById('editMenuItemId').value = menuItem.id;

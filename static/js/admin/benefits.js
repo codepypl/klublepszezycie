@@ -122,7 +122,7 @@ class BenefitsManager {
     }
 
     performDeleteBenefit(benefitId) {
-        fetch(`/api/benefits?id=${benefitId}`, {
+        fetch(`/api/benefits/${benefitId}`, {
             method: 'DELETE'
         })
         .then(response => response.json())
@@ -148,11 +148,20 @@ class BenefitsManager {
         e.preventDefault();
         
         const formData = new FormData(e.target);
-        // Don't append is_active - let the form handle it naturally
+        const data = {
+            title: formData.get('title'),
+            description: formData.get('description'),
+            icon: formData.get('icon'),
+            order: parseInt(formData.get('order')) || 0,
+            is_active: formData.get('is_active') === 'on'
+        };
         
         fetch('/api/benefits', {
             method: 'POST',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
         })
         .then(response => response.json())
         .then(data => {
@@ -176,11 +185,21 @@ class BenefitsManager {
         e.preventDefault();
         
         const formData = new FormData(e.target);
-        // Don't append is_active - let the form handle it naturally
+        const benefitId = formData.get('editBenefitId');
+        const data = {
+            title: formData.get('title'),
+            description: formData.get('description'),
+            icon: formData.get('icon'),
+            order: parseInt(formData.get('order')) || 0,
+            is_active: formData.get('is_active') === 'on'
+        };
         
-        fetch('/api/benefits', {
+        fetch(`/api/benefits/${benefitId}`, {
             method: 'PUT',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
         })
         .then(response => response.json())
         .then(data => {

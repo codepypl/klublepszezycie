@@ -346,12 +346,12 @@
             console.log('🎯 Klucze użytkownika:', Object.keys(user));
             
             // Profile header
-            document.getElementById('userName').textContent = user.name || user.username;
+            document.getElementById('userName').textContent = user.first_name || user.username;
             
             console.log('📊 Nagłówek profilu:');
-            console.log('📊 Name:', user.name);
+            console.log('📊 Name:', user.first_name);
             console.log('📊 Username:', user.username);
-            console.log('📊 Final name:', user.name || user.username);
+            console.log('📊 Final name:', user.first_name || user.username);
             
             // Profile info
             document.getElementById('username').textContent = user.username;
@@ -392,12 +392,12 @@
             }
             
             // Form fields
-            document.getElementById('name').value = user.name || '';
+            document.getElementById('name').value = user.first_name || '';
             document.getElementById('phone').value = user.phone || '';
             document.getElementById('clubMember').checked = user.club_member || false;
             
             console.log('📝 Formularz wypełniony danymi użytkownika');
-            console.log('📝 Wartość pola name:', user.name);
+            console.log('📝 Wartość pola name:', user.first_name);
             console.log('📝 Wartość pola phone:', user.phone);
             console.log('📝 Wartość pola clubMember:', user.club_member);
             console.log('📝 Typ pola clubMember:', typeof user.club_member);

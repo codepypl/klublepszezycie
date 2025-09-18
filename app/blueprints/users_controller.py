@@ -18,7 +18,7 @@ class UsersController:
             
             # Apply filters
             if name_filter:
-                query = query.filter(User.name.ilike(f'%{name_filter}%'))
+                query = query.filter(User.first_name.ilike(f'%{name_filter}%'))
             
             if email_filter:
                 query = query.filter(User.email.ilike(f'%{email_filter}%'))
@@ -128,7 +128,7 @@ class UsersController:
                 password = secrets.token_urlsafe(8)
             
             user = User(
-                name=name,
+                first_name=name,
                 email=email,
                 phone=phone,
                 role=role,
@@ -171,7 +171,7 @@ class UsersController:
                     'error': 'Email jest już używany przez innego użytkownika'
                 }
             
-            user.name = name
+            user.first_name = name
             user.email = email
             user.phone = phone
             user.role = role

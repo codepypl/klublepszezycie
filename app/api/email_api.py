@@ -65,6 +65,137 @@ def email_retry_single(email_id):
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@email_bp.route('/email/queue-stats', methods=['GET'])
+@login_required
+def email_queue_stats():
+    """Get email queue statistics"""
+    try:
+        total = EmailQueue.query.count()
+        pending = EmailQueue.query.filter_by(status='pending').count()
+        sent = EmailQueue.query.filter_by(status='sent').count()
+        failed = EmailQueue.query.filter_by(status='failed').count()
+        
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total': total,
+                'pending': pending,
+                'sent': sent,
+                'failed': failed
+            }
+        })
+    except Exception as e:
+        logging.error(f"Error getting queue stats: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@email_bp.route('/email/queue', methods=['GET'])
+@login_required
+def email_queue_list():
+    """Get email queue list with pagination and filtering"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        filter_status = request.args.get('filter', 'all')
+        
+        # Build query
+        query = EmailQueue.query
+        
+        if filter_status != 'all':
+            query = query.filter_by(status=filter_status)
+        
+        # Order by created_at desc
+        query = query.order_by(EmailQueue.created_at.desc())
+        
+        # Paginate
+        pagination = query.paginate(
+            page=page, 
+            per_page=per_page, 
+            error_out=False
+        )
+        
+        emails = []
+        for email in pagination.items:
+            emails.append({
+                'id': email.id,
+                'to_email': email.to_email,
+                'to_name': email.to_name,
+                'subject': email.subject,
+                'status': email.status,
+                'retry_count': email.retry_count,
+                'max_retries': email.max_retries,
+                'scheduled_at': email.scheduled_at.isoformat() if email.scheduled_at else None,
+                'sent_at': email.sent_at.isoformat() if email.sent_at else None,
+                'error_message': email.error_message,
+                'created_at': email.created_at.isoformat() if email.created_at else None,
+                'campaign_id': email.campaign_id,
+                'template_id': email.template_id
+            })
+        
+        return jsonify({
+            'success': True,
+            'emails': emails,
+            'pagination': {
+                'page': pagination.page,
+                'pages': pagination.pages,
+                'per_page': pagination.per_page,
+                'total': pagination.total,
+                'has_next': pagination.has_next,
+                'has_prev': pagination.has_prev,
+                'next_num': pagination.next_num,
+                'prev_num': pagination.prev_num
+            }
+        })
+    except Exception as e:
+        logging.error(f"Error getting queue list: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@email_bp.route('/email/process-queue', methods=['POST'])
+@login_required
+def email_process_queue():
+    """Process email queue - start sending pending emails"""
+    try:
+        # This endpoint just returns success - actual processing would be done by a background task
+        # In a real implementation, this would start a background worker or queue processor
+        return jsonify({
+            'success': True,
+            'message': 'Queue processing started'
+        })
+    except Exception as e:
+        logging.error(f"Error starting queue processing: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@email_bp.route('/email/queue-progress', methods=['GET'])
+@login_required
+def email_queue_progress():
+    """Get email queue processing progress"""
+    try:
+        total = EmailQueue.query.count()
+        pending = EmailQueue.query.filter_by(status='pending').count()
+        processing = EmailQueue.query.filter_by(status='sending').count()
+        sent = EmailQueue.query.filter_by(status='sent').count()
+        failed = EmailQueue.query.filter_by(status='failed').count()
+        
+        # Calculate progress percentage
+        if total == 0:
+            percent = 100
+        else:
+            percent = ((sent + failed) / total) * 100
+        
+        return jsonify({
+            'success': True,
+            'progress': {
+                'total': total,
+                'pending': pending,
+                'processing': processing,
+                'sent': sent,
+                'failed': failed,
+                'percent': round(percent, 1)
+            }
+        })
+    except Exception as e:
+        logging.error(f"Error getting queue progress: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @email_bp.route('/email/queue/<int:email_id>', methods=['DELETE'])
 @login_required
 def email_delete_from_queue(email_id):
@@ -265,7 +396,7 @@ def email_templates():
                 'subject': template.subject,
                 'template_type': template.template_type,
                 'is_active': template.is_active,
-                'is_default': template.name in default_templates,
+                'is_default': template.is_default,
                 'created_at': template.created_at.isoformat()
             })
         
@@ -329,7 +460,8 @@ def email_get_template(template_id):
                 'html_content': template.html_content,
                 'text_content': template.text_content,
                 'variables': template.variables,
-                'is_active': template.is_active
+                'is_active': template.is_active,
+                'is_default': template.is_default
             }
         })
         
@@ -354,7 +486,22 @@ def email_update_template(template_id):
         template.text_content = data.get('text_content', '')
         template.variables = data.get('variables', '')
         template.is_active = data.get('is_active', True)
+        template.is_default = data.get('is_default', False)
         template.updated_at = get_local_now()
+        
+        # Handle default template management
+        if template.is_default:
+            from app.services.template_manager import TemplateManager
+            manager = TemplateManager()
+            success, message = manager.set_template_as_default(template.id)
+            if not success:
+                return jsonify({'success': False, 'error': message}), 500
+        else:
+            from app.services.template_manager import TemplateManager
+            manager = TemplateManager()
+            success, message = manager.remove_template_from_defaults(template.id)
+            if not success:
+                return jsonify({'success': False, 'error': message}), 500
         
         db.session.commit()
         
@@ -429,17 +576,42 @@ def email_campaign_templates():
 def email_reset_templates():
     """Resetuje szablony do stanu domyślnego"""
     try:
-        from reset_templates import reset_templates
+        from app.services.template_manager import TemplateManager
         
-        success = reset_templates()
+        manager = TemplateManager()
         
-        if success:
-            return jsonify({'success': True, 'message': 'Szablony zostały zresetowane do stanu domyślnego'})
-        else:
-            return jsonify({'success': False, 'error': 'Błąd podczas resetowania szablonów'}), 500
+        # First sync default templates
+        success, message = manager.sync_templates_from_defaults()
+        if not success:
+            return jsonify({'success': False, 'error': message}), 500
+        
+        # Then reset templates from defaults
+        success, message = manager.reset_templates_to_defaults()
+        if not success:
+            return jsonify({'success': False, 'error': message}), 500
+        
+        return jsonify({'success': True, 'message': message})
             
     except Exception as e:
         db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@email_bp.route('/email/templates/sync-defaults', methods=['POST'])
+@login_required
+def email_sync_default_templates():
+    """Synchronizuje domyślne szablony"""
+    try:
+        from app.services.template_manager import TemplateManager
+        
+        manager = TemplateManager()
+        success, message = manager.sync_templates_from_defaults()
+        
+        if success:
+            return jsonify({'success': True, 'message': message})
+        else:
+            return jsonify({'success': False, 'error': message}), 500
+            
+    except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @email_bp.route('/email/campaigns', methods=['GET'])
@@ -798,7 +970,7 @@ def email_create_group():
                         group_id=group.id,
                         user_id=user_id,
                         email=user.email,
-                        name=user.name
+                        name=user.first_name
                     )
                     db.session.add(member)
                     added_count += 1
@@ -830,7 +1002,8 @@ def email_get_group(group_id):
                 'description': group.description,
                 'group_type': group.group_type,
                 'member_count': group.member_count,
-                'is_active': group.is_active
+                'is_active': group.is_active,
+                'criteria': group.criteria
             }
         })
         
@@ -847,10 +1020,11 @@ def email_update_group(group_id):
         if not group:
             return jsonify({'success': False, 'error': 'Grupa nie istnieje'}), 404
         
-        # Lista domyślnych grup (nie można ich edytować)
+        # Lista domyślnych grup i grup wydarzeń (nie można ich edytować)
         default_groups = ['club_members', 'all_users']
+        system_groups = default_groups + ['event_based']
         
-        if group.group_type in default_groups:
+        if group.group_type in system_groups:
             return jsonify({'success': False, 'error': 'Nie można edytować grup systemowych'}), 400
         
         data = request.get_json()
@@ -859,6 +1033,12 @@ def email_update_group(group_id):
         group.description = data.get('description', '')
         group.group_type = data['group_type']
         group.updated_at = get_local_now()
+        
+        # Update criteria based on group type
+        if data['group_type'] == 'event_based' and data.get('event_id'):
+            group.criteria = json.dumps({'event_id': data['event_id']})
+        elif data['group_type'] == 'manual' and data.get('user_ids'):
+            group.criteria = json.dumps({'user_ids': data['user_ids']})
         
         db.session.commit()
         
@@ -877,11 +1057,12 @@ def email_delete_group(group_id):
         if not group:
             return jsonify({'success': False, 'error': 'Grupa nie istnieje'}), 404
         
-        # Lista domyślnych grup (nie można ich usuwać)
+        # Lista domyślnych grup i grup wydarzeń (nie można ich usuwać)
         default_groups = ['club_members']
+        system_groups = default_groups + ['event_based']
         
-        if group.group_type in default_groups:
-            return jsonify({'success': False, 'error': 'Nie można usunąć grupy domyślnej'}), 400
+        if group.group_type in system_groups:
+            return jsonify({'success': False, 'error': 'Nie można usunąć grup systemowych'}), 400
         
         db.session.delete(group)
         db.session.commit()
@@ -977,7 +1158,7 @@ def email_add_group_member(group_id):
         member = UserGroupMember(
             group_id=group_id,
             user_id=user_id,
-            name=user.name,
+            name=user.first_name,
             email=user.email,
             member_type='manual'
         )
@@ -1100,7 +1281,7 @@ def add_user_to_event_group(user_id, event_id):
             group_id=group_id,
             user_id=user_id,
             email=user.email,
-            name=user.name
+            name=user.first_name
         )
         
         db.session.add(member)

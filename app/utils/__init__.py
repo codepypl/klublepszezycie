@@ -8,7 +8,7 @@ from .email_logging_utils import setup_email_logging, log_email_send, log_email_
 from .logging_utils import get_logger, log_info, log_error, log_warning
 from .seo_utils import SEOManager
 from .timezone_utils import get_local_datetime, get_local_timezone, get_local_now, convert_to_local, convert_to_utc
-from .user_info_utils import get_user_info, get_client_ip, get_location_from_ip, is_private_ip
+from .user_info_utils import get_user_info, get_client_ip, is_private_ip
 from .validation_utils import (
     allowed_file, validate_file_type, validate_event_date, validate_email, validate_phone,
     validate_blog_post, validate_blog_categories, validate_blog_tags, validate_featured_image,
@@ -38,7 +38,7 @@ __all__ = [
     'get_local_datetime', 'get_local_timezone', 'get_local_now', 'convert_to_local', 'convert_to_utc',
     
     # User info utilities
-    'get_user_info', 'get_client_ip', 'get_location_from_ip', 'is_private_ip',
+    'get_user_info', 'get_client_ip', 'is_private_ip',
     
     # Validation utilities
     'allowed_file', 'validate_file_type', 'validate_event_date', 'validate_email', 'validate_phone',

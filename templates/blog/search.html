@@ -334,14 +334,18 @@
                 </div>
                 <div class="col-lg-4 mb-4">
                     <h5 class="fw-bold mb-3">{{ footer_settings.contact_title or 'Kontakt' }}</h5>
+                    {% if footer_settings.contact_email %}
                     <p class="text-light mb-2">
                         <i class="fas fa-envelope me-2"></i>
-                        {{ footer_settings.contact_email or 'kontakt@klublepszezycie.pl' }}
+                        {{ footer_settings.contact_email }}
                     </p>
+                    {% endif %}
+                    {% if footer_settings.contact_phone %}
                     <p class="text-light mb-2">
                         <i class="fas fa-phone me-2"></i>
-                        {{ footer_settings.contact_phone or '+48 123 456 789' }}
+                        {{ footer_settings.contact_phone }}
                     </p>
+                    {% endif %}
                 </div>
                 <div class="col-lg-4 mb-4">
                     <h5 class="fw-bold mb-3">{{ footer_settings.social_title or 'Śledź nas' }}</h5>

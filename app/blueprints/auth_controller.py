@@ -273,7 +273,7 @@ class AuthController:
                 }
             
             if name:
-                user.name = name
+                user.first_name = name
             if phone:
                 user.phone = phone
             if email:

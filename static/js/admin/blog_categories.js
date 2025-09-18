@@ -62,13 +62,80 @@ class BlogCategoriesManager {
             const data = await response.json();
             
             if (data.success) {
-                // Reload page with new data
-                window.location.href = `/blog/admin/categories?page=${page}&per_page=${perPage}`;
+                // Update the categories table
+                this.updateCategoriesTable(data.categories);
+            } else {
+                window.toastManager.show('Błąd podczas ładowania kategorii', 'error');
             }
         } catch (error) {
             console.error('Error loading categories:', error);
             window.toastManager.show('Błąd podczas ładowania kategorii', 'error');
         }
+    }
+
+    updateCategoriesTable(categories) {
+        const tbody = document.querySelector('#categoriesTable tbody');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+        
+        categories.forEach(category => {
+            const row = document.createElement('tr');
+            row.setAttribute('data-category-id', category.id);
+            
+            // Format description
+            const description = category.description ? 
+                (category.description.length > 100 ? 
+                    category.description.substring(0, 100) + '...' : 
+                    category.description) : '';
+            
+            // Format path (parent category)
+            const path = category.parent ? 
+                `<span class="text-muted">${category.parent.title} / </span>${category.title}` : 
+                category.title;
+            
+            // Format created date
+            const createdDate = category.created_at ? 
+                new Date(category.created_at).toLocaleDateString('pl-PL') : '';
+            
+            row.innerHTML = `
+                <td>
+                    <input type="checkbox" name="itemIds" value="${category.id}">
+                </td>
+                <td>
+                    <strong>${category.title}</strong>
+                    ${description ? `<br><small class="text-muted">${description}</small>` : ''}
+                </td>
+                <td>
+                    <code>${category.slug}</code>
+                </td>
+                <td>
+                    ${path}
+                </td>
+                <td>
+                    <span class="badge admin-badge admin-badge-info">${category.posts_count || 0}</span>
+                </td>
+                <td>
+                    <span class="badge admin-badge ${category.is_active ? 'admin-badge-success' : 'admin-badge-danger'}">
+                        ${category.is_active ? 'Aktywna' : 'Nieaktywna'}
+                    </span>
+                </td>
+                <td>
+                    ${createdDate}
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.blogCategoriesManager.editCategory(${category.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="window.blogCategoriesManager.deleteCategory(${category.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
     }
 
     async handleAddCategory(e) {

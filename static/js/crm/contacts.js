@@ -106,7 +106,7 @@ function handleImportSubmission(e) {
         if (window.toastManager) {
             window.toastManager.error('Proszę wybrać plik');
         } else {
-            alert('Proszę wybrać plik');
+            showWarning('Proszę wybrać plik');
         }
         return;
     }
@@ -119,7 +119,7 @@ function handleImportSubmission(e) {
         if (window.toastManager) {
             window.toastManager.error('Proszę wybrać plik XLSX lub XLS');
         } else {
-            alert('Proszę wybrać plik XLSX lub XLS');
+            showWarning('Proszę wybrać plik XLSX lub XLS');
         }
         return;
     }
@@ -144,7 +144,7 @@ function handleImportSubmission(e) {
             if (window.toastManager) {
                 window.toastManager.success(`Pomyślnie zaimportowano ${data.imported_count} kontaktów`);
             } else {
-                alert(`Pomyślnie zaimportowano ${data.imported_count} kontaktów`);
+                showSuccess(`Pomyślnie zaimportowano ${data.imported_count} kontaktów`);
             }
             // Refresh contacts and import history
             refreshContactsData();
@@ -154,7 +154,7 @@ function handleImportSubmission(e) {
             if (window.toastManager) {
                 window.toastManager.error('Błąd: ' + data.error);
             } else {
-                alert('Błąd: ' + data.error);
+                showError('Błąd: ' + data.error);
             }
         }
     })
@@ -163,7 +163,7 @@ function handleImportSubmission(e) {
         if (window.toastManager) {
             window.toastManager.error('Wystąpił błąd podczas importu');
         } else {
-            alert('Wystąpił błąd podczas importu');
+            showError('Wystąpił błąd podczas importu');
         }
     })
     .finally(() => {

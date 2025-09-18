@@ -2,15 +2,14 @@
 Menu API endpoints
 """
 from flask import Blueprint, request, jsonify
-from flask_login import login_required
 from app.models import MenuItem, db
-from app.utils.auth_utils import admin_required
+from app.utils.auth_utils import admin_required_api, login_required_api
 import logging
 
 menu_api_bp = Blueprint('menu_api', __name__)
 
 @menu_api_bp.route('/menu', methods=['GET', 'POST', 'DELETE'])
-@login_required
+@login_required_api
 def api_menu():
     """Menu API"""
     if request.method == 'GET':
@@ -24,7 +23,6 @@ def api_menu():
                     'url': item.url,
                     'order': item.order,
                     'is_active': item.is_active,
-                    'parent_id': item.parent_id,
                     'created_at': item.created_at.isoformat() if item.created_at else None
                 } for item in menu_items]
             })
@@ -40,8 +38,7 @@ def api_menu():
                 title=data['title'],
                 url=data.get('url', ''),
                 order=data.get('order', 0),
-                is_active=data.get('is_active', True),
-                parent_id=data.get('parent_id')
+                is_active=data.get('is_active', True)
             )
             
             db.session.add(menu_item)
@@ -55,8 +52,7 @@ def api_menu():
                     'title': menu_item.title,
                     'url': menu_item.url,
                     'order': menu_item.order,
-                    'is_active': menu_item.is_active,
-                    'parent_id': menu_item.parent_id
+                    'is_active': menu_item.is_active
                 }
             })
         except Exception as e:
@@ -91,7 +87,7 @@ def api_menu():
             return jsonify({'success': False, 'message': str(e)}), 500
 
 @menu_api_bp.route('/menu/<int:item_id>', methods=['GET', 'PUT', 'DELETE'])
-@login_required
+@login_required_api
 def api_menu_item(item_id):
     """Individual menu item API"""
     menu_item = MenuItem.query.get_or_404(item_id)
@@ -106,7 +102,6 @@ def api_menu_item(item_id):
                     'url': menu_item.url,
                     'order': menu_item.order,
                     'is_active': menu_item.is_active,
-                    'parent_id': menu_item.parent_id,
                     'created_at': menu_item.created_at.isoformat() if menu_item.created_at else None
                 }
             })
@@ -122,8 +117,6 @@ def api_menu_item(item_id):
                 menu_item.order = data['order']
             if 'is_active' in data:
                 menu_item.is_active = data['is_active']
-            if 'parent_id' in data:
-                menu_item.parent_id = data['parent_id']
             
             db.session.commit()
             
@@ -147,8 +140,8 @@ def api_menu_item(item_id):
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @menu_api_bp.route('/bulk-delete/menu', methods=['POST'])
-@login_required
-@admin_required
+@login_required_api
+@admin_required_api
 def api_bulk_delete_menu():
     """Bulk delete menu items"""
     try:

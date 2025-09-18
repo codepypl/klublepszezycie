@@ -59,7 +59,7 @@
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-user me-1"></i>
-                                {{ current_user.name or current_user.email }}
+                                {{ current_user.first_name or current_user.email }}
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{{ url_for('users.profile') }}">Profil</a></li>
@@ -138,6 +138,30 @@
     </script>
     
     {% block scripts %}{% endblock %}
+
+    <!-- Universal Alert Modal -->
+    <div class="modal fade" id="alertModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="alertModalTitle">
+                        <i class="fas fa-info-circle me-2 text-info" id="alertModalIcon"></i>
+                        <span id="alertModalTitleText">Informacja</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="alertModalMessage">Treść wiadomości</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="alertModalOk">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Manager Script -->
+    <script src="{{ url_for('static', filename='js/utils/modal.js') }}"></script>
 </body>
 </html>
 

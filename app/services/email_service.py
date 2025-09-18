@@ -25,7 +25,7 @@ class EmailService:
         self.use_tls = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
         self.use_ssl = os.getenv('MAIL_USE_SSL', 'false').lower() == 'true'
 
-    def send_email(self, to_email: str, subject: str, html_content: str, text_content: str = None) -> Tuple[bool, str]:
+    def send_email(self, to_email: str, subject: str, html_content: str, text_content: str = None, template_id: int = None) -> Tuple[bool, str]:
         """
         Wysyła pojedynczy email
         
@@ -41,7 +41,7 @@ class EmailService:
         try:
             # Czyszczenie danych wejściowych
             to_email = unidecode(to_email).strip()
-            subject = unidecode(subject).strip()
+            subject = subject.strip()  # Nie usuwaj polskich znaków z tematu
             
             # Tworzenie wiadomości
             msg = MIMEMultipart('alternative')
@@ -75,12 +75,12 @@ class EmailService:
                     server.send_message(msg)
             
             # Log successful email
-            self._log_email(to_email, subject, 'sent')
+            self._log_email(to_email, subject, 'sent', template_id=template_id)
             return True, "Email wysłany pomyślnie"
             
         except Exception as e:
             # Log failed email
-            self._log_email(to_email, subject, 'failed', error_message=str(e))
+            self._log_email(to_email, subject, 'failed', template_id=template_id, error_message=str(e))
             return False, f"Błąd wysyłania emaila: {str(e)}"
 
     def send_template_email(self, to_email: str, template_name: str, context: Dict = None, to_name: str = None, use_queue: bool = True) -> Tuple[bool, str]:
@@ -131,7 +131,7 @@ class EmailService:
                     return False, "Błąd dodawania do kolejki"
             else:
                 # Wysyłanie bezpośrednie
-                return self.send_email(to_email, subject, html_content, text_content)
+                return self.send_email(to_email, subject, html_content, text_content, template_id=template.id)
             
         except Exception as e:
             return False, f"Błąd wysyłania szablonu: {str(e)}"
@@ -210,38 +210,21 @@ class EmailService:
                         item.to_email,
                         item.subject,
                         item.html_content,
-                        item.text_content
+                        item.text_content,
+                        template_id=item.template_id
                     )
                     
                     if success:
                         item.status = 'sent'
                         item.sent_at = datetime.utcnow()
                         stats['success'] += 1
-                        
-                        # Loguj sukces
-                        self._log_email(
-                            item.to_email,
-                            item.subject,
-                            'sent',
-                            item.template_id,
-                            item.campaign_id,
-                            item.context
-                        )
+                        # Email już został zalogowany przez send_email
                     else:
                         item.status = 'failed'
                         item.error_message = message
                         stats['failed'] += 1
                         
-                        # Loguj błąd
-                        self._log_email(
-                            item.to_email,
-                            item.subject,
-                            'failed',
-                            item.template_id,
-                            item.campaign_id,
-                            item.context,
-                            message
-                        )
+                        # Email już został zalogowany przez send_email
                     
                     stats['processed'] += 1
                     
@@ -494,7 +477,8 @@ class EmailService:
                         item.to_email,
                         item.subject,
                         item.html_content,
-                        item.text_content
+                        item.text_content,
+                        template_id=item.template_id
                     )
                     
                     if success:

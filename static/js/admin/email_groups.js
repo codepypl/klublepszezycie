@@ -82,16 +82,20 @@ function displayGroups(groups) {
     groups.forEach(group => {
         const row = document.createElement('tr');
         
-        // Ukryj checkbox i przyciski dla domyślnych grup
-        const checkboxHtml = group.is_default ? 
-            '<input type="checkbox" class="group-checkbox" value="' + group.id + '" disabled title="Nie można usuwać grup domyślnych">' :
+        // Ukryj checkbox i przyciski dla domyślnych grup i grup wydarzeń
+        const isSystemGroup = group.is_default || group.group_type === 'event_based';
+        const checkboxHtml = isSystemGroup ? 
+            '<input type="checkbox" class="group-checkbox" value="' + group.id + '" disabled title="Nie można usuwać grup systemowych">' :
             '<input type="checkbox" name="itemIds" value="' + group.id + '">';
         
-        const actionButtonsHtml = group.is_default ? 
+        const actionButtonsHtml = isSystemGroup ? 
             '<div class="btn-group" role="group">' +
                 '<button class="btn btn-sm admin-btn-outline" disabled title="Grupa zarządzana automatycznie przez system"><i class="fas fa-cog"></i></button>' +
-                '<button class="btn btn-sm admin-btn-outline" disabled title="Członkowie zarządzani automatycznie"><i class="fas fa-users"></i></button>' +
-                '<button class="btn btn-sm admin-btn-outline" disabled title="Nie można usuwać grup domyślnych"><i class="fas fa-lock"></i></button>' +
+                (group.group_type === 'event_based' ? 
+                    '<button class="btn btn-sm admin-btn-info" onclick="viewGroupMembers(' + group.id + ')" title="Zarządzaj członkami grupy wydarzenia"><i class="fas fa-users"></i></button>' :
+                    '<button class="btn btn-sm admin-btn-outline" disabled title="Członkowie zarządzani automatycznie"><i class="fas fa-users"></i></button>'
+                ) +
+                '<button class="btn btn-sm admin-btn-outline" disabled title="Nie można usuwać grup systemowych"><i class="fas fa-lock"></i></button>' +
             '</div>' :
             '<div class="btn-group" role="group">' +
                 '<button class="btn btn-sm admin-btn-outline" onclick="editGroup(' + group.id + ')" title="Edytuj grupę"><i class="fas fa-edit"></i></button>' +
@@ -101,7 +105,7 @@ function displayGroups(groups) {
         
         row.innerHTML = `
             <td>${checkboxHtml}</td>
-            <td>${group.name} ${group.is_default ? '<span class="admin-badge admin-badge-info ms-1">Systemowa</span>' : ''}</td>
+            <td>${group.name} ${group.is_default ? '<span class="admin-badge admin-badge-info ms-1">Systemowa</span>' : ''} ${group.group_type === 'event_based' ? '<span class="admin-badge admin-badge-warning ms-1">Wydarzenie</span>' : ''}</td>
             <td>${group.group_type}</td>
             <td>${group.member_count}</td>
             <td><span class="admin-badge admin-badge-${group.is_active ? 'success' : 'secondary'}">${group.is_active ? 'Aktywna' : 'Nieaktywna'}</span></td>
@@ -141,9 +145,9 @@ function syncSystemGroups() {
         fetch('/api/email/groups/sync', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            }
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
         })
         .then(response => response.json())
         .then(data => {
@@ -236,6 +240,12 @@ function editGroup(groupId) {
         .then(data => {
             if (data.success) {
                 const group = data.group;
+                
+                // Block editing of system groups
+                if (group.group_type === 'event_based') {
+                    toastManager.error('Nie można edytować grup wydarzeń - są zarządzane automatycznie przez system');
+                    return;
+                }
                 document.getElementById('group_id').value = group.id;
                 document.getElementById('group_name').value = group.name;
                 document.getElementById('group_description').value = group.description || '';
@@ -248,6 +258,25 @@ function editGroup(groupId) {
                 // If it's a manual group, load current members and pre-select them
                 if (group.group_type === 'manual') {
                     loadGroupMembersForEdit(groupId);
+                }
+                
+                // If it's an event-based group, set the selected event
+                if (group.group_type === 'event_based' && group.criteria) {
+                    try {
+                        const criteria = JSON.parse(group.criteria);
+                        const eventId = criteria.event_id;
+                        if (eventId) {
+                            // Wait for events to load, then set the selected event
+                            setTimeout(() => {
+                                const eventSelect = document.getElementById('selected_event');
+                                if (eventSelect) {
+                                    eventSelect.value = eventId;
+                                }
+                            }, 500); // Give time for loadEvents() to complete
+                        }
+                    } catch (e) {
+                        console.error('Error parsing group criteria:', e);
+                    }
                 }
                 
                 const modal = new bootstrap.Modal(document.getElementById('groupModal'));
@@ -265,6 +294,25 @@ function editGroup(groupId) {
 // View group members
 function viewGroupMembers(groupId) {
     currentGroupId = groupId;
+    
+    // Get group info to show in modal title
+    fetch(`/api/email/groups/${groupId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const group = data.group;
+                const modalTitle = document.getElementById('groupMembersModalLabel');
+                if (group.group_type === 'event_based') {
+                    modalTitle.textContent = `Członkowie grupy wydarzenia: ${group.name}`;
+                } else {
+                    modalTitle.textContent = `Członkowie grupy: ${group.name}`;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error loading group info:', error);
+        });
+    
     loadGroupMembers();
     loadAvailableUsers();
     const modal = new bootstrap.Modal(document.getElementById('groupMembersModal'));
@@ -353,7 +401,7 @@ function displayAvailableUsers(users) {
         item.className = 'list-group-item d-flex justify-content-between align-items-center';
         item.innerHTML = `
             <div>
-                <strong>${user.name}</strong><br>
+                <strong>${user.first_name}</strong><br>
                 <small class="text-muted">${user.email}</small>
             </div>
             <button class="btn btn-sm admin-btn" onclick="addGroupMember(${user.id})">
@@ -462,16 +510,24 @@ function toggleGroupTypeFields() {
 function loadEvents() {
     fetch('/api/event-schedule')
         .then(response => response.json())
-        .then(events => {
+        .then(data => {
             const select = document.getElementById('selected_event');
             select.innerHTML = '<option value="">Wybierz wydarzenie</option>';
             
-            events.forEach(event => {
-                const option = document.createElement('option');
-                option.value = event.id;
-                option.textContent = event.title;
-                select.appendChild(option);
-            });
+            // Check if data has events array
+            const events = data.events || data;
+            
+            if (Array.isArray(events)) {
+                events.forEach(event => {
+                    const option = document.createElement('option');
+                    option.value = event.id;
+                    option.textContent = event.title;
+                    select.appendChild(option);
+                });
+            } else {
+                console.error('Events data is not an array:', events);
+                toastManager.error('Nieprawidłowy format danych wydarzeń');
+            }
         })
         .catch(error => {
             console.error('Error loading events:', error);
@@ -512,7 +568,7 @@ function displayUsersForSelection(users) {
         item.innerHTML = `
             <input class="form-check-input" type="checkbox" value="${user.id}" id="user_${user.id}" name="selected_users" onchange="updateMemberCountPreview()">
             <label class="form-check-label" for="user_${user.id}">
-                <strong>${user.name}</strong> - ${user.email}
+                <strong>${user.first_name}</strong> - ${user.email}
             </label>
         `;
         container.appendChild(item);

@@ -5,22 +5,39 @@ from datetime import datetime
 from . import db
 
 class BlogCategory(db.Model):
-    """Blog categories"""
+    """Blog categories with hierarchical structure"""
     __tablename__ = 'blog_categories'
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     slug = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.Text)
+    parent_id = db.Column(db.Integer, db.ForeignKey('blog_categories.id'), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
+    sort_order = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
+    parent = db.relationship('BlogCategory', remote_side=[id], backref='children')
     posts = db.relationship('BlogPost', secondary='blog_post_categories', back_populates='categories')
     
     def __repr__(self):
         return f'<BlogCategory {self.title}>'
+    
+    @property
+    def posts_count(self):
+        return len(self.posts)
+    
+    @property
+    def full_path(self):
+        """Get full category path (e.g., 'Parent > Child > Subchild')"""
+        path = [self.title]
+        current = self.parent
+        while current:
+            path.insert(0, current.title)
+            current = current.parent
+        return ' > '.join(path)
 
 class BlogTag(db.Model):
     """Blog tags"""
@@ -84,6 +101,26 @@ class BlogPost(db.Model):
     def __repr__(self):
         return f'<BlogPost {self.title}>'
 
+class BlogPostImage(db.Model):
+    """Blog post images for gallery"""
+    __tablename__ = 'blog_post_images'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('blog_posts.id'), nullable=False)
+    image_url = db.Column(db.String(500), nullable=False)
+    alt_text = db.Column(db.String(200))
+    caption = db.Column(db.Text)
+    order = db.Column(db.Integer, default=0)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    post = db.relationship('BlogPost', backref='images')
+    
+    def __repr__(self):
+        return f'<BlogPostImage {self.id} for post {self.post_id}>'
+
 class BlogComment(db.Model):
     """Blog comments with threaded support"""
     __tablename__ = 'blog_comments'
@@ -108,14 +145,18 @@ class BlogComment(db.Model):
     # Moderation
     is_approved = db.Column(db.Boolean, default=False)
     is_spam = db.Column(db.Boolean, default=False)
+    moderation_reason = db.Column(db.Text)  # Uzasadnienie odrzucenia
+    moderated_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Kto moderował
+    moderated_at = db.Column(db.DateTime)  # Kiedy moderowano
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    post = db.relationship('BlogPost')
+    post = db.relationship('BlogPost', overlaps="comments")
     parent = db.relationship('BlogComment', remote_side=[id], backref='replies')
+    moderator = db.relationship('User', foreign_keys=[moderated_by], backref='moderated_comments')
     
     def __repr__(self):
         return f'<BlogComment {self.author_name} on post {self.post_id}>'

@@ -3,10 +3,14 @@ Public routes
 """
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, send_from_directory
 from app.blueprints.public_controller import PublicController, generate_unsubscribe_token
-from app.utils.timezone_utils import get_local_now
+from app.api.email_api import add_user_to_event_group
+from app.services.email_service import EmailService
+from app.utils.timezone_utils import get_local_now, convert_to_local
 from app.utils.blog_utils import generate_blog_link
-from app.models import db, EventSchedule
+from app.utils.validation_utils import validate_email, validate_phone
+from app.models import db, EventSchedule, User, EventRegistration
 import logging
+from datetime import datetime
 
 public_bp = Blueprint('public', __name__)
 
@@ -178,7 +182,7 @@ def register():
             delete_token = generate_unsubscribe_token(user.email, 'delete_account')
             
             context = {
-                'user_name': user.name,
+                'user_name': user.first_name,
                 'user_email': user.email,
                 'temporary_password': temp_password,  # Use same password
                 'login_url': request.url_root + 'login',
@@ -202,10 +206,10 @@ def register():
         
         # Send admin notification
         try:
-            from config import config
-            admin_email = config['development'].ADMIN_EMAIL
+            import os
+            admin_email = os.getenv('ADMIN_EMAIL', 'admin@lepszezycie.pl')
             admin_context = {
-                'user_name': user.name,
+                'user_name': user.first_name,
                 'user_email': user.email,
                 'user_phone': user.phone or 'Nie podano',
                 'registration_date': datetime.now().strftime('%d.%m.%Y %H:%M'),
@@ -375,7 +379,8 @@ def register_event(event_id):
             name=data['name'],
             email=data['email'],
             phone=data.get('phone', ''),
-            wants_club_news=data.get('wants_club_news', False)
+            wants_club_news=data.get('wants_club_news', False),
+            status='confirmed'  # Automatically confirm registration
         )
         
         db.session.add(registration)
@@ -486,7 +491,7 @@ def register_event(event_id):
                         from config import config
                         admin_email = config['development'].ADMIN_EMAIL
                         admin_context = {
-                            'user_name': new_user.name,
+                            'user_name': new_user.first_name,
                             'user_email': new_user.email,
                             'user_phone': new_user.phone or 'Nie podano',
                             'registration_date': datetime.now().strftime('%d.%m.%Y %H:%M'),
@@ -670,7 +675,7 @@ def register_for_event(user, event_id):
             from config import config
             admin_email = config['development'].ADMIN_EMAIL
             admin_context = {
-                'user_name': user.name,
+                'user_name': user.first_name,
                 'user_email': user.email,
                 'event_title': event.title,
                 'event_date': event.event_date.strftime('%d.%m.%Y %H:%M') if event.event_date else 'Nie podano',

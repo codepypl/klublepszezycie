@@ -335,7 +335,10 @@ def admin_delete(post_id):
 @login_required
 def admin_categories():
     """Blog categories management page"""
-    data = BlogController.get_categories()
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    
+    data = BlogController.get_categories_paginated(page=page, per_page=per_page)
     
     if not data['success']:
         flash(f'Błąd: {data["error"]}', 'error')

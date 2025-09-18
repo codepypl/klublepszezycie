@@ -18,6 +18,7 @@ def index():
     role_filter = request.args.get('role', '').strip()
     status_filter = request.args.get('status', '').strip()
     club_member_filter = request.args.get('club_member', '').strip()
+    edit_user_id = request.args.get('edit_user', '').strip()
     
     data = UsersController.get_users(
         page=page,
@@ -46,6 +47,16 @@ def index():
     if club_member_filter:
         active_filters_count += 1
     
+    # Get user for editing if edit_user_id is provided
+    edit_user = None
+    if edit_user_id:
+        try:
+            edit_user_data = UsersController.get_user(int(edit_user_id))
+            if edit_user_data['success']:
+                edit_user = edit_user_data['user']
+        except (ValueError, TypeError):
+            pass
+    
     return render_template('admin/users.html', 
                          users=data['users'],
                          pagination=data.get('pagination'),
@@ -55,14 +66,15 @@ def index():
                          email_filter=email_filter,
                          role_filter=role_filter,
                          status_filter=status_filter,
-                         club_member_filter=club_member_filter)
+                         club_member_filter=club_member_filter,
+                         edit_user=edit_user)
 
 @users_bp.route('/users/create', methods=['GET', 'POST'])
 @login_required
 def create():
     """Create new user"""
     if request.method == 'POST':
-        name = request.form.get('name', '').strip()
+        name = request.form.get('first_name', '').strip()
         email = request.form.get('email', '').strip()
         phone = request.form.get('phone', '').strip()
         role = request.form.get('role', 'user')
@@ -80,34 +92,6 @@ def create():
     
     return render_template('admin/user_create.html')
 
-@users_bp.route('/users/edit/<int:user_id>', methods=['GET', 'POST'])
-@login_required
-def edit(user_id):
-    """Edit user"""
-    data = UsersController.get_user(user_id)
-    
-    if not data['success']:
-        flash(data['error'], 'error')
-        return redirect(url_for('users.index'))
-    
-    user = data['user']
-    
-    if request.method == 'POST':
-        name = request.form.get('name', '').strip()
-        email = request.form.get('email', '').strip()
-        phone = request.form.get('phone', '').strip()
-        role = request.form.get('role', 'user')
-        is_active = request.form.get('is_active') == 'on'
-        
-        result = UsersController.update_user(user_id, name, email, phone, role, is_active)
-        
-        if result['success']:
-            flash(result['message'], 'success')
-            return redirect(url_for('users.index'))
-        else:
-            flash(result['error'], 'error')
-    
-    return render_template('admin/user_edit.html', user=user)
 
 @users_bp.route('/users/delete/<int:user_id>', methods=['POST'])
 @login_required

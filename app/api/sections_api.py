@@ -46,20 +46,52 @@ def api_sections():
         try:
             data = request.get_json()
             
+            # Convert string boolean values to actual booleans
+            def str_to_bool(value):
+                if isinstance(value, str):
+                    return value.lower() in ('true', '1', 'yes', 'on')
+                return bool(value)
+            
+            # Create default pillars and floating cards data
+            pillars_count = int(data.get('pillars_count', 4))
+            floating_cards_count = int(data.get('floating_cards_count', 3))
+            
+            # Create default pillars
+            default_pillars = []
+            for i in range(pillars_count):
+                default_pillars.append({
+                    'id': f'pillar_{i+1}',
+                    'title': f'Filar {i+1}',
+                    'description': 'Opis filaru...',
+                    'icon': 'fas fa-star',
+                    'color': '#007bff'
+                })
+            
+            # Create default floating cards
+            default_cards = []
+            for i in range(floating_cards_count):
+                default_cards.append({
+                    'id': f'card_{i+1}',
+                    'title': f'Karta {i+1}',
+                    'description': 'Opis karty...',
+                    'icon': 'fas fa-heart',
+                    'color': '#28a745'
+                })
+            
             section = Section(
                 name=data['name'],
                 title=data.get('title', ''),
                 subtitle=data.get('subtitle', ''),
                 content=data.get('content', ''),
                 background_image=data.get('background_image', ''),
-                order=data.get('order', 0),
-                is_active=data.get('is_active', True),
-                enable_pillars=data.get('enable_pillars', False),
-                enable_floating_cards=data.get('enable_floating_cards', False),
-                pillars_count=data.get('pillars_count', 4),
-                floating_cards_count=data.get('floating_cards_count', 3),
-                pillars_data=data.get('pillars_data', ''),
-                floating_cards_data=data.get('floating_cards_data', ''),
+                order=int(data.get('order', 0)),
+                is_active=str_to_bool(data.get('is_active', True)),
+                enable_pillars=str_to_bool(data.get('enable_pillars', False)),
+                enable_floating_cards=str_to_bool(data.get('enable_floating_cards', False)),
+                pillars_count=pillars_count,
+                floating_cards_count=floating_cards_count,
+                pillars_data=json.dumps(default_pillars),
+                floating_cards_data=json.dumps(default_cards),
                 final_text=data.get('final_text', '')
             )
             
@@ -151,6 +183,12 @@ def api_section(section_id):
         elif request.method == 'PUT':
             data = request.get_json()
             
+            # Convert string boolean values to actual booleans
+            def str_to_bool(value):
+                if isinstance(value, str):
+                    return value.lower() in ('true', '1', 'yes', 'on')
+                return bool(value)
+            
             if 'name' in data:
                 section.name = data['name']
             if 'title' in data:
@@ -162,17 +200,48 @@ def api_section(section_id):
             if 'background_image' in data:
                 section.background_image = data['background_image']
             if 'order' in data:
-                section.order = data['order']
+                section.order = int(data['order'])
             if 'is_active' in data:
-                section.is_active = data['is_active']
+                section.is_active = str_to_bool(data['is_active'])
             if 'enable_pillars' in data:
-                section.enable_pillars = data['enable_pillars']
+                section.enable_pillars = str_to_bool(data['enable_pillars'])
             if 'enable_floating_cards' in data:
-                section.enable_floating_cards = data['enable_floating_cards']
+                section.enable_floating_cards = str_to_bool(data['enable_floating_cards'])
             if 'pillars_count' in data:
-                section.pillars_count = data['pillars_count']
+                old_pillars_count = section.pillars_count
+                new_pillars_count = int(data['pillars_count'])
+                section.pillars_count = new_pillars_count
+                
+                # Create default pillars if count increased
+                if new_pillars_count > old_pillars_count:
+                    existing_pillars = json.loads(section.pillars_data) if section.pillars_data else []
+                    for i in range(old_pillars_count, new_pillars_count):
+                        existing_pillars.append({
+                            'id': f'pillar_{i+1}',
+                            'title': f'Filar {i+1}',
+                            'description': 'Opis filaru...',
+                            'icon': 'fas fa-star',
+                            'color': '#007bff'
+                        })
+                    section.pillars_data = json.dumps(existing_pillars)
+            
             if 'floating_cards_count' in data:
-                section.floating_cards_count = data['floating_cards_count']
+                old_cards_count = section.floating_cards_count
+                new_cards_count = int(data['floating_cards_count'])
+                section.floating_cards_count = new_cards_count
+                
+                # Create default floating cards if count increased
+                if new_cards_count > old_cards_count:
+                    existing_cards = json.loads(section.floating_cards_data) if section.floating_cards_data else []
+                    for i in range(old_cards_count, new_cards_count):
+                        existing_cards.append({
+                            'id': f'card_{i+1}',
+                            'title': f'Karta {i+1}',
+                            'description': 'Opis karty...',
+                            'icon': 'fas fa-heart',
+                            'color': '#28a745'
+                        })
+                    section.floating_cards_data = json.dumps(existing_cards)
             if 'pillars_data' in data:
                 section.pillars_data = data['pillars_data']
             if 'floating_cards_data' in data:
@@ -210,9 +279,12 @@ def api_section_pillars(section_id):
     try:
         data = request.get_json()
         pillars = data.get('pillars', [])
+        final_text = data.get('final_text', '')
         
-        # Update pillars data (assuming it's stored as JSON in content field)
-        section.content = json.dumps({'pillars': pillars})
+        # Update pillars data in the correct field
+        section.pillars_data = json.dumps(pillars)
+        section.final_text = final_text
+        section.enable_pillars = True  # Enable pillars when saving
         db.session.commit()
         
         return jsonify({
@@ -233,9 +305,12 @@ def api_section_floating_cards(section_id):
     try:
         data = request.get_json()
         floating_cards = data.get('floating_cards', [])
+        final_text = data.get('final_text', '')
         
-        # Update floating cards data (assuming it's stored as JSON in content field)
-        section.content = json.dumps({'floating_cards': floating_cards})
+        # Update floating cards data in the correct field
+        section.floating_cards_data = json.dumps(floating_cards)
+        section.final_text = final_text
+        section.enable_floating_cards = True  # Enable floating cards when saving
         db.session.commit()
         
         return jsonify({

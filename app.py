@@ -41,14 +41,8 @@ log_file = setup_logging()
 app = create_app()
 
 if __name__ == '__main__':
-    # Parse command line arguments for port
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--port', type=int, default=5000, help='Port to run the server on')
-    args = parser.parse_args()
-    
     # Log application startup
     logger = logging.getLogger(__name__)
-    logger.info(f"🌐 Starting Flask application on http://0.0.0.0:{args.port}")
+    logger.info("🌐 Starting Flask application on http://0.0.0.0:5000")
     
-    app.run(debug=True, host='0.0.0.0', port=args.port)
+    app.run(debug=True, host='0.0.0.0', port=5000)

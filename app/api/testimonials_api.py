@@ -105,6 +105,7 @@ def api_testimonial(testimonial_id):
                     'author_name': testimonial.author_name,
                     'content': testimonial.content,
                     'member_since': testimonial.member_since,
+                    'rating': testimonial.rating,
                     'order': testimonial.order,
                     'is_active': testimonial.is_active,
                     'created_at': testimonial.created_at.isoformat() if testimonial.created_at else None
@@ -120,6 +121,8 @@ def api_testimonial(testimonial_id):
                 testimonial.content = data['content']
             if 'member_since' in data:
                 testimonial.member_since = data['member_since']
+            if 'rating' in data:
+                testimonial.rating = data['rating']
             if 'order' in data:
                 testimonial.order = data['order']
             if 'is_active' in data:

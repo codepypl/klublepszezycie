@@ -16,27 +16,6 @@
             <p>Wszystkie Rejestracje</p>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="admin-stats-card">
-            <i class="fas fa-clock"></i>
-            <h3>{{ registrations|selectattr('status', 'equalto', 'pending')|list|length }}</h3>
-            <p>Oczekujące</p>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="admin-stats-card">
-            <i class="fas fa-check-circle"></i>
-            <h3>{{ registrations|selectattr('status', 'equalto', 'approved')|list|length }}</h3>
-            <p>Zatwierdzone</p>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="admin-stats-card">
-            <i class="fas fa-times-circle"></i>
-            <h3>{{ registrations|selectattr('status', 'equalto', 'rejected')|list|length }}</h3>
-            <p>Odrzucone</p>
-        </div>
-    </div>
 </div>
 
 <!-- Registrations Table -->
@@ -77,15 +56,7 @@
                                 </a>
                             </td>
                             <td>
-                                {% if registration.status == 'pending' %}
-                                    <span class="badge bg-warning">Oczekująca</span>
-                                {% elif registration.status == 'approved' %}
-                                    <span class="badge bg-success">Zatwierdzona</span>
-                                {% elif registration.status == 'rejected' %}
-                                    <span class="badge bg-danger">Odrzucona</span>
-                                {% else %}
-                                    <span class="admin-badge admin-badge-secondary">{{ registration.status }}</span>
-                                {% endif %}
+                                <span class="badge bg-success">Potwierdzona</span>
                             </td>
                             <td>
                                 <div class="btn-group" role="group">
@@ -99,18 +70,6 @@
                                             data-status="{{ registration.status }}">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    {% if registration.status == 'pending' %}
-                                    <button class="btn btn-sm admin-btn-success" 
-                                            data-action="approve" 
-                                            data-id="{{ registration.id }}">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                    <button class="btn btn-sm admin-btn-danger" 
-                                            data-action="reject" 
-                                            data-id="{{ registration.id }}">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                    {% endif %}
                                     <button class="btn btn-sm admin-btn-danger" 
                                             data-action="delete" 
                                             data-id="{{ registration.id }}"
@@ -193,57 +152,15 @@
         document.getElementById('view_email').textContent = email;
         document.getElementById('view_phone').textContent = phone;
         document.getElementById('view_presentation_date').textContent = presentationDate || 'Brak daty';
-        let statusText = '';
-        let statusClass = '';
-        if (status === 'pending') {
-            statusText = 'Oczekująca';
-            statusClass = 'admin-badge admin-badge-warning';
-        } else if (status === 'approved') {
-            statusText = 'Zatwierdzona';
-            statusClass = 'admin-badge admin-badge-success';
-        } else if (status === 'rejected') {
-            statusText = 'Odrzucona';
-            statusClass = 'admin-badge admin-badge-danger';
-        } else {
-            statusText = status;
-            statusClass = 'admin-badge admin-badge-secondary';
-        }
-        document.getElementById('view_status').innerHTML = `<span class="${statusClass}">${statusText}</span>`;
+        document.getElementById('view_status').innerHTML = '<span class="admin-badge admin-badge-success">Potwierdzona</span>';
         document.getElementById('view_date').textContent = new Date().toLocaleDateString('pl-PL');
         new bootstrap.Modal(document.getElementById('viewRegistrationModal')).show();
-    }
-
-    // Update Status
-    function updateStatus(id, status) {
-        const statusText = status === 'approved' ? 'zatwierdzić' : 'odrzucić';
-        if (confirm(`Czy na pewno chcesz ${statusText} tę rejestrację?`)) {
-            const formData = new FormData();
-            formData.append('id', id);
-            formData.append('status', status);
-            fetch('/admin/api/registrations', {
-                method: 'PUT',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.toastManager.success('Status rejestracji został zaktualizowany!');
-                    location.reload();
-                } else {
-                    window.toastManager.error('Błąd: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                window.toastManager.error('Wystąpił błąd podczas aktualizacji statusu');
-            });
-        }
     }
 
     // Delete Registration
     function deleteRegistration(id, name) {
         if (confirm(`Czy na pewno chcesz usunąć rejestrację użytkownika "${name}"?`)) {
-            fetch(`/admin/api/registrations/${id}`, {
+            fetch(`/api/registrations/${id}`, {
                 method: 'DELETE'
             })
             .then(response => response.json())
@@ -277,12 +194,6 @@
                     const presentationDate = button.dataset.presentationDate;
                     const status = button.dataset.status;
                     viewRegistration(id, name, email, phone, presentationDate, status);
-                    break;
-                case 'approve':
-                    updateStatus(id, 'approved');
-                    break;
-                case 'reject':
-                    updateStatus(id, 'rejected');
                     break;
                 case 'delete':
                     const deleteName = button.dataset.name;

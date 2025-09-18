@@ -9,11 +9,10 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=True)  # Made nullable for new system
+    first_name = db.Column(db.String(50), nullable=False)  # First name
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(255), nullable=False)
-    name = db.Column(db.String(100))  # Full name of the user
     phone = db.Column(db.String(20))  # Phone number
+    password_hash = db.Column(db.String(255), nullable=False)
     club_member = db.Column(db.Boolean, default=False)  # Whether user wants to join the club
     is_active = db.Column(db.Boolean, default=True, index=True)  # Whether the account is active
     role = db.Column(db.String(20), default='user', index=True)  # admin, user, ankieter

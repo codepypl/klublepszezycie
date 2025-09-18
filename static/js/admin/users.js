@@ -66,14 +66,34 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             
             const userId = document.getElementById('editUserId').value;
+            const password = document.getElementById('editUserPassword').value;
+            const passwordConfirm = document.getElementById('editUserPasswordConfirm').value;
+            
+            // Sprawdź czy hasła się zgadzają
+            if (password && password !== passwordConfirm) {
+                window.toastManager.error('Hasła nie są identyczne!');
+                return;
+            }
+            
+            // Sprawdź długość hasła
+            if (password && password.length < 6) {
+                window.toastManager.error('Hasło musi mieć co najmniej 6 znaków!');
+                return;
+            }
+            
             const userData = {
-                name: document.getElementById('editUserName').value,
+                first_name: document.getElementById('editUserName').value,
                 email: document.getElementById('editUserEmail').value,
                 phone: document.getElementById('editUserPhone').value,
                 club_member: document.getElementById('editUserClub').value === 'true',
                 is_active: document.getElementById('editUserActive').value === 'true',
                 role: document.getElementById('editUserRole').value
             };
+            
+            // Dodaj hasło tylko jeśli zostało ustawione
+            if (password) {
+                userData.password = password;
+            }
             
             // Wyślij żądanie aktualizacji
             fetch(`/api/user/${userId}`, {
@@ -87,6 +107,9 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     window.toastManager.success('Użytkownik został zaktualizowany pomyślnie!');
+                    // Wyczyść pola hasła
+                    document.getElementById('editUserPassword').value = '';
+                    document.getElementById('editUserPasswordConfirm').value = '';
                     // Przekieruj z powrotem do listy użytkowników
                     window.location.href = window.location.pathname;
                 } else {
@@ -162,13 +185,11 @@ function loadFiltersFromURL() {
 
 // Funkcje do edycji i usuwania użytkowników (jeśli są używane w innych miejscach)
 function editUser(userId) {
-    // Znajdź użytkownika po ID i przekieruj do edycji
-    const userRow = document.querySelector(`tr[data-user-id="${userId}"]`);
-    if (userRow) {
-        // Email jest w 4. kolumnie (po checkbox, ID, imię)
-        const email = userRow.querySelector('td:nth-child(4) a').textContent.trim();
-        window.location.href = `${window.location.pathname}?edit_user=${encodeURIComponent(email)}`;
-    }
+    // Przekieruj do strony użytkowników z parametrem edycji
+    console.log('editUser called with userId:', userId);
+    const url = `/admin/users?edit_user=${userId}`;
+    console.log('Redirecting to:', url);
+    window.location.href = url;
 }
 
 function deleteUser(userId) {
@@ -194,4 +215,27 @@ function deleteUser(userId) {
             window.toastManager.error('Wystąpił błąd podczas usuwania użytkownika');
         });
     }
+}
+
+function generatePassword() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    
+    // Generuj hasło o długości 12 znaków
+    for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    // Ustaw wygenerowane hasło w obu polach
+    document.getElementById('editUserPassword').value = password;
+    document.getElementById('editUserPasswordConfirm').value = password;
+    
+    // Pokaż hasło przez chwilę
+    const passwordField = document.getElementById('editUserPassword');
+    passwordField.type = 'text';
+    setTimeout(() => {
+        passwordField.type = 'password';
+    }, 2000);
+    
+    window.toastManager.success('Hasło zostało wygenerowane!');
 }

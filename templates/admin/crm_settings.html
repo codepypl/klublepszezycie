@@ -244,7 +244,7 @@ function saveCallSettings() {
     };
     
     // TODO: Implement API call to save settings
-    alert('Ustawienia połączeń zostały zapisane!');
+    showSuccess('Ustawienia połączeń zostały zapisane!');
 }
 
 function saveImportSettings() {
@@ -256,7 +256,7 @@ function saveImportSettings() {
     };
     
     // TODO: Implement API call to save settings
-    alert('Ustawienia importu zostały zapisane!');
+    showSuccess('Ustawienia importu zostały zapisane!');
 }
 
 function saveNotificationSettings() {
@@ -267,7 +267,7 @@ function saveNotificationSettings() {
     };
     
     // TODO: Implement API call to save settings
-    alert('Ustawienia powiadomień zostały zapisane!');
+    showSuccess('Ustawienia powiadomień zostały zapisane!');
 }
 
 function saveBlacklistSettings() {
@@ -278,26 +278,26 @@ function saveBlacklistSettings() {
     };
     
     // TODO: Implement API call to save settings
-    alert('Ustawienia czarnej listy zostały zapisane!');
+    showSuccess('Ustawienia czarnej listy zostały zapisane!');
 }
 
 function clearOldCalls() {
     if (confirm('Czy na pewno chcesz usunąć stare połączenia?')) {
         // TODO: Implement API call to clear old calls
-        alert('Stare połączenia zostały usunięte!');
+        showSuccess('Stare połączenia zostały usunięte!');
     }
 }
 
 function optimizeDatabase() {
     if (confirm('Czy na pewno chcesz zoptymalizować bazę danych CRM?')) {
         // TODO: Implement API call to optimize database
-        alert('Baza danych została zoptymalizowana!');
+        showSuccess('Baza danych została zoptymalizowana!');
     }
 }
 
 function exportSettings() {
     // TODO: Implement API call to export settings
-    alert('Ustawienia zostały wyeksportowane!');
+    showSuccess('Ustawienia zostały wyeksportowane!');
 }
 
 function clearAllData() {

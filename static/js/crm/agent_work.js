@@ -50,12 +50,12 @@ function startWork() {
             updateStatusDisplay();
             getNextContact();
         } else {
-            alert('Błąd podczas rozpoczynania pracy: ' + data.error);
+            showError('Błąd podczas rozpoczynania pracy: ' + data.error);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Wystąpił błąd podczas rozpoczynania pracy');
+        showError('Wystąpił błąd podczas rozpoczynania pracy');
     });
 }
 
@@ -74,12 +74,12 @@ function stopWork() {
             updateStatusDisplay();
             hideCurrentCallPanel();
         } else {
-            alert('Błąd podczas zatrzymywania pracy: ' + data.error);
+            showError('Błąd podczas zatrzymywania pracy: ' + data.error);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Wystąpił błąd podczas zatrzymywania pracy');
+        showError('Wystąpił błąd podczas zatrzymywania pracy');
     });
 }
 
@@ -120,13 +120,13 @@ function getNextContact() {
             displayContact(currentContact);
             showCurrentCallPanel();
         } else {
-            alert('Brak kontaktów do dzwonienia: ' + (data.message || 'Nie znaleziono kontaktów'));
+            showWarning('Brak kontaktów do dzwonienia: ' + (data.message || 'Nie znaleziono kontaktów'));
             hideCurrentCallPanel();
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Wystąpił błąd podczas pobierania kontaktu');
+        showError('Wystąpił błąd podczas pobierania kontaktu');
     });
 }
 
@@ -219,7 +219,7 @@ function getStatusText(status) {
 
 function makeCall() {
     if (!currentContact) {
-        alert('Brak kontaktu do dzwonienia');
+        showWarning('Brak kontaktu do dzwonienia');
         return;
     }
     
@@ -248,13 +248,13 @@ function makeCall() {
             showOutcomePanel();
             hideCallActions();
         } else {
-            alert('Błąd podczas inicjowania połączenia: ' + data.error);
+            showError('Błąd podczas inicjowania połączenia: ' + data.error);
             resetCallButton();
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Wystąpił błąd podczas inicjowania połączenia');
+        showError('Wystąpił błąd podczas inicjowania połączenia');
         resetCallButton();
     });
 }
@@ -279,7 +279,7 @@ function saveCallbackOutcome() {
     const callbackTime = document.getElementById('callbackTime').value;
     
     if (!callbackDate || !callbackTime) {
-        alert('Proszę podać datę i godzinę oddzwonienia');
+        showWarning('Proszę podać datę i godzinę oddzwonienia');
         return;
     }
     
@@ -313,17 +313,17 @@ function saveCallOutcome(outcome, callbackDateTime = null) {
     .then(response => safeJsonParse(response))
     .then(data => {
         if (data.success) {
-            alert(`Wynik rozmowy został zapisany!\nCzas rozmowy: ${formatDuration(data.duration_seconds)}`);
+            showSuccess(`Wynik rozmowy został zapisany!\nCzas rozmowy: ${formatDuration(data.duration_seconds)}`);
             resetOutcomePanel();
             checkForCallbacks(); // Check for new callbacks
             getNextContact();
         } else {
-            alert('Błąd podczas zapisywania wyniku: ' + data.error);
+            showError('Błąd podczas zapisywania wyniku: ' + data.error);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Wystąpił błąd podczas zapisywania wyniku');
+        showError('Wystąpił błąd podczas zapisywania wyniku');
     });
 }
 

@@ -176,8 +176,17 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="postTags" class="form-label">Tagi (oddzielone spacjami)</label>
-                            <input type="text" class="form-control" id="postTags" name="tags" placeholder="tag1 tag2 tag3">
+                            <label class="form-label">Tagi</label>
+                            <div id="postTagsSelector"></div>
+                        </div>
+                        
+                        <!-- Images Section -->
+                        <div class="mb-3">
+                            <label class="form-label">Obrazy w artykule</label>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Galeria zdjęć będzie dostępna po utworzeniu artykułu. Możesz dodać obrazy podczas edycji.
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -269,8 +278,8 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label for="editPostTags" class="form-label">Tagi (oddzielone spacjami)</label>
-                            <input type="text" class="form-control" id="editPostTags" name="tags" placeholder="tag1 tag2 tag3">
+                            <label class="form-label">Tagi</label>
+                            <div id="editPostTagsSelector"></div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -339,6 +348,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin/tag_selector.js') }}"></script>
 <script src="{{ url_for('static', filename='js/admin/blog_posts.js') }}"></script>
 
 <script>
@@ -346,12 +356,32 @@
 function editPost(postId) {
     if (window.blogPostsManager) {
         window.blogPostsManager.editPost(postId);
+    } else {
+        console.error('blogPostsManager not initialized yet');
+        // Retry after a short delay
+        setTimeout(() => {
+            if (window.blogPostsManager) {
+                window.blogPostsManager.editPost(postId);
+            } else {
+                showError('Błąd: Menedżer postów nie jest jeszcze załadowany. Spróbuj ponownie.');
+            }
+        }, 100);
     }
 }
 
 function deletePost(postId) {
     if (window.blogPostsManager) {
         window.blogPostsManager.deletePost(postId);
+    } else {
+        console.error('blogPostsManager not initialized yet');
+        // Retry after a short delay
+        setTimeout(() => {
+            if (window.blogPostsManager) {
+                window.blogPostsManager.deletePost(postId);
+            } else {
+                showError('Błąd: Menedżer postów nie jest jeszcze załadowany. Spróbuj ponownie.');
+            }
+        }, 100);
     }
 }
 
@@ -368,7 +398,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     window.paginationHandlers = {
         onPageChange: (page) => {
-            window.location.href = `{{ url_for('blog.admin_index') }}?page=${page}&per_page={{ posts.per_page if posts else 10 }}`;
+            const perPage = {{ posts.per_page if posts else 10 }};
+            window.location.href = `{{ url_for('blog.admin_index') }}?page=${page}&per_page=${perPage}`;
         },
         onPerPageChange: (newPage, perPage) => {
             window.location.href = `{{ url_for('blog.admin_index') }}?page=${newPage}&per_page=${perPage}`;

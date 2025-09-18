@@ -3,6 +3,7 @@ Główna aplikacja Flask - refaktoryzowana wersja
 """
 from flask import Flask
 from flask_login import LoginManager
+from flask_migrate import Migrate
 from dotenv import load_dotenv
 import os
 import json
@@ -15,6 +16,7 @@ from app.models import db
 
 # Initialize extensions
 login_manager = LoginManager()
+migrate = Migrate()
 
 def create_app():
     """Application factory pattern"""
@@ -36,6 +38,9 @@ def create_app():
     logger.info("🔗 Initializing database connection...")
     db.init_app(app)
     
+    logger.info("🔄 Setting up database migrations...")
+    migrate.init_app(app, db)
+    
     logger.info("🔐 Setting up authentication...")
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
@@ -49,7 +54,7 @@ def create_app():
     
     # Register blueprints
     logger.info("🛣️ Registering routes...")
-    from app.routes import public_bp, admin_bp, auth_bp, blog_bp, seo_bp, social_bp, events_bp, users_bp, footer_bp, crm_bp
+    from app.routes import public_bp, admin_bp, auth_bp, blog_bp, seo_bp, social_bp, events_bp, users_bp, footer_bp, crm_bp, ankieter_bp
     from app.api import email_bp, users_api_bp, testimonials_api_bp, sections_api_bp, menu_api_bp, faq_api_bp, benefits_api_bp, events_api_bp, blog_api_bp, seo_api_bp, social_api_bp, crm_api_bp, agent_api_bp
     
     app.register_blueprint(public_bp)
@@ -73,7 +78,8 @@ def create_app():
     app.register_blueprint(events_bp, url_prefix='/admin')
     app.register_blueprint(users_bp, url_prefix='/admin')
     app.register_blueprint(footer_bp, url_prefix='/admin')
-    app.register_blueprint(crm_bp, url_prefix='/crm')
+    app.register_blueprint(crm_bp, url_prefix='/admin/crm')
+    app.register_blueprint(ankieter_bp, url_prefix='/ankieter')
     app.register_blueprint(crm_api_bp, url_prefix='/api/crm')
     app.register_blueprint(agent_api_bp, url_prefix='/api/crm/agent')
     

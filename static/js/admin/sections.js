@@ -206,7 +206,10 @@ class SectionsManager {
         
         fetch('/api/sections', {
             method: 'POST',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(Object.fromEntries(formData))
         })
         .then(response => response.json())
         .then(data => {
@@ -247,7 +250,10 @@ class SectionsManager {
         const sectionId = document.getElementById('editSectionId').value;
         fetch(`/api/sections/${sectionId}`, {
             method: 'PUT',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(Object.fromEntries(formData))
         })
         .then(response => response.json())
         .then(data => {
@@ -344,7 +350,23 @@ async function editPillars(sectionId) {
             maxPillarsCount = section.pillars_count || 4;
             
             // Parse existing pillars data
-            pillarsData = section.pillars_data ? JSON.parse(section.pillars_data) : [];
+            let existingPillars = section.pillars_data ? JSON.parse(section.pillars_data) : [];
+            
+            // Ensure we have exactly maxPillarsCount pillars (fill with empty ones if needed)
+            pillarsData = [];
+            for (let i = 0; i < maxPillarsCount; i++) {
+                if (existingPillars[i]) {
+                    pillarsData.push(existingPillars[i]);
+                } else {
+                    pillarsData.push({
+                        title: '',
+                        description: '',
+                        icon: '',
+                        icon_color: '#007bff',
+                        blog_link: ''
+                    });
+                }
+            }
             
             // Set final text
             document.getElementById('editPillarsFinalText').value = section.final_text || '';
@@ -376,7 +398,24 @@ async function editFloatingCards(sectionId) {
             maxFloatingCardsCount = section.floating_cards_count || 3;
             
             // Parse existing floating cards data
-            floatingCardsData = section.floating_cards_data ? JSON.parse(section.floating_cards_data) : [];
+            let existingCards = section.floating_cards_data ? JSON.parse(section.floating_cards_data) : [];
+            
+            // Ensure we have exactly maxFloatingCardsCount cards (fill with empty ones if needed)
+            floatingCardsData = [];
+            for (let i = 0; i < maxFloatingCardsCount; i++) {
+                if (existingCards[i]) {
+                    floatingCardsData.push(existingCards[i]);
+                } else {
+                    floatingCardsData.push({
+                        title: '',
+                        description: '',
+                        icon: '',
+                        icon_color: '#007bff',
+                        blog_link: '',
+                        position: 300
+                    });
+                }
+            }
             
             // Set final text
             document.getElementById('editFloatingCardsFinalText').value = section.final_text || '';
@@ -399,6 +438,7 @@ async function renderPillars() {
     const container = document.getElementById('pillarsContainer');
     container.innerHTML = '';
     
+    // Render all pillars (we already have exactly maxPillarsCount)
     for (let i = 0; i < pillarsData.length; i++) {
         const pillar = pillarsData[i];
         const pillarElement = await createPillarElement(pillar, i);
@@ -416,6 +456,7 @@ async function renderFloatingCards() {
     const container = document.getElementById('floatingCardsContainer');
     container.innerHTML = '';
     
+    // Render all floating cards (we already have exactly maxFloatingCardsCount)
     for (let i = 0; i < floatingCardsData.length; i++) {
         const card = floatingCardsData[i];
         const cardElement = await createFloatingCardElement(card, i);
@@ -629,7 +670,7 @@ function handlePillarsForm(e) {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-            pillars_data: JSON.stringify(pillars),
+            pillars: pillars,
             final_text: finalText
         })
     })
@@ -639,6 +680,8 @@ function handlePillarsForm(e) {
             window.toastManager.success('Filary zostały zaktualizowane pomyślnie!');
             const modal = bootstrap.Modal.getInstance(document.getElementById('editPillarsModal'));
             modal.hide();
+            // Odśwież stronę
+            window.location.reload();
         } else {
             window.toastManager.error('Błąd podczas aktualizacji filarów: ' + data.error);
         }
@@ -687,7 +730,7 @@ function handleFloatingCardsForm(e) {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-            floating_cards_data: JSON.stringify(cards),
+            floating_cards: cards,
             final_text: finalText
         })
     })
@@ -697,6 +740,8 @@ function handleFloatingCardsForm(e) {
             window.toastManager.success('Karty zostały zaktualizowane pomyślnie!');
             const modal = bootstrap.Modal.getInstance(document.getElementById('editFloatingCardsModal'));
             modal.hide();
+            // Odśwież stronę
+            window.location.reload();
         } else {
             window.toastManager.error('Błąd podczas aktualizacji kart: ' + data.error);
         }

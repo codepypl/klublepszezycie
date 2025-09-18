@@ -142,7 +142,7 @@ function handleCallSubmission(e) {
             if (window.toastManager) {
                 window.toastManager.success('Połączenie przetworzone pomyślnie!');
             } else {
-                alert('Połączenie przetworzone pomyślnie!');
+                showSuccess('Połączenie przetworzone pomyślnie!');
             }
             
             // Hide form and refresh data instead of reloading page
@@ -159,7 +159,7 @@ function handleCallSubmission(e) {
             if (window.toastManager) {
                 window.toastManager.error('Błąd: ' + data.error);
             } else {
-                alert('Błąd: ' + data.error);
+                showError('Błąd: ' + data.error);
             }
         }
     })
@@ -168,7 +168,7 @@ function handleCallSubmission(e) {
         if (window.toastManager) {
             window.toastManager.error('Wystąpił błąd podczas przetwarzania połączenia');
         } else {
-            alert('Wystąpił błąd podczas przetwarzania połączenia');
+            showError('Wystąpił błąd podczas przetwarzania połączenia');
         }
     })
     .finally(() => {

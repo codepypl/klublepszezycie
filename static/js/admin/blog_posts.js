@@ -3,11 +3,13 @@ class BlogPostsManager {
     constructor() {
         this.posts = [];
         this.categories = [];
+        this.tagSelectors = {};
         this.init();
     }
 
     async init() {
         await this.loadCategories();
+        this.setupTagSelectors();
         this.bindEvents();
         this.setupSlugGeneration();
         this.setupImageHandlers();
@@ -51,6 +53,33 @@ class BlogPostsManager {
         });
     }
 
+    setupTagSelectors() {
+        // Wait for TagSelector to be available
+        if (typeof TagSelector === 'undefined') {
+            console.error('TagSelector not loaded');
+            return;
+        }
+
+        // Initialize tag selectors for add and edit forms
+        try {
+            this.tagSelectors.add = new TagSelector('postTagsSelector', {
+                placeholder: 'Wpisz tagi lub wybierz z listy...',
+                allowNew: true,
+                maxTags: 10
+            });
+
+            this.tagSelectors.edit = new TagSelector('editPostTagsSelector', {
+                placeholder: 'Wpisz tagi lub wybierz z listy...',
+                allowNew: true,
+                maxTags: 10
+            });
+            
+            console.log('Tag selectors initialized');
+        } catch (error) {
+            console.error('Error initializing tag selectors:', error);
+        }
+    }
+
     bindEvents() {
         // Add post form
         const addForm = document.getElementById('addPostForm');
@@ -85,7 +114,7 @@ class BlogPostsManager {
         const formData = new FormData(e.target);
         
         // Get content from TinyMCE
-        const content = tinymce.get('postContent') ? tinymce.get('postContent').getContent() : '';
+        const content = this.getTinyMCEContent('postContent');
         formData.set('content', content);
         
         // Convert categories array
@@ -96,16 +125,11 @@ class BlogPostsManager {
             formData.append('categories', JSON.stringify(categories));
         }
         
-        // Convert tags string to array
-        const tags = formData.get('tags');
-        if (tags) {
-            const tagsArray = tags.split(/\s+/).map(tag => tag.trim()).filter(tag => tag);
-            console.log('DEBUG: Tags array (ADD):', tagsArray);
-            formData.delete('tags');
-            if (tagsArray.length > 0) {
-                formData.append('tags', JSON.stringify(tagsArray));
-                console.log('DEBUG: Tags JSON (ADD):', JSON.stringify(tagsArray));
-            }
+        // Get tags from tag selector
+        const tagNames = this.tagSelectors.add.getTagNames();
+        formData.delete('tags');
+        if (tagNames.length > 0) {
+            formData.append('tags', JSON.stringify(tagNames));
         }
 
         // Handle allow_comments checkbox
@@ -146,7 +170,7 @@ class BlogPostsManager {
         const postId = formData.get('id');
         
         // Get content from TinyMCE
-        const content = tinymce.get('editPostContent') ? tinymce.get('editPostContent').getContent() : '';
+        const content = this.getTinyMCEContent('editPostContent');
         formData.set('content', content);
         
         // Convert categories array
@@ -157,16 +181,11 @@ class BlogPostsManager {
             formData.append('categories', JSON.stringify(categories));
         }
         
-        // Convert tags string to array
-        const tags = formData.get('tags');
-        if (tags) {
-            const tagsArray = tags.split(/\s+/).map(tag => tag.trim()).filter(tag => tag);
-            console.log('DEBUG: Tags array:', tagsArray);
-            formData.delete('tags');
-            if (tagsArray.length > 0) {
-                formData.append('tags', JSON.stringify(tagsArray));
-                console.log('DEBUG: Tags JSON:', JSON.stringify(tagsArray));
-            }
+        // Get tags from tag selector
+        const tagNames = this.tagSelectors.edit.getTagNames();
+        formData.delete('tags');
+        if (tagNames.length > 0) {
+            formData.append('tags', JSON.stringify(tagNames));
         }
 
         // Handle allow_comments checkbox
@@ -214,9 +233,7 @@ class BlogPostsManager {
                 document.getElementById('editPostAllowComments').checked = post.allow_comments || false;
                 
                 // Set content in TinyMCE
-                if (tinymce.get('editPostContent')) {
-                    tinymce.get('editPostContent').setContent(post.content || '');
-                }
+                this.setTinyMCEContent('editPostContent', post.content);
                 
                 // Set categories
                 const categoryCheckboxes = document.querySelectorAll('#editPostCategories input[type="checkbox"]');
@@ -224,9 +241,9 @@ class BlogPostsManager {
                     checkbox.checked = post.categories && post.categories.some(cat => cat.id === parseInt(checkbox.value));
                 });
                 
-                // Set tags
-                const tags = post.tags ? post.tags.map(tag => tag.name).join(' ') : '';
-                document.getElementById('editPostTags').value = tags;
+                // Set tags in tag selector
+                const tags = post.tags || [];
+                this.tagSelectors.edit.setTags(tags);
                 
                 // Set featured image preview
                 const currentImageDiv = document.getElementById('currentFeaturedImage');
@@ -284,11 +301,18 @@ class BlogPostsManager {
         if (modal) {
             modal.hide();
         }
+        
+        // Clear tag selectors when closing modals
+        if (modalId === 'addPostModal' && this.tagSelectors.add) {
+            this.tagSelectors.add.setTags([]);
+        } else if (modalId === 'editPostModal' && this.tagSelectors.edit) {
+            this.tagSelectors.edit.setTags([]);
+        }
     }
 
     // Image Management Methods
     setupImageHandlers() {
-        // Add image button
+        // Add image button (edit form)
         const addImageBtn = document.getElementById('addImageBtn');
         if (addImageBtn) {
             addImageBtn.addEventListener('click', () => this.showAddImageModal());
@@ -506,10 +530,58 @@ class BlogPostsManager {
         document.getElementById('postId').value = '';
     }
 
+    // TinyMCE helper functions
+    setTinyMCEContent(editorId, content) {
+        try {
+            const editor = tinymce.get(editorId);
+            if (editor) {
+                if (editor.initialized) {
+                    editor.setContent(content || '');
+                } else {
+                    editor.on('init', () => {
+                        editor.setContent(content || '');
+                    });
+                }
+            } else {
+                // Fallback: set content in textarea
+                const textarea = document.getElementById(editorId);
+                if (textarea) {
+                    textarea.value = content || '';
+                }
+            }
+        } catch (error) {
+            console.error('Error setting TinyMCE content:', error);
+            // Fallback: set content in textarea
+            const textarea = document.getElementById(editorId);
+            if (textarea) {
+                textarea.value = content || '';
+            }
+        }
+    }
+
+    getTinyMCEContent(editorId) {
+        try {
+            const editor = tinymce.get(editorId);
+            if (editor && editor.initialized) {
+                return editor.getContent();
+            } else {
+                // Fallback: get content from textarea
+                const textarea = document.getElementById(editorId);
+                return textarea ? textarea.value : '';
+            }
+        } catch (error) {
+            console.error('Error getting TinyMCE content:', error);
+            // Fallback: get content from textarea
+            const textarea = document.getElementById(editorId);
+            return textarea ? textarea.value : '';
+        }
+    }
+
     // Toast notifications are now handled by window.toastManager
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     window.blogPostsManager = new BlogPostsManager();
+    console.log('BlogPostsManager initialized:', window.blogPostsManager);
 });
