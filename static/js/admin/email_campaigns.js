@@ -155,7 +155,7 @@ function saveCampaign() {
     const templateId = formData.get('campaign_template');
     if (templateId) {
         const template = availableTemplates.find(t => t.id == templateId);
-        if (template && template.variables) {
+        if (template && template.variables && Array.isArray(template.variables)) {
             template.variables.forEach(variable => {
                 const input = document.getElementById(`var_${variable}`);
                 if (input) {

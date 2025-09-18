@@ -143,6 +143,21 @@ class BlogPostsManager {
                 credentials: 'include'
             });
 
+            // Check for 413 error (Content Too Large)
+            if (response.status === 413) {
+                window.toastManager.error('Artykuł jest za duży. Spróbuj zmniejszyć rozmiar obrazów lub treści.');
+                return;
+            }
+
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Non-JSON response:', text);
+                window.toastManager.error('Serwer zwrócił nieprawidłową odpowiedź. Sprawdź logi serwera.');
+                return;
+            }
+
             const result = await response.json();
             
             if (result.success) {
@@ -154,7 +169,11 @@ class BlogPostsManager {
             }
         } catch (error) {
             console.error('Error adding post:', error);
-            window.toastManager.error('Błąd podczas dodawania artykułu');
+            if (error.message.includes('Unexpected token')) {
+                window.toastManager.error('Serwer zwrócił nieprawidłową odpowiedź. Sprawdź czy artykuł nie jest za duży.');
+            } else {
+                window.toastManager.error('Błąd podczas dodawania artykułu');
+            }
         }
     }
 
@@ -199,6 +218,21 @@ class BlogPostsManager {
                 credentials: 'include'
             });
 
+            // Check for 413 error (Content Too Large)
+            if (response.status === 413) {
+                window.toastManager.error('Artykuł jest za duży. Spróbuj zmniejszyć rozmiar obrazów lub treści.');
+                return;
+            }
+
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Non-JSON response:', text);
+                window.toastManager.error('Serwer zwrócił nieprawidłową odpowiedź. Sprawdź logi serwera.');
+                return;
+            }
+
             const result = await response.json();
             
             if (result.success) {
@@ -210,7 +244,11 @@ class BlogPostsManager {
             }
         } catch (error) {
             console.error('Error updating post:', error);
-            window.toastManager.error('Błąd podczas aktualizacji artykułu');
+            if (error.message.includes('Unexpected token')) {
+                window.toastManager.error('Serwer zwrócił nieprawidłową odpowiedź. Sprawdź czy artykuł nie jest za duży.');
+            } else {
+                window.toastManager.error('Błąd podczas aktualizacji artykułu');
+            }
         }
     }
 

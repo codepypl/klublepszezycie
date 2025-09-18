@@ -1,7 +1,7 @@
 """
 Główna aplikacja Flask - refaktoryzowana wersja
 """
-from flask import Flask
+from flask import Flask, jsonify
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from dotenv import load_dotenv
@@ -27,7 +27,7 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://shadi@localhost:5432/betterlife')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = 'static/uploads'
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+    app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
     
     # Setup logging for Flask app
     import logging
@@ -85,6 +85,15 @@ def create_app():
     
     # Import user loader
     logger.info("👤 Setting up user authentication...")
+    
+    # Error handlers
+    @app.errorhandler(413)
+    def too_large(e):
+        return jsonify({
+            'success': False,
+            'error': 'Artykuł jest za duży. Spróbuj zmniejszyć rozmiar obrazów lub treści.',
+            'message': 'Content too large'
+        }), 413
     from app.utils.auth_utils import load_user
     login_manager.user_loader(load_user)
     

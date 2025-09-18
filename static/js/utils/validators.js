@@ -110,7 +110,7 @@ class FormValidators {
      * @param {string} fieldName - Human readable field name
      * @returns {boolean} - true if valid, false if invalid
      */
-    static validateFile(fieldId, allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], maxSize = 16, fieldName = 'Plik') {
+    static validateFile(fieldId, allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], maxSize = 50, fieldName = 'Plik') {
         const field = document.getElementById(fieldId);
         if (!field || !field.files || field.files.length === 0) {
             return true; // File is optional
@@ -127,7 +127,7 @@ class FormValidators {
             return false;
         }
         
-        // Check file size (16MB max, consistent with Python)
+        // Check file size (50MB max, consistent with Python)
         const maxSizeBytes = maxSize * 1024 * 1024;
         if (file.size > maxSizeBytes) {
             window.toastManager.error(`${fieldName} nie może być większy niż ${maxSize}MB`);
@@ -191,7 +191,7 @@ class FormValidators {
             { type: 'required', fieldId: slugFieldId, fieldName: 'Slug' },
             { type: 'slug', fieldId: slugFieldId, fieldName: 'Slug' },
             { type: 'tinymce', fieldId: contentFieldId, fieldName: 'Treść artykułu' },
-            { type: 'file', fieldId: imageFieldId, maxSize: 16, fieldName: 'Zdjęcie główne' }
+            { type: 'file', fieldId: imageFieldId, maxSize: 50, fieldName: 'Zdjęcie główne' }
         ]);
     }
 }
