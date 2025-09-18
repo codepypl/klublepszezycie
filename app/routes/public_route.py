@@ -392,7 +392,7 @@ def register_event(event_id):
         
         success, message = group_manager.add_email_to_event_group(
             email=registration.email,
-            first_name=registration.first_name,
+            name=registration.first_name,
             event_id=event_id
         )
         if success:
