@@ -255,6 +255,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = ProgressBar;
