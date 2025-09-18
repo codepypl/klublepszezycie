@@ -176,6 +176,11 @@ def api_event(event_id):
             
             db.session.commit()
             
+            # Aktualizuj grupę wydarzenia jeśli nazwa się zmieniła
+            if 'title' in data:
+                from app.api.email_api import create_event_group
+                create_event_group(event.id, event.title)
+            
             return jsonify({
                 'success': True,
                 'message': 'Event updated successfully'

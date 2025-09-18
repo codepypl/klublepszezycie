@@ -155,13 +155,26 @@ function saveCampaign() {
     const templateId = formData.get('campaign_template');
     if (templateId) {
         const template = availableTemplates.find(t => t.id == templateId);
-        if (template && template.variables && Array.isArray(template.variables)) {
-            template.variables.forEach(variable => {
-                const input = document.getElementById(`var_${variable}`);
-                if (input) {
-                    contentVariables[variable] = input.value;
+        if (template && template.variables) {
+            // Parse variables if it's a string
+            let variables = template.variables;
+            if (typeof variables === 'string') {
+                try {
+                    variables = JSON.parse(variables);
+                } catch (e) {
+                    console.error('Error parsing template variables:', e);
+                    variables = {};
                 }
-            });
+            }
+            
+            if (variables && Object.keys(variables).length > 0) {
+                Object.keys(variables).forEach(variable => {
+                    const input = document.getElementById(`var_${variable}`);
+                    if (input) {
+                        contentVariables[variable] = input.value;
+                    }
+                });
+            }
         }
     }
     
@@ -363,20 +376,37 @@ function handleTemplateChange() {
     
     if (templateId) {
         const template = availableTemplates.find(t => t.id == templateId);
-        if (template && template.variables && Array.isArray(template.variables) && template.variables.length > 0) {
-            variablesContainer.innerHTML = '';
-            template.variables.forEach(variable => {
-                const div = document.createElement('div');
-                div.className = 'mb-2';
-                div.innerHTML = `
-                    <label for="var_${variable}" class="form-label">${variable}</label>
-                    <input type="text" class="form-control" id="var_${variable}" name="var_${variable}" 
-                           placeholder="Wpisz treść dla ${variable}" oninput="updateEmailPreview()">
-                `;
-                variablesContainer.appendChild(div);
-            });
-            templateVariables.style.display = 'block';
-            updateEmailPreview();
+        if (template && template.variables) {
+            // Parse variables if it's a string
+            let variables = template.variables;
+            if (typeof variables === 'string') {
+                try {
+                    variables = JSON.parse(variables);
+                } catch (e) {
+                    console.error('Error parsing template variables:', e);
+                    variables = {};
+                }
+            }
+            
+            if (variables && Object.keys(variables).length > 0) {
+                variablesContainer.innerHTML = '';
+                Object.keys(variables).forEach(variable => {
+                    const div = document.createElement('div');
+                    div.className = 'mb-2';
+                    div.innerHTML = `
+                        <label for="var_${variable}" class="form-label">${variable}</label>
+                        <input type="text" class="form-control" id="var_${variable}" name="var_${variable}" 
+                               placeholder="Wpisz treść dla ${variable}" oninput="updateEmailPreview()">
+                        <div class="form-text">${variables[variable]}</div>
+                    `;
+                    variablesContainer.appendChild(div);
+                });
+                templateVariables.style.display = 'block';
+                updateEmailPreview();
+            } else {
+                templateVariables.style.display = 'none';
+                updateEmailPreview();
+            }
         } else {
             templateVariables.style.display = 'none';
             updateEmailPreview();

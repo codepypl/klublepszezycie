@@ -1218,17 +1218,95 @@ def update_campaign_stats(campaign_id):
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@email_bp.route('/bulk-delete/email-campaigns', methods=['POST'])
+@login_required
+def bulk_delete_campaigns():
+    """Bulk delete email campaigns"""
+    try:
+        data = request.get_json()
+        campaign_ids = data.get('ids', [])
+        
+        if not campaign_ids:
+            return jsonify({'success': False, 'error': 'Brak kampanii do usunięcia'}), 400
+        
+        # Delete campaigns
+        deleted_count = 0
+        for campaign_id in campaign_ids:
+            campaign = EmailCampaign.query.get(campaign_id)
+            if campaign:
+                # Delete associated queue items
+                EmailQueue.query.filter_by(campaign_id=campaign_id).delete()
+                # Delete campaign
+                db.session.delete(campaign)
+                deleted_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Usunięto {deleted_count} kampanii',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@email_bp.route('/bulk-delete/email-templates', methods=['POST'])
+@login_required
+def bulk_delete_templates():
+    """Bulk delete email templates"""
+    try:
+        data = request.get_json()
+        template_ids = data.get('ids', [])
+        
+        if not template_ids:
+            return jsonify({'success': False, 'error': 'Brak szablonów do usunięcia'}), 400
+        
+        # Delete templates
+        deleted_count = 0
+        for template_id in template_ids:
+            template = EmailTemplate.query.get(template_id)
+            if template:
+                # Delete associated queue items
+                EmailQueue.query.filter_by(template_id=template_id).delete()
+                # Delete template
+                db.session.delete(template)
+                deleted_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Usunięto {deleted_count} szablonów',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # Event Group Management Functions
 def create_event_group(event_id, event_title):
     """Tworzy grupę dla wydarzenia"""
     try:
-        # Sprawdź czy grupa już istnieje
+        # Sprawdź czy grupa już istnieje dla tego event_id
         existing_group = UserGroup.query.filter_by(
-            name=f"Wydarzenie: {event_title}",
-            group_type='event_based'
+            group_type='event_based',
+            criteria=json.dumps({'event_id': event_id})
         ).first()
         
         if existing_group:
+            # Aktualizuj nazwę i opis jeśli się zmieniły
+            new_name = f"Wydarzenie: {event_title}"
+            new_description = f"Grupa uczestników wydarzenia: {event_title}"
+            
+            if existing_group.name != new_name or existing_group.description != new_description:
+                existing_group.name = new_name
+                existing_group.description = new_description
+                db.session.commit()
+                print(f"Zaktualizowano grupę wydarzenia: {new_name}")
+            
             return existing_group.id
         
         # Utwórz nową grupę

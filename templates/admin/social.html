@@ -480,7 +480,8 @@
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-CSRFToken': getCsrfToken()
             },
             body: JSON.stringify({ ids: linkIds })
         })
@@ -630,12 +631,13 @@
             const linkIds = Array.from(selectedCheckboxes).map(cb => cb.value);
             
             fetch('/api/social/bulk-delete', {
-                method: 'POST',
+                method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
                 },
-                body: JSON.stringify({ link_ids: linkIds })
+                body: JSON.stringify({ ids: linkIds })
             })
             .then(response => response.json())
             .then(data => {
