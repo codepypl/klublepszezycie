@@ -33,16 +33,16 @@ class PublicController:
             
             # Menu items - filter by blog column for blog pages
             if has_request_context and request.endpoint.startswith('blog.'):
-                # For blog pages, show items marked for blog OR items not marked for any specific page
+                # For blog pages, show items marked for blog OR items for all pages (None)
                 menu_items_db = MenuItem.query.filter(
                     MenuItem.is_active == True,
-                    (MenuItem.blog == True) | (MenuItem.blog == False)
+                    (MenuItem.blog == True) | (MenuItem.blog.is_(None))
                 ).order_by(MenuItem.order.asc()).all()
             else:
-                # For other pages, show items NOT marked for blog
+                # For other pages, show items NOT marked for blog (False or None)
                 menu_items_db = MenuItem.query.filter(
                     MenuItem.is_active == True,
-                    MenuItem.blog == False
+                    (MenuItem.blog == False) | (MenuItem.blog.is_(None))
                 ).order_by(MenuItem.order.asc()).all()
             
             menu_items = []

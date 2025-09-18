@@ -40,7 +40,7 @@ def api_menu():
                 title=data['title'],
                 url=data.get('url', ''),
                 blog_url=data.get('blog_url', ''),
-                blog=data.get('blog', False),
+                blog=data.get('blog', None),
                 order=data.get('order', 0),
                 is_active=data.get('is_active', True)
             )

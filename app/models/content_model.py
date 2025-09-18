@@ -12,7 +12,7 @@ class MenuItem(db.Model):
     title = db.Column(db.String(100), nullable=False)
     url = db.Column(db.String(200), nullable=False)
     blog_url = db.Column(db.String(200))  # Alternative URL for blog pages
-    blog = db.Column(db.Boolean, default=False)  # Show only on blog pages
+    blog = db.Column(db.Boolean, nullable=True)  # Show only on blog pages (None = all pages, True = blog only, False = non-blog only)
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
