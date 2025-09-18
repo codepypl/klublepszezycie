@@ -297,11 +297,13 @@ class SectionsManager {
 // Helper function to get blog link options for dropdown
 async function getBlogLinkOptions(selectedLink = '') {
     try {
+        console.log('getBlogLinkOptions called with selectedLink:', selectedLink);
         // Get blog categories and posts
         const [categoriesResponse, postsResponse] = await Promise.all([
             fetch('/api/blog/categories'),
             fetch('/api/blog/posts')
         ]);
+        console.log('Fetch responses received');
         
         let options = '<option value="">-- Wybierz link --</option>';
         
@@ -319,34 +321,46 @@ async function getBlogLinkOptions(selectedLink = '') {
         if (categoriesResponse.ok) {
             try {
                 const categoriesData = await categoriesResponse.json();
+                console.log('Categories response:', categoriesData); // Debug log
                 if (categoriesData.success && Array.isArray(categoriesData.categories)) {
+                    console.log('Found categories:', categoriesData.categories.length); // Debug log
                     options += '<optgroup label="Kategorie">';
                     categoriesData.categories.forEach(category => {
                         const value = `category:${category.slug}`;
                         options += `<option value="${value}" ${value === selectedLink ? 'selected' : ''}>${category.full_path || category.title}</option>`;
                     });
                     options += '</optgroup>';
+                } else {
+                    console.warn('Categories data format issue:', categoriesData);
                 }
             } catch (error) {
                 console.warn('Error parsing categories response:', error);
             }
+        } else {
+            console.warn('Categories response not ok:', categoriesResponse.status, categoriesResponse.statusText);
         }
         
         // Add posts if available
         if (postsResponse.ok) {
             try {
                 const postsData = await postsResponse.json();
+                console.log('Posts response:', postsData); // Debug log
                 if (postsData.success && Array.isArray(postsData.posts)) {
+                    console.log('Found posts:', postsData.posts.length); // Debug log
                     options += '<optgroup label="Artykuły">';
                     postsData.posts.forEach(post => {
                         const value = `post:${post.slug}`;
                         options += `<option value="${value}" ${value === selectedLink ? 'selected' : ''}>${post.title}</option>`;
                     });
                     options += '</optgroup>';
+                } else {
+                    console.warn('Posts data format issue:', postsData);
                 }
             } catch (error) {
                 console.warn('Error parsing posts response:', error);
             }
+        } else {
+            console.warn('Posts response not ok:', postsResponse.status, postsResponse.statusText);
         }
         
         return options;

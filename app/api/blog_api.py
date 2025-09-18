@@ -51,7 +51,7 @@ def api_blog_posts():
         if tag_id:
             query = query.join(BlogPost.tags).filter(BlogTag.id == tag_id)
         
-        posts = query.order_by(BlogPost.published_at.desc()).paginate(
+        posts = query.order_by(BlogPost.published_at.desc().nulls_last()).paginate(
             page=page, per_page=per_page, error_out=False
         )
         
