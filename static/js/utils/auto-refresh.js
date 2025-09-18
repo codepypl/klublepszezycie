@@ -90,6 +90,7 @@ class AutoRefreshSystem {
     // Specific refresh functions for each admin page
     refreshMenuItems() {
         console.log('🔄 Refreshing menu items...');
+        console.log('🔍 Current file version should be updated - looking for menuTable');
         this.fetchAndUpdateTable('/api/menu', 'menuTable');
     }
 

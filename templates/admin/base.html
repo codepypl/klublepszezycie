@@ -263,7 +263,7 @@
     <!-- Global Progress Bar -->
     <script src="{{ url_for('static', filename='js/utils/progress-bar.js') }}"></script>
     <!-- Auto-Refresh System for CRUD operations -->
-    <script src="{{ url_for('static', filename='js/utils/auto-refresh.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/utils/auto-refresh.js') }}?v={{ range(1000, 9999) | random }}"></script>
     
     
     {% block extra_js %}{% endblock %}
