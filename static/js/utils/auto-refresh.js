@@ -39,14 +39,17 @@ class AutoRefreshSystem {
     refreshAfterCRUD(type = null) {
         console.log('🔄 Auto-refreshing after CRUD operation...');
         
-        if (type && this.refreshFunctions.has(type)) {
-            // Refresh specific type
-            this.refreshFunctions.get(type)();
-        } else {
-            // Auto-detect current page and refresh
-            const currentPath = window.location.pathname;
-            this.autoDetectAndRefresh(currentPath);
-        }
+        // Add a small delay to ensure DOM is ready
+        setTimeout(() => {
+            if (type && this.refreshFunctions.has(type)) {
+                // Refresh specific type
+                this.refreshFunctions.get(type)();
+            } else {
+                // Auto-detect current page and refresh
+                const currentPath = window.location.pathname;
+                this.autoDetectAndRefresh(currentPath);
+            }
+        }, 100);
     }
 
     autoDetectAndRefresh(path) {
@@ -183,9 +186,24 @@ class AutoRefreshSystem {
     }
 
     updateTableWithData(tableId, data) {
+        console.log(`🔍 Looking for table with ID: ${tableId}`);
+        console.log(`🔍 Available tables on page:`, document.querySelectorAll('table[id]'));
+        
         const table = document.getElementById(tableId);
         if (!table) {
-            console.warn(`Table ${tableId} not found`);
+            console.warn(`❌ Table ${tableId} not found`);
+            console.log(`🔍 All tables on page:`, Array.from(document.querySelectorAll('table')).map(t => t.id || 'no-id'));
+            console.log(`🔍 All elements with ID:`, Array.from(document.querySelectorAll('[id]')).map(e => e.id));
+            
+            // Check if table might be in a conditional block
+            if (tableId === 'menuTable') {
+                console.log(`🔍 Checking if menu_items is empty...`);
+                const menuItemsContainer = document.querySelector('.admin-card-body');
+                if (menuItemsContainer) {
+                    console.log(`🔍 Menu items container found:`, menuItemsContainer.innerHTML.substring(0, 200));
+                }
+            }
+            
             // Fallback to page reload
             setTimeout(() => {
                 window.location.reload();
