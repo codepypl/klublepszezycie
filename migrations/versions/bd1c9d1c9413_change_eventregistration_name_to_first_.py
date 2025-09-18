@@ -7,6 +7,7 @@ Create Date: 2025-09-18 15:25:18.142224
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import text
 
 
 # revision identifiers, used by Alembic.
@@ -24,9 +25,7 @@ def upgrade():
     
     # Copy data from name to first_name
     connection = op.get_bind()
-    connection.execute(
-        "UPDATE event_registrations SET first_name = name WHERE name IS NOT NULL"
-    )
+    connection.execute(text("UPDATE event_registrations SET first_name = name WHERE name IS NOT NULL"))
     
     # Now make first_name NOT NULL and drop the old column
     with op.batch_alter_table('event_registrations', schema=None) as batch_op:
@@ -44,9 +43,7 @@ def downgrade():
     
     # Copy data from first_name to name
     connection = op.get_bind()
-    connection.execute(
-        "UPDATE event_registrations SET name = first_name WHERE first_name IS NOT NULL"
-    )
+    connection.execute(text("UPDATE event_registrations SET name = first_name WHERE first_name IS NOT NULL"))
     
     # Now make name NOT NULL and drop the new column
     with op.batch_alter_table('event_registrations', schema=None) as batch_op:
