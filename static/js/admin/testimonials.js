@@ -63,31 +63,43 @@ class TestimonialsManager {
     }
 
     deleteTestimonial(testimonialId) {
-        if (confirm('Czy na pewno chcesz usunąć tę opinię?')) {
-            fetch(`/api/testimonials/${testimonialId}`, {
-                method: 'DELETE'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    if (response.status === 401 || response.status === 403) {
-                        throw new Error('Unauthorized');
-                    }
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        window.deleteConfirmation.showSingleDelete(
+            'opinię',
+            () => {
+                // Continue with deletion
+                performDeleteTestimonial(testimonialId);
+            },
+            'opinię'
+        );
+    }
+
+    performDeleteTestimonial(testimonialId) {
+        fetch(`/api/testimonials/${testimonialId}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error('Unauthorized');
                 }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    window.toastManager.success('Opinia została usunięta pomyślnie!');
-                    window.location.reload();
-                } else {
-                    window.toastManager.error('Błąd podczas usuwania: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                window.toastManager.error('Wystąpił błąd podczas usuwania opinii');
-            });
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                window.toastManager.success('Opinia została usunięta pomyślnie!');
+                
+                // Wywołaj globalne odświeżenie
+                window.refreshAfterCRUD();
+            } else {
+                window.toastManager.error('Błąd podczas usuwania: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            window.toastManager.error('Wystąpił błąd podczas usuwania opinii');
+        });
         }
     }
 
@@ -125,7 +137,9 @@ class TestimonialsManager {
                 window.toastManager.success('Opinia została dodana pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('addTestimonialModal'));
                 modal.hide();
-                window.location.reload();
+                
+                // Wywołaj globalne odświeżenie
+                window.refreshAfterCRUD();
             } else {
                 window.toastManager.error('Błąd podczas dodawania: ' + data.error);
             }
@@ -171,7 +185,9 @@ class TestimonialsManager {
                 window.toastManager.success('Opinia została zaktualizowana pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editTestimonialModal'));
                 modal.hide();
-                window.location.reload();
+                
+                // Wywołaj globalne odświeżenie
+                window.refreshAfterCRUD();
             } else {
                 window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
             }

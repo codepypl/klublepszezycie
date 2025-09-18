@@ -164,6 +164,13 @@ class BlogPostsManager {
                 window.toastManager.success(result.message || 'Artykuł został dodany pomyślnie');
                 this.closeModal('addPostModal');
                 location.reload();
+                
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
+                }
             } else {
                 window.toastManager.error(result.error || 'Błąd podczas dodawania artykułu');
             }
@@ -239,6 +246,13 @@ class BlogPostsManager {
                 window.toastManager.success(result.message || 'Artykuł został zaktualizowany pomyślnie');
                 this.closeModal('editPostModal');
                 location.reload();
+                
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
+                }
             } else {
                 window.toastManager.error(result.error || 'Błąd podczas aktualizacji artykułu');
             }
@@ -310,10 +324,17 @@ class BlogPostsManager {
     }
 
     async deletePost(postId) {
-        if (!confirm('Czy na pewno chcesz usunąć ten artykuł?')) {
-            return;
-        }
+        window.deleteConfirmation.showSingleDelete(
+            'artykuł',
+            () => {
+                // Continue with deletion
+                performDeletePost(postId);
+            },
+            'artykuł'
+        );
+    }
 
+    async performDeletePost(postId) {
         try {
             const response = await fetch(`/api/blog/admin/posts/${postId}`, {
                 method: 'DELETE',
@@ -325,6 +346,13 @@ class BlogPostsManager {
             if (result.success) {
                 window.toastManager.success(result.message || 'Artykuł został usunięty pomyślnie');
                 location.reload();
+                
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
+                }
             } else {
                 window.toastManager.error(result.error || 'Błąd podczas usuwania artykułu');
             }
@@ -538,10 +566,17 @@ class BlogPostsManager {
     }
 
     async deleteImage(imageId, postId) {
-        if (!confirm('Czy na pewno chcesz usunąć ten obraz?')) {
-            return;
-        }
+        window.deleteConfirmation.showSingleDelete(
+            'obraz',
+            () => {
+                // Continue with deletion
+                performDeleteImage(imageId);
+            },
+            'obraz'
+        );
+    }
 
+    async performDeleteImage(imageId, postId) {
         try {
             const response = await fetch(`/api/blog/admin/posts/${postId}/images/${imageId}`, {
                 method: 'DELETE',

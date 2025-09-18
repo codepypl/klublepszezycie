@@ -116,9 +116,14 @@ class FAQManager {
             bsModal.show();
         } else {
             // Fallback to confirm() if modal not available
-            if (confirm('Czy na pewno chcesz usunąć to pytanie? Tej operacji nie można cofnąć.')) {
-                this.performDeleteFaq(faqId);
-            }
+            window.deleteConfirmation.showSingleDelete(
+                'pytanie',
+                () => {
+                    // Continue with deletion
+                    performDeleteFAQ(faqId);
+                },
+                'pytanie'
+            );
         }
     }
 
@@ -146,6 +151,9 @@ class FAQManager {
                 if (row) {
                     row.remove();
                 }
+                
+                // Wywołaj globalne odświeżenie
+                window.refreshAfterCRUD();
             } else {
                 window.toastManager.error('Błąd podczas usuwania: ' + data.error);
             }
@@ -192,8 +200,8 @@ class FAQManager {
                 window.toastManager.success('Pytanie zostało dodane pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('addFaqModal'));
                 modal.hide();
-                // Odśwież stronę
-                window.location.reload();
+                // Wywołaj globalne odświeżenie
+                window.refreshAfterCRUD();
             } else {
                 window.toastManager.error('Błąd podczas dodawania: ' + data.error);
             }
@@ -241,8 +249,8 @@ class FAQManager {
                 window.toastManager.success('Pytanie zostało zaktualizowane pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editFaqModal'));
                 modal.hide();
-                // Odśwież stronę
-                window.location.reload();
+                // Wywołaj globalne odświeżenie
+                window.refreshAfterCRUD();
             } else {
                 window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
             }

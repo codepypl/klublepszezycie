@@ -518,3 +518,21 @@ class BlogController:
                 'error': str(e),
                 'comments': []
             }
+    
+    @staticmethod
+    def get_post_url_with_category(post):
+        """Get post URL with primary category"""
+        if post.categories:
+            primary_category = post.categories[0]
+            if primary_category.parent:
+                return f"/blog/category/{primary_category.parent.slug}/{primary_category.slug}/{post.slug}"
+            else:
+                return f"/blog/category/{primary_category.slug}/{post.slug}"
+        return f"/blog/{post.slug}"
+    
+    @staticmethod
+    def get_category_url_with_hierarchy(category):
+        """Get category URL with hierarchy"""
+        if category.parent:
+            return f"/blog/category/{category.parent.slug}/{category.slug}"
+        return f"/blog/category/{category.slug}"

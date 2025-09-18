@@ -115,9 +115,14 @@ class BenefitsManager {
             bsModal.show();
         } else {
             // Fallback to confirm() if modal not available
-            if (confirm('Czy na pewno chcesz usunąć tę korzyść? Tej operacji nie można cofnąć.')) {
-                this.performDeleteBenefit(benefitId);
-            }
+            window.deleteConfirmation.showSingleDelete(
+                'korzyść',
+                () => {
+                    // Continue with deletion
+                    performDeleteBenefit(benefitId);
+                },
+                'korzyść'
+            );
         }
     }
 
@@ -133,6 +138,13 @@ class BenefitsManager {
                 const row = document.querySelector(`tr[data-benefit-id="${benefitId}"]`);
                 if (row) {
                     row.remove();
+                }
+                
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
                 }
             } else {
                 window.toastManager.error('Błąd podczas usuwania: ' + data.error);
@@ -169,8 +181,12 @@ class BenefitsManager {
                 window.toastManager.success('Korzyść została dodana pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('addBenefitModal'));
                 modal.hide();
-                // Odśwież stronę
-                window.location.reload();
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
+                }
             } else {
                 window.toastManager.error('Błąd podczas dodawania: ' + data.error);
             }
@@ -207,8 +223,12 @@ class BenefitsManager {
                 window.toastManager.success('Korzyść została zaktualizowana pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editBenefitModal'));
                 modal.hide();
-                // Odśwież stronę
-                window.location.reload();
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
+                }
             } else {
                 window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
             }

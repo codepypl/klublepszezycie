@@ -284,16 +284,202 @@ class GroupManager:
         except Exception as e:
             return False, f"Błąd synchronizacji grupy członków klubu: {str(e)}"
     
+    def sync_event_groups(self):
+        """Synchronizuje grupy wydarzeń z rejestracjami"""
+        try:
+            from app.models import EventSchedule, EventRegistration
+            
+            # Pobierz wszystkie aktywne wydarzenia
+            events = EventSchedule.query.filter_by(is_active=True).all()
+            synced_groups = 0
+            
+            for event in events:
+                group_name = f"Wydarzenie: {event.title}"
+                
+                # Znajdź lub utwórz grupę wydarzenia
+                group = UserGroup.query.filter_by(
+                    name=group_name,
+                    group_type='event_based'
+                ).first()
+                
+                if not group:
+                    # Utwórz nową grupę
+                    group = UserGroup(
+                        name=group_name,
+                        description=f"Grupa uczestników wydarzenia: {event.title}",
+                        group_type='event_based',
+                        criteria=json.dumps({'event_id': event.id})
+                    )
+                    db.session.add(group)
+                    db.session.commit()
+                    print(f"✅ Utworzono nową grupę: {group_name}")
+                
+                # Pobierz wszystkich zarejestrowanych na wydarzenie
+                registrations = EventRegistration.query.filter_by(event_id=event.id).all()
+                
+                # Pobierz obecnych członków grupy (tylko aktywnych)
+                current_members = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).all()
+                current_emails = {member.email for member in current_members if member.email}
+                
+                # Pobierz unikalne emaile z rejestracji (usuń duplikaty)
+                unique_registrations = {}
+                for registration in registrations:
+                    if registration.email:
+                        # Użyj najnowszej rejestracji dla każdego emaila
+                        if registration.email not in unique_registrations or registration.created_at > unique_registrations[registration.email].created_at:
+                            unique_registrations[registration.email] = registration
+                
+                print(f"🔍 Grupa {group_name}: {len(registrations)} rejestracji, {len(unique_registrations)} unikalnych emaili")
+                
+                # Dodaj nowych członków
+                new_members = []
+                for email, registration in unique_registrations.items():
+                    if email not in current_emails:
+                        # Sprawdź czy użytkownik ma konto
+                        user = User.query.filter_by(email=email).first()
+                        
+                        member = UserGroupMember(
+                            group_id=group.id,
+                            user_id=user.id if user else None,
+                            email=email,
+                            name=registration.first_name,
+                            is_active=True
+                        )
+                        db.session.add(member)
+                        new_members.append(member)
+                        print(f"✅ Dodano {email} do grupy {group_name}")
+                    else:
+                        print(f"ℹ️ {email} już jest w grupie {group_name}")
+                
+                # Usuń członków, którzy nie są już zarejestrowani
+                unique_emails = set(unique_registrations.keys())
+                members_to_remove = []
+                for member in current_members:
+                    if member.email and member.email not in unique_emails:
+                        member.is_active = False
+                        members_to_remove.append(member)
+                        print(f"✅ Usunięto {member.email or member.name} z grupy {group_name}")
+                
+                # Aktualizuj liczbę członków
+                group.member_count = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).count()
+                synced_groups += 1
+            
+            db.session.commit()
+            return True, f"Zsynchronizowano {synced_groups} grup wydarzeń"
+            
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Błąd synchronizacji grup wydarzeń: {str(e)}"
+    
     def sync_system_groups(self):
         """Synchronizuje grupy systemowe"""
         try:
-            # Synchronizuj tylko grupę członków klubu (wszyscy aktywni użytkownicy)
-            success, message = self.sync_club_members_group()
+            # Synchronizuj grupę członków klubu
+            success1, message1 = self.sync_club_members_group()
             
-            return success, message
+            # Synchronizuj grupy wydarzeń
+            success2, message2 = self.sync_event_groups()
+            
+            if success1 and success2:
+                return True, f"{message1}. {message2}"
+            elif success1:
+                return True, f"{message1}. Błąd synchronizacji grup wydarzeń: {message2}"
+            elif success2:
+                return True, f"Błąd synchronizacji grupy członków: {message1}. {message2}"
+            else:
+                return False, f"Błąd synchronizacji: {message1}. {message2}"
             
         except Exception as e:
             return False, f"Błąd synchronizacji grup systemowych: {str(e)}"
+    
+    def async_sync_event_group(self, event_id):
+        """Asynchronicznie synchronizuje grupę konkretnego wydarzenia"""
+        try:
+            from app.models import EventSchedule, EventRegistration
+            
+            event = EventSchedule.query.get(event_id)
+            if not event:
+                print(f"❌ Wydarzenie {event_id} nie zostało znalezione")
+                return False, "Wydarzenie nie zostało znalezione"
+            
+            group_name = f"Wydarzenie: {event.title}"
+            
+            # Znajdź grupę wydarzenia
+            group = UserGroup.query.filter_by(
+                name=group_name,
+                group_type='event_based'
+            ).first()
+            
+            if not group:
+                print(f"❌ Grupa wydarzenia '{group_name}' nie została znaleziona - tworzę nową grupę")
+                # Utwórz nową grupę wydarzenia
+                group = UserGroup(
+                    name=group_name,
+                    description=f"Grupa uczestników wydarzenia: {event.title}",
+                    group_type='event_based',
+                    criteria=json.dumps({'event_id': event_id})
+                )
+                db.session.add(group)
+                db.session.commit()
+                print(f"✅ Utworzono nową grupę wydarzenia: {group_name}")
+            
+            # Pobierz wszystkich zarejestrowanych na wydarzenie
+            registrations = EventRegistration.query.filter_by(event_id=event_id).all()
+            
+            # Pobierz obecnych członków grupy (tylko aktywnych)
+            current_members = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).all()
+            current_emails = {member.email for member in current_members if member.email}
+            
+            # Pobierz unikalne emaile z rejestracji (usuń duplikaty)
+            unique_registrations = {}
+            for registration in registrations:
+                if registration.email:
+                    # Użyj najnowszej rejestracji dla każdego emaila
+                    if registration.email not in unique_registrations or registration.created_at > unique_registrations[registration.email].created_at:
+                        unique_registrations[registration.email] = registration
+            
+            print(f"🔍 Znaleziono {len(registrations)} rejestracji, {len(unique_registrations)} unikalnych emaili")
+            
+            # Dodaj nowych członków
+            new_members = []
+            for email, registration in unique_registrations.items():
+                if email not in current_emails:
+                    # Sprawdź czy użytkownik ma konto
+                    from app.models import User
+                    user = User.query.filter_by(email=email).first()
+                    
+                    member = UserGroupMember(
+                        group_id=group.id,
+                        user_id=user.id if user else None,
+                        email=email,
+                        name=registration.first_name,
+                        is_active=True
+                    )
+                    db.session.add(member)
+                    new_members.append(member)
+                    print(f"✅ Dodano {email} do grupy {group_name}")
+                else:
+                    print(f"ℹ️ {email} już jest w grupie {group_name}")
+            
+            # Usuń członków, którzy nie są już zarejestrowani
+            unique_emails = set(unique_registrations.keys())
+            members_to_remove = []
+            for member in current_members:
+                if member.email and member.email not in unique_emails:
+                    member.is_active = False
+                    members_to_remove.append(member)
+                    print(f"✅ Usunięto {member.email or member.name} z grupy {group_name}")
+            
+            # Aktualizuj liczbę członków
+            group.member_count = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).count()
+            
+            db.session.commit()
+            return True, f"Zsynchronizowano grupę wydarzenia {group_name}"
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"❌ Błąd synchronizacji grupy wydarzenia {event_id}: {str(e)}")
+            return False, f"Błąd synchronizacji grupy wydarzenia: {str(e)}"
     
     def update_group_members(self, group_id):
         """Aktualizuje listę członków grupy na podstawie kryteriów"""

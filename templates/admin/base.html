@@ -184,7 +184,7 @@
                     <p class="text-muted">Ta operacja nie może być cofnięta.</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="bulkDeleteCancel">Anuluj</button>
+                    <button type="button" class="btn btn-secondary" id="bulkDeleteCancel" data-bs-dismiss="modal">Anuluj</button>
                     <button type="button" class="btn btn-danger" id="confirmBulkDelete">Usuń</button>
                 </div>
             </div>
@@ -260,9 +260,9 @@
     });
     </script>
     
-    <!-- Global Progress Bar and Realtime Refresh -->
+    <!-- Global Progress Bar and Global Refresh -->
     <script src="{{ url_for('static', filename='js/utils/progress-bar.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/utils/realtime-refresh.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/utils/global-refresh.js') }}"></script>
     
     {% block extra_js %}{% endblock %}
     
@@ -309,5 +309,8 @@
             }
         }
     </script>
+    
+    <!-- Delete Confirmation Modal -->
+    <script src="{{ url_for('static', filename='js/utils/delete-confirmation.js') }}"></script>
 </body>
 </html>

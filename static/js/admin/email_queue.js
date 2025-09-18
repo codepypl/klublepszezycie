@@ -176,6 +176,9 @@ function retryFailed() {
             toastManager.success('Nieudane emaile ponowione!');
             loadStats();
             loadQueue(currentFilter);
+            
+            // Wywołaj globalne odświeżenie
+            window.refreshAfterCRUD();
         } else {
             toastManager.error('Błąd ponawiania: ' + data.error);
         }
@@ -196,6 +199,9 @@ function retryEmail(emailId) {
         if (data.success) {
             toastManager.success('Email ponowiony!');
             loadQueue(currentFilter);
+            
+            // Wywołaj globalne odświeżenie
+            window.refreshAfterCRUD();
         } else {
             toastManager.error('Błąd ponawiania: ' + data.error);
         }
@@ -208,24 +214,37 @@ function retryEmail(emailId) {
 
 // Delete email
 function deleteEmail(emailId) {
-    if (confirm('Czy na pewno chcesz usunąć ten email z kolejki?')) {
-        fetch(`/api/email/queue/${emailId}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                toastManager.success('Email usunięty!');
-                loadStats();
-                loadQueue(currentFilter);
-            } else {
-                toastManager.error('Błąd usuwania: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error deleting email:', error);
-            toastManager.error('Błąd usuwania');
-        });
+    window.deleteConfirmation.showSingleDelete(
+        'email z kolejki',
+        () => {
+            // Continue with deletion
+            performDeleteEmail(emailId);
+        },
+        'email z kolejki'
+    );
+}
+
+function performDeleteEmail(emailId) {
+    fetch(`/api/email/queue/${emailId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            toastManager.success('Email usunięty!');
+            loadStats();
+            loadQueue(currentFilter);
+            
+            // Wywołaj globalne odświeżenie
+            window.refreshAfterCRUD();
+        } else {
+            toastManager.error('Błąd usuwania: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting email:', error);
+        toastManager.error('Błąd usuwania');
+    });
     }
 }
 

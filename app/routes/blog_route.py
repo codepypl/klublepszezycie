@@ -74,6 +74,54 @@ def post_detail(slug):
                          popular_tags=popular_tags,
                          **db_data)
 
+@blog_bp.route('/category/<category_slug>/<post_slug>')
+def post_detail_with_category(category_slug, post_slug):
+    """Blog post detail page with category in URL"""
+    data = BlogController.get_blog_post(post_slug)
+    
+    if not data['success']:
+        flash(data['error'], 'error')
+        return redirect(url_for('blog.index'))
+    
+    # Verify the category matches
+    category = next((cat for cat in data['post'].categories if cat.slug == category_slug), None)
+    if not category:
+        # If category doesn't match, redirect to correct category
+        if data['post'].categories:
+            primary_category = data['post'].categories[0]
+            return redirect(url_for('blog.post_detail_with_category', 
+                                  category_slug=primary_category.slug, 
+                                  post_slug=post_slug), code=301)
+        else:
+            return redirect(url_for('blog.post_detail', slug=post_slug), code=301)
+    
+    post = data['post']
+    related_posts = data['related_posts']
+    
+    # Get comments for this post
+    comments_data = BlogController.get_post_comments(post.id, approved_only=True)
+    comments = comments_data['comments'] if comments_data['success'] else []
+    
+    # Get categories and tags for sidebar
+    categories_data = BlogController.get_categories()
+    tags_data = BlogController.get_tags()
+    
+    categories = categories_data['categories'] if categories_data['success'] else []
+    popular_tags = tags_data['tags'] if tags_data['success'] else []
+    
+    # Get all database data dynamically
+    from app.blueprints.public_controller import PublicController
+    db_data = PublicController.get_database_data()
+    
+    return render_template('blog/post_detail.html',
+                         post=post,
+                         comments=comments,
+                         related_posts=related_posts,
+                         categories=categories,
+                         popular_tags=popular_tags,
+                         primary_category=category,
+                         **db_data)
+
 @blog_bp.route('/category/<slug>')
 def category_detail(slug):
     """Category detail page"""
@@ -98,6 +146,47 @@ def category_detail(slug):
                          categories=data['categories'],
                          tags=data['tags'],
                          category=category,
+                         **db_data)
+
+@blog_bp.route('/category/<parent_slug>/<child_slug>')
+def category_hierarchy_detail(parent_slug, child_slug):
+    """Category detail page with hierarchy in URL"""
+    page = request.args.get('page', 1, type=int)
+    
+    # Get child category
+    from app.models import BlogCategory
+    child_category = BlogCategory.query.filter_by(slug=child_slug, is_active=True).first()
+    
+    if not child_category:
+        flash('Kategoria nie została znaleziona', 'error')
+        return redirect(url_for('blog.index'))
+    
+    # Verify parent relationship
+    if not child_category.parent or child_category.parent.slug != parent_slug:
+        # Redirect to correct URL
+        if child_category.parent:
+            return redirect(url_for('blog.category_hierarchy_detail', 
+                                  parent_slug=child_category.parent.slug, 
+                                  child_slug=child_slug), code=301)
+        else:
+            return redirect(url_for('blog.category_detail', slug=child_slug), code=301)
+    
+    data = BlogController.get_blog_posts(page=page, category_slug=child_slug)
+    
+    if not data['success']:
+        flash(data['error'], 'error')
+        return redirect(url_for('blog.index'))
+    
+    # Get all database data dynamically
+    from app.blueprints.public_controller import PublicController
+    db_data = PublicController.get_database_data()
+    
+    return render_template('blog/category_detail.html',
+                         posts=data['posts'],
+                         categories=data['categories'],
+                         tags=data['tags'],
+                         category=child_category,
+                         parent_category=child_category.parent,
                          **db_data)
 
 @blog_bp.route('/tag/<slug>')

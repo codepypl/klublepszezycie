@@ -797,9 +797,16 @@
                         console.error('❌ Submit button not found in event form');
                         return;
                     }
+                    
+                    // Prevent multiple submissions
+                    if (submitBtn.disabled) {
+                        console.log('Form already submitting, ignoring submit');
+                        return;
+                    }
+                    
                     const originalText = submitBtn.innerHTML;
                     
-                    // Disable submit button
+                    // Disable submit button immediately
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Rejestracja...';
                     
@@ -933,9 +940,16 @@
                         console.error('❌ Submit button not found in general form');
                         return;
                     }
+                    
+                    // Prevent multiple submissions
+                    if (submitBtn.disabled) {
+                        console.log('Form already submitting, ignoring submit');
+                        return;
+                    }
+                    
                     const originalText = submitBtn.innerHTML;
                     
-                    // Disable submit button
+                    // Disable submit button immediately
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Rejestracja...';
                     
@@ -959,7 +973,7 @@
                         wants_club_news: true  // CTA form always joins the club
                     };
                     
-                    console.log('Form data:', jsonData);
+                    console.log('Starting CTA registration:', jsonData);
                     
                     // Send request
                     fetch('/register', {
@@ -1016,7 +1030,6 @@
 
         // Event Countdown Timer
         let countdownInterval = null;
-        let eventUpdateInterval = null;
         let currentEventId = null;
         let currentEventStatus = null;
 
@@ -1065,28 +1078,39 @@
             }
         }
 
-        // Update event status
-        function updateEventStatus() {
-            if (!currentEventId) return;
+        // Register custom update functions with global refresh system
+        if (window.globalRefreshSystem) {
+            // Rejestruj funkcję aktualizacji statusu wydarzenia
+            window.globalRefreshSystem.registerUpdateFunction('event-status', (data) => {
+                if (!currentEventId) return;
+                
+                const newStatus = data.is_registration_open ? 'upcoming' : 'closed';
+                console.log(`📅 Event status check: ${currentEventStatus} → ${newStatus}`, data);
+                
+                // Update display if status changed
+                if (newStatus !== currentEventStatus) {
+                    console.log(`📅 Event status changed: ${currentEventStatus} → ${newStatus}`);
+                    updateEventDisplay(data, newStatus);
+                    currentEventStatus = newStatus;
+                }
+            });
             
-            fetch(`/api/event-schedule/${currentEventId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.event) {
-                        const event = data.event;
-                        const newStatus = data.event_status || 'upcoming';
-                        
-                        // Update display if status changed
-                        if (newStatus !== currentEventStatus) {
-                            console.log(`📅 Event status changed: ${currentEventStatus} → ${newStatus}`);
-                            updateEventDisplay(event, newStatus);
-                            currentEventStatus = newStatus;
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ Error updating event status:', error);
-                });
+            // Rejestruj funkcję aktualizacji licznika rejestracji
+            window.globalRefreshSystem.registerUpdateFunction('registration-count', (data) => {
+                updateRegistrationCount(data.registration_count, data.max_participants);
+            });
+        }
+
+        // Update registration count
+        function updateRegistrationCount(count, max) {
+            const countElement = document.querySelector('.registration-count');
+            if (countElement) {
+                if (max) {
+                    countElement.textContent = `${count}/${max} miejsc`;
+                } else {
+                    countElement.textContent = `${count} osób`;
+                }
+            }
         }
 
         // Update event display (countdown or live status)
@@ -1146,15 +1170,8 @@
                 }
             }
             
-            // Start periodic event status updates
-            eventUpdateInterval = setInterval(updateEventStatus, 30000); // Check every 30 seconds
-            
-            // Also check when page becomes visible
-            document.addEventListener('visibilitychange', function() {
-                if (!document.hidden && currentEventId) {
-                    updateEventStatus();
-                }
-            });
+            // Global refresh system will handle updates automatically
+            console.log('🔄 Event management initialized - global refresh system will handle updates');
         });
     </script>
 
@@ -1320,6 +1337,12 @@
             
             // Handle form submission
             submitBtn.addEventListener('click', function() {
+                // Prevent multiple submissions
+                if (submitBtn.disabled) {
+                    console.log('Form already submitting, ignoring click');
+                    return;
+                }
+                
                 const form = document.getElementById('eventRegistrationForm');
                 const formData = new FormData(form);
                 
@@ -1331,14 +1354,23 @@
                     event_id: formData.get('event_id')
                 };
                 
-                // Disable submit button
+                // Validate required fields
+                if (!data.first_name || !data.email || !data.event_id) {
+                    showError('Wszystkie wymagane pola muszą być wypełnione.');
+                    return;
+                }
+                
+                // Disable submit button immediately
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Zapisuję...';
                 
-                fetch('/register', {
+                console.log('Starting event registration:', data);
+                
+                fetch(`/register-event/${data.event_id}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify(data)
                 })
@@ -1363,6 +1395,7 @@
                     // Re-enable submit button
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Zapisz się';
+                    console.log('Event registration form reset, button re-enabled');
                 });
             });
         });

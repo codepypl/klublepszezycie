@@ -81,6 +81,9 @@
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="{{ url_for('public.index') }}">Strona główna</a></li>
                         <li class="breadcrumb-item"><a href="{{ url_for('blog.index') }}">Blog</a></li>
+                        {% if parent_category %}
+                            <li class="breadcrumb-item"><a href="{{ get_category_url_with_hierarchy(parent_category) }}">{{ parent_category.title }}</a></li>
+                        {% endif %}
                         <li class="breadcrumb-item active" aria-current="page">{{ category.title }}</li>
                     </ol>
                 </nav>
@@ -121,7 +124,7 @@
                                     {% endfor %}
                                 </div>
                                 <h5 class="card-title">
-                                    <a href="{{ url_for('blog.post_detail', slug=post.slug) }}" class="text-decoration-none">
+                                    <a href="{{ get_post_url_with_category(post) }}" class="text-decoration-none">
                                         {{ post.title }}
                                     </a>
                                 </h5>
@@ -130,7 +133,7 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <small class="text-muted">
                                             <i class="fas fa-user me-1"></i>
-                                            {{ post.author.name or post.author.email }}
+                                            {{ post.author.first_name or post.author.email }}
                                         </small>
                                         <small class="text-muted">
                                             <i class="fas fa-calendar me-1"></i>
@@ -213,7 +216,7 @@
                         <ul class="list-unstyled mb-0">
                             {% for cat in categories %}
                             <li class="mb-2">
-                                <a href="{{ url_for('blog.category_detail', slug=cat.slug) }}" 
+                                <a href="{{ get_category_url_with_hierarchy(cat) }}" 
                                    class="text-decoration-none {% if cat.id == category.id %}fw-bold text-primary{% endif %}">
                                     {{ cat.title }}
                                     <span class="badge bg-secondary ms-2">{{ cat.posts_count }}</span>
@@ -223,7 +226,7 @@
                                     {% for child in cat.children %}
                                     {% if child.is_active %}
                                     <li class="mb-1">
-                                        <a href="{{ url_for('blog.category_detail', slug=child.slug) }}" 
+                                        <a href="{{ get_category_url_with_hierarchy(child) }}" 
                                            class="text-decoration-none text-muted small {% if child.id == category.id %}fw-bold text-primary{% endif %}">
                                             {{ child.title }}
                                             <span class="badge bg-light text-dark ms-1">{{ child.posts_count }}</span>
@@ -275,7 +278,7 @@
                             <strong>Artykułów:</strong> {{ posts.total }}<br>
                             {% if category.parent %}
                             <strong>Kategoria nadrzędna:</strong> 
-                            <a href="{{ url_for('blog.category_detail', slug=category.parent.slug) }}" class="text-decoration-none">
+                            <a href="{{ get_category_url_with_hierarchy(category.parent) }}" class="text-decoration-none">
                                 {{ category.parent.title }}
                             </a><br>
                             {% endif %}

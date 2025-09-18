@@ -38,10 +38,17 @@ class BlogCommentsManager {
 
 
     async deleteComment(commentId) {
-        if (!confirm('Czy na pewno chcesz usunąć ten komentarz?')) {
-            return;
-        }
+        window.deleteConfirmation.showSingleDelete(
+            'komentarz',
+            () => {
+                // Continue with deletion
+                performDeleteComment(commentId);
+            },
+            'komentarz'
+        );
+    }
 
+    async performDeleteComment(commentId) {
         try {
             const response = await fetch(`/api/blog/comments/${commentId}`, {
                 method: 'DELETE'
@@ -52,6 +59,9 @@ class BlogCommentsManager {
             if (result.success) {
                 window.toastManager.show(result.message || 'Komentarz został usunięty pomyślnie', 'success');
                 this.loadComments();
+                
+                // Wywołaj globalne odświeżenie
+                window.refreshAfterCRUD();
             } else {
                 window.toastManager.show(result.message || 'Błąd podczas usuwania komentarza', 'error');
             }
@@ -72,6 +82,9 @@ class BlogCommentsManager {
             if (result.success) {
                 window.toastManager.show(result.message || 'Komentarz został zatwierdzony pomyślnie', 'success');
                 this.loadComments();
+                
+                // Wywołaj globalne odświeżenie
+                window.refreshAfterCRUD();
             } else {
                 window.toastManager.show(result.message || 'Błąd podczas zatwierdzania komentarza', 'error');
             }
@@ -109,6 +122,9 @@ class BlogCommentsManager {
                 window.toastManager.show(result.message || 'Komentarz został odrzucony pomyślnie', 'success');
                 this.closeModal('rejectCommentModal');
                 this.loadComments();
+                
+                // Wywołaj globalne odświeżenie
+                window.refreshAfterCRUD();
             } else {
                 window.toastManager.show(result.message || 'Błąd podczas odrzucania komentarza', 'error');
             }

@@ -81,9 +81,12 @@
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="{{ url_for('public.index') }}">Strona główna</a></li>
                         <li class="breadcrumb-item"><a href="{{ url_for('blog.index') }}">Blog</a></li>
-                        {% for category in post.categories %}
-                        <li class="breadcrumb-item"><a href="{{ url_for('blog.category_detail', slug=category.slug) }}">{{ category.title }}</a></li>
-                        {% endfor %}
+                        {% if primary_category %}
+                            {% if primary_category.parent %}
+                                <li class="breadcrumb-item"><a href="{{ get_category_url_with_hierarchy(primary_category.parent) }}">{{ primary_category.parent.title }}</a></li>
+                            {% endif %}
+                            <li class="breadcrumb-item"><a href="{{ get_category_url_with_hierarchy(primary_category) }}">{{ primary_category.title }}</a></li>
+                        {% endif %}
                         <li class="breadcrumb-item active" aria-current="page">{{ post.title }}</li>
                     </ol>
                 </nav>
@@ -96,7 +99,7 @@
                         <div class="d-flex flex-wrap align-items-center text-muted">
                             <span class="me-3">
                                 <i class="fas fa-user me-1"></i>
-                                {{ post.author.name or post.author.email }}
+                                {{ post.author.first_name or post.author.email }}
                             </span>
                             <span class="me-3">
                                 <i class="fas fa-calendar me-1"></i>
@@ -373,7 +376,7 @@
                             <div class="card">
                                 <div class="card-body">
                                     <h6 class="card-title">
-                                        <a href="{{ url_for('blog.post_detail', slug=related_post.slug) }}" class="text-decoration-none">
+                                        <a href="{{ get_post_url_with_category(related_post) }}" class="text-decoration-none">
                                             {{ related_post.title }}
                                         </a>
                                     </h6>
@@ -454,7 +457,7 @@
                         {% for related_post in related_posts %}
                         <div class="mb-3">
                             <h6 class="mb-1">
-                                <a href="{{ url_for('blog.post_detail', slug=related_post.slug) }}" class="text-decoration-none">
+                                <a href="{{ get_post_url_with_category(related_post) }}" class="text-decoration-none">
                                     {{ related_post.title }}
                                 </a>
                             </h6>

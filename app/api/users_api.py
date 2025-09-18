@@ -161,25 +161,12 @@ def api_user(user_id):
                     else:
                         print(f"❌ Błąd usuwania z grupy członków klubu: {message}")
                     
-                    # Remove from all event groups
-                    from app.models import UserGroupMember, UserGroup
-                    event_memberships = UserGroupMember.query.join(UserGroup).filter(
-                        UserGroupMember.user_id == user.id,
-                        UserGroupMember.is_active == True,
-                        UserGroup.group_type == 'event_based'
-                    ).all()
-                    
-                    print(f"🔍 Usuwanie użytkownika {user.email} z {len(event_memberships)} grup wydarzeń")
-                    
-                    for membership in event_memberships:
-                        group = membership.group
-                        if group:
-                            print(f"🔍 Usuwanie z grupy wydarzenia: {group.name}")
-                            success, message = group_manager.remove_user_from_group(group.id, user.id)
-                            if success:
-                                print(f"✅ Usunięto z grupy wydarzenia: {group.name}")
-                            else:
-                                print(f"❌ Błąd usuwania z grupy wydarzenia {group.name}: {message}")
+                    # Asynchronicznie synchronizuj wszystkie grupy wydarzeń
+                    success, message = group_manager.sync_event_groups()
+                    if success:
+                        print(f"✅ Zsynchronizowano wszystkie grupy wydarzeń po zmianie statusu członka klubu dla {user.email}")
+                    else:
+                        print(f"❌ Błąd synchronizacji grup wydarzeń: {message}")
             
             # Wyślij email z nowym hasłem jeśli zostało ustawione
             if new_password:

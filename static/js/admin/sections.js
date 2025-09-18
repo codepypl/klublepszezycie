@@ -162,9 +162,14 @@ class SectionsManager {
             bsModal.show();
         } else {
             // Fallback to confirm() if modal not available
-            if (confirm('Czy na pewno chcesz usunąć tę sekcję? Tej operacji nie można cofnąć.')) {
-                this.performDeleteSection(sectionId);
-            }
+            window.deleteConfirmation.showSingleDelete(
+                'sekcję',
+                () => {
+                    // Continue with deletion
+                    performDeleteSection(sectionId);
+                },
+                'sekcję'
+            );
         }
     }
 
@@ -180,6 +185,13 @@ class SectionsManager {
                 const row = document.querySelector(`tr[data-section-id="${sectionId}"]`);
                 if (row) {
                     row.remove();
+                }
+                
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
                 }
             } else {
                 window.toastManager.error('Błąd podczas usuwania: ' + data.error);
@@ -217,8 +229,12 @@ class SectionsManager {
                 window.toastManager.success('Sekcja została dodana pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('addSectionModal'));
                 modal.hide();
-                // Odśwież stronę
-                window.location.reload();
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
+                }
             } else {
                 window.toastManager.error('Błąd podczas dodawania: ' + data.error);
             }
@@ -261,8 +277,12 @@ class SectionsManager {
                 window.toastManager.success('Sekcja została zaktualizowana pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editSectionModal'));
                 modal.hide();
-                // Odśwież stronę
-                window.location.reload();
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
+                }
             } else {
                 window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
             }

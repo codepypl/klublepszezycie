@@ -110,8 +110,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Wyczyść pola hasła
                     document.getElementById('editUserPassword').value = '';
                     document.getElementById('editUserPasswordConfirm').value = '';
-                    // Przekieruj z powrotem do listy użytkowników
-                    window.location.href = window.location.pathname;
+                    // Zamknij modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+                    
+                    // Wywołaj globalne odświeżenie
+                    if (typeof window.refreshAfterCRUD === 'function') {
+                        window.refreshAfterCRUD();
+                    } else {
+                        console.warn('window.refreshAfterCRUD is not available');
+                    }
                 } else {
                     window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
                 }
@@ -193,28 +203,39 @@ function editUser(userId) {
 }
 
 function deleteUser(userId) {
-    if (confirm('Czy na pewno chcesz usunąć tego użytkownika? Tej operacji nie można cofnąć.')) {
-        fetch(`/api/user/${userId}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.toastManager.success('Użytkownik został usunięty pomyślnie!');
-                // Usuń wiersz z tabeli
-                const row = document.querySelector(`tr[data-user-id="${userId}"]`);
-                if (row) {
-                    row.remove();
+    window.deleteConfirmation.showSingleDelete(
+        'użytkownika',
+        () => {
+            fetch(`/api/user/${userId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.toastManager.success('Użytkownik został usunięty pomyślnie!');
+                    // Usuń wiersz z tabeli
+                    const row = document.querySelector(`tr[data-user-id="${userId}"]`);
+                    if (row) {
+                        row.remove();
+                    }
+                    
+                    // Wywołaj globalne odświeżenie
+                    if (typeof window.refreshAfterCRUD === 'function') {
+                        window.refreshAfterCRUD();
+                    } else {
+                        console.warn('window.refreshAfterCRUD is not available');
+                    }
+                } else {
+                    window.toastManager.error('Błąd podczas usuwania: ' + data.error);
                 }
-            } else {
-                window.toastManager.error('Błąd podczas usuwania: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            window.toastManager.error('Wystąpił błąd podczas usuwania użytkownika');
-        });
-    }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.toastManager.error('Wystąpił błąd podczas usuwania użytkownika');
+            });
+        },
+        'użytkownika'
+    );
 }
 
 function generatePassword() {

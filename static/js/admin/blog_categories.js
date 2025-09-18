@@ -165,6 +165,13 @@ class BlogCategoriesManager {
                 this.closeModal('addCategoryModal');
                 e.target.reset();
                 this.loadCategories();
+                
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
+                }
             } else {
                 window.toastManager.show(result.message || 'Błąd podczas dodawania kategorii', 'error');
             }
@@ -201,6 +208,13 @@ class BlogCategoriesManager {
                 window.toastManager.show(result.message || 'Kategoria została zaktualizowana pomyślnie', 'success');
                 this.closeModal('editCategoryModal');
                 this.loadCategories();
+                
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
+                }
             } else {
                 window.toastManager.show(result.message || 'Błąd podczas aktualizacji kategorii', 'error');
             }
@@ -243,10 +257,17 @@ class BlogCategoriesManager {
     }
 
     async deleteCategory(categoryId) {
-        if (!confirm('Czy na pewno chcesz usunąć tę kategorię?')) {
-            return;
-        }
+        window.deleteConfirmation.showSingleDelete(
+            'kategorię',
+            () => {
+                // Continue with deletion
+                performDeleteCategory(categoryId);
+            },
+            'kategorię'
+        );
+    }
 
+    async performDeleteCategory(categoryId) {
         try {
             const response = await fetch(`/api/blog/admin/categories/${categoryId}`, {
                 method: 'DELETE'
@@ -257,6 +278,13 @@ class BlogCategoriesManager {
             if (result.success) {
                 window.toastManager.show(result.message || 'Kategoria została usunięta pomyślnie', 'success');
                 this.loadCategories();
+                
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
+                }
             } else {
                 window.toastManager.show(result.message || 'Błąd podczas usuwania kategorii', 'error');
             }

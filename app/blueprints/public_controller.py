@@ -323,29 +323,16 @@ class PublicController:
                         db.session.commit()
                         print(f"✅ Usunięto użytkownika {user.email} z grupy członków klubu")
                 
-                # Remove from all event groups
+                # Asynchronicznie synchronizuj wszystkie grupy wydarzeń
                 from app.services.group_manager import GroupManager
                 group_manager = GroupManager()
                 
-                # Get all event groups where user is a member
-                event_memberships = UserGroupMember.query.join(UserGroup).filter(
-                    UserGroupMember.user_id == user.id,
-                    UserGroupMember.is_active == True,
-                    UserGroup.group_type == 'event_based'
-                ).all()
-                
-                print(f"🔍 Usuwanie użytkownika {user.email} z {len(event_memberships)} grup wydarzeń")
-                
-                # Remove from each event group
-                for membership in event_memberships:
-                    group = membership.group
-                    if group:
-                        print(f"🔍 Usuwanie z grupy wydarzenia: {group.name}")
-                        success, message = group_manager.remove_user_from_group(group.id, user.id)
-                        if success:
-                            print(f"✅ Usunięto z grupy wydarzenia: {group.name}")
-                        else:
-                            print(f"❌ Błąd usuwania z grupy wydarzenia {group.name}: {message}")
+                # Synchronizuj wszystkie grupy wydarzeń
+                success, message = group_manager.sync_event_groups()
+                if success:
+                    print(f"✅ Zsynchronizowano wszystkie grupy wydarzeń po wypisaniu użytkownika {user.email}")
+                else:
+                    print(f"❌ Błąd synchronizacji grup wydarzeń: {message}")
                 
                 return {
                     'success': True,
@@ -406,6 +393,13 @@ class PublicController:
                             print(f"✅ Usunięto z grupy: {group.name}")
                         else:
                             print(f"❌ Błąd usuwania z grupy {group.name}: {message}")
+                
+                # Asynchronicznie synchronizuj wszystkie grupy wydarzeń po usunięciu użytkownika
+                success, message = group_manager.sync_event_groups()
+                if success:
+                    print(f"✅ Zsynchronizowano wszystkie grupy wydarzeń po usunięciu użytkownika {user.email}")
+                else:
+                    print(f"❌ Błąd synchronizacji grup wydarzeń: {message}")
                 
                 # Delete user
                 db.session.delete(user)

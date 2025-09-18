@@ -222,6 +222,13 @@ function saveCampaign() {
             toastManager.success('Kampania zapisana pomyślnie!');
             bootstrap.Modal.getInstance(document.getElementById('campaignModal')).hide();
             loadCampaigns();
+            
+            // Wywołaj globalne odświeżenie
+            if (typeof window.refreshAfterCRUD === 'function') {
+                window.refreshAfterCRUD();
+            } else {
+                console.warn('window.refreshAfterCRUD is not available');
+            }
         } else {
             toastManager.error('Błąd zapisywania kampanii: ' + data.error);
         }
@@ -294,6 +301,9 @@ function sendCampaign(campaignId) {
             if (data.success) {
                 toastManager.success('Kampania wysłana!');
                 loadCampaigns();
+                
+                // Wywołaj globalne odświeżenie
+                window.refreshAfterCRUD();
             } else {
                 toastManager.error('Błąd wysyłania: ' + data.error);
             }
@@ -307,24 +317,31 @@ function sendCampaign(campaignId) {
 
 // Delete campaign
 function deleteCampaign(campaignId) {
-    if (confirm('Czy na pewno chcesz usunąć tę kampanię?')) {
-        fetch(`/api/email/campaigns/${campaignId}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                toastManager.success('Kampania usunięta!');
-                loadCampaigns();
-            } else {
-                toastManager.error('Błąd usuwania: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error deleting campaign:', error);
-            toastManager.error('Błąd usuwania');
-        });
-    }
+    window.deleteConfirmation.showSingleDelete(
+        'kampanię',
+        () => {
+            fetch(`/api/email/campaigns/${campaignId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    toastManager.success('Kampania usunięta!');
+                    loadCampaigns();
+                    
+                    // Wywołaj globalne odświeżenie
+                    window.refreshAfterCRUD();
+                } else {
+                    toastManager.error('Błąd usuwania: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting campaign:', error);
+                toastManager.error('Błąd usuwania');
+            });
+        },
+        'kampanię'
+    );
 }
 
 // Load templates

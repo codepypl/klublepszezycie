@@ -252,7 +252,7 @@ class SEOManager:
             "description": post.meta_description or post.excerpt or post.content[:160],
             "author": {
                 "@type": "Person",
-                "name": post.author.name or post.author.email
+                "name": post.author.first_name or post.author.email
             },
             "publisher": {
                 "@type": "Organization",

@@ -127,6 +127,9 @@ class EventsController:
                     'error': 'Nieprawidłowy format daty lub czasu'
                 }
             
+            # Store old title for group update
+            old_title = event.title
+            
             event.title = title
             event.description = description
             event.event_date = event_datetime
@@ -135,6 +138,34 @@ class EventsController:
             event.status = status
             
             db.session.commit()
+            
+            # Update group name if title changed
+            if old_title != title:
+                from app.services.group_manager import GroupManager
+                group_manager = GroupManager()
+                
+                # Find and update the event group
+                from app.models import UserGroup
+                group = UserGroup.query.filter_by(
+                    name=f"Wydarzenie: {old_title}",
+                    group_type='event_based'
+                ).first()
+                
+                if group:
+                    print(f"🔍 Aktualizacja nazwy grupy z '{group.name}' na 'Wydarzenie: {title}'")
+                    group.name = f"Wydarzenie: {title}"
+                    group.description = f"Grupa uczestników wydarzenia: {title}"
+                    db.session.commit()
+                    print(f"✅ Nazwa grupy zaktualizowana pomyślnie")
+                else:
+                    print(f"❌ Grupa wydarzenia '{old_title}' nie została znaleziona")
+            
+            # Asynchronicznie synchronizuj grupę wydarzenia po aktualizacji
+            success, message = group_manager.async_sync_event_group(event_id)
+            if success:
+                print(f"✅ Zsynchronizowano grupę wydarzenia po aktualizacji: {title}")
+            else:
+                print(f"❌ Błąd synchronizacji grupy wydarzenia: {message}")
             
             return {
                 'success': True,

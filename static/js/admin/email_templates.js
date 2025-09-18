@@ -684,36 +684,17 @@ function deleteTemplate(templateId) {
     confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
     
     newConfirmBtn.onclick = function() {
-        // Hide modal first
-        modalElement.classList.remove('show');
-        modalElement.style.display = 'none';
-        document.body.classList.remove('modal-open');
-        const backdrop = document.querySelector('.modal-backdrop');
-        if (backdrop) {
-            backdrop.remove();
+        // Hide modal using Bootstrap method
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
         }
         
         // Then perform delete
         performDeleteTemplate(templateId);
     };
     
-    // Update cancel button to properly clean up
-    const cancelBtn = modalElement.querySelector('button[data-bs-dismiss="modal"]');
-    if (cancelBtn) {
-        const newCancelBtn = cancelBtn.cloneNode(true);
-        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-        
-        newCancelBtn.onclick = function() {
-            // Hide modal
-            modalElement.classList.remove('show');
-            modalElement.style.display = 'none';
-            document.body.classList.remove('modal-open');
-            const backdrop = document.querySelector('.modal-backdrop');
-            if (backdrop) {
-                backdrop.remove();
-            }
-        };
-    }
+    // Cancel button will use standard Bootstrap behavior with data-bs-dismiss="modal"
 }
 
 // Perform actual delete operation
@@ -751,36 +732,17 @@ function resetTemplates() {
     confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
     
     newConfirmBtn.onclick = function() {
-        // Hide modal first
-        modalElement.classList.remove('show');
-        modalElement.style.display = 'none';
-        document.body.classList.remove('modal-open');
-        const backdrop = document.querySelector('.modal-backdrop');
-        if (backdrop) {
-            backdrop.remove();
+        // Hide modal using Bootstrap method
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
         }
         
         // Then perform reset
         performResetTemplates();
     };
     
-    // Update cancel button to properly clean up
-    const cancelBtn = modalElement.querySelector('button[data-bs-dismiss="modal"]');
-    if (cancelBtn) {
-        const newCancelBtn = cancelBtn.cloneNode(true);
-        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-        
-        newCancelBtn.onclick = function() {
-            // Hide modal
-            modalElement.classList.remove('show');
-            modalElement.style.display = 'none';
-            document.body.classList.remove('modal-open');
-            const backdrop = document.querySelector('.modal-backdrop');
-            if (backdrop) {
-                backdrop.remove();
-            }
-        };
-    }
+    // Cancel button will use standard Bootstrap behavior with data-bs-dismiss="modal"
 }
 
 // Perform actual reset operation

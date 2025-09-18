@@ -358,17 +358,26 @@ def register_event(event_id):
             return jsonify({'success': False, 'message': 'Nieprawidłowe dane JSON'}), 400
         
         # Validate input
+        print(f"🔍 Validating data: first_name='{data.get('first_name')}', email='{data.get('email')}', phone='{data.get('phone')}'")
+        
         if not data.get('first_name') or not data.get('email'):
             print(f"❌ Missing required fields: first_name={data.get('first_name')}, email={data.get('email')}")
             return jsonify({'success': False, 'message': 'Imię i email są wymagane'}), 400
         
-        if not validate_email(data['email']):
+        email_valid = validate_email(data['email'])
+        print(f"🔍 Email validation result: {email_valid}")
+        if not email_valid:
             print(f"❌ Invalid email format: {data['email']}")
             return jsonify({'success': False, 'message': 'Nieprawidłowy format email'}), 400
         
-        if data.get('phone') and not validate_phone(data['phone']):
-            print(f"❌ Invalid phone format: {data['phone']}")
-            return jsonify({'success': False, 'message': 'Nieprawidłowy format telefonu'}), 400
+        if data.get('phone'):
+            phone_valid = validate_phone(data['phone'])
+            print(f"🔍 Phone validation result: {phone_valid} for phone: '{data['phone']}'")
+            if not phone_valid:
+                print(f"❌ Invalid phone format: {data['phone']}")
+                return jsonify({'success': False, 'message': 'Nieprawidłowy format telefonu'}), 400
+        else:
+            print("🔍 No phone provided, skipping phone validation")
         
         # Get event
         event = EventSchedule.query.get(event_id)
@@ -387,56 +396,63 @@ def register_event(event_id):
         if event.end_date and event.end_date <= now_naive:
             return jsonify({'success': False, 'message': 'Rejestracja na to wydarzenie jest już zamknięta - wydarzenie się zakończyło'}), 400
         
-        # Check if user is already registered
-        existing_registration = EventRegistration.query.filter_by(
-            event_id=event_id,
-            email=data['email']
-        ).first()
-        
-        if existing_registration:
-            return jsonify({'success': False, 'message': 'Jesteś już zarejestrowany na to wydarzenie'}), 400
-        
-        # Check max participants
+        # Check max participants first (before checking duplicates)
         if event.max_participants:
             current_registrations = EventRegistration.query.filter_by(event_id=event_id).count()
             if current_registrations >= event.max_participants:
                 return jsonify({'success': False, 'message': 'Brak wolnych miejsc na to wydarzenie'}), 400
         
-        # Create registration
-        registration = EventRegistration(
-            event_id=event_id,
-            first_name=data['first_name'],
-            email=data['email'],
-            phone=data.get('phone', ''),
-            wants_club_news=data.get('wants_club_news', False),
-            status='confirmed'  # Automatically confirm registration
-        )
+        # Use database transaction with proper locking to prevent race conditions
+        try:
+            # Check if user is already registered (with row-level locking)
+            existing_registration = EventRegistration.query.filter_by(
+                event_id=event_id,
+                email=data['email']
+            ).with_for_update().first()
+            
+            if existing_registration:
+                print(f"❌ User already registered: {data['email']}")
+                return jsonify({'success': False, 'message': 'Jesteś już zarejestrowany na to wydarzenie'}), 400
+            
+            # Double-check max participants after locking
+            if event.max_participants:
+                current_registrations = EventRegistration.query.filter_by(event_id=event_id).count()
+                if current_registrations >= event.max_participants:
+                    print(f"❌ Event full: {current_registrations}/{event.max_participants}")
+                    return jsonify({'success': False, 'message': 'Brak wolnych miejsc na to wydarzenie'}), 400
+            
+            # Create registration
+            registration = EventRegistration(
+                event_id=event_id,
+                first_name=data['first_name'],
+                email=data['email'],
+                phone=data.get('phone', ''),
+                wants_club_news=data.get('wants_club_news', False),
+                status='confirmed'  # Automatically confirm registration
+            )
+            
+            db.session.add(registration)
+            db.session.commit()
+            print(f"✅ Registration created successfully: {data['email']}")
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"❌ Database error during registration: {e}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({'success': False, 'message': 'Błąd podczas rejestracji. Spróbuj ponownie.'}), 500
         
-        db.session.add(registration)
-        db.session.commit()
-        
-        # Add email to event group (regardless of whether user has account)
+        # Asynchronicznie synchronizuj grupę wydarzenia
+        print(f"🔍 Rozpoczynam synchronizację grupy wydarzenia {event_id}")
         from app.services.group_manager import GroupManager
         group_manager = GroupManager()
         
-        success, message = group_manager.add_email_to_event_group(
-            email=registration.email,
-            name=registration.first_name,
-            event_id=event_id
-        )
+        # Wywołaj asynchroniczną synchronizację grupy wydarzenia
+        success, message = group_manager.async_sync_event_group(event_id)
         if success:
-            print(f"✅ Dodano {registration.email} do grupy wydarzenia: {event.title}")
+            print(f"✅ Zsynchronizowano grupę wydarzenia: {event.title}")
         else:
-            print(f"❌ Błąd dodawania do grupy wydarzenia: {message}")
-        
-        # Add user to event group if they have a user account
-        user = User.query.filter_by(email=registration.email).first()
-        if user:
-            success, message = add_user_to_event_group(user.id, event_id)
-            if success:
-                print(f"✅ Dodano użytkownika {user.email} do grupy wydarzenia: {event.title}")
-            else:
-                print(f"❌ Błąd dodawania użytkownika do grupy wydarzenia: {message}")
+            print(f"❌ Błąd synchronizacji grupy wydarzenia: {message}")
         
         # Create user account if wants_club_news is True
         user_created = False

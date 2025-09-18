@@ -141,9 +141,14 @@ class MenuManager {
             bsModal.show();
         } else {
             // Fallback to confirm() if modal not available
-            if (confirm('Czy na pewno chcesz usunąć ten element menu? Tej operacji nie można cofnąć.')) {
-                this.performDeleteMenuItem(menuId);
-            }
+            window.deleteConfirmation.showSingleDelete(
+                'element menu',
+                () => {
+                    // Continue with deletion
+                    performDeleteMenuItem(menuItemId);
+                },
+                'element menu'
+            );
         }
     }
 
@@ -167,6 +172,13 @@ class MenuManager {
                 const row = document.querySelector(`tr[data-menu-id="${menuId}"]`);
                 if (row) {
                     row.remove();
+                }
+                
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
                 }
             } else {
                 window.toastManager.error('Błąd podczas usuwania: ' + data.error);
@@ -216,8 +228,12 @@ class MenuManager {
                 window.toastManager.success('Element menu został dodany pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('addMenuItemModal'));
                 modal.hide();
-                // Odśwież stronę
-                window.location.reload();
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
+                }
             } else {
                 window.toastManager.error('Błąd podczas dodawania: ' + data.error);
             }
@@ -267,8 +283,12 @@ class MenuManager {
                 window.toastManager.success('Element menu został zaktualizowany pomyślnie!');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editMenuItemModal'));
                 modal.hide();
-                // Odśwież stronę
-                window.location.reload();
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
+                }
             } else {
                 window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
             }

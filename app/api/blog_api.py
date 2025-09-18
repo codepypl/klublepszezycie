@@ -63,7 +63,7 @@ def api_blog_posts():
                 'excerpt': post.excerpt,
                 'content': post.content,
                 'published_at': post.published_at.isoformat() if post.published_at else None,
-                'author': post.author.name if post.author else 'Unknown',
+                'author': post.author.first_name if post.author else 'Unknown',
                 'categories': [{'id': cat.id, 'title': cat.title, 'slug': cat.slug} for cat in post.categories],
                 'tags': [{'id': tag.id, 'name': tag.name, 'slug': tag.slug} for tag in post.tags],
                 'featured_image': post.featured_image
@@ -125,7 +125,7 @@ def api_blog_admin_posts():
                     'is_published': post.is_published,
                     'published_at': post.published_at.isoformat() if post.published_at else None,
                     'created_at': post.created_at.isoformat() if post.created_at else None,
-                'author': post.author.name if post.author else 'Unknown',
+                'author': post.author.first_name if post.author else 'Unknown',
                 'categories': [{'id': cat.id, 'title': cat.title} for cat in post.categories],
                     'tags': [{'id': tag.id, 'name': tag.name} for tag in post.tags],
                     'featured_image': post.featured_image

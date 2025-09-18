@@ -170,14 +170,40 @@ function syncSystemGroups() {
     }
 }
 
+function syncEventGroups() {
+    if (confirm('Czy na pewno chcesz zsynchronizować grupy wydarzeń?\n\nTa operacja zaktualizuje listę członków wszystkich grup wydarzeń na podstawie aktualnych rejestracji.')) {
+        fetch('/api/email/groups/sync-events', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.toastManager.show('Grupy wydarzeń zostały zsynchronizowane', 'success');
+                loadGroups(); // Odśwież listę grup
+            } else {
+                window.toastManager.show(data.error || 'Błąd synchronizacji', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            window.toastManager.show('Wystąpił błąd podczas synchronizacji grup wydarzeń', 'error');
+        });
+    }
+}
+
 // Make functions globally available
 window.showGroupModal = showGroupModal;
 window.saveGroup = saveGroup;
 window.editGroup = editGroup;
 window.deleteGroup = deleteGroup;
+window.syncSystemGroups = syncSystemGroups;
+window.syncEventGroups = syncEventGroups;
 window.viewGroupMembers = viewGroupMembers;
 window.toggleGroupTypeFields = toggleGroupTypeFields;
-window.syncSystemGroups = syncSystemGroups;
 window.updateMemberCountPreview = updateMemberCountPreview;
 window.loadGroupMembersForEdit = loadGroupMembersForEdit;
 
@@ -435,6 +461,9 @@ function addGroupMember(userId) {
             loadGroupMembers();
             loadAvailableUsers(document.getElementById('searchUsers').value);
             loadGroups(); // Odśwież listę grup aby zaktualizować licznik członków
+            
+            // Wywołaj globalne odświeżenie
+            window.refreshAfterCRUD();
         } else {
             toastManager.error('Błąd dodawania członka: ' + data.error);
         }
@@ -447,48 +476,69 @@ function addGroupMember(userId) {
 
 // Remove group member
 function removeGroupMember(memberId) {
-    if (confirm('Czy na pewno chcesz usunąć tego członka z grupy?')) {
-        fetch(`/api/email/groups/members/${memberId}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                toastManager.success('Członek usunięty!');
-                loadGroupMembers();
-                loadAvailableUsers(document.getElementById('searchUsers').value);
-                loadGroups(); // Odśwież listę grup aby zaktualizować licznik członków
-            } else {
-                toastManager.error('Błąd usuwania członka: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error removing group member:', error);
-            toastManager.error('Błąd usuwania członka');
-        });
-    }
+    window.deleteConfirmation.showSingleDelete(
+        'członka z grupy',
+        () => {
+            fetch(`/api/email/groups/members/${memberId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    toastManager.success('Członek usunięty!');
+                    loadGroupMembers();
+                    loadAvailableUsers(document.getElementById('searchUsers').value);
+                    
+                    // Wywołaj globalne odświeżenie
+                    if (typeof window.refreshAfterCRUD === 'function') {
+                        window.refreshAfterCRUD();
+                    } else {
+                        console.warn('window.refreshAfterCRUD is not available');
+                    }
+                    loadGroups(); // Odśwież listę grup aby zaktualizować licznik członków
+                } else {
+                    toastManager.error('Błąd usuwania członka: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error removing group member:', error);
+                toastManager.error('Błąd usuwania członka');
+            });
+        }
+    );
 }
 
 // Delete group
 function deleteGroup(groupId) {
-    if (confirm('Czy na pewno chcesz usunąć tę grupę?')) {
-        fetch(`/api/email/groups/${groupId}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                toastManager.success('Grupa usunięta!');
-                loadGroups();
-            } else {
-                toastManager.error('Błąd usuwania: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error deleting group:', error);
-            toastManager.error('Błąd usuwania');
-        });
-    }
+    window.deleteConfirmation.showSingleDelete(
+        'grupę',
+        () => {
+            fetch(`/api/email/groups/${groupId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    toastManager.success('Grupa usunięta!');
+                    loadGroups();
+                    
+                    // Wywołaj globalne odświeżenie
+                    if (typeof window.refreshAfterCRUD === 'function') {
+                        window.refreshAfterCRUD();
+                    } else {
+                        console.warn('window.refreshAfterCRUD is not available');
+                    }
+                } else {
+                    toastManager.error('Błąd usuwania: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting group:', error);
+                toastManager.error('Błąd usuwania');
+            });
+        },
+        'grupę'
+    );
 }
 
 // Toggle group type fields

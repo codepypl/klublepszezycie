@@ -282,6 +282,9 @@ def api_schedule(schedule_id):
         elif request.method == 'PUT':
             data = request.get_json()
             
+            # Store old title for group update
+            old_title = schedule.title
+            
             if 'title' in data:
                 schedule.title = data['title']
             if 'description' in data:
@@ -298,6 +301,34 @@ def api_schedule(schedule_id):
                 schedule.is_active = data['is_active']
             
             db.session.commit()
+            
+            # Update group name if title changed
+            if 'title' in data and old_title != data['title']:
+                from app.services.group_manager import GroupManager
+                group_manager = GroupManager()
+                
+                # Find and update the event group
+                from app.models import UserGroup
+                group = UserGroup.query.filter_by(
+                    name=f"Wydarzenie: {old_title}",
+                    group_type='event_based'
+                ).first()
+                
+                if group:
+                    print(f"🔍 Aktualizacja nazwy grupy z '{group.name}' na 'Wydarzenie: {data['title']}'")
+                    group.name = f"Wydarzenie: {data['title']}"
+                    group.description = f"Grupa uczestników wydarzenia: {data['title']}"
+                    db.session.commit()
+                    print(f"✅ Nazwa grupy zaktualizowana pomyślnie")
+                else:
+                    print(f"❌ Grupa wydarzenia '{old_title}' nie została znaleziona")
+            
+            # Asynchronicznie synchronizuj grupę wydarzenia po aktualizacji
+            success, message = group_manager.async_sync_event_group(schedule_id)
+            if success:
+                print(f"✅ Zsynchronizowano grupę wydarzenia po aktualizacji przez API")
+            else:
+                print(f"❌ Błąd synchronizacji grupy wydarzenia: {message}")
             
             return jsonify({
                 'success': True,
@@ -424,31 +455,22 @@ def api_delete_registration(registration_id):
         
         # Store data before deletion for group cleanup
         event_id = registration.event_id
-        user_id = registration.user_id
         email = registration.email
         
         # Delete registration
         db.session.delete(registration)
         db.session.commit()
         
-        # Remove from event group
+        # Asynchronicznie synchronizuj grupę wydarzenia
         from app.services.group_manager import GroupManager
         group_manager = GroupManager()
         
-        if user_id:
-            # User has account - remove from group by user_id
-            success, message = group_manager.remove_user_from_event_group(user_id, event_id)
-            if success:
-                print(f"✅ Usunięto użytkownika {user_id} z grupy wydarzenia {event_id}")
-            else:
-                print(f"❌ Błąd usuwania użytkownika z grupy wydarzenia: {message}")
+        # Wywołaj asynchroniczną synchronizację grupy wydarzenia
+        success, message = group_manager.async_sync_event_group(event_id)
+        if success:
+            print(f"✅ Zsynchronizowano grupę wydarzenia po usunięciu rejestracji")
         else:
-            # No user account - remove by email
-            success, message = group_manager.remove_email_from_event_group(email, event_id)
-            if success:
-                print(f"✅ Usunięto email {email} z grupy wydarzenia {event_id}")
-            else:
-                print(f"❌ Błąd usuwania emailu z grupy wydarzenia: {message}")
+            print(f"❌ Błąd synchronizacji grupy wydarzenia: {message}")
         
         return jsonify({
             'success': True,

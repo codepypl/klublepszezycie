@@ -214,17 +214,14 @@ function refreshDashboard() {
     loadDashboardStats();
 }
 
-// Setup auto-refresh like email queue
-function setupDashboardAutoRefresh() {
-    // Refresh every 30 seconds
-    dashboardRefreshInterval = setInterval(() => {
-        // Don't refresh if import is in progress
+// Register with global refresh system
+if (window.globalRefreshSystem) {
+    window.globalRefreshSystem.registerUpdateFunction('crm-dashboard', (data) => {
         if (typeof isImporting !== 'undefined' && isImporting) {
             return;
         }
-        
         loadDashboardStats();
-    }, 30000); // 30 seconds
+    });
 }
 
 // Load stats on page load
@@ -232,27 +229,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load initial data
     loadDashboardStats();
     
-    // Check if import is in progress first (localStorage)
-    const importInProgress = localStorage.getItem('crm_import_in_progress') === 'true';
-    if (importInProgress) {
-        console.log('Import in progress (localStorage), auto-refresh disabled');
-        return;
-    }
-    
-    // Check if import is in progress by looking for step 3
-    const importStep3 = document.getElementById('importStep3');
-    if (importStep3) {
-        const isVisible = importStep3.style.display !== 'none' && 
-                         window.getComputedStyle(importStep3).display !== 'none';
-        if (isVisible) {
-            // Import is in progress, don't start auto-refresh
-            console.log('Import in progress (step 3 visible), auto-refresh disabled');
-            return;
-        }
-    }
-    
-    // Setup auto refresh only if no import is running
-    setupDashboardAutoRefresh();
+    // Global refresh system will handle auto-refresh
+    console.log('🔄 CRM Dashboard initialized - global refresh system will handle updates');
 });
 </script>
 {% endblock %}

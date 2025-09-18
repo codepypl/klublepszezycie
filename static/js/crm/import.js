@@ -642,15 +642,15 @@ function disableAutoRefreshDuringImport() {
 }
 
 function disableAllAutoRefresh() {
-    // This will be implemented by realtime-refresh.js
-    if (typeof window.disableAllAutoRefresh === 'function' && window.disableAllAutoRefresh !== disableAllAutoRefresh) {
-        window.disableAllAutoRefresh();
+    // Disable global refresh system
+    if (window.globalRefreshSystem) {
+        window.globalRefreshSystem.stopAutoRefresh();
     }
 }
 
 function enableAllAutoRefresh() {
-    // This will be implemented by realtime-refresh.js
-    if (typeof window.enableAllAutoRefresh === 'function' && window.enableAllAutoRefresh !== enableAllAutoRefresh) {
-        window.enableAllAutoRefresh();
+    // Enable global refresh system
+    if (window.globalRefreshSystem) {
+        window.globalRefreshSystem.startAutoRefresh();
     }
 }

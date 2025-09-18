@@ -120,6 +120,13 @@ class BlogTagsManager {
                 this.closeModal('addTagModal');
                 e.target.reset();
                 this.loadTags();
+                
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
+                }
             } else {
                 window.toastManager.show(result.message || 'Błąd podczas dodawania tagu', 'error');
             }
@@ -154,6 +161,13 @@ class BlogTagsManager {
                 window.toastManager.show(result.message || 'Tag został zaktualizowany pomyślnie', 'success');
                 this.closeModal('editTagModal');
                 this.loadTags();
+                
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
+                }
             } else {
                 window.toastManager.show(result.message || 'Błąd podczas aktualizacji tagu', 'error');
             }
@@ -191,10 +205,17 @@ class BlogTagsManager {
     }
 
     async deleteTag(tagId) {
-        if (!confirm('Czy na pewno chcesz usunąć ten tag?')) {
-            return;
-        }
+        window.deleteConfirmation.showSingleDelete(
+            'tag',
+            () => {
+                // Continue with deletion
+                performDeleteTag(tagId);
+            },
+            'tag'
+        );
+    }
 
+    async performDeleteTag(tagId) {
         try {
             const response = await fetch(`/api/blog/tags/${tagId}`, {
                 method: 'DELETE'
@@ -205,6 +226,13 @@ class BlogTagsManager {
             if (result.success) {
                 window.toastManager.show(result.message || 'Tag został usunięty pomyślnie', 'success');
                 this.loadTags();
+                
+                // Wywołaj globalne odświeżenie
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available');
+                }
             } else {
                 window.toastManager.show(result.message || 'Błąd podczas usuwania tagu', 'error');
             }

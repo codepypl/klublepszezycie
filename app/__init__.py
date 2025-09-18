@@ -27,7 +27,7 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://shadi@localhost:5432/betterlife')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = 'static/uploads'
-    app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
+    app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
     
     # Setup logging for Flask app
     import logging
@@ -138,13 +138,23 @@ def create_app():
             from app.utils.seo_utils import SEOManager
             return SEOManager.generate_section_seo(section)
         
+        def get_post_url_with_category(post):
+            from app.blueprints.blog_controller import BlogController
+            return BlogController.get_post_url_with_category(post)
+        
+        def get_category_url_with_hierarchy(category):
+            from app.blueprints.blog_controller import BlogController
+            return BlogController.get_category_url_with_hierarchy(category)
+        
         return {
             'get_seo_settings': get_seo_settings,
             'get_blog_post_seo': get_blog_post_seo,
             'get_blog_category_seo': get_blog_category_seo,
             'get_blog_tag_seo': get_blog_tag_seo,
             'get_event_seo': get_event_seo,
-            'get_section_seo': get_section_seo
+            'get_section_seo': get_section_seo,
+            'get_post_url_with_category': get_post_url_with_category,
+            'get_category_url_with_hierarchy': get_category_url_with_hierarchy
         }
     
     # Create database tables

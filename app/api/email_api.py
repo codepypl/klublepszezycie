@@ -1093,6 +1093,25 @@ def email_sync_system_groups():
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@email_bp.route('/email/groups/sync-events', methods=['POST'])
+@login_required
+def email_sync_event_groups():
+    """Synchronizuje grupy wydarzeń"""
+    try:
+        from app.services.group_manager import GroupManager
+        group_manager = GroupManager()
+        
+        success, message = group_manager.sync_event_groups()
+        
+        if success:
+            return jsonify({'success': True, 'message': message})
+        else:
+            return jsonify({'success': False, 'error': message}), 500
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @email_bp.route('/email/groups/<int:group_id>/members', methods=['GET'])
 @login_required
 def email_get_group_members(group_id):
