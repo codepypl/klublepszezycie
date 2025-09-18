@@ -214,15 +214,7 @@ function refreshDashboard() {
     loadDashboardStats();
 }
 
-// Register with global refresh system
-if (window.globalRefreshSystem) {
-    window.globalRefreshSystem.registerUpdateFunction('crm-dashboard', (data) => {
-        if (typeof isImporting !== 'undefined' && isImporting) {
-            return;
-        }
-        loadDashboardStats();
-    });
-}
+// Auto-refresh is now handled by refreshAfterCRUD() system
 
 // Load stats on page load
 document.addEventListener('DOMContentLoaded', function() {

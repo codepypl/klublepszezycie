@@ -643,14 +643,10 @@ function disableAutoRefreshDuringImport() {
 
 function disableAllAutoRefresh() {
     // Disable global refresh system
-    if (window.globalRefreshSystem) {
-        window.globalRefreshSystem.stopAutoRefresh();
-    }
+    // Auto-refresh is now handled by refreshAfterCRUD() system
 }
 
 function enableAllAutoRefresh() {
     // Enable global refresh system
-    if (window.globalRefreshSystem) {
-        window.globalRefreshSystem.startAutoRefresh();
-    }
+    // Auto-refresh is now handled by refreshAfterCRUD() system
 }

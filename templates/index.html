@@ -1078,28 +1078,12 @@
             }
         }
 
-        // Register custom update functions with global refresh system
-        if (window.globalRefreshSystem) {
-            // Rejestruj funkcję aktualizacji statusu wydarzenia
-            window.globalRefreshSystem.registerUpdateFunction('event-status', (data) => {
-                if (!currentEventId) return;
-                
-                const newStatus = data.is_registration_open ? 'upcoming' : 'closed';
-                console.log(`📅 Event status check: ${currentEventStatus} → ${newStatus}`, data);
-                
-                // Update display if status changed
-                if (newStatus !== currentEventStatus) {
-                    console.log(`📅 Event status changed: ${currentEventStatus} → ${newStatus}`);
-                    updateEventDisplay(data, newStatus);
-                    currentEventStatus = newStatus;
-                }
-            });
-            
-            // Rejestruj funkcję aktualizacji licznika rejestracji
-            window.globalRefreshSystem.registerUpdateFunction('registration-count', (data) => {
-                updateRegistrationCount(data.registration_count, data.max_participants);
-            });
-        }
+        // Simple auto-refresh for event status (every 30 seconds)
+        setInterval(() => {
+            if (currentEventId) {
+                updateEventStatus();
+            }
+        }, 30000);
 
         // Update registration count
         function updateRegistrationCount(count, max) {

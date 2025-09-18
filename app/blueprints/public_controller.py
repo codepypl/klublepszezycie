@@ -45,10 +45,6 @@ class PublicController:
                     (MenuItem.blog == False) | (MenuItem.blog.is_(None))
                 ).order_by(MenuItem.order.asc()).all()
             
-            print(f"Debug: Found {len(menu_items_db)} active menu items")
-            for item in menu_items_db:
-                print(f"  - {item.title} (Active: {item.is_active}, Blog: {item.blog})")
-            
             menu_items = []
             for item in menu_items_db:
                 # Use blog_url if available and we're on blog pages, otherwise use regular url
