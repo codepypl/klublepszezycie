@@ -21,6 +21,8 @@ def api_menu():
                     'id': item.id,
                     'title': item.title,
                     'url': item.url,
+                    'blog_url': item.blog_url,
+                    'blog': item.blog,
                     'order': item.order,
                     'is_active': item.is_active,
                     'created_at': item.created_at.isoformat() if item.created_at else None
@@ -37,6 +39,8 @@ def api_menu():
             menu_item = MenuItem(
                 title=data['title'],
                 url=data.get('url', ''),
+                blog_url=data.get('blog_url', ''),
+                blog=data.get('blog', False),
                 order=data.get('order', 0),
                 is_active=data.get('is_active', True)
             )
@@ -51,6 +55,8 @@ def api_menu():
                     'id': menu_item.id,
                     'title': menu_item.title,
                     'url': menu_item.url,
+                    'blog_url': menu_item.blog_url,
+                    'blog': menu_item.blog,
                     'order': menu_item.order,
                     'is_active': menu_item.is_active
                 }
@@ -100,6 +106,8 @@ def api_menu_item(item_id):
                     'id': menu_item.id,
                     'title': menu_item.title,
                     'url': menu_item.url,
+                    'blog_url': menu_item.blog_url,
+                    'blog': menu_item.blog,
                     'order': menu_item.order,
                     'is_active': menu_item.is_active,
                     'created_at': menu_item.created_at.isoformat() if menu_item.created_at else None
@@ -113,6 +121,10 @@ def api_menu_item(item_id):
                 menu_item.title = data['title']
             if 'url' in data:
                 menu_item.url = data['url']
+            if 'blog_url' in data:
+                menu_item.blog_url = data['blog_url']
+            if 'blog' in data:
+                menu_item.blog = data['blog']
             if 'order' in data:
                 menu_item.order = data['order']
             if 'is_active' in data:
