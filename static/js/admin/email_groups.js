@@ -85,7 +85,7 @@ function displayGroups(groups) {
         // Ukryj checkbox i przyciski dla domyślnych grup i grup wydarzeń
         const isSystemGroup = group.is_default || group.group_type === 'event_based';
         const checkboxHtml = isSystemGroup ? 
-            '<input type="checkbox" class="group-checkbox" value="' + group.id + '" disabled title="Nie można usuwać grup systemowych">' :
+            '<input type="checkbox" name="itemIds" value="' + group.id + '" disabled title="Nie można usuwać grup systemowych">' :
             '<input type="checkbox" name="itemIds" value="' + group.id + '">';
         
         const actionButtonsHtml = isSystemGroup ? 
@@ -116,7 +116,12 @@ function displayGroups(groups) {
         tbody.appendChild(row);
     });
     
-    // Reinitialize bulk delete after loading groups
+    // Initialize bulk delete after loading groups
+    initializeBulkDelete();
+}
+
+// Initialize bulk delete functionality
+function initializeBulkDelete() {
     const table = document.getElementById('groupsTable');
     if (table) {
         const deleteEndpoint = table.dataset.deleteEndpoint;

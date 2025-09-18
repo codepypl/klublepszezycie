@@ -1287,6 +1287,40 @@ def bulk_delete_templates():
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@email_bp.route('/bulk-delete/email-groups', methods=['POST'])
+@login_required
+def bulk_delete_email_groups():
+    """Bulk delete email groups"""
+    try:
+        data = request.get_json()
+        group_ids = data.get('ids', [])
+        
+        if not group_ids:
+            return jsonify({'success': False, 'error': 'Brak grup do usunięcia'}), 400
+        
+        # Delete groups (only manual groups can be deleted)
+        deleted_count = 0
+        for group_id in group_ids:
+            group = UserGroup.query.get(group_id)
+            if group and group.group_type == 'manual':
+                # Delete associated members
+                UserGroupMember.query.filter_by(group_id=group_id).delete()
+                # Delete group
+                db.session.delete(group)
+                deleted_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Usunięto {deleted_count} grup',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # Event Group Management Functions
 def create_event_group(event_id, event_title):
     """Tworzy grupę dla wydarzenia"""
