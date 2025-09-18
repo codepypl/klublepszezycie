@@ -87,7 +87,7 @@ class AutoRefreshSystem {
     // Specific refresh functions for each admin page
     refreshMenuItems() {
         console.log('🔄 Refreshing menu items...');
-        this.fetchAndUpdateTable('/api/menu', 'menuItemsTable');
+        this.fetchAndUpdateTable('/api/menu', 'menuTable');
     }
 
     refreshSections() {
@@ -132,12 +132,12 @@ class AutoRefreshSystem {
 
     refreshEmailGroups() {
         console.log('🔄 Refreshing email groups...');
-        this.fetchAndUpdateTable('/api/email/groups', 'emailGroupsTable');
+        this.fetchAndUpdateTable('/api/email/groups', 'groupsTable');
     }
 
     refreshEmailCampaigns() {
         console.log('🔄 Refreshing email campaigns...');
-        this.fetchAndUpdateTable('/api/email/campaigns', 'emailCampaignsTable');
+        this.fetchAndUpdateTable('/api/email/campaigns', 'campaignsTable');
     }
 
     refreshEmailQueue() {
@@ -186,12 +186,14 @@ class AutoRefreshSystem {
         const table = document.getElementById(tableId);
         if (!table) {
             console.warn(`Table ${tableId} not found`);
+            // Fallback to page reload
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
             return;
         }
 
-        // This is a simplified version - in real implementation,
-        // you would need to properly update the table rows
-        console.log(`Updated table ${tableId} with ${data.length} items`);
+        console.log(`✅ Found table ${tableId}, updating with ${data.length} items`);
         
         // For now, just reload the page as fallback
         // In the future, implement proper table row updates
