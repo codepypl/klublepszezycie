@@ -142,7 +142,7 @@ def register():
         temp_password = str(uuid.uuid4())[:8]
         
         user = User(
-            name=data['name'],
+            first_name=data['name'],
             email=data['email'],
             phone=data.get('phone', ''),
             password_hash=generate_password_hash(temp_password),  # Use same password
