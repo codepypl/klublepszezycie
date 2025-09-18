@@ -4,7 +4,7 @@ Testimonials API endpoints
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
 from app.models import Testimonial, db
-from app.utils.auth_utils import admin_required
+from app.utils.auth_utils import admin_required, admin_required_api
 import logging
 
 testimonials_api_bp = Blueprint('testimonials_api', __name__)
@@ -67,7 +67,7 @@ def api_testimonials():
     elif request.method == 'DELETE':
         try:
             data = request.get_json()
-            testimonial_ids = data.get('testimonial_ids', [])
+            testimonial_ids = data.get('testimonial_ids', data.get('ids', []))
             
             if not testimonial_ids:
                 return jsonify({'success': False, 'message': 'No testimonials selected'}), 400
@@ -151,12 +151,12 @@ def api_testimonial(testimonial_id):
 
 @testimonials_api_bp.route('/bulk-delete/testimonials', methods=['POST'])
 @login_required
-@admin_required
+@admin_required_api
 def api_bulk_delete_testimonials():
     """Bulk delete testimonials"""
     try:
         data = request.get_json()
-        testimonial_ids = data.get('testimonial_ids', [])
+        testimonial_ids = data.get('testimonial_ids', data.get('ids', []))
         
         if not testimonial_ids:
             return jsonify({'success': False, 'message': 'No testimonials selected'}), 400

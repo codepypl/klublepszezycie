@@ -4,7 +4,7 @@ Events API endpoints
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
 from app.models import EventSchedule, EventRegistration, db
-from app.utils.auth_utils import admin_required
+from app.utils.auth_utils import admin_required, admin_required_api
 import logging
 
 events_api_bp = Blueprint('events_api', __name__)
@@ -101,7 +101,7 @@ def api_event_schedule():
     elif request.method == 'DELETE':
         try:
             data = request.get_json()
-            event_ids = data.get('event_ids', [])
+            event_ids = data.get('event_ids', data.get('ids', []))
             
             if not event_ids:
                 return jsonify({'success': False, 'message': 'No events selected'}), 400
@@ -349,12 +349,12 @@ def api_check_schedules():
 
 @events_api_bp.route('/bulk-delete/schedules', methods=['POST'])
 @login_required
-@admin_required
+@admin_required_api
 def api_bulk_delete_schedules():
     """Bulk delete schedules"""
     try:
         data = request.get_json()
-        schedule_ids = data.get('schedule_ids', [])
+        schedule_ids = data.get('schedule_ids', data.get('ids', []))
         
         if not schedule_ids:
             return jsonify({'success': False, 'message': 'No schedules selected'}), 400
@@ -379,12 +379,12 @@ def api_bulk_delete_schedules():
 
 @events_api_bp.route('/bulk-delete/events', methods=['POST'])
 @login_required
-@admin_required
+@admin_required_api
 def api_bulk_delete_events():
     """Bulk delete events"""
     try:
         data = request.get_json()
-        event_ids = data.get('event_ids', [])
+        event_ids = data.get('event_ids', data.get('ids', []))
         
         if not event_ids:
             return jsonify({'success': False, 'message': 'No events selected'}), 400
@@ -432,12 +432,12 @@ def api_delete_registration(registration_id):
 
 @events_api_bp.route('/bulk-delete/registrations', methods=['POST'])
 @login_required
-@admin_required
+@admin_required_api
 def api_bulk_delete_registrations():
     """Bulk delete event registrations"""
     try:
         data = request.get_json()
-        registration_ids = data.get('registration_ids', [])
+        registration_ids = data.get('registration_ids', data.get('ids', []))
         
         if not registration_ids:
             return jsonify({'success': False, 'message': 'No registrations selected'}), 400

@@ -430,7 +430,7 @@ class BlogController:
             
             # Add posts count for each tag
             for tag in tags:
-                tag.posts_count = tag.posts.count()
+                tag.posts_count = len(tag.posts)
             
             return {
                 'success': True,

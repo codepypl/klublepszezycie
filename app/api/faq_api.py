@@ -4,7 +4,7 @@ FAQ API endpoints
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
 from app.models import FAQ, db
-from app.utils.auth_utils import admin_required
+from app.utils.auth_utils import admin_required, admin_required_api
 import logging
 
 faq_api_bp = Blueprint('faq_api', __name__)
@@ -64,7 +64,7 @@ def api_faq():
     elif request.method == 'DELETE':
         try:
             data = request.get_json()
-            faq_ids = data.get('faq_ids', [])
+            faq_ids = data.get('faq_ids', data.get('ids', []))
             
             if not faq_ids:
                 return jsonify({'success': False, 'message': 'No FAQs selected'}), 400
@@ -142,12 +142,12 @@ def api_faq_item(faq_id):
 
 @faq_api_bp.route('/bulk-delete/faq', methods=['POST'])
 @login_required
-@admin_required
+@admin_required_api
 def api_bulk_delete_faq():
     """Bulk delete FAQs"""
     try:
         data = request.get_json()
-        faq_ids = data.get('faq_ids', [])
+        faq_ids = data.get('faq_ids', data.get('ids', []))
         
         if not faq_ids:
             return jsonify({'success': False, 'message': 'No FAQs selected'}), 400

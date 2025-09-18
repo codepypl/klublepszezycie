@@ -73,7 +73,7 @@ def api_benefits():
     elif request.method == 'PUT':
         try:
             data = request.get_json()
-            benefit_ids = data.get('benefit_ids', [])
+            benefit_ids = data.get('benefit_ids', data.get('ids', []))
             
             if not benefit_ids:
                 return jsonify({'success': False, 'message': 'No benefits selected'}), 400
@@ -108,7 +108,7 @@ def api_benefits():
     elif request.method == 'DELETE':
         try:
             data = request.get_json()
-            benefit_ids = data.get('benefit_ids', [])
+            benefit_ids = data.get('benefit_ids', data.get('ids', []))
             
             if not benefit_ids:
                 return jsonify({'success': False, 'message': 'No benefits selected'}), 400

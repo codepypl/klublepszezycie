@@ -4,7 +4,7 @@ Social Media API endpoints
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
 from app.models import SocialLink, db
-from app.utils.auth_utils import admin_required
+from app.utils.auth_utils import admin_required, admin_required_api
 import logging
 
 social_api_bp = Blueprint('social_api', __name__)
@@ -122,12 +122,12 @@ def api_social_link(link_id):
 
 @social_api_bp.route('/social/bulk-delete', methods=['DELETE'])
 @login_required
-@admin_required
+@admin_required_api
 def api_social_bulk_delete():
     """Bulk delete social links"""
     try:
         data = request.get_json()
-        link_ids = data.get('link_ids', [])
+        link_ids = data.get('link_ids', data.get('ids', []))
         
         if not link_ids:
             return jsonify({'success': False, 'message': 'No social links selected'}), 400

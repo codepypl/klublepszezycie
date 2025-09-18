@@ -4,7 +4,8 @@ Blog API endpoints
 from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from app.models import BlogPost, BlogCategory, BlogTag, BlogComment, BlogPostImage, db
-from app.utils.auth_utils import admin_required
+from app.utils.auth_utils import admin_required, admin_required_api
+from app.utils.file_utils import cleanup_blog_post_files
 import logging
 import os
 import json
@@ -384,12 +385,20 @@ def api_blog_admin_post(post_id):
             })
         
         elif request.method == 'DELETE':
+            # Clean up associated files before deleting the post
+            cleanup_result = cleanup_blog_post_files(post)
+            
+            # Delete the post from database
             db.session.delete(post)
             db.session.commit()
             
+            # Log cleanup results
+            logging.info(f"Blog post {post_id} deleted. File cleanup: {cleanup_result}")
+            
             return jsonify({
                 'success': True,
-                'message': 'Blog post deleted successfully'
+                'message': 'Blog post deleted successfully',
+                'files_cleaned': cleanup_result
             })
     
     except Exception as e:
@@ -399,28 +408,42 @@ def api_blog_admin_post(post_id):
 
 @blog_api_bp.route('/blog/admin/posts/bulk-delete', methods=['POST'])
 @login_required
-@admin_required
+@admin_required_api
 def api_blog_admin_posts_bulk_delete():
     """Bulk delete blog posts"""
     try:
         data = request.get_json()
-        post_ids = data.get('post_ids', [])
+        post_ids = data.get('post_ids', data.get('ids', []))
         
         if not post_ids:
             return jsonify({'success': False, 'message': 'No posts selected'}), 400
         
         deleted_count = 0
+        cleanup_results = []
+        
         for post_id in post_ids:
             post = BlogPost.query.get(post_id)
             if post:
+                # Clean up associated files before deleting the post
+                cleanup_result = cleanup_blog_post_files(post)
+                cleanup_results.append({
+                    'post_id': post_id,
+                    'post_title': post.title,
+                    'cleanup': cleanup_result
+                })
+                
                 db.session.delete(post)
                 deleted_count += 1
         
         db.session.commit()
         
+        # Log cleanup results
+        logging.info(f"Bulk deleted {deleted_count} blog posts. Cleanup results: {cleanup_results}")
+        
         return jsonify({
             'success': True,
-            'message': f'Successfully deleted {deleted_count} blog posts'
+            'message': f'Successfully deleted {deleted_count} blog posts',
+            'cleanup_results': cleanup_results
         })
     except Exception as e:
         db.session.rollback()
@@ -546,12 +569,12 @@ def api_blog_admin_category(category_id):
 
 @blog_api_bp.route('/blog/admin/categories/bulk-delete', methods=['POST'])
 @login_required
-@admin_required
+@admin_required_api
 def api_blog_admin_categories_bulk_delete():
     """Bulk delete blog categories"""
     try:
         data = request.get_json()
-        category_ids = data.get('category_ids', [])
+        category_ids = data.get('category_ids', data.get('ids', []))
         
         if not category_ids:
             return jsonify({'success': False, 'message': 'No categories selected'}), 400
@@ -705,14 +728,14 @@ def api_blog_tag(tag_id):
         logging.error(f"Error with blog tag {tag_id}: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@blog_api_bp.route('/blog/tags/bulk-delete', methods=['POST'])
+@blog_api_bp.route('/blog/admin/tags/bulk-delete', methods=['POST'])
 @login_required
-@admin_required
+@admin_required_api
 def api_blog_tags_bulk_delete():
     """Bulk delete blog tags"""
     try:
         data = request.get_json()
-        tag_ids = data.get('tag_ids', [])
+        tag_ids = data.get('tag_ids', data.get('ids', []))
         
         if not tag_ids:
             return jsonify({'success': False, 'message': 'No tags selected'}), 400
@@ -991,12 +1014,12 @@ def api_blog_comment_spam(comment_id):
 
 @blog_api_bp.route('/blog/comments/bulk-delete', methods=['POST'])
 @login_required
-@admin_required
+@admin_required_api
 def api_blog_comments_bulk_delete():
     """Bulk delete blog comments"""
     try:
         data = request.get_json()
-        comment_ids = data.get('comment_ids', [])
+        comment_ids = data.get('comment_ids', data.get('ids', []))
         
         if not comment_ids:
             return jsonify({'success': False, 'message': 'No comments selected'}), 400

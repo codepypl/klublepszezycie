@@ -63,7 +63,7 @@ def api_menu():
     elif request.method == 'DELETE':
         try:
             data = request.get_json()
-            menu_item_ids = data.get('menu_item_ids', [])
+            menu_item_ids = data.get('menu_item_ids', data.get('ids', []))
             
             if not menu_item_ids:
                 return jsonify({'success': False, 'message': 'No menu items selected'}), 400
@@ -146,7 +146,7 @@ def api_bulk_delete_menu():
     """Bulk delete menu items"""
     try:
         data = request.get_json()
-        menu_item_ids = data.get('menu_item_ids', [])
+        menu_item_ids = data.get('menu_item_ids', data.get('ids', []))
         
         if not menu_item_ids:
             return jsonify({'success': False, 'message': 'No menu items selected'}), 400

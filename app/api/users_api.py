@@ -292,7 +292,7 @@ def api_bulk_delete_users():
         if not data:
             return jsonify({'success': False, 'message': 'No data provided'}), 400
             
-        user_ids = data.get('user_ids', [])
+        user_ids = data.get('user_ids', data.get('ids', []))
         
         if not user_ids:
             return jsonify({'success': False, 'message': 'No users selected'}), 400
@@ -321,7 +321,7 @@ def api_bulk_delete_user_groups():
     """Bulk delete user groups"""
     try:
         data = request.get_json()
-        group_ids = data.get('group_ids', [])
+        group_ids = data.get('group_ids', data.get('ids', []))
         
         if not group_ids:
             return jsonify({'success': False, 'message': 'No groups selected'}), 400

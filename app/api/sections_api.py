@@ -4,7 +4,7 @@ Sections API endpoints
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
 from app.models import Section, db
-from app.utils.auth_utils import admin_required
+from app.utils.auth_utils import admin_required, admin_required_api
 import logging
 import json
 
@@ -127,7 +127,7 @@ def api_sections():
     elif request.method == 'DELETE':
         try:
             data = request.get_json()
-            section_ids = data.get('section_ids', [])
+            section_ids = data.get('section_ids', data.get('ids', []))
             
             if not section_ids:
                 return jsonify({'success': False, 'message': 'No sections selected'}), 400
@@ -324,12 +324,12 @@ def api_section_floating_cards(section_id):
 
 @sections_api_bp.route('/bulk-delete/sections', methods=['POST'])
 @login_required
-@admin_required
+@admin_required_api
 def api_bulk_delete_sections():
     """Bulk delete sections"""
     try:
         data = request.get_json()
-        section_ids = data.get('section_ids', [])
+        section_ids = data.get('section_ids', data.get('ids', []))
         
         if not section_ids:
             return jsonify({'success': False, 'message': 'No sections selected'}), 400
