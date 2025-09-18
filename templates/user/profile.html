@@ -164,7 +164,7 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label for="name" class="form-label">Imię *</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
+                        <input type="text" class="form-control" id="name" name="first_name" required>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="email" class="form-label">Adres e-mail *</label>
@@ -477,7 +477,7 @@
         function resetForm() {
             if (currentUserData) {
                 console.log('🔄 Resetowanie formularza do oryginalnych wartości:', currentUserData);
-                document.getElementById('name').value = currentUserData.name || '';
+                document.getElementById('name').value = currentUserData.first_name || '';
                 document.getElementById('email').value = currentUserData.email || '';
                 document.getElementById('phone').value = currentUserData.phone || '';
                 document.getElementById('clubMember').checked = currentUserData.club_member || false;

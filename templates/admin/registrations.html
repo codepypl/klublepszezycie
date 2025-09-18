@@ -43,7 +43,7 @@
                                 </small>
                             </td>
                             <td>
-                                <strong>{{ registration.name }}</strong>
+                                <strong>{{ registration.first_name }}</strong>
                             </td>
                             <td>
                                 <a href="mailto:{{ registration.email }}" class="text-decoration-none">
@@ -63,7 +63,7 @@
                                     <button class="btn btn-sm admin-btn-outline" 
                                             data-action="view" 
                                             data-id="{{ registration.id }}"
-                                            data-name="{{ registration.name }}"
+                                            data-name="{{ registration.first_name }}"
                                             data-email="{{ registration.email }}"
                                             data-phone="{{ registration.phone }}"
                                             data-presentation-date="{{ registration.presentation_date or '' }}"
@@ -73,7 +73,7 @@
                                     <button class="btn btn-sm admin-btn-danger" 
                                             data-action="delete" 
                                             data-id="{{ registration.id }}"
-                                            data-name="{{ registration.name }}">
+                                            data-name="{{ registration.first_name }}">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
