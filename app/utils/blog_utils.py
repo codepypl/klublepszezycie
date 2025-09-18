@@ -64,7 +64,19 @@ def generate_blog_link(link_data):
                 return None
             post = BlogPost.query.filter_by(slug=value, status='published').first()
             if post:
-                return url_for('blog.post_detail', slug=value)
+                # Use new URL structure with category
+                if post.categories:
+                    primary_category = post.categories[0]
+                    if primary_category.parent:
+                        return url_for('blog.post_detail_with_category', 
+                                     category_slug=primary_category.slug, 
+                                     post_slug=value)
+                    else:
+                        return url_for('blog.post_detail_with_category', 
+                                     category_slug=primary_category.slug, 
+                                     post_slug=value)
+                else:
+                    return url_for('blog.post_detail', slug=value)
         
         elif link_type == 'blog_index':
             # Link do głównej strony bloga

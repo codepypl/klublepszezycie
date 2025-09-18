@@ -146,6 +146,14 @@ def create_app():
             from app.blueprints.blog_controller import BlogController
             return BlogController.get_category_url_with_hierarchy(category)
         
+        def get_blog_posts_for_select():
+            from app.utils.blog_utils import get_blog_posts_for_select
+            return get_blog_posts_for_select()
+        
+        def get_blog_categories_for_select():
+            from app.utils.blog_utils import get_blog_categories_for_select
+            return get_blog_categories_for_select()
+        
         return {
             'get_seo_settings': get_seo_settings,
             'get_blog_post_seo': get_blog_post_seo,
@@ -154,7 +162,9 @@ def create_app():
             'get_event_seo': get_event_seo,
             'get_section_seo': get_section_seo,
             'get_post_url_with_category': get_post_url_with_category,
-            'get_category_url_with_hierarchy': get_category_url_with_hierarchy
+            'get_category_url_with_hierarchy': get_category_url_with_hierarchy,
+            'get_blog_posts_for_select': get_blog_posts_for_select,
+            'get_blog_categories_for_select': get_blog_categories_for_select
         }
     
     # Create database tables

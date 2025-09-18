@@ -26,7 +26,8 @@ def api_blog_categories():
                 'title': category.title,
                 'slug': category.slug,
                 'description': category.description,
-                'parent_id': category.parent_id
+                'parent_id': category.parent_id,
+                'full_path': category.full_path
             } for category in categories]
         })
     except Exception as e:
@@ -42,7 +43,7 @@ def api_blog_posts():
         category_id = request.args.get('category_id', type=int)
         tag_id = request.args.get('tag_id', type=int)
         
-        query = BlogPost.query.filter_by(is_published=True)
+        query = BlogPost.query.filter_by(status='published')
         
         if category_id:
             query = query.join(BlogPost.categories).filter(BlogCategory.id == category_id)
