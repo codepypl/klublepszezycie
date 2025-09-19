@@ -1,3 +1,0 @@
-"""
-CRM tests module
-"""
