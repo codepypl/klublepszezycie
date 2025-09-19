@@ -98,7 +98,9 @@
                 <h5 class="fw-bold mb-3">{{ footer_settings.contact_title or 'Kontakt' }}</h5>
                 <p class="text-light mb-2">
                     <i class="fas fa-envelope me-2"></i>
-                    {{ footer_settings.contact_email or 'kontakt@klublepszezycie.pl' }}
+                    <a href="mailto:{{ footer_settings.contact_email or 'kontakt@klublepszezycie.pl' }}" class="text-light text-decoration-none">
+                        {{ (footer_settings.contact_email or 'kontakt@klublepszezycie.pl')|replace('@', '[at]') }}
+                    </a>
                 </p>
                 <p class="text-light mb-2">
                     <i class="fas fa-phone me-2"></i>

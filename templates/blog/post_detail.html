@@ -511,7 +511,9 @@
                     {% if footer_settings.contact_email %}
                     <p class="text-light mb-2">
                         <i class="fas fa-envelope me-2"></i>
-                        {{ footer_settings.contact_email }}
+                        <a href="mailto:{{ footer_settings.contact_email }}" class="text-light text-decoration-none">
+                            {{ footer_settings.contact_email|replace('@', '[at]') }}
+                        </a>
                     </p>
                     {% endif %}
                     {% if footer_settings.contact_phone %}
