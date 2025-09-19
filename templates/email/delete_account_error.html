@@ -60,7 +60,6 @@
                         <div class="mb-4">
                             <small class="text-muted">
                                 <strong>Kod błędu:</strong> {{ error_code }}<br>
-                                {% if email %}<strong>Email:</strong> {{ email }}<br>{% endif %}
                                 {% if timestamp %}<strong>Data:</strong> {{ timestamp }}{% endif %}
                             </small>
                         </div>
@@ -68,14 +67,14 @@
                         <p class="lead text-muted mb-5">
                             {% if error_code == 'INVALID_TOKEN' %}
                                 Link jest nieprawidłowy lub wygasł. Sprawdź czy skopiowałeś cały link z emaila.
-                            {% elif error_code == 'USER_NOT_FOUND' %}
-                                Konto o tym adresie email nie zostało znalezione w naszym systemie. Możliwe, że zostało już usunięte lub nigdy nie było zarejestrowane.
                             {% elif error_code == 'ADMIN_PROTECTED' %}
                                 Konto administratora nie może być usunięte przez link. Skontaktuj się z administratorem systemu.
                             {% elif error_code == 'DATABASE_ERROR' %}
                                 Wystąpił błąd techniczny. Spróbuj ponownie za kilka minut.
+                            {% elif error_code == 'OPERATION_FAILED' %}
+                                Nie udało się usunąć konta. Link może być nieprawidłowy lub wygasły.
                             {% else %}
-                                Wystąpił nieoczekiwany błąd. Skontaktuj się z nami jeśli problem się powtarza.
+                                Nie udało się usunąć konta. Link może być nieprawidłowy lub wygasły.
                             {% endif %}
                         </p>
                         <div class="d-grid gap-3 d-md-block">

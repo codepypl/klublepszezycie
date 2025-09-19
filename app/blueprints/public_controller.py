@@ -398,8 +398,8 @@ class PublicController:
             else:
                 return {
                     'success': False,
-                    'error': 'Użytkownik nie został znaleziony',
-                    'error_code': 'USER_NOT_FOUND'
+                    'error': 'Nie udało się wypisać z listy mailingowej',
+                    'error_code': 'OPERATION_FAILED'
                 }
         except Exception as e:
             db.session.rollback()
@@ -475,8 +475,8 @@ class PublicController:
             else:
                 return {
                     'success': False,
-                    'error': 'Użytkownik nie został znaleziony',
-                    'error_code': 'USER_NOT_FOUND'
+                    'error': 'Nie udało się usunąć konta',
+                    'error_code': 'OPERATION_FAILED'
                 }
         except Exception as e:
             db.session.rollback()

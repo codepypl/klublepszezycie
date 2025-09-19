@@ -80,7 +80,6 @@ class SecurityMonitor:
         try:
             # Define suspicious patterns
             suspicious_patterns = [
-                'USER_NOT_FOUND',  # User doesn't exist but has valid token
                 'INVALID_TOKEN',   # Invalid token attempts
                 'ADMIN_PROTECTED'  # Attempts to delete admin accounts
             ]
@@ -88,7 +87,7 @@ class SecurityMonitor:
             # Check if result indicates suspicious activity
             error_code = result.get('error_code', '')
             if error_code in suspicious_patterns:
-                severity = 'ERROR' if error_code == 'USER_NOT_FOUND' else 'WARNING'
+                severity = 'ERROR'
                 
                 details = f"Email: {email}, Action: {action}, Error: {error_code}, Result: {result.get('error', 'Unknown')}"
                 self.log_security_event(

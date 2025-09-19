@@ -680,7 +680,6 @@ def unsubscribe_api(email, token):
             return render_template('email/unsubscribe_error.html', 
                                  error=result['error'],
                                  error_code=result.get('error_code', 'UNKNOWN_ERROR'),
-                                 email=decoded_email,
                                  timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     except Exception as e:
         # Log critical error
@@ -688,7 +687,6 @@ def unsubscribe_api(email, token):
         return render_template('email/unsubscribe_error.html', 
                              error=f'Wystąpił błąd: {str(e)}',
                              error_code='CRITICAL_ERROR',
-                             email=decoded_email if 'decoded_email' in locals() else email,
                              timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 @public_bp.route('/api/delete-account/<email>/<token>')
@@ -726,7 +724,6 @@ def delete_account_api(email, token):
             return render_template('email/delete_account_error.html', 
                                  error=result['error'],
                                  error_code=result.get('error_code', 'UNKNOWN_ERROR'),
-                                 email=decoded_email,
                                  timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     except Exception as e:
         # Log critical error
@@ -734,7 +731,6 @@ def delete_account_api(email, token):
         return render_template('email/delete_account_error.html', 
                              error=f'Wystąpił błąd: {str(e)}',
                              error_code='CRITICAL_ERROR',
-                             email=decoded_email if 'decoded_email' in locals() else email,
                              timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 def register_for_event(user, event_id):
