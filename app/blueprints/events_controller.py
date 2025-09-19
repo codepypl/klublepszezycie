@@ -3,7 +3,7 @@ Events business logic controller
 """
 from flask import request
 from flask_login import login_required, current_user
-from app.models import db, EventSchedule, EventRegistration, User
+from app.models import db, EventSchedule, User, Stats, UserLogs, UserHistory
 from datetime import datetime, timedelta
 from app.utils.timezone_utils import get_local_now
 
@@ -191,7 +191,10 @@ class EventsController:
                 }
             
             # Check if there are registrations
-            registrations_count = EventRegistration.query.filter_by(event_id=event_id).count()
+            registrations_count = User.query.filter_by(
+                event_id=event_id,
+                account_type='event_registration'
+            ).count()
             if registrations_count > 0:
                 return {
                     'success': False,
@@ -216,21 +219,21 @@ class EventsController:
     def get_registrations(event_id=None, page=1, per_page=10, status=None, search=None):
         """Get event registrations"""
         try:
-            query = EventRegistration.query
+            query = User.query.filter_by(account_type='event_registration')
             
             if event_id:
                 query = query.filter_by(event_id=event_id)
             
-            if status:
-                query = query.filter_by(status=status)
+            # Note: status filtering removed as it's not applicable to users
+            # Users are either registered (account_type='event_registration') or not
             
             if search:
-                query = query.join(User).filter(
+                query = query.filter(
                     User.first_name.ilike(f'%{search}%') |
                     User.email.ilike(f'%{search}%')
                 )
             
-            registrations = query.order_by(EventRegistration.created_at.desc()).paginate(
+            registrations = query.order_by(User.created_at.desc()).paginate(
                 page=page, per_page=per_page, error_out=False
             )
             
@@ -270,42 +273,57 @@ class EventsController:
                 }
             
             # Check if user is already registered
-            existing_registration = EventRegistration.query.filter_by(
-                event_id=event_id, user_id=user_id
+            existing_user = User.query.filter_by(
+                event_id=event_id,
+                account_type='event_registration',
+                id=user_id
             ).first()
             
-            if existing_registration:
+            if existing_user:
                 return {
                     'success': False,
                     'error': 'Jesteś już zarejestrowany na to wydarzenie'
                 }
             
             # Check if event is full
-            current_registrations = EventRegistration.query.filter_by(event_id=event_id).count()
+            current_registrations = User.query.filter_by(
+                event_id=event_id,
+                account_type='event_registration'
+            ).count()
             if event.max_participants and current_registrations >= event.max_participants:
                 return {
                     'success': False,
                     'error': 'Wydarzenie jest pełne'
                 }
             
-            # Create registration
+            # Update user to register for event
             user = User.query.get(user_id)
-            registration = EventRegistration(
-                event_id=event_id,
+            user.account_type = 'event_registration'
+            user.event_id = event_id
+            
+            # Log the registration in UserHistory (event participation history)
+            UserHistory.log_event_registration(
                 user_id=user_id,
-                first_name=user.first_name,
-                email=user.email,
-                phone=user.phone,
-                notes=notes,
-                status='confirmed'
+                event_id=event_id,
+                was_club_member=user.club_member or False
             )
             
-            db.session.add(registration)
+            # Log the action in UserLogs (user activity logs)
+            UserLogs.log_event_registration(
+                user_id=user_id,
+                event_id=event_id,
+                event_title=event.title
+            )
+            
+            # Update stats
+            Stats.increment('event_registrations', related_id=event_id, related_type='event')
+            Stats.increment('total_registrations')
+            
             db.session.commit()
             
             return {
                 'success': True,
-                'registration': registration,
+                'user': user,
                 'message': 'Zostałeś zarejestrowany na wydarzenie'
             }
         except Exception as e:
@@ -316,17 +334,40 @@ class EventsController:
             }
     
     @staticmethod
-    def cancel_registration(registration_id):
+    def cancel_registration(user_id, event_id):
         """Cancel event registration"""
         try:
-            registration = EventRegistration.query.get(registration_id)
-            if not registration:
+            user = User.query.filter_by(
+                id=user_id,
+                event_id=event_id,
+                account_type='event_registration'
+            ).first()
+            
+            if not user:
                 return {
                     'success': False,
                     'error': 'Rejestracja nie została znaleziona'
                 }
             
-            registration.status = 'cancelled'
+            # Get event title for logging
+            event = EventSchedule.query.get(event_id)
+            event_title = event.title if event else f'Event {event_id}'
+            
+            # Reset user account type
+            user.account_type = 'user'
+            user.event_id = None
+            
+            # Log the cancellation in user history
+            UserHistory.log_event_cancellation(
+                user_id=user_id,
+                event_id=event_id,
+                event_title=event_title
+            )
+            
+            # Update stats
+            Stats.decrement('event_registrations', related_id=event_id, related_type='event')
+            Stats.decrement('total_registrations')
+            
             db.session.commit()
             
             return {

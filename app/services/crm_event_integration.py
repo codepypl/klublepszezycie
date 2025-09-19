@@ -5,7 +5,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from app.models import db, UserGroup, UserGroupMember, EventSchedule, EventRegistration
+from app.models import db, UserGroup, UserGroupMember, EventSchedule, User
 from app.models.crm_model import Contact, Call
 from app.services.email_automation import EmailService
 
@@ -56,16 +56,27 @@ class EventIntegrationService:
             )
             db.session.add(group_member)
         
-        # Create event registration
-        registration = EventRegistration(
-            event_id=event_id,
+        # Create user for event registration
+        from werkzeug.security import generate_password_hash
+        import secrets
+        
+        # Generate temporary password
+        password = secrets.token_urlsafe(8)
+        
+        user = User(
             first_name=contact.name,
             email=contact.email,
             phone=contact.phone,
-            registration_source='crm_lead'
+            password_hash=generate_password_hash(password),
+            account_type='event_registration',
+            event_id=event_id,
+            group_id=event_group.id,
+            club_member=False,
+            is_active=True,
+            role='user'
         )
         
-        db.session.add(registration)
+        db.session.add(user)
         
         # Update call record
         call = Call.query.filter_by(

@@ -55,13 +55,19 @@ class DeleteConfirmation {
     setupConfirmButton(onConfirm, modal) {
         // Clone the button to remove existing event listeners
         const newConfirmBtn = this.confirmBtn.cloneNode(true);
-        this.confirmBtn.parentNode.replaceChild(newConfirmBtn, this.confirmBtn);
         
-        // Update reference
-        this.confirmBtn = newConfirmBtn;
+        // Check if parent node exists before replacing
+        if (this.confirmBtn.parentNode) {
+            this.confirmBtn.parentNode.replaceChild(newConfirmBtn, this.confirmBtn);
+            // Update reference
+            this.confirmBtn = newConfirmBtn;
+        } else {
+            console.warn('Confirm button parent node not found, using original button');
+            this.confirmBtn = this.confirmBtn; // Keep original reference
+        }
         
         // Set up new event listener
-        newConfirmBtn.onclick = () => {
+        this.confirmBtn.onclick = () => {
             // Hide modal using Bootstrap method
             modal.hide();
             

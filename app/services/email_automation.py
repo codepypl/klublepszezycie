@@ -2,7 +2,7 @@
 Email Automation - automatyzacje emailowe
 """
 from datetime import datetime, timedelta
-from app.models import db, User, EventSchedule, EventRegistration, UserGroup, UserGroupMember
+from app.models import db, User, EventSchedule, UserGroup, UserGroupMember
 from app.services.email_service import EmailService
 from app.services.group_manager import GroupManager
 from app.utils.timezone_utils import get_local_now
@@ -51,12 +51,12 @@ class EmailAutomation:
         except Exception as e:
             return False, f"Błąd wysyłania emaila powitalnego: {str(e)}"
     
-    def on_event_registration(self, registration_id):
+    def on_event_registration(self, user_id):
         """Wywoływane przy rejestracji na wydarzenie"""
         try:
-            registration = EventRegistration.query.get(registration_id)
-            if not registration:
-                return False, "Rejestracja nie została znaleziona"
+            user = User.query.get(user_id)
+            if not user or user.account_type != 'event_registration':
+                return False, "Użytkownik nie został znaleziony lub nie jest zarejestrowany na wydarzenie"
             
             # Dodaj do grupy wydarzenia (jeśli użytkownik ma konto)
             # Note: user_id field no longer exists in event_registrations table
@@ -246,14 +246,14 @@ class EmailAutomation:
         except Exception as e:
             return False, f"Błąd przetwarzania przypomnień: {str(e)}"
     
-    def send_admin_notification(self, event_id, registration_id):
+    def send_admin_notification(self, event_id, user_id):
         """Wysyła powiadomienie do administratorów o nowej rejestracji"""
         try:
-            registration = EventRegistration.query.get(registration_id)
+            user = User.query.get(user_id)
             event = EventSchedule.query.get(event_id)
             
-            if not registration or not event:
-                return False, "Rejestracja lub wydarzenie nie zostało znalezione"
+            if not user or not event:
+                return False, "Użytkownik lub wydarzenie nie zostało znalezione"
             
             # Znajdź administratorów
             admins = User.query.filter_by(is_admin=True, is_active=True).all()

@@ -3,7 +3,7 @@ Events API endpoints
 """
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
-from app.models import EventSchedule, EventRegistration, db
+from app.models import EventSchedule, User, db
 from app.utils.auth_utils import admin_required, admin_required_api
 import logging
 
@@ -449,16 +449,17 @@ def api_bulk_delete_events():
 def api_delete_registration(registration_id):
     """Delete event registration"""
     try:
-        registration = EventRegistration.query.get(registration_id)
-        if not registration:
+        user = User.query.get(registration_id)
+        if not user or user.account_type != 'event_registration':
             return jsonify({'success': False, 'message': 'Registration not found'}), 404
         
         # Store data before deletion for group cleanup
-        event_id = registration.event_id
-        email = registration.email
+        event_id = user.event_id
+        email = user.email
         
-        # Delete registration
-        db.session.delete(registration)
+        # Reset user account type
+        user.account_type = 'user'
+        user.event_id = None
         db.session.commit()
         
         # Asynchronicznie synchronizuj grupę wydarzenia
@@ -497,21 +498,21 @@ def api_bulk_delete_registrations():
         # Store registration data before deletion for group cleanup
         registrations_to_delete = []
         for registration_id in registration_ids:
-            registration = EventRegistration.query.get(registration_id)
-            if registration:
+            user = User.query.get(registration_id)
+            if user and user.account_type == 'event_registration':
                 registrations_to_delete.append({
-                    'id': registration.id,
-                    'event_id': registration.event_id,
-                    'user_id': registration.user_id,
-                    'email': registration.email
+                    'id': user.id,
+                    'event_id': user.event_id,
+                    'email': user.email
                 })
         
-        # Delete registrations
+        # Reset user registrations
         deleted_count = 0
         for registration_id in registration_ids:
-            registration = EventRegistration.query.get(registration_id)
-            if registration:
-                db.session.delete(registration)
+            user = User.query.get(registration_id)
+            if user and user.account_type == 'event_registration':
+                user.account_type = 'user'
+                user.event_id = None
                 deleted_count += 1
         
         db.session.commit()

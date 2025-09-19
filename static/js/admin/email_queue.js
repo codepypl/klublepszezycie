@@ -245,7 +245,6 @@ function performDeleteEmail(emailId) {
         console.error('Error deleting email:', error);
         toastManager.error('Błąd usuwania');
     });
-    }
 }
 
 // Progress bar functions

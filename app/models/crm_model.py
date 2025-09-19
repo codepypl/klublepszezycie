@@ -25,7 +25,7 @@ class Contact(db.Model):
     is_blacklisted = db.Column(db.Boolean, default=False)  # Blacklisted numbers
     call_attempts = db.Column(db.Integer, default=0)  # Number of call attempts
     max_call_attempts = db.Column(db.Integer, default=3)  # Max attempts before blacklisting
-    assigned_ankieter_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # Assigned ankieter
+    assigned_ankieter_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))  # Assigned ankieter
     last_call_date = db.Column(db.DateTime)  # Last call attempt
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -80,7 +80,7 @@ class Call(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     contact_id = db.Column(db.Integer, db.ForeignKey('crm_contacts.id'), nullable=False)
-    ankieter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    ankieter_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     call_date = db.Column(db.DateTime, nullable=False)
     call_start_time = db.Column(db.DateTime)  # When call actually started
     call_end_time = db.Column(db.DateTime)  # When call ended
@@ -149,7 +149,7 @@ class BlacklistEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     phone = db.Column(db.String(20), nullable=False, unique=True)
     reason = db.Column(db.String(200))  # Reason for blacklisting
-    blacklisted_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    blacklisted_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     contact_id = db.Column(db.Integer, db.ForeignKey('crm_contacts.id'))  # Original contact
     is_active = db.Column(db.Boolean, default=True)  # Can be reactivated by admin
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -174,7 +174,7 @@ class ImportFile(db.Model):
     file_size = db.Column(db.Integer)  # File size in bytes
     file_type = db.Column(db.String(10), nullable=False)  # xlsx, xls, csv
     csv_separator = db.Column(db.String(5), default=',')  # CSV separator character
-    imported_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    imported_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     import_status = db.Column(db.String(20), default='uploaded')  # uploaded, processing, completed, failed
     total_rows = db.Column(db.Integer, default=0)
     processed_rows = db.Column(db.Integer, default=0)

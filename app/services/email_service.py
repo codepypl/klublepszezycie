@@ -402,8 +402,11 @@ class EmailService:
                 return False
             
             # Pobierz zarejestrowanych użytkowników
-            from app.models import EventRegistration
-            registrations = EventRegistration.query.filter_by(event_id=event_id).all()
+            from app.models import User
+            registrations = User.query.filter_by(
+                event_id=event_id,
+                account_type='event_registration'
+            ).all()
             
             for registration in registrations:
                 context = {

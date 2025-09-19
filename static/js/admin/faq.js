@@ -77,7 +77,12 @@ class FAQManager {
             
             // Remove existing event listeners
             const newConfirmButton = confirmButton.cloneNode(true);
-            confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+            // Check if parent node exists before replacing
+if (confirmButton.parentNode) {
+    confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+} else {
+    console.warn('Confirm button parent node not found');
+}
             
             // Add new event listener for confirm button
             newConfirmButton.addEventListener('click', () => {
@@ -97,7 +102,12 @@ class FAQManager {
             // Add event listener for cancel button to properly clean up
             if (cancelButton) {
                 const newCancelButton = cancelButton.cloneNode(true);
-                cancelButton.parentNode.replaceChild(newCancelButton, cancelButton);
+                // Check if parent node exists before replacing
+if (cancelButton.parentNode) {
+    cancelButton.parentNode.replaceChild(newCancelButton, cancelButton);
+} else {
+    console.warn('Cancel button parent node not found');
+}
                 
                 newCancelButton.addEventListener('click', () => {
                     // Hide modal

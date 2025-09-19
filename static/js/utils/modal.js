@@ -123,8 +123,19 @@ class ModalManager {
             // Remove existing event listeners
             const newConfirmButton = confirmButton.cloneNode(true);
             const newCancelButton = cancelButton.cloneNode(true);
-            confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
-            cancelButton.parentNode.replaceChild(newCancelButton, cancelButton);
+            
+            // Check if parent nodes exist before replacing
+            if (confirmButton.parentNode) {
+                confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+            } else {
+                console.warn('Confirm button parent node not found');
+            }
+            
+            if (cancelButton.parentNode) {
+                cancelButton.parentNode.replaceChild(newCancelButton, cancelButton);
+            } else {
+                console.warn('Cancel button parent node not found');
+            }
 
             // Add new event listeners
             newConfirmButton.addEventListener('click', () => {

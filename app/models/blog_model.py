@@ -66,7 +66,7 @@ class BlogPost(db.Model):
     excerpt = db.Column(db.Text)
     content = db.Column(db.Text, nullable=False)
     featured_image = db.Column(db.String(200))
-    author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=False)
     meta_title = db.Column(db.String(200))
     meta_description = db.Column(db.Text)
     status = db.Column(db.String(20), default='draft')  # draft, published, archived
@@ -146,7 +146,7 @@ class BlogComment(db.Model):
     is_approved = db.Column(db.Boolean, default=False)
     is_spam = db.Column(db.Boolean, default=False)
     moderation_reason = db.Column(db.Text)  # Uzasadnienie odrzucenia
-    moderated_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Kto moderował
+    moderated_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)  # Kto moderował
     moderated_at = db.Column(db.DateTime)  # Kiedy moderowano
     
     # Timestamps

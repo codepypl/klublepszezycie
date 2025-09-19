@@ -16,8 +16,11 @@ class User(UserMixin, db.Model):
     club_member = db.Column(db.Boolean, default=False)  # Whether user wants to join the club
     is_active = db.Column(db.Boolean, default=True, index=True)  # Whether the account is active
     role = db.Column(db.String(20), default='user', index=True)  # admin, user, ankieter
+    account_type = db.Column(db.String(30), default='user', index=True)  # admin, club_member, ankieter, event_registration
+    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=True)  # ID of event for event registrations
+    group_id = db.Column(db.Integer, db.ForeignKey('user_groups.id'), nullable=True)  # ID of group user belongs to
     is_temporary_password = db.Column(db.Boolean, default=True)  # Whether user needs to change password
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     last_login = db.Column(db.DateTime)
     
     def check_password(self, password):
@@ -43,6 +46,22 @@ class User(UserMixin, db.Model):
             return self.is_admin_role()
         return self.role == role_name
 
+    def is_event_registration(self):
+        """Check if user is from event registration"""
+        return self.account_type == 'event_registration'
+    
+    def is_club_member_account(self):
+        """Check if user is club member account type"""
+        return self.account_type == 'club_member'
+    
+    def is_admin_account(self):
+        """Check if user is admin account type"""
+        return self.account_type == 'admin'
+    
+    def is_ankieter_account(self):
+        """Check if user is ankieter account type"""
+        return self.account_type == 'ankieter'
+
     # Backward-compatible property for legacy code that used a boolean column
     @property
     def is_admin(self):
@@ -56,7 +75,7 @@ class PasswordResetToken(db.Model):
     __tablename__ = 'password_reset_tokens'
     
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     token = db.Column(db.String(255), unique=True, nullable=False)
     expires_at = db.Column(db.DateTime, nullable=False)
     used = db.Column(db.Boolean, default=False)

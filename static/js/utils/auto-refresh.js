@@ -136,7 +136,7 @@ class AutoRefreshSystem {
 
     refreshEmailGroups() {
         console.log('🔄 Refreshing email groups...');
-        this.fetchAndUpdateTable('/api/email/groups', 'groupsTable');
+        this.fetchAndUpdateTable('/api/email/groups', 'emailGroupsTable');
     }
 
     refreshEmailCampaigns() {
@@ -214,11 +214,277 @@ class AutoRefreshSystem {
 
         console.log(`✅ Found table ${tableId}, updating with ${data.length} items`);
         
-        // For now, just reload the page as fallback
-        // In the future, implement proper table row updates
-        setTimeout(() => {
-            window.location.reload();
-        }, 500);
+        // Implement proper table row updates based on table type
+        if (tableId === 'usersTable') {
+            this.updateUsersTable(table, data);
+        } else if (tableId === 'emailQueueTable') {
+            this.updateEmailQueueTable(table, data);
+        } else if (tableId === 'emailGroupsTable') {
+            this.updateEmailGroupsTable(table, data);
+        } else {
+            // For other tables, use fallback to page reload
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        }
+    }
+
+    // Update users table with new data
+    updateUsersTable(table, users) {
+        console.log(`🔄 Updating users table with ${users.length} users`);
+        
+        const tbody = table.querySelector('tbody');
+        if (!tbody) {
+            console.warn('No tbody found in users table');
+            return;
+        }
+
+        // Clear existing rows
+        tbody.innerHTML = '';
+
+        // Add new rows
+        users.forEach(user => {
+            const row = this.createUserRow(user);
+            tbody.appendChild(row);
+        });
+
+        console.log(`✅ Updated users table with ${users.length} rows`);
+    }
+
+    // Create a user table row
+    createUserRow(user) {
+        const row = document.createElement('tr');
+        row.setAttribute('data-user-id', user.id);
+        
+        // Format dates
+        const createdDate = user.created_at ? this.formatDate(user.created_at) : '-';
+        const lastLoginDate = user.last_login ? this.formatDate(user.last_login) : '-';
+        
+        // Get event name if user is registered for an event
+        let eventInfo = '-';
+        if (user.event_id) {
+            // We'll need to fetch event details or pass them from the API
+            eventInfo = `Wydarzenie ID: ${user.event_id}`;
+        }
+
+        row.innerHTML = `
+            <td>
+                <input type="checkbox" class="form-check-input" value="${user.id}">
+            </td>
+            <td>${user.id}</td>
+            <td>${user.first_name || '-'}</td>
+            <td>${user.email}</td>
+            <td>${eventInfo}</td>
+            <td>${user.group_id || '-'}</td>
+            <td>
+                ${this.getAccountTypeBadge(user.account_type)}
+            </td>
+            <td>
+                ${user.is_active ? 
+                    '<span class="badge admin-badge admin-badge-success">Aktywny</span>' : 
+                    '<span class="badge admin-badge admin-badge-danger">Nieaktywny</span>'
+                }
+            </td>
+            <td>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm admin-btn-outline" 
+                            onclick="viewUserProfile(${user.id})" 
+                            title="Podgląd profilu">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm admin-btn-outline" 
+                            onclick="editUser(${user.id})" 
+                            title="Edytuj użytkownika">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    ${!user.is_admin ? `
+                        <button type="button" class="btn btn-sm admin-btn-danger" 
+                                onclick="deleteUser(${user.id})" 
+                                title="Usuń użytkownika">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            </td>
+        `;
+        
+        return row;
+    }
+
+    // Get account type badge
+    getAccountTypeBadge(accountType) {
+        switch(accountType) {
+            case 'admin':
+                return '<span class="badge admin-badge admin-badge-danger">Administrator</span>';
+            case 'club_member':
+                return '<span class="badge admin-badge admin-badge-success">Członek klubu</span>';
+            case 'ankieter':
+                return '<span class="badge admin-badge admin-badge-warning">Ankieter</span>';
+            case 'event_registration':
+                return '<span class="badge admin-badge admin-badge-info">Rejestracja na wydarzenia</span>';
+            default:
+                return '<span class="badge admin-badge admin-badge-secondary">Użytkownik</span>';
+        }
+    }
+
+    // Format date for display
+    formatDate(dateString) {
+        if (!dateString) return '-';
+        
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleString('pl-PL', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return '-';
+        }
+    }
+
+    // Update email queue table
+    updateEmailQueueTable(table, emails) {
+        console.log(`🔄 Updating email queue table with ${emails.length} emails`);
+        
+        const tbody = table.querySelector('tbody');
+        if (!tbody) {
+            console.warn('No tbody found in email queue table');
+            return;
+        }
+
+        // Clear existing rows
+        tbody.innerHTML = '';
+
+        // Add new rows
+        emails.forEach(email => {
+            const row = this.createEmailQueueRow(email);
+            tbody.appendChild(row);
+        });
+
+        console.log(`✅ Updated email queue table with ${emails.length} rows`);
+    }
+
+    // Create email queue row
+    createEmailQueueRow(email) {
+        const row = document.createElement('tr');
+        row.setAttribute('data-email-id', email.id);
+        
+        row.innerHTML = `
+            <td>${email.id}</td>
+            <td>${email.recipient_email}</td>
+            <td>${email.subject}</td>
+            <td>${this.getEmailStatusBadge(email.status)}</td>
+            <td>${this.formatDate(email.created_at)}</td>
+            <td>${this.formatDate(email.sent_at)}</td>
+            <td>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm admin-btn-outline" 
+                            onclick="viewEmail(${email.id})" 
+                            title="Podgląd emaila">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    ${email.status === 'pending' ? `
+                        <button type="button" class="btn btn-sm admin-btn-success" 
+                                onclick="sendEmail(${email.id})" 
+                                title="Wyślij email">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            </td>
+        `;
+        
+        return row;
+    }
+
+    // Get email status badge
+    getEmailStatusBadge(status) {
+        switch(status) {
+            case 'pending':
+                return '<span class="badge admin-badge admin-badge-warning">Oczekujący</span>';
+            case 'sent':
+                return '<span class="badge admin-badge admin-badge-success">Wysłany</span>';
+            case 'failed':
+                return '<span class="badge admin-badge admin-badge-danger">Błąd</span>';
+            default:
+                return '<span class="badge admin-badge admin-badge-secondary">Nieznany</span>';
+        }
+    }
+
+    // Update email groups table
+    updateEmailGroupsTable(table, groups) {
+        console.log(`🔄 Updating email groups table with ${groups.length} groups`);
+        
+        const tbody = table.querySelector('tbody');
+        if (!tbody) {
+            console.warn('No tbody found in email groups table');
+            return;
+        }
+
+        // Clear existing rows
+        tbody.innerHTML = '';
+
+        // Add new rows
+        groups.forEach(group => {
+            const row = this.createEmailGroupRow(group);
+            tbody.appendChild(row);
+        });
+
+        console.log(`✅ Updated email groups table with ${groups.length} rows`);
+    }
+
+    // Create email group row
+    createEmailGroupRow(group) {
+        const row = document.createElement('tr');
+        row.setAttribute('data-group-id', group.id);
+        
+        row.innerHTML = `
+            <td>${group.id}</td>
+            <td>${group.name}</td>
+            <td>${group.description || '-'}</td>
+            <td>${group.member_count || 0}</td>
+            <td>${this.getGroupTypeBadge(group.group_type)}</td>
+            <td>${this.formatDate(group.created_at)}</td>
+            <td>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm admin-btn-outline" 
+                            onclick="viewGroupMembers(${group.id})" 
+                            title="Podgląd członków">
+                        <i class="fas fa-users"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm admin-btn-outline" 
+                            onclick="editGroup(${group.id})" 
+                            title="Edytuj grupę">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm admin-btn-danger" 
+                            onclick="deleteGroup(${group.id})" 
+                            title="Usuń grupę">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        
+        return row;
+    }
+
+    // Get group type badge
+    getGroupTypeBadge(groupType) {
+        switch(groupType) {
+            case 'club_members':
+                return '<span class="badge admin-badge admin-badge-success">Członkowie klubu</span>';
+            case 'event_based':
+                return '<span class="badge admin-badge admin-badge-info">Wydarzenie</span>';
+            case 'manual':
+                return '<span class="badge admin-badge admin-badge-secondary">Ręczna</span>';
+            default:
+                return '<span class="badge admin-badge admin-badge-secondary">Nieznany</span>';
+        }
     }
 }
 

@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from app.models import User, UserGroup, db
 from app.utils.auth_utils import admin_required_api, login_required_api
+from app.blueprints.users_controller import UsersController
 import logging
 
 users_api_bp = Blueprint('users_api', __name__)
@@ -42,6 +43,10 @@ def api_users():
                 'email': user.email,
                 'phone': user.phone,
                 'is_active': user.is_active,
+                'event_id': user.event_id,
+                'group_id': user.group_id,
+                'account_type': user.account_type,
+                'is_admin': user.is_admin,
                 'created_at': user.created_at.isoformat() if user.created_at else None,
                 'last_login': user.last_login.isoformat() if user.last_login else None
             } for user in users.items],
@@ -56,6 +61,48 @@ def api_users():
         })
     except Exception as e:
         logging.error(f"Error getting users: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@users_api_bp.route('/users/for-event-group/<int:event_id>', methods=['GET'])
+@login_required
+def api_users_for_event_group(event_id):
+    """Get users suitable for adding to event group (non-club members registered for other events)"""
+    try:
+        search = request.args.get('search', '', type=str)
+        
+        # Get users who:
+        # 1. Are NOT club members (club_member=False)
+        # 2. Are registered for events (account_type='event_registration')
+        # 3. Are NOT registered for the current event being edited
+        query = User.query.filter(
+            User.club_member == False,
+            User.account_type == 'event_registration',
+            User.event_id != event_id
+        )
+        
+        if search:
+            query = query.filter(
+                db.or_(
+                    User.first_name.ilike(f'%{search}%'),
+                    User.email.ilike(f'%{search}%')
+                )
+            )
+        
+        users = query.all()
+        
+        return jsonify({
+            'success': True,
+            'users': [{
+                'id': user.id,
+                'first_name': user.first_name,
+                'email': user.email,
+                'phone': user.phone,
+                'event_id': user.event_id,
+                'account_type': user.account_type
+            } for user in users]
+        })
+    except Exception as e:
+        logging.error(f"Error getting users for event group: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @users_api_bp.route('/search-users', methods=['GET'])
@@ -127,6 +174,8 @@ def api_user(user_id):
                 user.club_member = data['club_member']
             if 'role' in data:
                 user.role = data['role']
+            if 'account_type' in data:
+                user.account_type = data['account_type']
             
             # Obsługa nowego hasła
             new_password = None
@@ -161,12 +210,19 @@ def api_user(user_id):
                     else:
                         print(f"❌ Błąd usuwania z grupy członków klubu: {message}")
                     
-                    # Asynchronicznie synchronizuj wszystkie grupy wydarzeń
+                    # Synchronizuj wszystkie grupy wydarzeń
                     success, message = group_manager.sync_event_groups()
                     if success:
                         print(f"✅ Zsynchronizowano wszystkie grupy wydarzeń po zmianie statusu członka klubu dla {user.email}")
                     else:
                         print(f"❌ Błąd synchronizacji grup wydarzeń: {message}")
+                
+                # Dodatkowa synchronizacja grupy członków klubu dla pewności
+                success, message = group_manager.sync_club_members_group()
+                if success:
+                    print(f"✅ Zsynchronizowano grupę członków klubu po zmianie statusu dla {user.email}")
+                else:
+                    print(f"❌ Błąd synchronizacji grupy członków klubu: {message}")
             
             # Wyślij email z nowym hasłem jeśli zostało ustawione
             if new_password:
@@ -209,8 +265,35 @@ def api_user(user_id):
             })
         
         elif request.method == 'DELETE':
+            # Store user info before deletion for group synchronization
+            user_email = user.email
+            user_id = user.id
+            
+            # Delete user from database
             db.session.delete(user)
             db.session.commit()
+            
+            # Synchronize groups after user deletion
+            try:
+                from app.services.group_manager import GroupManager
+                group_manager = GroupManager()
+                
+                # Synchronize club members group
+                success, message = group_manager.sync_club_members_group()
+                if success:
+                    print(f"✅ Zsynchronizowano grupę członków klubu po usunięciu użytkownika {user_email}")
+                else:
+                    print(f"❌ Błąd synchronizacji grupy członków klubu: {message}")
+                
+                # Synchronize event groups
+                success, message = group_manager.sync_event_groups()
+                if success:
+                    print(f"✅ Zsynchronizowano grupy wydarzeń po usunięciu użytkownika {user_email}")
+                else:
+                    print(f"❌ Błąd synchronizacji grup wydarzeń: {message}")
+                    
+            except Exception as sync_error:
+                print(f"❌ Błąd synchronizacji grup po usunięciu użytkownika {user_email}: {str(sync_error)}")
             
             return jsonify({
                 'success': True,
@@ -332,13 +415,44 @@ def api_bulk_delete_users():
             return jsonify({'success': False, 'message': 'No users selected'}), 400
         
         deleted_count = 0
+        deleted_users = []  # Store user info for group synchronization
+        
         for user_id in user_ids:
             user = User.query.get(user_id)
             if user:
+                # Store user info before deletion
+                deleted_users.append({
+                    'id': user.id,
+                    'email': user.email,
+                    'club_member': user.club_member
+                })
                 db.session.delete(user)
                 deleted_count += 1
         
         db.session.commit()
+        
+        # Synchronize groups after bulk deletion
+        if deleted_users:
+            try:
+                from app.services.group_manager import GroupManager
+                group_manager = GroupManager()
+                
+                # Synchronize club members group
+                success, message = group_manager.sync_club_members_group()
+                if success:
+                    print(f"✅ Zsynchronizowano grupę członków klubu po bulk delete ({deleted_count} użytkowników)")
+                else:
+                    print(f"❌ Błąd synchronizacji grupy członków klubu: {message}")
+                
+                # Synchronize event groups
+                success, message = group_manager.sync_event_groups()
+                if success:
+                    print(f"✅ Zsynchronizowano grupy wydarzeń po bulk delete ({deleted_count} użytkowników)")
+                else:
+                    print(f"❌ Błąd synchronizacji grup wydarzeń: {message}")
+                    
+            except Exception as sync_error:
+                print(f"❌ Błąd synchronizacji grup po bulk delete: {str(sync_error)}")
         
         return jsonify({
             'success': True,
@@ -391,7 +505,8 @@ def api_profile():
                 'user': {
                     'id': user.id,
                     'name': user.first_name,
-                    'username': user.username,
+                    'first_name': user.first_name,
+                    'username': user.first_name,
                     'email': user.email,
                     'phone': user.phone,
                     'club_member': user.club_member,
@@ -453,7 +568,8 @@ def api_profile():
                 'user': {
                     'id': user.id,
                     'name': user.first_name,
-                    'username': user.username,
+                    'first_name': user.first_name,
+                    'username': user.first_name,
                     'email': user.email,
                     'phone': user.phone,
                     'club_member': user.club_member,
@@ -468,3 +584,42 @@ def api_profile():
         db.session.rollback()
         logging.error(f"Error in profile API: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+@users_api_bp.route('/users/profile/<int:user_id>', methods=['GET'])
+@login_required
+def api_user_profile(user_id):
+    """Get user profile with event history"""
+    try:
+        result = UsersController.get_user_profile(user_id)
+        
+        if result['success']:
+            user = result['user']
+            event_history = result['event_history']
+            
+            return jsonify({
+                'success': True,
+                'user': {
+                    'id': user.id,
+                    'first_name': user.first_name,
+                    'email': user.email,
+                    'phone': user.phone,
+                    'club_member': user.club_member,
+                    'account_type': user.account_type,
+                    'event_id': user.event_id,
+                    'group_id': user.group_id,
+                    'is_active': user.is_active,
+                    'role': user.role,
+                    'created_at': user.created_at.strftime('%Y-%m-%dT%H:%M:%S%z') if user.created_at else None,
+                    'last_login': user.last_login.strftime('%Y-%m-%dT%H:%M:%S%z') if user.last_login else None
+                },
+                'event_history': event_history
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result['error']
+            }), 404
+    
+    except Exception as e:
+        logging.error(f"Error in user profile API: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500

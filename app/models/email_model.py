@@ -50,7 +50,8 @@ class UserGroup(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    group_type = db.Column(db.String(50), default='manual')  # manual, automatic, event
+    group_type = db.Column(db.String(50), default='manual')  # manual, automatic, event, event_based
+    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=True)  # ID of event for event groups
     criteria = db.Column(db.Text)  # JSON string for automatic group criteria
     is_active = db.Column(db.Boolean, default=True)
     member_count = db.Column(db.Integer, default=0)

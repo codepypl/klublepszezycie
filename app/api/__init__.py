@@ -15,6 +15,7 @@ from .seo_api import seo_api_bp
 from .social_api import social_api_bp
 from .crm_api import crm_api_bp
 from .crm_agent_api import agent_api_bp
+from .stats_api import stats_api_bp
 
 __all__ = [
     'email_bp',
@@ -29,5 +30,6 @@ __all__ = [
     'seo_api_bp',
     'social_api_bp',
     'crm_api_bp',
-    'agent_api_bp'
+    'agent_api_bp',
+    'stats_api_bp'
 ]

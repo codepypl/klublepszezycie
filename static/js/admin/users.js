@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 phone: document.getElementById('editUserPhone').value,
                 club_member: document.getElementById('editUserClub').value === 'true',
                 is_active: document.getElementById('editUserActive').value === 'true',
-                role: document.getElementById('editUserRole').value
+                account_type: document.getElementById('editUserAccountType').value
             };
             
             // Dodaj hasło tylko jeśli zostało ustawione
@@ -137,18 +137,20 @@ document.addEventListener('DOMContentLoaded', function() {
 function applyFilters() {
     const name = document.getElementById('filterName').value.trim();
     const email = document.getElementById('filterEmail').value.trim();
-    const role = document.getElementById('filterRole').value;
+    const accountType = document.getElementById('filterAccountType').value;
     const status = document.getElementById('filterStatus').value;
-    const clubMember = document.getElementById('filterClubMember').value;
+    const event = document.getElementById('filterEvent').value;
+    const group = document.getElementById('filterGroup').value;
     
     // Buduj URL z parametrami
     const params = new URLSearchParams();
     
     if (name) params.append('name', name);
     if (email) params.append('email', email);
-    if (role) params.append('role', role);
+    if (accountType) params.append('account_type', accountType);
     if (status) params.append('status', status);
-    if (clubMember) params.append('club_member', clubMember);
+    if (event) params.append('event', event);
+    if (group) params.append('group', group);
     
     // Przekieruj z filtrami
     const currentUrl = new URL(window.location);
@@ -159,9 +161,10 @@ function applyFilters() {
 function clearFilters() {
     document.getElementById('filterName').value = '';
     document.getElementById('filterEmail').value = '';
-    document.getElementById('filterRole').value = '';
+    document.getElementById('filterAccountType').value = '';
     document.getElementById('filterStatus').value = '';
-    document.getElementById('filterClubMember').value = '';
+    document.getElementById('filterEvent').value = '';
+    document.getElementById('filterGroup').value = '';
     
     // Przekieruj bez parametrów
     const currentUrl = new URL(window.location);
@@ -177,14 +180,17 @@ function loadFiltersFromURL() {
     if (urlParams.get('email')) {
         document.getElementById('filterEmail').value = urlParams.get('email');
     }
-    if (urlParams.get('role')) {
-        document.getElementById('filterRole').value = urlParams.get('role');
+    if (urlParams.get('account_type')) {
+        document.getElementById('filterAccountType').value = urlParams.get('account_type');
     }
     if (urlParams.get('status')) {
         document.getElementById('filterStatus').value = urlParams.get('status');
     }
-    if (urlParams.get('club_member')) {
-        document.getElementById('filterClubMember').value = urlParams.get('club_member');
+    if (urlParams.get('event')) {
+        document.getElementById('filterEvent').value = urlParams.get('event');
+    }
+    if (urlParams.get('group')) {
+        document.getElementById('filterGroup').value = urlParams.get('group');
     }
     
     // Jeśli są aktywne filtry, rozwiń sekcję

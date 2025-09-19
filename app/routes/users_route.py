@@ -15,9 +15,10 @@ def index():
     per_page = request.args.get('per_page', 10, type=int)
     name_filter = request.args.get('name', '').strip()
     email_filter = request.args.get('email', '').strip()
-    role_filter = request.args.get('role', '').strip()
+    account_type_filter = request.args.get('account_type', '').strip()
     status_filter = request.args.get('status', '').strip()
-    club_member_filter = request.args.get('club_member', '').strip()
+    event_filter = request.args.get('event', '').strip()
+    group_filter = request.args.get('group', '').strip()
     edit_user_id = request.args.get('edit_user', '').strip()
     
     data = UsersController.get_users(
@@ -25,9 +26,10 @@ def index():
         per_page=per_page,
         name_filter=name_filter,
         email_filter=email_filter,
-        role_filter=role_filter,
+        account_type_filter=account_type_filter,
         status_filter=status_filter,
-        club_member_filter=club_member_filter
+        event_filter=event_filter,
+        group_filter=group_filter
     )
     
     if not data['success']:
@@ -40,11 +42,13 @@ def index():
         active_filters_count += 1
     if email_filter:
         active_filters_count += 1
-    if role_filter:
+    if account_type_filter:
         active_filters_count += 1
     if status_filter:
         active_filters_count += 1
-    if club_member_filter:
+    if event_filter:
+        active_filters_count += 1
+    if group_filter:
         active_filters_count += 1
     
     # Get user for editing if edit_user_id is provided
@@ -57,6 +61,11 @@ def index():
         except (ValueError, TypeError):
             pass
     
+    # Get events and groups for filters
+    from app.models import EventSchedule, UserGroup
+    events = EventSchedule.query.filter_by(is_active=True).order_by(EventSchedule.title).all()
+    groups = UserGroup.query.filter_by(is_active=True).order_by(UserGroup.name).all()
+    
     return render_template('admin/users.html', 
                          users=data['users'],
                          pagination=data.get('pagination'),
@@ -64,9 +73,12 @@ def index():
                          active_filters_count=active_filters_count,
                          name_filter=name_filter,
                          email_filter=email_filter,
-                         role_filter=role_filter,
+                         account_type_filter=account_type_filter,
                          status_filter=status_filter,
-                         club_member_filter=club_member_filter,
+                         event_filter=event_filter,
+                         group_filter=group_filter,
+                         events=events,
+                         groups=groups,
                          edit_user=edit_user)
 
 @users_bp.route('/users/create', methods=['GET', 'POST'])

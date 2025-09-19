@@ -328,7 +328,9 @@
                     console.log('✅ Profil załadowany pomyślnie, dane użytkownika:', data.user);
                     console.log('✅ Status członkostwa w klubie:', data.user.club_member);
                     console.log('✅ Typ statusu członkostwa:', typeof data.user.club_member);
+                    console.log('🔄 Wywołuję displayProfile z danymi:', data.user);
                     displayProfile(data.user);
+                    console.log('✅ displayProfile zakończone');
                 } else {
                     console.error('❌ Błąd podczas ładowania profilu:', data.error);
                     showError('Błąd podczas ładowania profilu: ' + (data.error || 'Nieznany błąd'));
@@ -392,31 +394,51 @@
             }
             
             // Form fields
+            console.log('🔄 Aktualizuję pola formularza...');
+            console.log('🔄 Wartość first_name:', user.first_name);
+            console.log('🔄 Wartość email:', user.email);
+            console.log('🔄 Wartość phone:', user.phone);
+            console.log('🔄 Wartość club_member:', user.club_member);
+            
             document.getElementById('name').value = user.first_name || '';
+            document.getElementById('email').value = user.email || '';
             document.getElementById('phone').value = user.phone || '';
             document.getElementById('clubMember').checked = user.club_member || false;
             
+            console.log('✅ Pola formularza zaktualizowane');
+            console.log('✅ Wartość pola name po ustawieniu:', document.getElementById('name').value);
+            console.log('✅ Wartość pola email po ustawieniu:', document.getElementById('email').value);
+            console.log('✅ Wartość pola phone po ustawieniu:', document.getElementById('phone').value);
+            console.log('✅ Wartość pola clubMember po ustawieniu:', document.getElementById('clubMember').checked);
+            
             console.log('📝 Formularz wypełniony danymi użytkownika');
             console.log('📝 Wartość pola name:', user.first_name);
+            console.log('📝 Wartość pola email:', user.email);
             console.log('📝 Wartość pola phone:', user.phone);
             console.log('📝 Wartość pola clubMember:', user.club_member);
             console.log('📝 Typ pola clubMember:', typeof user.club_member);
             console.log('📝 Element name:', document.getElementById('name'));
+            console.log('📝 Element email:', document.getElementById('email'));
             console.log('📝 Element phone:', document.getElementById('phone'));
             console.log('📝 Element clubMember:', document.getElementById('clubMember'));
             console.log('📝 Wartość elementu name:', document.getElementById('name')?.value);
+            console.log('📝 Wartość elementu email:', document.getElementById('email')?.value);
             console.log('📝 Wartość elementu phone:', document.getElementById('phone')?.value);
             console.log('📝 Wartość elementu clubMember:', document.getElementById('clubMember')?.checked);
             console.log('📝 Typ elementu name:', typeof document.getElementById('name')?.value);
+            console.log('📝 Typ elementu email:', typeof document.getElementById('email')?.value);
             console.log('📝 Typ elementu phone:', typeof document.getElementById('phone')?.value);
             console.log('📝 Typ elementu clubMember:', typeof document.getElementById('clubMember')?.checked);
             console.log('📝 Wartość elementu name po ustawieniu:', document.getElementById('name').value);
+            console.log('📝 Wartość elementu email po ustawieniu:', document.getElementById('email').value);
             console.log('📝 Wartość elementu phone po ustawieniu:', document.getElementById('phone').value);
             console.log('📝 Wartość elementu clubMember po ustawieniu:', document.getElementById('clubMember').checked);
             console.log('📝 Typ elementu name po ustawieniu:', typeof document.getElementById('name').value);
+            console.log('📝 Typ elementu email po ustawieniu:', typeof document.getElementById('email').value);
             console.log('📝 Typ elementu phone po ustawieniu:', typeof document.getElementById('phone').value);
             console.log('📝 Typ elementu clubMember po ustawieniu:', typeof document.getElementById('clubMember').checked);
             console.log('📝 Wartość elementu name po ustawieniu (string):', String(document.getElementById('name').value));
+            console.log('📝 Wartość elementu email po ustawieniu (string):', String(document.getElementById('email').value));
             console.log('📝 Wartość elementu phone po ustawieniu (string):', String(document.getElementById('phone').value));
             console.log('📝 Wartość elementu clubMember po ustawieniu (string):', String(document.getElementById('clubMember').checked));
         }
@@ -426,14 +448,14 @@
             e.preventDefault();
             
             const formData = {
-                name: document.getElementById('name').value.trim(),
+                first_name: document.getElementById('name').value.trim(),
                 email: document.getElementById('email').value.trim(),
                 phone: document.getElementById('phone').value.trim(),
                 club_member: document.getElementById('clubMember').checked
             };
             
             // Validation
-            if (!formData.name) {
+            if (!formData.first_name) {
                 showError('Imię i nazwisko jest wymagane');
                 return;
             }
@@ -462,7 +484,9 @@
                 if (data.success) {
                     showSuccess(data.message);
                     console.log('🔄 Przeładowanie profilu po aktualizacji...');
+                    console.log('🔄 Wywołuję loadProfile()...');
                     loadProfile(); // Reload profile data
+                    console.log('✅ loadProfile() wywołane');
                 } else {
                     console.error('❌ Błąd podczas aktualizacji profilu:', data.error);
                     showError(data.error || 'Błąd podczas aktualizacji profilu');

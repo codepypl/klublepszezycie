@@ -681,7 +681,12 @@ function deleteTemplate(templateId) {
     // Update confirm button
     const confirmBtn = document.getElementById('confirmBulkDelete');
     const newConfirmBtn = confirmBtn.cloneNode(true);
-    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    // Check if parent node exists before replacing
+    if (confirmBtn.parentNode) {
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    } else {
+        console.warn('Confirm button parent node not found');
+    }
     
     newConfirmBtn.onclick = function() {
         // Hide modal using Bootstrap method
@@ -729,7 +734,12 @@ function resetTemplates() {
     // Update confirm button
     const confirmBtn = document.getElementById('confirmBulkDelete');
     const newConfirmBtn = confirmBtn.cloneNode(true);
-    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    // Check if parent node exists before replacing
+    if (confirmBtn.parentNode) {
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    } else {
+        console.warn('Confirm button parent node not found');
+    }
     
     newConfirmBtn.onclick = function() {
         // Hide modal using Bootstrap method

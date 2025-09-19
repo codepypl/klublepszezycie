@@ -3,7 +3,7 @@ Admin business logic controller
 """
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from app.models import db, EventSchedule, EventRegistration, User, UserGroup, Section
+from app.models import db, EventSchedule, User, UserGroup, Section, Stats, UserLogs
 from app.utils.timezone_utils import get_local_now
 from app.utils.auth_utils import admin_required
 import json
@@ -15,27 +15,20 @@ class AdminController:
     def get_dashboard_data():
         """Get dashboard statistics and data"""
         try:
-            # Get statistics
-            total_events = EventSchedule.query.count()
-            total_registrations = EventRegistration.query.count()
-            total_users = User.query.count()
-            
-            # Get testimonials count
-            from app.models import Testimonial
-            total_testimonials = Testimonial.query.count()
-            
-            # Get new users from last 30 days
-            from datetime import datetime, timedelta
-            thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-            new_users = User.query.filter(User.created_at >= thirty_days_ago).count()
+            # Get statistics from central stats table
+            total_events = Stats.get_total_events()
+            total_registrations = Stats.get_total_registrations()
+            total_users = Stats.get_total_users()
+            total_testimonials = Stats.get_total_testimonials()
+            new_users = Stats.get_new_users_30_days()
             
             # Get recent events
             recent_events = EventSchedule.query.order_by(EventSchedule.created_at.desc()).limit(5).all()
             
-            # Get recent registrations
-            recent_registrations = EventRegistration.query.order_by(
-                EventRegistration.created_at.desc()
-            ).limit(5).all()
+            # Get recent registrations - get recent event registration users
+            recent_registrations = User.query.filter_by(
+                account_type='event_registration'
+            ).order_by(User.created_at.desc()).limit(5).all()
             
             # Create stats object
             stats = {
@@ -69,24 +62,13 @@ class AdminController:
     def get_crm_settings_data():
         """Get CRM settings data"""
         try:
-            # Get CRM statistics
-            from app.models.crm_model import Contact, Call, ImportFile, BlacklistEntry
-            
-            total_contacts = Contact.query.count()
-            total_calls = Call.query.count()
-            total_imports = ImportFile.query.count()
-            total_blacklist = BlacklistEntry.query.count()
-            
-            # Get call statistics
-            from app.models.crm_model import Call
-            from datetime import datetime, timedelta
-            
-            today = datetime.now().date()
-            daily_calls = Call.query.filter(Call.created_at >= today).count()
-            daily_leads = Call.query.filter(
-                Call.created_at >= today,
-                Call.status == 'lead'
-            ).count()
+            # Get CRM statistics from central stats table
+            total_contacts = Stats.get_total_contacts()
+            total_calls = Stats.get_total_calls()
+            total_imports = Stats.get_total_imports()
+            total_blacklist = Stats.get_total_blacklist()
+            daily_calls = Stats.get_daily_calls()
+            daily_leads = Stats.get_daily_leads()
             
             stats = {
                 'total_contacts': total_contacts,
@@ -153,10 +135,11 @@ class AdminController:
         try:
             from app.models.crm_model import Contact, Call, ImportFile, ImportRecord, BlacklistEntry
             
-            total_contacts = Contact.query.count()
-            total_calls = Call.query.count()
-            total_imports = ImportFile.query.count()
-            total_blacklist = BlacklistEntry.query.count()
+            # Get counts from central stats table
+            total_contacts = Stats.get_total_contacts()
+            total_calls = Stats.get_total_calls()
+            total_imports = Stats.get_total_imports()
+            total_blacklist = Stats.get_total_blacklist()
             
             # Get recent imports
             recent_imports = ImportFile.query.order_by(ImportFile.created_at.desc()).limit(5).all()

@@ -50,12 +50,12 @@ def create_app():
     # Import models in app context
     logger.info("📊 Loading database models...")
     with app.app_context():
-        from app.models import User, EventSchedule, EventRegistration, UserGroup, BlogCategory, BlogPost, BlogTag, BlogComment, SocialLink, EmailTemplate, UserGroupMember, EmailCampaign, EmailQueue, EmailLog, PasswordResetToken, SEOSettings, FooterSettings, LegalDocument
+        from app.models import User, EventSchedule, UserGroup, BlogCategory, BlogPost, BlogTag, BlogComment, SocialLink, EmailTemplate, UserGroupMember, EmailCampaign, EmailQueue, EmailLog, PasswordResetToken, SEOSettings, FooterSettings, LegalDocument, UserLogs, UserHistory, Stats
     
     # Register blueprints
     logger.info("🛣️ Registering routes...")
     from app.routes import public_bp, admin_bp, auth_bp, blog_bp, seo_bp, social_bp, events_bp, users_bp, footer_bp, crm_bp, ankieter_bp
-    from app.api import email_bp, users_api_bp, testimonials_api_bp, sections_api_bp, menu_api_bp, faq_api_bp, benefits_api_bp, events_api_bp, blog_api_bp, seo_api_bp, social_api_bp, crm_api_bp, agent_api_bp
+    from app.api import email_bp, users_api_bp, testimonials_api_bp, sections_api_bp, menu_api_bp, faq_api_bp, benefits_api_bp, events_api_bp, blog_api_bp, seo_api_bp, social_api_bp, crm_api_bp, agent_api_bp, stats_api_bp
     
     app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -82,6 +82,7 @@ def create_app():
     app.register_blueprint(ankieter_bp, url_prefix='/ankieter')
     app.register_blueprint(crm_api_bp, url_prefix='/api/crm')
     app.register_blueprint(agent_api_bp, url_prefix='/api/crm/agent')
+    app.register_blueprint(stats_api_bp, url_prefix='/api')
     
     # Import user loader
     logger.info("👤 Setting up user authentication...")
@@ -172,6 +173,9 @@ def create_app():
     with app.app_context():
         db.create_all()
         logger.info("✅ Database tables created successfully!")
+        
+    # Automatic group synchronization is disabled - using manual sync only
+    logger.info("⏸️ Automatic group synchronization is disabled - using manual sync only")
     
     logger.info("✅ Flask application initialized successfully!")
     return app

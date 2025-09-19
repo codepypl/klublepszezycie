@@ -1078,6 +1078,81 @@
             }
         }
 
+        // Update event status from server
+        function updateEventStatus() {
+            if (!currentEventId) {
+                console.log('❌ No current event ID available for status update');
+                return;
+            }
+            
+            fetch(`/api/event-status?event_id=${currentEventId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('❌ Error fetching event status:', data.error);
+                        return;
+                    }
+                    
+                    console.log('📊 Event status update:', data);
+                    
+                    // Update registration count
+                    updateRegistrationCount(data.registration_count, data.max_participants);
+                    
+                    // Check if event status has changed
+                    const now = new Date();
+                    const eventDate = new Date(data.event_date);
+                    let newStatus = 'past';
+                    
+                    if (eventDate > now) {
+                        newStatus = 'upcoming';
+                    } else {
+                        newStatus = 'current';
+                    }
+                    
+                    // If status has changed, update the display
+                    if (newStatus !== currentEventStatus) {
+                        console.log(`🔄 Event status changed from ${currentEventStatus} to ${newStatus}`);
+                        currentEventStatus = newStatus;
+                        
+                        // Update the hero section dataset
+                        const heroSection = document.getElementById('hero');
+                        if (heroSection) {
+                            heroSection.dataset.eventStatus = newStatus;
+                        }
+                        
+                        // Update the display
+                        updateEventDisplay(data, newStatus);
+                    }
+                    
+                    // Update registration form availability
+                    const registrationForm = document.querySelector('#eventRegistrationModal form');
+                    const submitBtn = registrationForm?.querySelector('button[type="submit"]');
+                    
+                    if (data.is_registration_open && !data.is_registered) {
+                        // Registration is open and user is not registered
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = 'Zarejestruj się';
+                        }
+                    } else if (data.is_registered) {
+                        // User is already registered
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.textContent = 'Już zarejestrowany';
+                        }
+                    } else {
+                        // Registration is closed
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.textContent = 'Rejestracja zamknięta';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Error updating event status:', error);
+                });
+        }
+
         // Simple auto-refresh for event status (every 30 seconds)
         setInterval(() => {
             if (currentEventId) {

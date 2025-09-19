@@ -25,13 +25,17 @@ class EventSchedule(db.Model):
     max_participants = db.Column(db.Integer)
     is_archived = db.Column(db.Boolean, default=False)
     
-    # Relationships
-    registrations = db.relationship('EventRegistration', back_populates='event', lazy='dynamic', cascade='all, delete-orphan')
+    # Relationships - now using User model for registrations
+    registered_users = db.relationship('User', backref='registered_event', lazy=True, foreign_keys='User.event_id')
     
     @property
     def current_participants(self):
         """Get current number of participants"""
-        return self.registrations.filter_by(status='confirmed').count()
+        from .user_model import User
+        return User.query.filter_by(
+            event_id=self.id,
+            account_type='event_registration'
+        ).count()
     
     @property
     def is_full(self):
@@ -50,23 +54,3 @@ class EventSchedule(db.Model):
     def __repr__(self):
         return f'<EventSchedule {self.title}>'
 
-class EventRegistration(db.Model):
-    """Event registrations"""
-    __tablename__ = 'event_registrations'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=False)
-    first_name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), nullable=False)
-    phone = db.Column(db.String(20))
-    status = db.Column(db.String(20), default='pending')  # pending, confirmed, cancelled
-    wants_club_news = db.Column(db.Boolean, default=False)  # Added from database schema
-    notification_preferences = db.Column(db.Text)  # JSON string for notification preferences
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
-    event = db.relationship('EventSchedule', back_populates='registrations')
-    
-    def __repr__(self):
-        return f'<EventRegistration {self.first_name} for {self.event.title}>'

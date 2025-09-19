@@ -42,9 +42,9 @@
         </div>
         <div class="col-md-3">
             <div class="admin-stats-card">
-                <i class="fas fa-user-clock"></i>
-                <h3>{{ stats.never_logged_users }}</h3>
-                <p>Nigdy Nie Logowali</p>
+                <i class="fas fa-calendar-check"></i>
+                <h3>{{ stats.event_registrations }}</h3>
+                <p>Z Rejestracji na Wydarzenia</p>
             </div>
         </div>
     </div>
@@ -75,12 +75,13 @@
                             <input type="email" class="form-control" id="filterEmail" placeholder="Wpisz email...">
                         </div>
                         <div class="col-md-3">
-                            <label for="filterRole" class="form-label">Rola</label>
-                            <select class="form-select" id="filterRole">
-                                <option value="">Wszystkie role</option>
+                            <label for="filterAccountType" class="form-label">Typ Konta</label>
+                            <select class="form-select" id="filterAccountType">
+                                <option value="">Wszystkie typy</option>
                                 <option value="admin">Administrator</option>
+                                <option value="club_member">Członek klubu</option>
                                 <option value="ankieter">Ankieter</option>
-                                <option value="user">Użytkownik</option>
+                                <option value="event_registration">Rejestracja na wydarzenia</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -89,17 +90,26 @@
                                 <option value="">Wszystkie statusy</option>
                                 <option value="active">Aktywny</option>
                                 <option value="inactive">Nieaktywny</option>
-                                <option value="never_logged">Nigdy nie logował</option>
                             </select>
                         </div>
                     </div>
                     <div class="row g-3 mt-2">
                         <div class="col-md-3">
-                            <label for="filterClubMember" class="form-label">Członek klubu</label>
-                            <select class="form-select" id="filterClubMember">
-                                <option value="">Wszyscy</option>
-                                <option value="true">Tak</option>
-                                <option value="false">Nie</option>
+                            <label for="filterEvent" class="form-label">Wydarzenie</label>
+                            <select class="form-select" id="filterEvent">
+                                <option value="">Wszystkie wydarzenia</option>
+                                {% for event in events %}
+                                <option value="{{ event.id }}">{{ event.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filterGroup" class="form-label">Grupa</label>
+                            <select class="form-select" id="filterGroup">
+                                <option value="">Wszystkie grupy</option>
+                                {% for group in groups %}
+                                <option value="{{ group.id }}">{{ group.name }}</option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-9 d-flex align-items-end">
@@ -168,11 +178,13 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="editUserRole" class="form-label">Rola</label>
-                                <select class="form-select" id="editUserRole">
-                                    <option value="user" {% if edit_user.role == 'user' %}selected{% endif %}>Użytkownik</option>
-                                    <option value="ankieter" {% if edit_user.role == 'ankieter' %}selected{% endif %}>Ankieter</option>
-                                    <option value="admin" {% if edit_user.role == 'admin' or edit_user.is_admin %}selected{% endif %}>Administrator</option>
+                                <label for="editUserAccountType" class="form-label">Typ Konta</label>
+                                <select class="form-select" id="editUserAccountType">
+                                    <option value="user" {% if edit_user.account_type == 'user' %}selected{% endif %}>Użytkownik</option>
+                                    <option value="admin" {% if edit_user.account_type == 'admin' %}selected{% endif %}>Administrator</option>
+                                    <option value="club_member" {% if edit_user.account_type == 'club_member' %}selected{% endif %}>Członek klubu</option>
+                                    <option value="ankieter" {% if edit_user.account_type == 'ankieter' %}selected{% endif %}>Ankieter</option>
+                                    <option value="event_registration" {% if edit_user.account_type == 'event_registration' %}selected{% endif %}>Rejestracja na wydarzenia</option>
                                 </select>
                             </div>
                         </div>
@@ -216,10 +228,10 @@
                                 <th>ID</th>
                                 <th>Imię</th>
                                 <th>Email</th>
-                                <th>Telefon</th>
-                                <th>Członek klubu</th>
+                                <th>Wydarzenie</th>
+                                <th>ID grupy</th>
+                                <th>Typ Konta</th>
                                 <th>Status</th>
-                                <th>Ostatnie logowanie</th>
                                 <th>Akcje</th>
                             </tr>
                         </thead>
@@ -234,27 +246,37 @@
                                 <td>{{ user.id }}</td>
                                 <td>
                                     <strong>{{ user.first_name }}</strong>
-                                    <br><small class="text-muted">
-                                        {% if user.role == 'admin' or user.is_admin %}
-                                            Administrator
-                                        {% elif user.role == 'ankieter' %}
-                                            Ankieter
-                                        {% else %}
-                                            Użytkownik
-                                        {% endif %}
-                                    </small>
                                 </td>
                                 <td>
                                     <a href="mailto:{{ user.email }}" class="text-decoration-none">
                                         {{ user.email }}
                                     </a>
                                 </td>
-                                <td>{{ user.phone or 'Brak' }}</td>
                                 <td>
-                                    {% if user.club_member %}
-                                        <span class="badge admin-badge admin-badge-success">Tak</span>
+                                    {% if user.event_id %}
+                                        <span class="badge admin-badge admin-badge-info">{{ user.event_id }}</span>
                                     {% else %}
-                                        <span class="badge admin-badge admin-badge-secondary">Nie</span>
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.group_id %}
+                                        <span class="badge admin-badge admin-badge-info">{{ user.group_id }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.account_type == 'admin' %}
+                                        <span class="badge admin-badge admin-badge-danger">Administrator</span>
+                                    {% elif user.account_type == 'club_member' %}
+                                        <span class="badge admin-badge admin-badge-success">Członek klubu</span>
+                                    {% elif user.account_type == 'ankieter' %}
+                                        <span class="badge admin-badge admin-badge-warning">Ankieter</span>
+                                    {% elif user.account_type == 'event_registration' %}
+                                        <span class="badge admin-badge admin-badge-info">Rejestracja na wydarzenia</span>
+                                    {% else %}
+                                        <span class="badge admin-badge admin-badge-secondary">Użytkownik</span>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -265,14 +287,12 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if user.last_login %}
-                                        {{ user.last_login.strftime('%d.%m.%Y %H:%M') }}
-                                    {% else %}
-                                        <span class="text-muted">Nigdy</span>
-                                    {% endif %}
-                                </td>
-                                <td>
                                     <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm admin-btn-outline" 
+                                                onclick="viewUserProfile({{ user.id }})" 
+                                                title="Podgląd profilu">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
                                         <button type="button" class="btn btn-sm admin-btn-outline" 
                                                 onclick="editUser({{ user.id }})" 
                                                 title="Edytuj użytkownika">
@@ -308,6 +328,32 @@
             {% endif %}
         </div>
     </div>
+
+    <!-- User Profile Modal -->
+    <div class="modal fade" id="userProfileModal" tabindex="-1" aria-labelledby="userProfileModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userProfileModalLabel">
+                        <i class="fas fa-user me-2"></i>Podgląd profilu użytkownika
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="userProfileContent">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Ładowanie...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block extra_js %}
@@ -335,6 +381,113 @@
         {% endif %}
     });
     
+    // View user profile function
+    function viewUserProfile(userId) {
+        const modal = new bootstrap.Modal(document.getElementById('userProfileModal'));
+        const content = document.getElementById('userProfileContent');
+        
+        // Show loading
+        content.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Ładowanie...</span>
+                </div>
+            </div>
+        `;
+        
+        modal.show();
+        
+        // Fetch user profile data
+        fetch(`/api/users/profile/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const user = data.user;
+                    const eventHistory = data.event_history || [];
+                    
+                    content.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-3">Podstawowe dane</h6>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Imię:</strong></td>
+                                        <td>${user.first_name}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Email:</strong></td>
+                                        <td><a href="mailto:${user.email}">${user.email}</a></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Członek klubu:</strong></td>
+                                        <td>
+                                            <span class="badge ${user.club_member ? 'bg-success' : 'bg-secondary'}">
+                                                ${user.club_member ? 'Tak' : 'Nie'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Ostatnie logowanie:</strong></td>
+                                        <td>${user.last_login ? formatDate(user.last_login) : 'Nigdy'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Data utworzenia konta:</strong></td>
+                                        <td>${formatDate(user.created_at)}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-3">Historia wydarzeń</h6>
+                                ${eventHistory.length > 0 ? `
+                                    <div class="list-group">
+                                        ${eventHistory.map(event => `
+                                            <div class="list-group-item">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1">${event.event_title}</h6>
+                                                    <small>${new Date(event.registration_date).toLocaleDateString('pl-PL')}</small>
+                                                </div>
+                                                <p class="mb-1">Data wydarzenia: ${event.event_date ? new Date(event.event_date).toLocaleDateString('pl-PL') : 'Nie określono'}</p>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : `
+                                    <p class="text-muted">Brak historii wydarzeń</p>
+                                `}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Błąd ładowania profilu: ${data.error}
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                content.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Błąd ładowania profilu: ${error.message}
+                    </div>
+                `;
+            });
+    }
+    
+    // Date formatting function
+    function formatDate(dateString) {
+        if (!dateString) return 'Brak';
+        const date = new Date(dateString);
+        const formatted = date.toLocaleDateString('pl-PL', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        return formatted;
+    }
     
 </script>
 

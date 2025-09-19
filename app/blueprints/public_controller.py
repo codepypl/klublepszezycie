@@ -2,20 +2,18 @@
 Public business logic controller
 """
 from flask import request, jsonify, flash, redirect, url_for
-from app.models import db, EventSchedule, EventRegistration, User, Section, MenuItem, FAQ, BenefitItem, Testimonial, SocialLink, FooterSettings
+from app.models import db, EventSchedule, User, Section, MenuItem, FAQ, BenefitItem, Testimonial, SocialLink, FooterSettings, Stats, UserLogs, UserHistory
 from app.services.email_service import EmailService
 from app.api.email_api import add_user_to_event_group
 import os
 import hmac
 import hashlib
+import logging
 from datetime import datetime
 from app.utils.validation_utils import validate_email, validate_phone, validate_event_date
 from app.utils.timezone_utils import get_local_now, convert_to_local
 from app.utils.blog_utils import generate_blog_link
 import json
-import logging
-import hashlib
-import hmac
 
 class PublicController:
     """Public business logic controller"""
@@ -189,7 +187,10 @@ class PublicController:
                 }
             
             # Check if event is full
-            current_registrations = EventRegistration.query.filter_by(event_id=event_id).count()
+            current_registrations = User.query.filter_by(
+                event_id=event_id,
+                account_type='event_registration'
+            ).count()
             if event.max_participants and current_registrations >= event.max_participants:
                 return {
                     'success': False,
@@ -197,38 +198,87 @@ class PublicController:
                 }
             
             # Check if user already registered
-            existing_registration = EventRegistration.query.filter_by(
-                event_id=event_id, email=email
+            existing_user = User.query.filter_by(
+                event_id=event_id,
+                email=email,
+                account_type='event_registration'
             ).first()
             
-            if existing_registration:
+            if existing_user:
                 return {
                     'success': False,
                     'error': 'Jesteś już zarejestrowany na to wydarzenie'
                 }
             
-            # Create registration
-            registration = EventRegistration(
-                event_id=event_id,
-                first_name=name,
-                email=email,
-                phone=phone,
-                notes=notes,
-                status='confirmed'
-            )
+            # Create or update user for event registration
+            user = User.query.filter_by(email=email).first()
+            if user:
+                # Update existing user
+                user.account_type = 'event_registration'
+                user.event_id = event_id
+            else:
+                # Create new user - this would need password generation
+                return {
+                    'success': False,
+                    'error': 'Ta funkcja wymaga utworzenia nowego użytkownika. Użyj nowego systemu rejestracji.'
+                }
             
-            db.session.add(registration)
             db.session.commit()
             
-            # Add user to event group if exists
+            # Log the registration in UserHistory (event participation history)
+            UserHistory.log_event_registration(
+                user_id=user.id,
+                event_id=event_id,
+                was_club_member=user.club_member or False
+            )
+            
+            # Log the action in UserLogs (user activity logs)
+            UserLogs.log_event_registration(
+                user_id=user.id,
+                event_id=event_id,
+                event_title=event.title
+            )
+            
+            # Update stats
+            Stats.increment('event_registrations', related_id=event_id, related_type='event')
+            Stats.increment('total_registrations')
+            
+            # Add user to event group and synchronize all groups
             try:
-                add_user_to_event_group(email, event.title)
+                from app.services.group_manager import GroupManager
+                group_manager = GroupManager()
+                
+                # Add user to specific event group
+                success, message = group_manager.add_user_to_event_group(user.id, event_id)
+                if success:
+                    logging.info(f"✅ Dodano użytkownika {user.email} do grupy wydarzenia: {event.title}")
+                else:
+                    logging.warning(f"❌ Błąd dodawania do grupy wydarzenia: {message}")
+                
+                # Synchronize all groups to ensure consistency
+                try:
+                    # Sync club members group (in case user became club member)
+                    success, message = group_manager.sync_club_members_group()
+                    if success:
+                        logging.info(f"✅ Zsynchronizowano grupę członków klubu po rejestracji na wydarzenie")
+                    else:
+                        logging.warning(f"❌ Błąd synchronizacji grupy członków klubu: {message}")
+                    
+                    # Sync event groups
+                    success, message = group_manager.sync_event_groups()
+                    if success:
+                        logging.info(f"✅ Zsynchronizowano grupy wydarzeń po rejestracji")
+                    else:
+                        logging.warning(f"❌ Błąd synchronizacji grup wydarzeń: {message}")
+                except Exception as sync_error:
+                    logging.warning(f"❌ Błąd synchronizacji grup po rejestracji: {str(sync_error)}")
+                    
             except Exception as e:
                 logging.warning(f"Failed to add user to event group: {str(e)}")
             
             return {
                 'success': True,
-                'registration': registration,
+                'user': user,
                 'message': 'Zostałeś zarejestrowany na wydarzenie'
             }
         except Exception as e:
@@ -400,16 +450,16 @@ class PublicController:
                         else:
                             print(f"❌ Błąd usuwania z grupy {group.name}: {message}")
                 
-                # Asynchronicznie synchronizuj wszystkie grupy wydarzeń po usunięciu użytkownika
+                # Delete user
+                db.session.delete(user)
+                db.session.commit()
+                
+                # Synchronizuj wszystkie grupy wydarzeń po usunięciu użytkownika
                 success, message = group_manager.sync_event_groups()
                 if success:
                     print(f"✅ Zsynchronizowano wszystkie grupy wydarzeń po usunięciu użytkownika {user.email}")
                 else:
                     print(f"❌ Błąd synchronizacji grup wydarzeń: {message}")
-                
-                # Delete user
-                db.session.delete(user)
-                db.session.commit()
                 
                 print(f"✅ Użytkownik {user.email} został usunięty z systemu")
                 

@@ -8,7 +8,7 @@ from app.services.email_service import EmailService
 from app.utils.timezone_utils import get_local_now, convert_to_local
 from app.utils.blog_utils import generate_blog_link
 from app.utils.validation_utils import validate_email, validate_phone
-from app.models import db, EventSchedule, User, EventRegistration
+from app.models import db, EventSchedule, User, UserGroup
 import logging
 from datetime import datetime
 
@@ -108,7 +108,7 @@ def index():
 
 @public_bp.route('/register', methods=['POST'])
 def register():
-    """User registration - JSON API"""
+    """User registration - JSON API with new user management logic"""
     try:
         # Only accept JSON data
         if not request.is_json:
@@ -128,55 +128,64 @@ def register():
         
         # Check if user already exists
         existing_user = User.query.filter_by(email=data['email']).first()
+        
         if existing_user:
-            # If user exists and event_id is provided, just register for the event
-            if data.get('event_id'):
-                return register_for_event(existing_user, data['event_id'])
-            
-            # If user exists and no event_id, just add to club and return success
-            if not existing_user.club_member:
+            # User exists - check their status
+            if existing_user.club_member:
+                # User is already club member
+                return jsonify({'success': True, 'message': 'Witamy z powrotem! Jesteś już członkiem klubu'})
+            else:
+                # User exists but is not club member - convert to club member
                 existing_user.club_member = True
+                existing_user.account_type = 'club_member'
                 db.session.commit()
+                print(f"✅ Converted existing user to club member: {existing_user.email}")
+        else:
+            # Create new club member user
+            from werkzeug.security import generate_password_hash
+            import uuid
             
-            return jsonify({'success': True, 'message': 'Witamy z powrotem! Zostałeś dodany do klubu'})
-        
-        # Create new user
-        from werkzeug.security import generate_password_hash
-        import uuid
-        
-        # Generate temporary password
-        temp_password = str(uuid.uuid4())[:8]
-        
-        user = User(
-            first_name=data['first_name'],
-            email=data['email'],
-            phone=data.get('phone', ''),
-            password_hash=generate_password_hash(temp_password),  # Use same password
-            is_active=True,
-            is_temporary_password=True,
-            club_member=True  # CTA form always joins the club
-        )
-        
-        try:
-            db.session.add(user)
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            # Check if it's a duplicate key error
-            if 'duplicate key' in str(e) or 'UNIQUE constraint' in str(e):
-                # User was created by another process, try to get it
-                existing_user = User.query.filter_by(email=data['email']).first()
-                if existing_user:
-                    if not existing_user.club_member:
-                        existing_user.club_member = True
-                        db.session.commit()
-                    return jsonify({'success': True, 'message': 'Witamy z powrotem! Zostałeś dodany do klubu'})
-            # Re-raise the exception if it's not a duplicate key error
-            raise e
+            # Generate temporary password
+            temp_password = str(uuid.uuid4())[:8]
+            
+            user = User(
+                first_name=data['first_name'],
+                email=data['email'],
+                phone=data.get('phone', ''),
+                password_hash=generate_password_hash(temp_password),
+                is_active=True,
+                is_temporary_password=True,
+                club_member=True,
+                account_type='club_member',
+                role='user'
+            )
+            
+            try:
+                db.session.add(user)
+                db.session.commit()
+                print(f"✅ Created new club member: {user.email}")
+            except Exception as e:
+                db.session.rollback()
+                # Check if it's a duplicate key error
+                if 'duplicate key' in str(e) or 'UNIQUE constraint' in str(e):
+                    # User was created by another process, try to get it
+                    existing_user = User.query.filter_by(email=data['email']).first()
+                    if existing_user:
+                        if not existing_user.club_member:
+                            existing_user.club_member = True
+                            existing_user.account_type = 'club_member'
+                            db.session.commit()
+                        return jsonify({'success': True, 'message': 'Witamy z powrotem! Zostałeś dodany do klubu'})
+                # Re-raise the exception if it's not a duplicate key error
+                raise e
         
         # Add user to system groups
         from app.services.group_manager import GroupManager
         group_manager = GroupManager()
+        
+        # Get the user (either existing or newly created)
+        if existing_user:
+            user = existing_user
         
         # Add to all users group
         success, message = group_manager.add_user_to_all_users(user.id)
@@ -185,41 +194,59 @@ def register():
         else:
             print(f"❌ Błąd dodawania do grupy wszystkich użytkowników: {message}")
         
-        # Add to club members group if they want club news
-        if user.club_member:
-            success, message = group_manager.add_user_to_club_members(user.id)
-            if success:
-                print(f"✅ Dodano użytkownika {user.email} do grupy członków klubu")
-            else:
-                print(f"❌ Błąd dodawania do grupy członków klubu: {message}")
+        # Add to club members group
+        success, message = group_manager.add_user_to_club_members(user.id)
+        if success:
+            print(f"✅ Dodano użytkownika {user.email} do grupy członków klubu")
+        else:
+            print(f"❌ Błąd dodawania do grupy członków klubu: {message}")
         
-        # Send welcome email with temporary password (optional - don't fail registration if email fails)
+        # Synchronize all groups to ensure consistency
         try:
-            email_service = EmailService()
+            # Sync club members group
+            success, message = group_manager.sync_club_members_group()
+            if success:
+                print(f"✅ Zsynchronizowano grupę członków klubu po utworzeniu użytkownika")
+            else:
+                print(f"❌ Błąd synchronizacji grupy członków klubu: {message}")
             
-            # Generate unsubscribe and delete account URLs
-            unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
-            delete_token = generate_unsubscribe_token(user.email, 'delete_account')
-            
-            context = {
-                'user_name': user.first_name,
-                'user_email': user.email,
-                'temporary_password': temp_password,  # Use same password
-                'login_url': request.url_root + 'login',
-                'unsubscribe_url': request.url_root + f'api/unsubscribe/{user.email}/{unsubscribe_token}',
-                'delete_account_url': request.url_root + f'api/delete-account/{user.email}/{delete_token}'
-            }
-            
-            success, message = email_service.send_template_email(
-                to_email=user.email,
-                template_name='welcome',  # Use existing welcome template
-                context=context
-            )
-            
-            if not success:
-                print(f"Failed to send welcome email: {message}")
-        except Exception as e:
-            print(f"Email service error (registration continues): {e}")
+            # Sync event groups
+            success, message = group_manager.sync_event_groups()
+            if success:
+                print(f"✅ Zsynchronizowano grupy wydarzeń po utworzeniu użytkownika")
+            else:
+                print(f"❌ Błąd synchronizacji grup wydarzeń: {message}")
+        except Exception as sync_error:
+            print(f"❌ Błąd synchronizacji grup po utworzeniu użytkownika: {str(sync_error)}")
+        
+        # Send welcome email with temporary password (only for new users)
+        if not existing_user:
+            try:
+                email_service = EmailService()
+                
+                # Generate unsubscribe and delete account URLs
+                unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
+                delete_token = generate_unsubscribe_token(user.email, 'delete_account')
+                
+                context = {
+                    'user_name': user.first_name,
+                    'user_email': user.email,
+                    'temporary_password': temp_password,
+                    'login_url': request.url_root + 'login',
+                    'unsubscribe_url': request.url_root + f'api/unsubscribe/{user.email}/{unsubscribe_token}',
+                    'delete_account_url': request.url_root + f'api/delete-account/{user.email}/{delete_token}'
+                }
+                
+                success, message = email_service.send_template_email(
+                    to_email=user.email,
+                    template_name='welcome',  # Use existing welcome template
+                    context=context
+                )
+                
+                if not success:
+                    print(f"Failed to send welcome email: {message}")
+            except Exception as e:
+                print(f"Email service error (registration continues): {e}")
         
         # Note: on_user_joined_club is not called here because this is a new user registration
         # The welcome email with temporary password is already sent above
@@ -284,18 +311,22 @@ def api_event_status():
         # Registration is open only if event hasn't started yet
         is_registration_open = event.event_date and event.event_date > now_naive
         
-        # Get registration count
-        registration_count = EventRegistration.query.filter_by(event_id=event_id).count()
+        # Get registration count - count users registered for this event
+        registration_count = User.query.filter_by(
+            event_id=event_id,
+            account_type='event_registration'
+        ).count()
         
         # Check if user is already registered (if email provided)
         user_email = request.args.get('email')
         is_registered = False
         if user_email:
-            existing_registration = EventRegistration.query.filter_by(
-                event_id=event_id, 
-                email=user_email
+            existing_user = User.query.filter_by(
+                event_id=event_id,
+                email=user_email,
+                account_type='event_registration'
             ).first()
-            is_registered = existing_registration is not None
+            is_registered = existing_user is not None
         
         return jsonify({
             'event_id': event_id,
@@ -324,12 +355,13 @@ def check_registration(event_id):
             return jsonify({'success': False, 'message': 'Email jest wymagany'}), 400
         
         # Check if user is already registered
-        existing_registration = EventRegistration.query.filter_by(
+        existing_user = User.query.filter_by(
             event_id=event_id,
-            email=email
+            email=email,
+            account_type='event_registration'
         ).first()
         
-        if existing_registration:
+        if existing_user:
             return jsonify({
                 'success': False, 
                 'message': 'Jesteś już zarejestrowany na to wydarzenie',
@@ -347,7 +379,7 @@ def check_registration(event_id):
 
 @public_bp.route('/register-event/<int:event_id>', methods=['POST'])
 def register_event(event_id):
-    """Register for event"""
+    """Register for event with new user management logic"""
     try:
         data = request.get_json()
         print(f"🔍 Event registration data: {data}")
@@ -396,44 +428,142 @@ def register_event(event_id):
         if event.end_date and event.end_date <= now_naive:
             return jsonify({'success': False, 'message': 'Rejestracja na to wydarzenie jest już zamknięta - wydarzenie się zakończyło'}), 400
         
-        # Check max participants first (before checking duplicates)
+        # Check if user already exists
+        existing_user = User.query.filter_by(email=data['email']).first()
+        
+        if existing_user:
+            # User exists - check their status
+            if existing_user.club_member:
+                # User is club member - they don't need to register
+                return jsonify({
+                    'success': False, 
+                    'message': 'Ten adres e-mail jest używany przez jednego z członków klubu, nie musisz rejestrować się na wydarzenie, ponieważ wszyscy członkowie klubu są automatycznie zapisani na każde wydarzenie.'
+                }), 400
+            else:
+                # User exists but is not club member - allow registration
+                print(f"🔍 Existing user found: {existing_user.email}, club_member: {existing_user.club_member}")
+        else:
+            # User doesn't exist - will be created during registration
+            pass
+        
+        # Check max participants - count users registered for this event
         if event.max_participants:
-            current_registrations = EventRegistration.query.filter_by(event_id=event_id).count()
+            current_registrations = User.query.filter_by(
+                event_id=event_id,
+                account_type='event_registration'
+            ).count()
             if current_registrations >= event.max_participants:
                 return jsonify({'success': False, 'message': 'Brak wolnych miejsc na to wydarzenie'}), 400
         
         # Use database transaction with proper locking to prevent race conditions
         try:
-            # Check if user is already registered (with row-level locking)
-            existing_registration = EventRegistration.query.filter_by(
+            # Check if user is already registered for this event (with row-level locking)
+            existing_event_user = User.query.filter_by(
                 event_id=event_id,
-                email=data['email']
+                email=data['email'],
+                account_type='event_registration'
             ).with_for_update().first()
             
-            if existing_registration:
-                print(f"❌ User already registered: {data['email']}")
+            if existing_event_user:
+                print(f"❌ User already registered for this event: {data['email']}")
                 return jsonify({'success': False, 'message': 'Jesteś już zarejestrowany na to wydarzenie'}), 400
             
             # Double-check max participants after locking
             if event.max_participants:
-                current_registrations = EventRegistration.query.filter_by(event_id=event_id).count()
+                current_registrations = User.query.filter_by(
+                    event_id=event_id,
+                    account_type='event_registration'
+                ).count()
                 if current_registrations >= event.max_participants:
                     print(f"❌ Event full: {current_registrations}/{event.max_participants}")
                     return jsonify({'success': False, 'message': 'Brak wolnych miejsc na to wydarzenie'}), 400
             
-            # Create registration
-            registration = EventRegistration(
-                event_id=event_id,
-                first_name=data['first_name'],
-                email=data['email'],
-                phone=data.get('phone', ''),
-                wants_club_news=data.get('wants_club_news', False),
-                status='confirmed'  # Automatically confirm registration
+            # Create user account for event registration
+            if not existing_user:
+                from app.blueprints.users_controller import UsersController
+                user_result = UsersController.create_event_registration_user(
+                    first_name=data['first_name'],
+                    email=data['email'],
+                    phone=data.get('phone', ''),
+                    event_id=event_id,
+                    group_id=None  # Will be set after group creation
+                )
+                
+                if not user_result['success']:
+                    print(f"❌ Failed to create user: {user_result['error']}")
+                    db.session.rollback()
+                    return jsonify({'success': False, 'message': 'Błąd podczas tworzenia konta użytkownika. Spróbuj ponownie.'}), 500
+                else:
+                    print(f"✅ User created for event registration: {data['email']}")
+                    created_user = user_result['user']
+            else:
+                # Update existing user to register for this event
+                existing_user.account_type = 'event_registration'
+                existing_user.event_id = event_id
+                existing_user.group_id = None  # Will be set after group creation
+                created_user = existing_user
+            
+            # Get or create event group
+            from app.services.group_manager import GroupManager
+            group_manager = GroupManager()
+            
+            # Get event group
+            event_group = UserGroup.query.filter_by(group_type='event_based', event_id=event_id).first()
+            if not event_group:
+                # Create event group if it doesn't exist
+                event_group = UserGroup(
+                    name=f"Wydarzenie: {event.title}",
+                    description=f"Grupa uczestników wydarzenia: {event.title}",
+                    group_type='event_based',
+                    event_id=event_id
+                )
+                db.session.add(event_group)
+                db.session.commit()
+            
+            # Update user's group_id
+            created_user.group_id = event_group.id
+            db.session.commit()
+            
+            # Synchronize event group
+            print(f"🔍 Starting event group synchronization for event {event_id}")
+            success, message = group_manager.async_sync_event_group(event_id)
+            if success:
+                print(f"✅ Event group synchronized: {event.title}")
+            else:
+                print(f"❌ Event group synchronization error: {message}")
+            
+            # Send confirmation email
+            email_service = EmailService()
+            
+            # Generate unsubscribe and delete account URLs
+            unsubscribe_token = generate_unsubscribe_token(created_user.email, 'unsubscribe')
+            delete_token = generate_unsubscribe_token(created_user.email, 'delete_account')
+            
+            context = {
+                'user_name': created_user.first_name,
+                'event_title': event.title,
+                'event_date': event.event_date.strftime('%d.%m.%Y') if event.event_date else '',
+                'event_time': event.event_date.strftime('%H:%M') if event.event_date else '',
+                'event_location': event.location or 'Online',
+                'event_description': event.description or '',
+                'unsubscribe_url': request.url_root + f'api/unsubscribe/{created_user.email}/{unsubscribe_token}',
+                'delete_account_url': request.url_root + f'api/delete-account/{created_user.email}/{delete_token}'
+            }
+            
+            success, message = email_service.send_template_email(
+                to_email=created_user.email,
+                template_name='event_registration_confirmation',
+                context=context
             )
             
-            db.session.add(registration)
-            db.session.commit()
-            print(f"✅ Registration created successfully: {data['email']}")
+            if success:
+                print(f"✅ Confirmation email sent to {created_user.email}")
+            else:
+                print(f"❌ Failed to send confirmation email: {message}")
+            
+            # Call register_for_event to complete the registration process
+            # This will add user to group and send confirmation email
+            return register_for_event(created_user, event_id)
             
         except Exception as e:
             db.session.rollback()
@@ -442,192 +572,11 @@ def register_event(event_id):
             traceback.print_exc()
             return jsonify({'success': False, 'message': 'Błąd podczas rejestracji. Spróbuj ponownie.'}), 500
         
-        # Asynchronicznie synchronizuj grupę wydarzenia
-        print(f"🔍 Rozpoczynam synchronizację grupy wydarzenia {event_id}")
-        from app.services.group_manager import GroupManager
-        group_manager = GroupManager()
-        
-        # Wywołaj asynchroniczną synchronizację grupy wydarzenia
-        success, message = group_manager.async_sync_event_group(event_id)
-        if success:
-            print(f"✅ Zsynchronizowano grupę wydarzenia: {event.title}")
-        else:
-            print(f"❌ Błąd synchronizacji grupy wydarzenia: {message}")
-        
-        # Create user account if wants_club_news is True
-        user_created = False
-        if registration.wants_club_news:
-            try:
-                # Check if user already exists
-                existing_user = User.query.filter_by(email=registration.email).first()
-                if not existing_user:
-                    # Generate temporary password
-                    import uuid
-                    temp_password = str(uuid.uuid4())[:8]
-                    
-                    # Create new user
-                    from werkzeug.security import generate_password_hash
-                    new_user = User(
-                        email=registration.email,
-                        first_name=registration.first_name,
-                        password_hash=generate_password_hash(temp_password),
-                        is_active=True,
-                        is_temporary_password=True,
-                        club_member=True
-                    )
-                    
-                    try:
-                        db.session.add(new_user)
-                        db.session.commit()
-                        user_created = True
-                    except Exception as user_creation_error:
-                        db.session.rollback()
-                        # Check if it's a duplicate key error
-                        if 'duplicate key' in str(user_creation_error) or 'UNIQUE constraint' in str(user_creation_error):
-                            # User was created by another process, get existing user
-                            existing_user = User.query.filter_by(email=registration.email).first()
-                            if existing_user:
-                                if not existing_user.club_member:
-                                    existing_user.club_member = True
-                                    db.session.commit()
-                                new_user = existing_user  # Use existing user for further processing
-                                user_created = True  # Still consider it as "created" for email purposes
-                        else:
-                            # Re-raise the exception if it's not a duplicate key error
-                            raise user_creation_error
-                    
-                    # Add new user to system groups
-                    from app.services.group_manager import GroupManager
-                    group_manager = GroupManager()
-                    
-                    # Add to all users group
-                    success, message = group_manager.add_user_to_all_users(new_user.id)
-                    if success:
-                        print(f"✅ Dodano nowego użytkownika {new_user.email} do grupy wszystkich użytkowników")
-                    else:
-                        print(f"❌ Błąd dodawania do grupy wszystkich użytkowników: {message}")
-                    
-                    # Add to club members group
-                    success, message = group_manager.add_user_to_club_members(new_user.id)
-                    if success:
-                        print(f"✅ Dodano nowego użytkownika {new_user.email} do grupy członków klubu")
-                    else:
-                        print(f"❌ Błąd dodawania do grupy członków klubu: {message}")
-                    
-                    # Add new user to event group
-                    success, message = add_user_to_event_group(new_user.id, event_id)
-                    if success:
-                        print(f"✅ Dodano nowego użytkownika {new_user.email} do grupy wydarzenia: {event.title}")
-                    else:
-                        print(f"❌ Błąd dodawania nowego użytkownika do grupy wydarzenia: {message}")
-                    
-                    # Send welcome email with temporary password
-                    # Generate unsubscribe and delete account URLs
-                    unsubscribe_token = generate_unsubscribe_token(registration.email, 'unsubscribe')
-                    delete_token = generate_unsubscribe_token(registration.email, 'delete_account')
-                    
-                    welcome_context = {
-                        'user_name': registration.first_name,
-                        'user_email': registration.email,
-                        'temporary_password': temp_password,
-                        'login_url': request.url_root + 'login',
-                        'unsubscribe_url': request.url_root + f'api/unsubscribe/{registration.email}/{unsubscribe_token}',
-                        'delete_account_url': request.url_root + f'api/delete-account/{registration.email}/{delete_token}'
-                    }
-                    
-                    welcome_success, welcome_message = email_service.send_template_email(
-                        to_email=registration.email,
-                        template_name='welcome',
-                        context=welcome_context
-                    )
-                    
-                    if not welcome_success:
-                        print(f"Failed to send welcome email: {welcome_message}")
-                    
-                    # Note: on_user_registration is not called here because the welcome email 
-                    # with temporary password is already sent above
-                    
-                    # Send admin notification for new club member
-                    try:
-                        from config import config
-                        admin_email = config['development'].ADMIN_EMAIL
-                        admin_context = {
-                            'user_name': new_user.first_name,
-                            'user_email': new_user.email,
-                            'user_phone': new_user.phone or 'Nie podano',
-                            'registration_date': datetime.now().strftime('%d.%m.%Y %H:%M'),
-                            'registration_source': f'Rejestracja na wydarzenie: {event.title}'
-                        }
-                        
-                        email_service = EmailService()
-                        success, message = email_service.send_template_email(
-                            to_email=admin_email,
-                            template_name='admin_notification',
-                            context=admin_context,
-                            to_name='Administrator'
-                        )
-                        
-                        if success:
-                            print(f"✅ Wysłano powiadomienie administratora o nowym członku: {new_user.email}")
-                        else:
-                            print(f"❌ Błąd wysyłania powiadomienia administratora: {message}")
-                            
-                    except Exception as e:
-                        print(f"Error sending admin notification: {str(e)}")
-                        
-            except Exception as e:
-                print(f"Error creating user account: {str(e)}")
-                # Don't fail the registration if user creation fails
-        
-        # Send confirmation email
-        email_service = EmailService()
-        
-        # Generate unsubscribe and delete account URLs
-        unsubscribe_token = generate_unsubscribe_token(registration.email, 'unsubscribe')
-        delete_token = generate_unsubscribe_token(registration.email, 'delete_account')
-        
-        context = {
-            'user_name': registration.first_name,
-            'user_email': registration.email,
-            'event_title': event.title,  # Fixed: was event_name, should be event_title
-            'event_date': event.event_date.strftime('%d.%m.%Y') if event.event_date else '',
-            'event_time': event.event_date.strftime('%H:%M') if event.event_date else '',
-            'event_location': event.location or 'Online',
-            'event_description': event.description or '',
-            'unsubscribe_url': request.url_root + f'api/unsubscribe/{registration.email}/{unsubscribe_token}',
-            'delete_account_url': request.url_root + f'api/delete-account/{registration.email}/{delete_token}'
-        }
-        
-        success, message = email_service.send_template_email(
-            to_email=registration.email,
-            template_name='event_registration',
-            context=context
-        )
-        
-        if not success:
-            print(f"Failed to send confirmation email: {message}")
-        
-        # Call email automation for event registration
-        try:
-            from app.services.email_automation import EmailAutomation
-            automation = EmailAutomation()
-            automation.on_event_registration(registration.id)
-        except Exception as e:
-            print(f"Error calling event registration automation: {str(e)}")
-        
-        # Prepare success message
-        success_message = 'Rejestracja zakończona pomyślnie. Sprawdź email z potwierdzeniem.'
-        if user_created:
-            success_message += ' Konto użytkownika zostało utworzone - sprawdź email z danymi logowania.'
-        
-        return jsonify({
-            'success': True,
-            'message': success_message
-        })
-        
     except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': f'Błąd rejestracji: {str(e)}'}), 500
+        print(f"❌ Unexpected error in register_event: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Wystąpił nieoczekiwany błąd. Spróbuj ponownie.'}), 500
 
 @public_bp.route('/uploads/<filename>')
 def uploaded_file(filename):
@@ -696,10 +645,42 @@ def terms():
                          footer_settings=footer_settings,
                          active_social_links=active_social_links)
 
+@public_bp.route('/api/unsubscribe/<email>/<token>')
+def unsubscribe_api(email, token):
+    """API endpoint for unsubscribe from newsletter"""
+    try:
+        result = PublicController.unsubscribe_from_newsletter(email, token)
+        
+        if result['success']:
+            return render_template('email/unsubscribe_success.html', 
+                                 message=result['message'])
+        else:
+            return render_template('email/unsubscribe_error.html', 
+                                 error=result['error'])
+    except Exception as e:
+        return render_template('email/unsubscribe_error.html', 
+                             error=f'Wystąpił błąd: {str(e)}')
+
+@public_bp.route('/api/delete-account/<email>/<token>')
+def delete_account_api(email, token):
+    """API endpoint for delete account"""
+    try:
+        result = PublicController.delete_user_account(email, token)
+        
+        if result['success']:
+            return render_template('email/delete_account_success.html', 
+                                 message=result['message'])
+        else:
+            return render_template('email/delete_account_error.html', 
+                                 error=result['error'])
+    except Exception as e:
+        return render_template('email/delete_account_error.html', 
+                             error=f'Wystąpił błąd: {str(e)}')
+
 def register_for_event(user, event_id):
     """Register existing user for a specific event"""
     try:
-        from app.models import EventRegistration, EventSchedule
+        from app.models import EventSchedule, UserHistory, UserLogs, Stats
         
         # Check if event exists and is active
         event = EventSchedule.query.filter_by(
@@ -711,40 +692,133 @@ def register_for_event(user, event_id):
         if not event:
             return jsonify({'success': False, 'message': 'Wydarzenie nie zostało znalezione lub nie jest dostępne'}), 404
         
-        # Check if user is already registered for this event
-        existing_registration = EventRegistration.query.filter_by(
-            user_id=user.id, 
-            event_id=event_id
-        ).first()
+        # Check if user is already registered for this event (but only if they weren't just created)
+        # If user already has event_id and account_type set, they were just registered in register_event
+        if user.event_id == event_id and user.account_type == 'event_registration':
+            print(f"✅ User {user.email} was just registered for event {event_id}, proceeding with group assignment and email")
+        else:
+            # Check if user is already registered for this event from previous registration
+            existing_registration = User.query.filter_by(
+                id=user.id, 
+                event_id=event_id,
+                account_type='event_registration'
+            ).first()
+            
+            if existing_registration:
+                return jsonify({'success': False, 'message': 'Jesteś już zarejestrowany na to wydarzenie'}), 400
         
-        if existing_registration:
-            return jsonify({'success': False, 'message': 'Jesteś już zarejestrowany na to wydarzenie'}), 400
+        # Update user to register for event
+        user.account_type = 'event_registration'
+        user.event_id = event_id
         
-        # Create event registration
-        registration = EventRegistration(
+        # Log the registration in UserHistory (event participation history)
+        UserHistory.log_event_registration(
             user_id=user.id,
             event_id=event_id,
-            first_name=user.first_name,
-            email=user.email,
-            phone=user.phone,
-            registration_date=get_local_now(),
-            status='confirmed'
+            was_club_member=user.club_member or False
         )
         
-        db.session.add(registration)
+        # Log the action in UserLogs (user activity logs)
+        try:
+            from flask import request
+            ip_address = request.remote_addr if request else None
+            user_agent = request.headers.get('User-Agent') if request else None
+        except:
+            ip_address = None
+            user_agent = None
+            
+        UserLogs.log_event_registration(
+            user_id=user.id,
+            event_id=event_id,
+            event_title=event.title,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        
+        # Update stats
+        Stats.increment('event_registrations', related_id=event_id, related_type='event')
+        Stats.increment('total_registrations')
+        
+        # Add user to event group and synchronize all groups
+        from app.services.group_manager import GroupManager
+        group_manager = GroupManager()
+        
+        # Add user to specific event group
+        success, message = group_manager.add_user_to_event_group(user.id, event_id)
+        if success:
+            print(f"✅ Dodano użytkownika {user.email} do grupy wydarzenia: {event.title}")
+        else:
+            print(f"❌ Błąd dodawania do grupy wydarzenia: {message}")
+        
+        # Synchronize all groups to ensure consistency
+        try:
+            # Sync club members group (in case user became club member)
+            success, message = group_manager.sync_club_members_group()
+            if success:
+                print(f"✅ Zsynchronizowano grupę członków klubu po rejestracji na wydarzenie")
+            else:
+                print(f"❌ Błąd synchronizacji grupy członków klubu: {message}")
+            
+            # Sync event groups
+            success, message = group_manager.sync_event_groups()
+            if success:
+                print(f"✅ Zsynchronizowano grupy wydarzeń po rejestracji")
+            else:
+                print(f"❌ Błąd synchronizacji grup wydarzeń: {message}")
+        except Exception as sync_error:
+            print(f"❌ Błąd synchronizacji grup po rejestracji: {str(sync_error)}")
+        
         db.session.commit()
+        
+        # Send confirmation email to user
+        try:
+            email_service = EmailService()
+            
+            # Generate unsubscribe token
+            unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
+            
+            # Get base URL safely
+            try:
+                from flask import request
+                base_url = request.url_root if request else 'http://localhost:5000/'
+            except:
+                base_url = 'http://localhost:5000/'
+            
+            context = {
+                'user_name': user.first_name,
+                'event_title': event.title,
+                'event_date': event.event_date.strftime('%d.%m.%Y') if event.event_date else 'Nie podano',
+                'event_time': event.event_date.strftime('%H:%M') if event.event_date else 'Nie podano',
+                'event_location': event.location or 'Nie podano',
+                'event_description': event.description or '',
+                'unsubscribe_url': base_url + f'api/unsubscribe/{user.email}/{unsubscribe_token}'
+            }
+            
+            success, message = email_service.send_template_email(
+                to_email=user.email,
+                template_name='event_registration',
+                context=context
+            )
+            
+            if success:
+                print(f"✅ Wysłano email potwierdzenia rejestracji na wydarzenie: {user.email}")
+            else:
+                print(f"❌ Błąd wysyłania email potwierdzenia: {message}")
+                
+        except Exception as e:
+            print(f"❌ Błąd wysyłania email potwierdzenia: {str(e)}")
         
         # Send admin notification about event registration
         try:
-            from config import config
-            admin_email = config['development'].ADMIN_EMAIL
+            import os
+            admin_email = os.getenv('ADMIN_EMAIL', 'admin@lepszezycie.pl')
             admin_context = {
                 'user_name': user.first_name,
                 'user_email': user.email,
                 'event_title': event.title,
                 'event_date': event.event_date.strftime('%d.%m.%Y %H:%M') if event.event_date else 'Nie podano',
                 'registration_date': get_local_now().strftime('%d.%m.%Y %H:%M'),
-                'registration_source': f'Timeline - {event.title}'
+                'registration_source': f'Rejestracja na wydarzenie - {event.title}'
             }
             
             email_service = EmailService()
@@ -755,9 +829,9 @@ def register_for_event(user, event_id):
                 to_name='Administrator'
             )
         except Exception as e:
-            print(f"Error sending admin notification: {e}")
+            print(f"❌ Błąd wysyłania powiadomienia administratora: {e}")
         
-        return jsonify({'success': True, 'message': f'Zostałeś zarejestrowany na wydarzenie: {event.title}'})
+        return jsonify({'success': True, 'message': f'Zostałeś zarejestrowany na wydarzenie: {event.title}. Sprawdź email z potwierdzeniem.'})
         
     except Exception as e:
         db.session.rollback()

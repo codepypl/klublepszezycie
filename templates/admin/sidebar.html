@@ -172,12 +172,6 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ url_for('events.registrations') }}" class="nav-link {% if request.endpoint == 'events.registrations' %}active{% endif %}">
-                            <i class="fas fa-user-plus"></i>
-                            <span class="nav-link-text">Rejestracje na wydarzenia</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a href="{{ url_for('users.index') }}" class="nav-link {% if request.endpoint == 'users.index' %}active{% endif %}">
                             <i class="fas fa-users"></i>
                             <span class="nav-link-text">Użytkownicy</span>

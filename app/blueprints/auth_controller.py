@@ -27,6 +27,10 @@ class AuthController:
             
             if user and check_password_hash(user.password_hash, password):
                 if user.is_active:
+                    # Update last login time
+                    user.last_login = datetime.utcnow()
+                    db.session.commit()
+                    
                     return {
                         'success': True,
                         'user': user

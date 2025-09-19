@@ -3,7 +3,7 @@ Group Manager - zarządzanie grupami użytkowników
 """
 import json
 from datetime import datetime
-from app.models import db, UserGroup, UserGroupMember, User, EventSchedule, EventRegistration
+from app.models import db, UserGroup, UserGroupMember, User, EventSchedule
 from app.utils.timezone_utils import get_local_now
 
 class GroupManager:
@@ -287,7 +287,7 @@ class GroupManager:
     def sync_event_groups(self):
         """Synchronizuje grupy wydarzeń z rejestracjami"""
         try:
-            from app.models import EventSchedule, EventRegistration
+            from app.models import EventSchedule, User
             
             # Pobierz wszystkie aktywne wydarzenia
             events = EventSchedule.query.filter_by(is_active=True).all()
@@ -315,7 +315,10 @@ class GroupManager:
                     print(f"✅ Utworzono nową grupę: {group_name}")
                 
                 # Pobierz wszystkich zarejestrowanych na wydarzenie
-                registrations = EventRegistration.query.filter_by(event_id=event.id).all()
+                registrations = User.query.filter_by(
+                    event_id=event.id,
+                    account_type='event_registration'
+                ).all()
                 
                 # Pobierz obecnych członków grupy (tylko aktywnych)
                 current_members = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).all()
@@ -351,14 +354,29 @@ class GroupManager:
                     else:
                         print(f"ℹ️ {email} już jest w grupie {group_name}")
                 
-                # Usuń członków, którzy nie są już zarejestrowani
+                # Usuń członków, którzy nie są już zarejestrowani lub których konta zostały usunięte
                 unique_emails = set(unique_registrations.keys())
                 members_to_remove = []
                 for member in current_members:
+                    should_remove = False
+                    reason = ""
+                    
+                    # Check if user account was deleted
+                    if member.user_id:
+                        user_exists = User.query.get(member.user_id)
+                        if not user_exists:
+                            should_remove = True
+                            reason = "konto użytkownika zostało usunięte"
+                    
+                    # Check if user is no longer registered for this event
                     if member.email and member.email not in unique_emails:
+                        should_remove = True
+                        reason = "nie jest już zarejestrowany na wydarzenie"
+                    
+                    if should_remove:
                         member.is_active = False
                         members_to_remove.append(member)
-                        print(f"✅ Usunięto {member.email or member.name} z grupy {group_name}")
+                        print(f"✅ Usunięto {member.email or member.name} z grupy {group_name} ({reason})")
                 
                 # Aktualizuj liczbę członków
                 group.member_count = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).count()
@@ -395,7 +413,7 @@ class GroupManager:
     def async_sync_event_group(self, event_id):
         """Asynchronicznie synchronizuje grupę konkretnego wydarzenia"""
         try:
-            from app.models import EventSchedule, EventRegistration
+            from app.models import EventSchedule
             
             event = EventSchedule.query.get(event_id)
             if not event:
@@ -424,7 +442,10 @@ class GroupManager:
                 print(f"✅ Utworzono nową grupę wydarzenia: {group_name}")
             
             # Pobierz wszystkich zarejestrowanych na wydarzenie
-            registrations = EventRegistration.query.filter_by(event_id=event_id).all()
+            registrations = User.query.filter_by(
+                event_id=event_id,
+                account_type='event_registration'
+            ).all()
             
             # Pobierz obecnych członków grupy (tylko aktywnych)
             current_members = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).all()
@@ -506,7 +527,10 @@ class GroupManager:
                 
                 if event_id:
                     # Pobierz wszystkich uczestników wydarzenia
-                    registrations = EventRegistration.query.filter_by(event_id=event_id).all()
+                    registrations = User.query.filter_by(
+                    event_id=event_id,
+                    account_type='event_registration'
+                ).all()
                     
                     for registration in registrations:
                         member = UserGroupMember(

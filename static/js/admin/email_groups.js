@@ -326,7 +326,7 @@ function editGroup(groupId) {
 function viewGroupMembers(groupId) {
     currentGroupId = groupId;
     
-    // Get group info to show in modal title
+    // Get group info to show in modal title and get event_id for filtering
     fetch(`/api/email/groups/${groupId}`)
         .then(response => response.json())
         .then(data => {
@@ -335,17 +335,34 @@ function viewGroupMembers(groupId) {
                 const modalTitle = document.getElementById('groupMembersModalLabel');
                 if (group.group_type === 'event_based') {
                     modalTitle.textContent = `Członkowie grupy wydarzenia: ${group.name}`;
+                    
+                    // Get event_id from group criteria for filtering users
+                    let eventId = null;
+                    if (group.criteria) {
+                        try {
+                            const criteria = JSON.parse(group.criteria);
+                            eventId = criteria.event_id;
+                        } catch (e) {
+                            console.error('Error parsing group criteria:', e);
+                        }
+                    }
+                    
+                    // Store event_id globally for use in loadAvailableUsers
+                    window.currentEventId = eventId;
                 } else {
                     modalTitle.textContent = `Członkowie grupy: ${group.name}`;
+                    window.currentEventId = null;
                 }
+                
+                // Load users and members after setting event_id
+                loadGroupMembers();
+                loadAvailableUsers();
             }
         })
         .catch(error => {
             console.error('Error loading group info:', error);
         });
     
-    loadGroupMembers();
-    loadAvailableUsers();
     const modal = new bootstrap.Modal(document.getElementById('groupMembersModal'));
     modal.show();
 }
@@ -402,7 +419,13 @@ function loadAvailableUsers(searchTerm = '') {
         params.append('search', searchTerm);
     }
     
-    fetch(`/api/users?${params}`)
+    // Check if this is an event-based group and we have event_id
+    let apiUrl = '/api/users';
+    if (window.currentEventId) {
+        apiUrl = `/api/users/for-event-group/${window.currentEventId}`;
+    }
+    
+    fetch(`${apiUrl}?${params}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -430,10 +453,17 @@ function displayAvailableUsers(users) {
     users.forEach(user => {
         const item = document.createElement('div');
         item.className = 'list-group-item d-flex justify-content-between align-items-center';
+        
+        // Show event information if available
+        let eventInfo = '';
+        if (user.event_id && user.account_type === 'event_registration') {
+            eventInfo = `<br><small class="text-info">Zarejestrowany na wydarzenie ID: ${user.event_id}</small>`;
+        }
+        
         item.innerHTML = `
             <div>
                 <strong>${user.first_name}</strong><br>
-                <small class="text-muted">${user.email}</small>
+                <small class="text-muted">${user.email}</small>${eventInfo}
             </div>
             <button class="btn btn-sm admin-btn" onclick="addGroupMember(${user.id})">
                 <i class="fas fa-plus"></i>

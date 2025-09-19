@@ -192,8 +192,26 @@ class BulkDelete {
     }
     
     refreshTable() {
-        // Reload the page to refresh the table
-        window.location.reload();
+        // Use auto-refresh system instead of page reload
+        if (typeof window.refreshAfterCRUD === 'function') {
+            // Determine the type based on the table ID or current page
+            let refreshType = null;
+            const currentPath = window.location.pathname;
+            
+            if (currentPath.includes('/admin/users')) {
+                refreshType = 'users';
+            } else if (currentPath.includes('/admin/email/queue')) {
+                refreshType = 'email-queue';
+            } else if (currentPath.includes('/admin/email/groups')) {
+                refreshType = 'email-groups';
+            }
+            
+            console.log(`🔄 Refreshing table with type: ${refreshType || 'auto-detect'}`);
+            window.refreshAfterCRUD(refreshType);
+        } else {
+            // Fallback to page reload if auto-refresh is not available
+            window.location.reload();
+        }
     }
     
     showMessage(message, type) {

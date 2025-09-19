@@ -238,7 +238,13 @@ function deleteTestimonial(testimonialId) {
         
         // Remove existing event listeners
         const newConfirmButton = confirmButton.cloneNode(true);
-        confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+        
+        // Check if parent node exists before replacing
+        if (confirmButton.parentNode) {
+            confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+        } else {
+            console.warn('Confirm button parent node not found');
+        }
         
         // Add new event listener
         newConfirmButton.addEventListener('click', () => {

@@ -70,10 +70,12 @@ def email_retry_single(email_id):
 def email_queue_stats():
     """Get email queue statistics"""
     try:
-        total = EmailQueue.query.count()
-        pending = EmailQueue.query.filter_by(status='pending').count()
-        sent = EmailQueue.query.filter_by(status='sent').count()
-        failed = EmailQueue.query.filter_by(status='failed').count()
+        from app.models import Stats
+        
+        total = Stats.get_total_emails()
+        pending = Stats.get_pending_emails()
+        sent = Stats.get_sent_emails()
+        failed = Stats.get_failed_emails()
         
         return jsonify({
             'success': True,
@@ -225,11 +227,13 @@ def email_logs_stats():
     try:
         from app.models import EmailLog
         
+        from app.models import Stats
+        
         stats = {
-            'total': EmailLog.query.count(),
-            'sent': EmailLog.query.filter_by(status='sent').count(),
-            'failed': EmailLog.query.filter_by(status='failed').count(),
-            'bounced': EmailLog.query.filter_by(status='bounced').count()
+            'total': Stats.get_total_email_logs(),
+            'sent': Stats.get_sent_emails(),
+            'failed': Stats.get_failed_emails(),
+            'bounced': Stats.get_bounced_emails()
         }
         
         return jsonify({'success': True, 'stats': stats})

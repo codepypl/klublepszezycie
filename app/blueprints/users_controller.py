@@ -3,7 +3,7 @@ Users business logic controller
 """
 from flask import request
 from flask_login import login_required, current_user
-from app.models import db, User, UserGroup, UserGroupMember
+from app.models import db, User, UserGroup, UserGroupMember, Stats
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash
 
@@ -11,7 +11,7 @@ class UsersController:
     """Users business logic controller"""
     
     @staticmethod
-    def get_users(page=1, per_page=10, name_filter='', email_filter='', role_filter='', status_filter='', club_member_filter=''):
+    def get_users(page=1, per_page=10, name_filter='', email_filter='', account_type_filter='', status_filter='', event_filter='', group_filter=''):
         """Get users with pagination and filters"""
         try:
             query = User.query
@@ -23,8 +23,8 @@ class UsersController:
             if email_filter:
                 query = query.filter(User.email.ilike(f'%{email_filter}%'))
             
-            if role_filter:
-                query = query.filter(User.role == role_filter)
+            if account_type_filter:
+                query = query.filter(User.account_type == account_type_filter)
             
             if status_filter:
                 if status_filter == 'active':
@@ -32,28 +32,22 @@ class UsersController:
                 elif status_filter == 'inactive':
                     query = query.filter(User.is_active == False)
             
-            if club_member_filter:
-                if club_member_filter == 'yes':
-                    # Users who are members of club_members group
-                    club_group = UserGroup.query.filter_by(group_type='club_members').first()
-                    if club_group:
-                        query = query.join(UserGroupMember).filter(UserGroupMember.group_id == club_group.id)
-                elif club_member_filter == 'no':
-                    # Users who are NOT members of club_members group
-                    club_group = UserGroup.query.filter_by(group_type='club_members').first()
-                    if club_group:
-                        query = query.outerjoin(UserGroupMember).filter(
-                            (UserGroupMember.group_id != club_group.id) | (UserGroupMember.group_id.is_(None))
-                        )
+            if event_filter:
+                query = query.filter(User.event_id == event_filter)
+            
+            if group_filter:
+                query = query.filter(User.group_id == group_filter)
             
             users = query.order_by(User.created_at.desc()).paginate(
                 page=page, per_page=per_page, error_out=False
             )
             
-            # Get stats
-            total_users = User.query.count()
-            active_users = User.query.filter_by(is_active=True).count()
-            admin_users = User.query.filter_by(role='admin').count()
+            # Get stats from central stats table
+            total_users = Stats.get_total_users()
+            active_users = Stats.get_active_users()
+            admin_users = Stats.get_admin_users()
+            event_registrations = Stats.get_total_registrations()
+            
             club_members = 0
             club_group = UserGroup.query.filter_by(group_type='club_members').first()
             if club_group:
@@ -72,6 +66,7 @@ class UsersController:
                     'total_users': total_users,
                     'active_users': active_users,
                     'admin_users': admin_users,
+                    'event_registrations': event_registrations,
                     'club_members': club_members
                 }
             }
@@ -153,7 +148,7 @@ class UsersController:
             }
     
     @staticmethod
-    def update_user(user_id, name, email, phone, role, is_active):
+    def update_user(user_id, name, email, phone, role, is_active, account_type=None):
         """Update user"""
         try:
             user = User.query.get(user_id)
@@ -176,6 +171,8 @@ class UsersController:
             user.phone = phone
             user.role = role
             user.is_active = is_active
+            if account_type:
+                user.account_type = account_type
             
             db.session.commit()
             
@@ -383,6 +380,95 @@ class UsersController:
             return {
                 'success': True,
                 'message': 'Użytkownik został usunięty z grupy'
+            }
+        except Exception as e:
+            db.session.rollback()
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    @staticmethod
+    def get_user_profile(user_id):
+        """Get user profile with event history"""
+        try:
+            user = User.query.get(user_id)
+            if not user:
+                return {
+                    'success': False,
+                    'error': 'Użytkownik nie został znaleziony'
+                }
+            
+            # Get event history for this user from UserHistory
+            from app.models import UserHistory, EventSchedule
+            event_history = []
+
+            # Get user event history entries
+            history_entries = UserHistory.get_user_event_history(user.id)
+
+            for entry in history_entries:
+                event = EventSchedule.query.get(entry.event_id) if entry.event_id else None
+                if event:
+                    event_history.append({
+                        'event_id': event.id,
+                        'event_title': event.title,
+                        'event_date': event.event_date,
+                        'registration_date': entry.registration_date,
+                        'participation_date': entry.participation_date,
+                        'status': entry.status,
+                        'was_club_member': entry.was_club_member,
+                        'notes': entry.notes
+                    })
+            
+            return {
+                'success': True,
+                'user': user,
+                'event_history': event_history
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'Błąd podczas pobierania profilu użytkownika: {str(e)}'
+            }
+    
+    @staticmethod
+    def create_event_registration_user(first_name, email, phone, event_id, group_id):
+        """Create user from event registration"""
+        try:
+            # Check if user already exists
+            existing_user = User.query.filter_by(email=email).first()
+            if existing_user:
+                return {
+                    'success': False,
+                    'error': 'Użytkownik z tym emailem już istnieje',
+                    'existing_user': existing_user
+                }
+            
+            # Generate temporary password
+            import secrets
+            password = secrets.token_urlsafe(8)
+            
+            user = User(
+                first_name=first_name,
+                email=email,
+                phone=phone,
+                password_hash=generate_password_hash(password),
+                account_type='event_registration',
+                event_id=event_id,
+                group_id=group_id,
+                club_member=False,
+                is_active=True,
+                role='user'
+            )
+            
+            db.session.add(user)
+            db.session.commit()
+            
+            return {
+                'success': True,
+                'user': user,
+                'password': password,
+                'message': 'Użytkownik został utworzony z rejestracji na wydarzenie'
             }
         except Exception as e:
             db.session.rollback()
