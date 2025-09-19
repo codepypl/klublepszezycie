@@ -540,10 +540,13 @@ class PublicController:
             }
 
 def generate_unsubscribe_token(email, action):
-    """Generate unsubscribe token for email"""
+    """Generate unsubscribe token for email with expiration"""
     try:
         secret_key = os.environ.get('SECRET_KEY', 'default-secret-key')
-        message = f"{email}:{action}"
+        # Add timestamp for expiration (30 days from now)
+        import time
+        timestamp = int(time.time()) + (30 * 24 * 60 * 60)  # 30 days
+        message = f"{email}:{action}:{timestamp}"
         token = hmac.new(
             secret_key.encode('utf-8'),
             message.encode('utf-8'),
@@ -557,7 +560,25 @@ def verify_unsubscribe_token(email, action, token):
     """Verify unsubscribe token"""
     try:
         secret_key = os.environ.get('SECRET_KEY', 'default-secret-key')
+        import time
+        current_time = int(time.time())
+        
+        # Check token for different expiration times (backward compatibility)
+        # Try current token (30 days)
         expected_token = generate_unsubscribe_token(email, action)
-        return hmac.compare_digest(token, expected_token)
+        if hmac.compare_digest(token, expected_token):
+            return True
+            
+        # Try old format without timestamp (backward compatibility)
+        message = f"{email}:{action}"
+        old_token = hmac.new(
+            secret_key.encode('utf-8'),
+            message.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+        if hmac.compare_digest(token, old_token):
+            return True
+            
+        return False
     except Exception:
         return False

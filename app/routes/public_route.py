@@ -649,7 +649,10 @@ def terms():
 def unsubscribe_api(email, token):
     """API endpoint for unsubscribe from newsletter"""
     try:
-        result = PublicController.unsubscribe_from_newsletter(email, token)
+        import urllib.parse
+        # Decode email in case it was URL encoded
+        decoded_email = urllib.parse.unquote(email)
+        result = PublicController.unsubscribe_from_newsletter(decoded_email, token)
         
         if result['success']:
             return render_template('email/unsubscribe_success.html', 
@@ -665,7 +668,10 @@ def unsubscribe_api(email, token):
 def delete_account_api(email, token):
     """API endpoint for delete account"""
     try:
-        result = PublicController.delete_user_account(email, token)
+        import urllib.parse
+        # Decode email in case it was URL encoded
+        decoded_email = urllib.parse.unquote(email)
+        result = PublicController.delete_user_account(decoded_email, token)
         
         if result['success']:
             return render_template('email/delete_account_success.html', 
