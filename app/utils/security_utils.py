@@ -80,8 +80,8 @@ class SecurityMonitor:
         try:
             # Define suspicious patterns
             suspicious_patterns = [
-                'INVALID_TOKEN',   # Invalid token attempts
-                'ADMIN_PROTECTED'  # Attempts to delete admin accounts
+                'SE-ITK-01',   # Invalid token attempts
+                'SE-ADP-01'    # Attempts to delete admin accounts
             ]
             
             # Check if result indicates suspicious activity

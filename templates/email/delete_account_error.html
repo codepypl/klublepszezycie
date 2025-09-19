@@ -65,13 +65,13 @@
                         </div>
                         {% endif %}
                         <p class="lead text-muted mb-5">
-                            {% if error_code == 'INVALID_TOKEN' %}
+                            {% if error_code == 'SE-ITK-01' %}
                                 Link jest nieprawidłowy lub wygasł. Sprawdź czy skopiowałeś cały link z emaila.
-                            {% elif error_code == 'ADMIN_PROTECTED' %}
+                            {% elif error_code == 'SE-ADP-01' %}
                                 Konto administratora nie może być usunięte przez link. Skontaktuj się z administratorem systemu.
-                            {% elif error_code == 'DATABASE_ERROR' %}
+                            {% elif error_code == 'SE-DBE-01' %}
                                 Wystąpił błąd techniczny. Spróbuj ponownie za kilka minut.
-                            {% elif error_code == 'OPERATION_FAILED' %}
+                            {% elif error_code == 'SE-UNF-01' %}
                                 Nie udało się usunąć konta. Link może być nieprawidłowy lub wygasły.
                             {% else %}
                                 Nie udało się usunąć konta. Link może być nieprawidłowy lub wygasły.

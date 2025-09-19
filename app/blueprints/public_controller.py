@@ -362,7 +362,7 @@ class PublicController:
                 return {
                     'success': False,
                     'error': 'Nieprawidłowy lub wygasły token',
-                    'error_code': 'INVALID_TOKEN'
+                    'error_code': 'SE-ITK-01'
                 }
             
             # Find user by email
@@ -399,14 +399,14 @@ class PublicController:
                 return {
                     'success': False,
                     'error': 'Nie udało się wypisać z listy mailingowej',
-                    'error_code': 'OPERATION_FAILED'
+                    'error_code': 'SE-UNF-01'
                 }
         except Exception as e:
             db.session.rollback()
             return {
                 'success': False,
                 'error': str(e),
-                'error_code': 'DATABASE_ERROR'
+                'error_code': 'SE-DBE-01'
             }
     
     @staticmethod
@@ -417,7 +417,7 @@ class PublicController:
                 return {
                     'success': False,
                     'error': 'Nieprawidłowy lub wygasły token',
-                    'error_code': 'INVALID_TOKEN'
+                    'error_code': 'SE-ITK-01'
                 }
             
             # Find user by email
@@ -428,7 +428,7 @@ class PublicController:
                     return {
                         'success': False,
                         'error': 'Nie można usunąć konta administratora',
-                        'error_code': 'ADMIN_PROTECTED'
+                        'error_code': 'SE-ADP-01'
                     }
                 
                 # Remove user from all groups before deleting
@@ -476,14 +476,14 @@ class PublicController:
                 return {
                     'success': False,
                     'error': 'Nie udało się usunąć konta',
-                    'error_code': 'OPERATION_FAILED'
+                    'error_code': 'SE-UNF-01'
                 }
         except Exception as e:
             db.session.rollback()
             return {
                 'success': False,
                 'error': str(e),
-                'error_code': 'DATABASE_ERROR'
+                'error_code': 'SE-DBE-01'
             }
     
     @staticmethod
