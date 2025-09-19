@@ -311,7 +311,7 @@
                     <div class="mb-3">
                         <label for="imageFile" class="form-label">Upload Obrazu</label>
                         <input type="file" class="form-control" id="imageFile" name="image_file" accept="image/*" onchange="validateImageFile()">
-                        <div class="form-text">Lub wklej URL poniżej. Maksymalny rozmiar: 50MB</div>
+                        <div class="form-text">Lub wklej URL poniżej. Maksymalny rozmiar: 100MB</div>
                     </div>
                     
                     <div class="mb-3">
@@ -413,10 +413,10 @@ function validateImageFile() {
     const fileInput = document.getElementById('imageFile');
     if (fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
-        const maxSize = 50 * 1024 * 1024; // 50MB
+        const maxSize = 100 * 1024 * 1024; // 100MB
         
         if (file.size > maxSize) {
-            window.toastManager.error('Plik jest za duży. Maksymalny rozmiar: 50MB');
+            window.toastManager.error('Plik jest za duży. Maksymalny rozmiar: 100MB');
             fileInput.value = ''; // Clear the input
             return false;
         }

@@ -17,7 +17,7 @@ class Config:
     
     # File Upload Settings
     UPLOAD_FOLDER = 'static/uploads'
-    MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB max file size
+    MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB max file size
     
     
     # Email Configuration (Zoho Mail)

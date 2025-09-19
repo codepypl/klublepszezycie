@@ -24,13 +24,13 @@ def validate_file_type(file):
     if not allowed_file(file.filename):
         return False, f"Nieprawidłowy typ pliku. Dozwolone: {', '.join(ALLOWED_EXTENSIONS)}"
     
-    # Check file size (50MB max)
+    # Check file size (100MB max)
     file.seek(0, 2)  # Seek to end
     file_size = file.tell()
     file.seek(0)  # Reset to beginning
     
-    if file_size > 50 * 1024 * 1024:  # 50MB
-        return False, "Plik jest za duży. Maksymalny rozmiar: 50MB"
+    if file_size > 100 * 1024 * 1024:  # 100MB
+        return False, "Plik jest za duży. Maksymalny rozmiar: 100MB"
     
     return True, "OK"
 
@@ -157,13 +157,13 @@ def validate_featured_image(file):
     if not allowed_file(file.filename):
         return False, f'Nieprawidłowy format pliku. Dozwolone: {", ".join(allowed_extensions)}'
     
-    # Check file size (16MB max)
+    # Check file size (100MB max)
     file.seek(0, 2)  # Seek to end
     file_size = file.tell()
     file.seek(0)  # Reset to beginning
     
-    if file_size > 16 * 1024 * 1024:  # 16MB
-        return False, 'Plik jest za duży. Maksymalny rozmiar: 16MB'
+    if file_size > 100 * 1024 * 1024:  # 100MB
+        return False, 'Plik jest za duży. Maksymalny rozmiar: 100MB'
     
     return True, None
 
