@@ -4,8 +4,12 @@ Skrypt do sprawdzenia struktury tabeli user_history na serwerze produkcyjnym
 """
 import os
 import sys
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.exc import SQLAlchemyError
+
+# Load environment variables from .env file
+load_dotenv()
 
 def check_table_structure():
     """Sprawdza strukturę tabeli user_history"""

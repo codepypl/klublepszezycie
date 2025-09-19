@@ -1,31 +1,52 @@
 # 🔧 Instrukcje Naprawy Migracji na Serwerze Produkcyjnym
 
-## 🚨 Problem
-Migracja `af25e20522fc` próbuje dodać kolumny do tabeli `user_history`, które już istnieją na serwerze produkcyjnym, powodując błąd:
-```
-psycopg2.errors.DuplicateColumn: column "registration_type" of relation "user_history" already exists
-```
+## 🚨 Problemy
+1. **Migracja `af25e20522fc`** próbuje dodać kolumny do tabeli `user_history`, które już istnieją:
+   ```
+   psycopg2.errors.DuplicateColumn: column "registration_type" of relation "user_history" already exists
+   ```
+
+2. **Brakujące kolumny w tabeli `users`** powodują błędy aplikacji:
+   ```
+   sqlalchemy.exc.ProgrammingError: column users.account_type does not exist
+   ```
 
 ## 🔍 Diagnoza
-Na serwerze produkcyjnym struktura tabeli `user_history` różni się od lokalnej. Kolumny z migracji już istnieją, ale migracja nie została oznaczona jako zastosowana.
+Na serwerze produkcyjnym struktura bazy danych różni się od lokalnej:
+- Tabela `user_history` ma kolumny, ale migracja nie została oznaczona jako zastosowana
+- Tabela `users` nie ma wymaganych kolumn `account_type`, `event_id`, `group_id`
 
 ## 🛠️ Rozwiązanie
 
-### Krok 1: Sprawdzenie struktury tabeli
+### Krok 1: Sprawdzenie stanu migracji
 ```bash
 # Na serwerze produkcyjnym
 cd /apps/klublepszezycie
 source .venv/bin/activate
+python check_migrations.py
+```
+
+### Krok 2: Naprawa tabeli users
+```bash
+# Na serwerze produkcyjnym
+python fix_users_table.py
+```
+
+### Krok 3: Sprawdzenie struktury tabeli user_history
+```bash
+# Na serwerze produkcyjnym
 python check_table_structure.py
 ```
 
-### Krok 2: Naprawa migracji
+### Krok 4: Naprawa migracji user_history
 ```bash
 # Na serwerze produkcyjnym
 python fix_migration.py
 ```
 
-### Krok 3: Kontynuacja migracji
+**Uwaga:** Wszystkie skrypty automatycznie ładują zmienne środowiskowe z pliku `.env` dzięki `load_dotenv()`.
+
+### Krok 5: Kontynuacja migracji
 ```bash
 # Na serwerze produkcyjnym
 flask db upgrade

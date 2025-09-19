@@ -4,8 +4,12 @@ Skrypt do naprawy problematycznej migracji na serwerze produkcyjnym
 """
 import os
 import sys
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
+
+# Load environment variables from .env file
+load_dotenv()
 
 def fix_migration():
     """Naprawia problematyczną migrację"""
