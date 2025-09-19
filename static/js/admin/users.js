@@ -153,7 +153,10 @@ function applyFilters() {
     if (email) params.append('email', email);
     if (accountType) params.append('account_type', accountType);
     if (status) params.append('status', status);
-    if (clubMember) params.append('club_member', clubMember);
+    if (clubMember && clubMember !== '') {
+        console.log('Adding club_member filter:', clubMember);
+        params.append('club_member', clubMember);
+    }
     if (event) params.append('event', event);
     if (group) params.append('group', group);
     
