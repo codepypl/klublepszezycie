@@ -6,6 +6,7 @@ from app.models import db, User, EventSchedule, UserGroup, UserGroupMember
 from app.services.email_service import EmailService
 from app.services.group_manager import GroupManager
 from app.utils.timezone_utils import get_local_now
+from app.utils.crypto_utils import encrypt_email
 
 class EmailAutomation:
     """Automatyzacje emailowe"""
@@ -30,15 +31,14 @@ class EmailAutomation:
                 # Get base URL from environment or use default
                 base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
                 
-                import urllib.parse
                 
                 context = {
                     'user_name': user.first_name or 'Użytkowniku',
                     'user_email': user.email,
                     'temporary_password': 'Sprawdź poprzedni email',  # Password was sent in previous email
                     'login_url': f'{base_url}/login',
-                    'unsubscribe_url': f'{base_url}/api/unsubscribe/{urllib.parse.quote(user.email)}/{unsubscribe_token}',
-                    'delete_account_url': f'{base_url}/api/delete-account/{urllib.parse.quote(user.email)}/{delete_token}'
+                    'unsubscribe_url': f'{base_url}/api/unsubscribe/{encrypt_email(user.email)}/{unsubscribe_token}',
+                    'delete_account_url': f'{base_url}/api/delete-account/{encrypt_email(user.email)}/{delete_token}'
                 }
                 
                 self.email_service.send_template_email(
@@ -94,15 +94,14 @@ class EmailAutomation:
                 # Get base URL from environment or use default
                 base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
                 
-                import urllib.parse
                 
                 context = {
                     'user_name': user.first_name or 'Użytkowniku',
                     'user_email': user.email,
                     'temporary_password': 'Brak hasła tymczasowego',  # No temp password for existing users
                     'login_url': f'{base_url}/login',
-                    'unsubscribe_url': f'{base_url}/api/unsubscribe/{urllib.parse.quote(user.email)}/{unsubscribe_token}',
-                    'delete_account_url': f'{base_url}/api/delete-account/{urllib.parse.quote(user.email)}/{delete_token}'
+                    'unsubscribe_url': f'{base_url}/api/unsubscribe/{encrypt_email(user.email)}/{unsubscribe_token}',
+                    'delete_account_url': f'{base_url}/api/delete-account/{encrypt_email(user.email)}/{delete_token}'
                 }
                 
                 self.email_service.send_template_email(
@@ -162,7 +161,6 @@ class EmailAutomation:
                 # Get base URL from environment or use default
                 base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
                 
-                import urllib.parse
                 
                 context = {
                     'user_name': member.name or 'Użytkowniku',
@@ -170,8 +168,8 @@ class EmailAutomation:
                     'event_date': event.event_date.strftime('%d.%m.%Y'),
                     'event_time': event.event_date.strftime('%H:%M'),
                     'event_location': event.location or 'Online',
-                    'unsubscribe_url': f'{base_url}/api/unsubscribe/{urllib.parse.quote(member.email)}/{unsubscribe_token}',
-                    'delete_account_url': f'{base_url}/api/delete-account/{urllib.parse.quote(member.email)}/{delete_token}'
+                    'unsubscribe_url': f'{base_url}/api/unsubscribe/{encrypt_email(member.email)}/{unsubscribe_token}',
+                    'delete_account_url': f'{base_url}/api/delete-account/{encrypt_email(member.email)}/{delete_token}'
                 }
                 
                 # 24h przed

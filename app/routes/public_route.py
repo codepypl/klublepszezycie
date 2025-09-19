@@ -8,6 +8,7 @@ from app.services.email_service import EmailService
 from app.utils.timezone_utils import get_local_now, convert_to_local
 from app.utils.blog_utils import generate_blog_link
 from app.utils.validation_utils import validate_email, validate_phone
+from app.utils.crypto_utils import encrypt_email
 from app.models import db, EventSchedule, User, UserGroup
 import logging
 from datetime import datetime
@@ -233,8 +234,8 @@ def register():
                     'user_email': user.email,
                     'temporary_password': temp_password,
                     'login_url': request.url_root + 'login',
-                    'unsubscribe_url': request.url_root + f'api/unsubscribe/{user.email}/{unsubscribe_token}',
-                    'delete_account_url': request.url_root + f'api/delete-account/{user.email}/{delete_token}'
+                    'unsubscribe_url': request.url_root + f'api/unsubscribe/{encrypt_email(user.email)}/{unsubscribe_token}',
+                    'delete_account_url': request.url_root + f'api/delete-account/{encrypt_email(user.email)}/{delete_token}'
                 }
                 
                 success, message = email_service.send_template_email(
@@ -546,8 +547,8 @@ def register_event(event_id):
                 'event_time': event.event_date.strftime('%H:%M') if event.event_date else '',
                 'event_location': event.location or 'Online',
                 'event_description': event.description or '',
-                'unsubscribe_url': request.url_root + f'api/unsubscribe/{created_user.email}/{unsubscribe_token}',
-                'delete_account_url': request.url_root + f'api/delete-account/{created_user.email}/{delete_token}'
+                'unsubscribe_url': request.url_root + f'api/unsubscribe/{encrypt_email(created_user.email)}/{unsubscribe_token}',
+                'delete_account_url': request.url_root + f'api/delete-account/{encrypt_email(created_user.email)}/{delete_token}'
             }
             
             success, message = email_service.send_template_email(
@@ -648,14 +649,18 @@ def terms():
 @public_bp.route('/api/unsubscribe/<email>/<token>')
 def unsubscribe_api(email, token):
     """API endpoint for unsubscribe from newsletter"""
-    import urllib.parse
     import logging
     from flask import request
     from datetime import datetime
+    from app.utils.crypto_utils import decrypt_email
     
     try:
-        # Decode email in case it was URL encoded
-        decoded_email = urllib.parse.unquote(email)
+        # Decrypt email from URL parameter
+        decoded_email = decrypt_email(email)
+        if not decoded_email:
+            # Fallback: try URL decoding for backward compatibility
+            import urllib.parse
+            decoded_email = urllib.parse.unquote(email)
         
         # Log security event
         client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
@@ -698,8 +703,12 @@ def delete_account_api(email, token):
     from datetime import datetime
     
     try:
-        # Decode email in case it was URL encoded
-        decoded_email = urllib.parse.unquote(email)
+        # Decrypt email from URL parameter
+        decoded_email = decrypt_email(email)
+        if not decoded_email:
+            # Fallback: try URL decoding for backward compatibility
+            import urllib.parse
+            decoded_email = urllib.parse.unquote(email)
         
         # Log security event
         client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
@@ -847,7 +856,7 @@ def register_for_event(user, event_id):
                 'event_time': event.event_date.strftime('%H:%M') if event.event_date else 'Nie podano',
                 'event_location': event.location or 'Nie podano',
                 'event_description': event.description or '',
-                'unsubscribe_url': base_url + f'api/unsubscribe/{user.email}/{unsubscribe_token}'
+                'unsubscribe_url': base_url + f'api/unsubscribe/{encrypt_email(user.email)}/{unsubscribe_token}'
             }
             
             success, message = email_service.send_template_email(

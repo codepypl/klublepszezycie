@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "celery>=5.5.3",
+    "cryptography==41.0.7",
     "flask>=3.1.2",
     "flask-login>=0.6.3",
     "flask-migrate>=4.1.0",
