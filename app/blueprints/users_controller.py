@@ -11,7 +11,7 @@ class UsersController:
     """Users business logic controller"""
     
     @staticmethod
-    def get_users(page=1, per_page=10, name_filter='', email_filter='', account_type_filter='', status_filter='', event_filter='', group_filter=''):
+    def get_users(page=1, per_page=10, name_filter='', email_filter='', account_type_filter='', status_filter='', club_member_filter='', event_filter='', group_filter=''):
         """Get users with pagination and filters"""
         try:
             query = User.query
@@ -31,6 +31,12 @@ class UsersController:
                     query = query.filter(User.is_active == True)
                 elif status_filter == 'inactive':
                     query = query.filter(User.is_active == False)
+            
+            if club_member_filter:
+                if club_member_filter == 'true':
+                    query = query.filter(User.club_member == True)
+                elif club_member_filter == 'false':
+                    query = query.filter(User.club_member == False)
             
             if event_filter:
                 query = query.filter(User.event_id == event_filter)

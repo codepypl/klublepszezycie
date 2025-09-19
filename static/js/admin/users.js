@@ -142,6 +142,7 @@ function applyFilters() {
     const email = document.getElementById('filterEmail').value.trim();
     const accountType = document.getElementById('filterAccountType').value;
     const status = document.getElementById('filterStatus').value;
+    const clubMember = document.getElementById('filterClubMember').value;
     const event = document.getElementById('filterEvent').value;
     const group = document.getElementById('filterGroup').value;
     
@@ -152,6 +153,7 @@ function applyFilters() {
     if (email) params.append('email', email);
     if (accountType) params.append('account_type', accountType);
     if (status) params.append('status', status);
+    if (clubMember) params.append('club_member', clubMember);
     if (event) params.append('event', event);
     if (group) params.append('group', group);
     
@@ -166,6 +168,7 @@ function clearFilters() {
     document.getElementById('filterEmail').value = '';
     document.getElementById('filterAccountType').value = '';
     document.getElementById('filterStatus').value = '';
+    document.getElementById('filterClubMember').value = '';
     document.getElementById('filterEvent').value = '';
     document.getElementById('filterGroup').value = '';
     
@@ -188,6 +191,9 @@ function loadFiltersFromURL() {
     }
     if (urlParams.get('status')) {
         document.getElementById('filterStatus').value = urlParams.get('status');
+    }
+    if (urlParams.get('club_member')) {
+        document.getElementById('filterClubMember').value = urlParams.get('club_member');
     }
     if (urlParams.get('event')) {
         document.getElementById('filterEvent').value = urlParams.get('event');

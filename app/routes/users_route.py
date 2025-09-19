@@ -17,6 +17,7 @@ def index():
     email_filter = request.args.get('email', '').strip()
     account_type_filter = request.args.get('account_type', '').strip()
     status_filter = request.args.get('status', '').strip()
+    club_member_filter = request.args.get('club_member', '').strip()
     event_filter = request.args.get('event', '').strip()
     group_filter = request.args.get('group', '').strip()
     edit_user_id = request.args.get('edit_user', '').strip()
@@ -28,6 +29,7 @@ def index():
         email_filter=email_filter,
         account_type_filter=account_type_filter,
         status_filter=status_filter,
+        club_member_filter=club_member_filter,
         event_filter=event_filter,
         group_filter=group_filter
     )
@@ -45,6 +47,8 @@ def index():
     if account_type_filter:
         active_filters_count += 1
     if status_filter:
+        active_filters_count += 1
+    if club_member_filter:
         active_filters_count += 1
     if event_filter:
         active_filters_count += 1
@@ -75,6 +79,7 @@ def index():
                          email_filter=email_filter,
                          account_type_filter=account_type_filter,
                          status_filter=status_filter,
+                         club_member_filter=club_member_filter,
                          event_filter=event_filter,
                          group_filter=group_filter,
                          events=events,
