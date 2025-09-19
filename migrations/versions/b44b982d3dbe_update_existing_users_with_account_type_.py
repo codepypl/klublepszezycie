@@ -23,16 +23,15 @@ def upgrade():
     # Update account_type based on existing data
     print("🔄 Updating account_type for existing users...")
     
-    # Set account_type based on role and club_member status
+    # Set account_type based on role (club membership is tracked separately by club_member boolean)
     connection.execute(sa.text("""
         UPDATE users 
         SET account_type = CASE 
             WHEN role = 'admin' THEN 'admin'
-            WHEN club_member = true THEN 'club_member'
             WHEN role = 'ankieter' THEN 'ankieter'
             ELSE 'user'
         END
-        WHERE account_type IS NULL OR account_type = 'user'
+        WHERE account_type IS NULL OR account_type = 'user' OR account_type = 'club_member'
     """))
     
     # Update group_id for club members

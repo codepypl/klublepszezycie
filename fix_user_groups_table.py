@@ -212,3 +212,4 @@ if __name__ == "__main__":
     else:
         print("\n❌ Naprawa zakończona z błędami")
         sys.exit(1)
+

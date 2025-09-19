@@ -8,11 +8,14 @@
 
 {% block page_actions %}
     <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn-success" id="bulkEditBtn" style="display: none;">
+            <i class="fas fa-edit me-2"></i>
+            Edytuj Zaznaczone
+        </button>
         <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
-
     </div>
 {% endblock %}
 
@@ -79,7 +82,7 @@
                             <select class="form-select" id="filterAccountType">
                                 <option value="">Wszystkie typy</option>
                                 <option value="admin">Administrator</option>
-                                <option value="club_member">Członek klubu</option>
+                                <option value="user">Użytkownik</option>
                                 <option value="ankieter">Ankieter</option>
                                 <option value="event_registration">Rejestracja na wydarzenia</option>
                             </select>
@@ -182,7 +185,6 @@
                                 <select class="form-select" id="editUserAccountType">
                                     <option value="user" {% if edit_user.account_type == 'user' %}selected{% endif %}>Użytkownik</option>
                                     <option value="admin" {% if edit_user.account_type == 'admin' %}selected{% endif %}>Administrator</option>
-                                    <option value="club_member" {% if edit_user.account_type == 'club_member' %}selected{% endif %}>Członek klubu</option>
                                     <option value="ankieter" {% if edit_user.account_type == 'ankieter' %}selected{% endif %}>Ankieter</option>
                                     <option value="event_registration" {% if edit_user.account_type == 'event_registration' %}selected{% endif %}>Rejestracja na wydarzenia</option>
                                 </select>
@@ -269,14 +271,15 @@
                                 <td>
                                     {% if user.account_type == 'admin' %}
                                         <span class="badge admin-badge admin-badge-danger">Administrator</span>
-                                    {% elif user.account_type == 'club_member' %}
-                                        <span class="badge admin-badge admin-badge-success">Członek klubu</span>
                                     {% elif user.account_type == 'ankieter' %}
                                         <span class="badge admin-badge admin-badge-warning">Ankieter</span>
                                     {% elif user.account_type == 'event_registration' %}
                                         <span class="badge admin-badge admin-badge-info">Rejestracja na wydarzenia</span>
                                     {% else %}
                                         <span class="badge admin-badge admin-badge-secondary">Użytkownik</span>
+                                    {% endif %}
+                                    {% if user.club_member %}
+                                        <span class="badge admin-badge admin-badge-success ms-1">Członek klubu</span>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -490,6 +493,63 @@
     }
     
 </script>
+
+<!-- Bulk Edit Modal -->
+<div class="modal fade" id="bulkEditModal" tabindex="-1" aria-labelledby="bulkEditModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkEditModalLabel">
+                    <i class="fas fa-edit me-2"></i>Edycja masowa użytkowników
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Zaznaczono <strong id="selectedCount">0</strong> użytkowników do edycji.
+                </div>
+                
+                <form id="bulkEditForm">
+                    <div class="mb-3">
+                        <label class="form-label">Członkostwo w klubie</label>
+                        <select class="form-select" id="bulkClubMember" name="club_member">
+                            <option value="">Nie zmieniaj</option>
+                            <option value="true">Ustaw jako członka klubu</option>
+                            <option value="false">Usuń z klubu</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Status konta</label>
+                        <select class="form-select" id="bulkStatus" name="is_active">
+                            <option value="">Nie zmieniaj</option>
+                            <option value="true">Aktywuj konto</option>
+                            <option value="false">Dezaktywuj konto</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Typ konta</label>
+                        <select class="form-select" id="bulkAccountType" name="account_type">
+                            <option value="">Nie zmieniaj</option>
+                            <option value="user">Użytkownik</option>
+                            <option value="admin">Administrator</option>
+                            <option value="ankieter">Ankieter</option>
+                            <option value="event_registration">Rejestracja na wydarzenia</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="button" class="btn btn-primary" id="confirmBulkEdit">
+                    <i class="fas fa-save me-2"></i>Zapisz zmiany
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- External JavaScript -->
 <script src="{{ url_for('static', filename='js/admin/users.js') }}"></script>

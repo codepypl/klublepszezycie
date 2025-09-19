@@ -59,6 +59,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Załaduj filtry z URL
     loadFiltersFromURL();
     
+    // Obsługa bulk edit
+    initializeBulkEdit();
+    
     // Obsługa formularza edycji użytkownika
     const editUserForm = document.getElementById('editUserForm');
     if (editUserForm) {
@@ -265,4 +268,142 @@ function generatePassword() {
     }, 2000);
     
     window.toastManager.success('Hasło zostało wygenerowane!');
+}
+
+// Initialize bulk edit functionality
+function initializeBulkEdit() {
+    const bulkEditBtn = document.getElementById('bulkEditBtn');
+    const bulkEditModal = document.getElementById('bulkEditModal');
+    const confirmBulkEditBtn = document.getElementById('confirmBulkEdit');
+    
+    if (!bulkEditBtn || !bulkEditModal || !confirmBulkEditBtn) {
+        return;
+    }
+    
+    // Show bulk edit button when users are selected
+    function updateBulkEditButton() {
+        const selectedCheckboxes = document.querySelectorAll('input[name="itemIds"]:checked');
+        const selectedCount = selectedCheckboxes.length;
+        
+        if (selectedCount > 0) {
+            bulkEditBtn.style.display = 'inline-block';
+            bulkEditBtn.innerHTML = `<i class="fas fa-edit me-2"></i>Edytuj Zaznaczone (${selectedCount})`;
+        } else {
+            bulkEditBtn.style.display = 'none';
+        }
+    }
+    
+    // Listen for checkbox changes
+    document.addEventListener('change', function(e) {
+        if (e.target.name === 'itemIds') {
+            updateBulkEditButton();
+        }
+    });
+    
+    // Open bulk edit modal
+    bulkEditBtn.addEventListener('click', function() {
+        const selectedCheckboxes = document.querySelectorAll('input[name="itemIds"]:checked');
+        const selectedCount = selectedCheckboxes.length;
+        
+        if (selectedCount === 0) {
+            window.toastManager.error('Nie zaznaczono żadnych użytkowników');
+            return;
+        }
+        
+        // Update selected count in modal
+        document.getElementById('selectedCount').textContent = selectedCount;
+        
+        // Reset form
+        document.getElementById('bulkEditForm').reset();
+        
+        // Show modal
+        const modal = new bootstrap.Modal(bulkEditModal);
+        modal.show();
+    });
+    
+    // Confirm bulk edit
+    confirmBulkEditBtn.addEventListener('click', function() {
+        const selectedCheckboxes = document.querySelectorAll('input[name="itemIds"]:checked');
+        const userIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+        
+        if (userIds.length === 0) {
+            window.toastManager.error('Nie zaznaczono żadnych użytkowników');
+            return;
+        }
+        
+        // Get form data
+        const formData = {
+            user_ids: userIds,
+            club_member: document.getElementById('bulkClubMember').value || null,
+            is_active: document.getElementById('bulkStatus').value || null,
+            account_type: document.getElementById('bulkAccountType').value || null
+        };
+        
+        // Check if at least one field is selected
+        if (formData.club_member === null && formData.is_active === null && formData.account_type === null) {
+            window.toastManager.error('Wybierz przynajmniej jedno pole do edycji');
+            return;
+        }
+        
+        // Confirm action
+        const changes = [];
+        if (formData.club_member !== null) {
+            changes.push(`Członkostwo w klubie: ${formData.club_member === 'true' ? 'Tak' : 'Nie'}`);
+        }
+        if (formData.is_active !== null) {
+            changes.push(`Status: ${formData.is_active === 'true' ? 'Aktywny' : 'Nieaktywny'}`);
+        }
+        if (formData.account_type !== null) {
+            changes.push(`Typ konta: ${formData.account_type}`);
+        }
+        
+        if (!confirm(`Czy na pewno chcesz zaktualizować ${userIds.length} użytkowników?\n\nZmiany:\n${changes.join('\n')}`)) {
+            return;
+        }
+        
+        // Show loading state
+        confirmBulkEditBtn.disabled = true;
+        confirmBulkEditBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Zapisywanie...';
+        
+        // Send request
+        fetch('/api/bulk-edit/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.toastManager.success(data.message);
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(bulkEditModal);
+                modal.hide();
+                
+                // Uncheck all checkboxes
+                selectedCheckboxes.forEach(cb => cb.checked = false);
+                updateBulkEditButton();
+                
+                // Refresh page or update UI
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    location.reload();
+                }
+            } else {
+                window.toastManager.error('Błąd podczas aktualizacji: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            window.toastManager.error('Wystąpił błąd podczas aktualizacji użytkowników');
+        })
+        .finally(() => {
+            // Reset button state
+            confirmBulkEditBtn.disabled = false;
+            confirmBulkEditBtn.innerHTML = '<i class="fas fa-save me-2"></i>Zapisz zmiany';
+        });
+    });
 }

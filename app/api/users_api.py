@@ -463,6 +463,111 @@ def api_bulk_delete_users():
         logging.error(f"Error bulk deleting users: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@users_api_bp.route('/bulk-edit/users', methods=['POST'])
+@admin_required_api
+def api_bulk_edit_users():
+    """Bulk edit users"""
+    try:
+        data = request.get_json()
+        logging.info(f"Bulk edit users request data: {data}")
+        
+        if not data:
+            return jsonify({'success': False, 'message': 'No data provided'}), 400
+            
+        user_ids = data.get('user_ids', data.get('ids', []))
+        
+        if not user_ids:
+            return jsonify({'success': False, 'message': 'No users selected'}), 400
+        
+        # Get edit parameters
+        club_member = data.get('club_member')
+        is_active = data.get('is_active')
+        account_type = data.get('account_type')
+        
+        # Check if at least one parameter is provided
+        if club_member is None and is_active is None and account_type is None:
+            return jsonify({'success': False, 'message': 'No changes specified'}), 400
+        
+        updated_count = 0
+        updated_users = []  # Store user info for group synchronization
+        
+        for user_id in user_ids:
+            user = User.query.get(user_id)
+            if user:
+                # Don't allow editing admin users
+                if user.is_admin_role():
+                    continue
+                
+                user_updated = False
+                
+                # Update club membership
+                if club_member is not None:
+                    if club_member == 'true':
+                        user.club_member = True
+                    elif club_member == 'false':
+                        user.club_member = False
+                    user_updated = True
+                
+                # Update account status
+                if is_active is not None:
+                    if is_active == 'true':
+                        user.is_active = True
+                    elif is_active == 'false':
+                        user.is_active = False
+                    user_updated = True
+                
+                # Update account type
+                if account_type is not None and account_type != '':
+                    user.account_type = account_type
+                    user_updated = True
+                
+                if user_updated:
+                    updated_users.append({
+                        'id': user.id,
+                        'email': user.email,
+                        'club_member': user.club_member,
+                        'is_active': user.is_active,
+                        'account_type': user.account_type
+                    })
+                    updated_count += 1
+        
+        db.session.commit()
+        
+        # Synchronize groups after bulk edit
+        if updated_users:
+            try:
+                from app.services.group_manager import GroupManager
+                group_manager = GroupManager()
+                
+                # Synchronize club members group
+                success, message = group_manager.sync_club_members_group()
+                if success:
+                    print(f"✅ Zsynchronizowano grupę członków klubu po bulk edit ({updated_count} użytkowników)")
+                else:
+                    print(f"❌ Błąd synchronizacji grupy członków klubu: {message}")
+                
+                # Synchronize event groups
+                success, message = group_manager.sync_event_groups()
+                if success:
+                    print(f"✅ Zsynchronizowano grupy wydarzeń po bulk edit")
+                else:
+                    print(f"❌ Błąd synchronizacji grup wydarzeń: {message}")
+                    
+            except Exception as sync_error:
+                print(f"❌ Błąd podczas synchronizacji grup po bulk edit: {str(sync_error)}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Zaktualizowano {updated_count} użytkowników',
+            'updated_count': updated_count,
+            'updated_users': updated_users
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error bulk editing users: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @users_api_bp.route('/bulk-delete/user-groups', methods=['POST'])
 @admin_required_api
 def api_bulk_delete_user_groups():

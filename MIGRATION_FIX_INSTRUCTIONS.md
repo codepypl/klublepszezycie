@@ -58,14 +58,27 @@ python fix_migration.py
 
 **Uwaga:** Wszystkie skrypty automatycznie ładują zmienne środowiskowe z pliku `.env` dzięki `load_dotenv()`.
 
-### Krok 5: Kontynuacja migracji
+### Krok 6: Kontynuacja migracji
 ```bash
 # Na serwerze produkcyjnym
 flask db upgrade
 ```
 
-## 📋 Co robi skrypt naprawczy
+## 📋 Co robią skrypty naprawcze
 
+### **`fix_users_table.py`:**
+- ✅ **Dodaje kolumny:** `account_type`, `event_id`, `group_id`
+- ✅ **Dodaje foreign key constraints**
+- ✅ **Aktualizuje dane:** `account_type = 'user'` dla istniejących użytkowników
+- ✅ **Aktualizuje group_id** dla członków klubu
+
+### **`fix_user_groups_table.py`:**
+- ✅ **Dodaje kolumny:** `event_id`, `criteria`, `is_active`, `member_count`, `created_at`, `updated_at`
+- ✅ **Dodaje foreign key constraint** dla `event_id`
+- ✅ **Aktualizuje dane:** `is_active = true`, `member_count = 0` dla istniejących grup
+- ✅ **Aktualizuje criteria** dla grup wydarzeń na podstawie `event_id`
+
+### **`fix_migration.py`:**
 1. **Sprawdza istniejące kolumny** w tabeli `user_history`
 2. **Identyfikuje brakujące kolumny** z migracji
 3. **Dodaje brakujące kolumny** ręcznie (jeśli są)

@@ -16,7 +16,7 @@ class User(UserMixin, db.Model):
     club_member = db.Column(db.Boolean, default=False)  # Whether user wants to join the club
     is_active = db.Column(db.Boolean, default=True, index=True)  # Whether the account is active
     role = db.Column(db.String(20), default='user', index=True)  # admin, user, ankieter
-    account_type = db.Column(db.String(30), default='user', index=True)  # admin, club_member, ankieter, event_registration
+    account_type = db.Column(db.String(30), default='user', index=True)  # admin, user, ankieter, event_registration
     event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=True)  # ID of event for event registrations
     group_id = db.Column(db.Integer, db.ForeignKey('user_groups.id'), nullable=True)  # ID of group user belongs to
     is_temporary_password = db.Column(db.Boolean, default=True)  # Whether user needs to change password
@@ -51,8 +51,8 @@ class User(UserMixin, db.Model):
         return self.account_type == 'event_registration'
     
     def is_club_member_account(self):
-        """Check if user is club member account type"""
-        return self.account_type == 'club_member'
+        """Check if user is club member (based on club_member boolean field)"""
+        return self.club_member
     
     def is_admin_account(self):
         """Check if user is admin account type"""

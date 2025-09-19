@@ -137,7 +137,7 @@ def register():
             else:
                 # User exists but is not club member - convert to club member
                 existing_user.club_member = True
-                existing_user.account_type = 'club_member'
+                # Keep account_type as 'user' - club membership is tracked by club_member boolean
                 db.session.commit()
                 print(f"✅ Converted existing user to club member: {existing_user.email}")
         else:
@@ -156,7 +156,7 @@ def register():
                 is_active=True,
                 is_temporary_password=True,
                 club_member=True,
-                account_type='club_member',
+                account_type='user',
                 role='user'
             )
             
@@ -173,7 +173,7 @@ def register():
                     if existing_user:
                         if not existing_user.club_member:
                             existing_user.club_member = True
-                            existing_user.account_type = 'club_member'
+                            # Keep account_type as 'user' - club membership is tracked by club_member boolean
                             db.session.commit()
                         return jsonify({'success': True, 'message': 'Witamy z powrotem! Zostałeś dodany do klubu'})
                 # Re-raise the exception if it's not a duplicate key error
