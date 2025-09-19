@@ -354,22 +354,6 @@ function initializeBulkEdit() {
             return;
         }
         
-        // Confirm action
-        const changes = [];
-        if (formData.club_member !== null) {
-            changes.push(`Członkostwo w klubie: ${formData.club_member === 'true' ? 'Tak' : 'Nie'}`);
-        }
-        if (formData.is_active !== null) {
-            changes.push(`Status: ${formData.is_active === 'true' ? 'Aktywny' : 'Nieaktywny'}`);
-        }
-        if (formData.account_type !== null) {
-            changes.push(`Typ konta: ${formData.account_type}`);
-        }
-        
-        if (!confirm(`Czy na pewno chcesz zaktualizować ${userIds.length} użytkowników?\n\nZmiany:\n${changes.join('\n')}`)) {
-            return;
-        }
-        
         // Show loading state
         confirmBulkEditBtn.disabled = true;
         confirmBulkEditBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Zapisywanie...';
@@ -392,6 +376,7 @@ function initializeBulkEdit() {
                 modal.hide();
                 
                 // Uncheck all checkboxes
+                const selectedCheckboxes = document.querySelectorAll('input[name="itemIds"]:checked');
                 selectedCheckboxes.forEach(cb => cb.checked = false);
                 updateBulkEditButton();
                 
