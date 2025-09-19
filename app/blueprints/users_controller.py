@@ -32,10 +32,10 @@ class UsersController:
                 elif status_filter == 'inactive':
                     query = query.filter(User.is_active == False)
             
-            if club_member_filter:
-                if club_member_filter == 'true':
+            if club_member_filter is not None and club_member_filter != '':
+                if club_member_filter == 'true' or club_member_filter is True:
                     query = query.filter(User.club_member == True)
-                elif club_member_filter == 'false':
+                elif club_member_filter == 'false' or club_member_filter is False:
                     query = query.filter(User.club_member == False)
             
             if event_filter:
