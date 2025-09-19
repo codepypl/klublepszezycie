@@ -11,10 +11,16 @@
    sqlalchemy.exc.ProgrammingError: column users.account_type does not exist
    ```
 
+3. **Brakujące kolumny w tabeli `user_groups`** powodują błędy aplikacji:
+   ```
+   psycopg2.errors.UndefinedColumn: column user_groups.event_id does not exist
+   ```
+
 ## 🔍 Diagnoza
 Na serwerze produkcyjnym struktura bazy danych różni się od lokalnej:
 - Tabela `user_history` ma kolumny, ale migracja nie została oznaczona jako zastosowana
 - Tabela `users` nie ma wymaganych kolumn `account_type`, `event_id`, `group_id`
+- Tabela `user_groups` nie ma wymaganych kolumn `event_id`, `criteria`, `is_active`, `member_count`
 
 ## 🛠️ Rozwiązanie
 
@@ -32,13 +38,19 @@ python check_migrations.py
 python fix_users_table.py
 ```
 
-### Krok 3: Sprawdzenie struktury tabeli user_history
+### Krok 3: Naprawa tabeli user_groups
+```bash
+# Na serwerze produkcyjnym
+python fix_user_groups_table.py
+```
+
+### Krok 4: Sprawdzenie struktury tabeli user_history
 ```bash
 # Na serwerze produkcyjnym
 python check_table_structure.py
 ```
 
-### Krok 4: Naprawa migracji user_history
+### Krok 5: Naprawa migracji user_history
 ```bash
 # Na serwerze produkcyjnym
 python fix_migration.py
