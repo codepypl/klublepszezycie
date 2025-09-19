@@ -361,7 +361,8 @@ class PublicController:
             if not verify_unsubscribe_token(email, 'unsubscribe', token):
                 return {
                     'success': False,
-                    'error': 'Nieprawidłowy lub wygasły token'
+                    'error': 'Nieprawidłowy lub wygasły token',
+                    'error_code': 'INVALID_TOKEN'
                 }
             
             # Find user by email
@@ -397,13 +398,15 @@ class PublicController:
             else:
                 return {
                     'success': False,
-                    'error': 'Użytkownik nie został znaleziony'
+                    'error': 'Użytkownik nie został znaleziony',
+                    'error_code': 'USER_NOT_FOUND'
                 }
         except Exception as e:
             db.session.rollback()
             return {
                 'success': False,
-                'error': str(e)
+                'error': str(e),
+                'error_code': 'DATABASE_ERROR'
             }
     
     @staticmethod
@@ -413,7 +416,8 @@ class PublicController:
             if not verify_unsubscribe_token(email, 'delete_account', token):
                 return {
                     'success': False,
-                    'error': 'Nieprawidłowy lub wygasły token'
+                    'error': 'Nieprawidłowy lub wygasły token',
+                    'error_code': 'INVALID_TOKEN'
                 }
             
             # Find user by email
@@ -423,7 +427,8 @@ class PublicController:
                 if user.is_admin_role():
                     return {
                         'success': False,
-                        'error': 'Nie można usunąć konta administratora'
+                        'error': 'Nie można usunąć konta administratora',
+                        'error_code': 'ADMIN_PROTECTED'
                     }
                 
                 # Remove user from all groups before deleting
@@ -470,13 +475,15 @@ class PublicController:
             else:
                 return {
                     'success': False,
-                    'error': 'Użytkownik nie został znaleziony'
+                    'error': 'Użytkownik nie został znaleziony',
+                    'error_code': 'USER_NOT_FOUND'
                 }
         except Exception as e:
             db.session.rollback()
             return {
                 'success': False,
-                'error': str(e)
+                'error': str(e),
+                'error_code': 'DATABASE_ERROR'
             }
     
     @staticmethod

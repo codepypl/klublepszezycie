@@ -648,40 +648,94 @@ def terms():
 @public_bp.route('/api/unsubscribe/<email>/<token>')
 def unsubscribe_api(email, token):
     """API endpoint for unsubscribe from newsletter"""
+    import urllib.parse
+    import logging
+    from flask import request
+    from datetime import datetime
+    
     try:
-        import urllib.parse
         # Decode email in case it was URL encoded
         decoded_email = urllib.parse.unquote(email)
+        
+        # Log security event
+        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
+        user_agent = request.headers.get('User-Agent', 'unknown')
+        
+        # Log the attempt
+        logging.warning(f"SECURITY: Unsubscribe attempt - Email: {decoded_email}, IP: {client_ip}, User-Agent: {user_agent}, Token: {token[:16]}...")
+        
         result = PublicController.unsubscribe_from_newsletter(decoded_email, token)
         
+        # Check for suspicious activity
+        from app.utils.security_utils import security_monitor
+        security_monitor.check_suspicious_activity(decoded_email, 'unsubscribe', token, result)
+        
         if result['success']:
+            logging.info(f"SUCCESS: Unsubscribe successful - Email: {decoded_email}, IP: {client_ip}")
             return render_template('email/unsubscribe_success.html', 
                                  message=result['message'])
         else:
+            # Log failed attempt with more details
+            logging.error(f"SECURITY: Unsubscribe failed - Email: {decoded_email}, IP: {client_ip}, Error: {result['error']}")
             return render_template('email/unsubscribe_error.html', 
-                                 error=result['error'])
+                                 error=result['error'],
+                                 error_code=result.get('error_code', 'UNKNOWN_ERROR'),
+                                 email=decoded_email,
+                                 timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     except Exception as e:
+        # Log critical error
+        logging.critical(f"SECURITY: Unsubscribe critical error - Email: {decoded_email if 'decoded_email' in locals() else email}, IP: {client_ip if 'client_ip' in locals() else 'unknown'}, Exception: {str(e)}")
         return render_template('email/unsubscribe_error.html', 
-                             error=f'Wystąpił błąd: {str(e)}')
+                             error=f'Wystąpił błąd: {str(e)}',
+                             error_code='CRITICAL_ERROR',
+                             email=decoded_email if 'decoded_email' in locals() else email,
+                             timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 @public_bp.route('/api/delete-account/<email>/<token>')
 def delete_account_api(email, token):
     """API endpoint for delete account"""
+    import urllib.parse
+    import logging
+    from flask import request
+    from datetime import datetime
+    
     try:
-        import urllib.parse
         # Decode email in case it was URL encoded
         decoded_email = urllib.parse.unquote(email)
+        
+        # Log security event
+        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
+        user_agent = request.headers.get('User-Agent', 'unknown')
+        
+        # Log the attempt
+        logging.warning(f"SECURITY: Delete account attempt - Email: {decoded_email}, IP: {client_ip}, User-Agent: {user_agent}, Token: {token[:16]}...")
+        
         result = PublicController.delete_user_account(decoded_email, token)
         
+        # Check for suspicious activity
+        from app.utils.security_utils import security_monitor
+        security_monitor.check_suspicious_activity(decoded_email, 'delete_account', token, result)
+        
         if result['success']:
+            logging.info(f"SUCCESS: Account deletion successful - Email: {decoded_email}, IP: {client_ip}")
             return render_template('email/delete_account_success.html', 
                                  message=result['message'])
         else:
+            # Log failed attempt with more details
+            logging.error(f"SECURITY: Delete account failed - Email: {decoded_email}, IP: {client_ip}, Error: {result['error']}")
             return render_template('email/delete_account_error.html', 
-                                 error=result['error'])
+                                 error=result['error'],
+                                 error_code=result.get('error_code', 'UNKNOWN_ERROR'),
+                                 email=decoded_email,
+                                 timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     except Exception as e:
+        # Log critical error
+        logging.critical(f"SECURITY: Delete account critical error - Email: {decoded_email if 'decoded_email' in locals() else email}, IP: {client_ip if 'client_ip' in locals() else 'unknown'}, Exception: {str(e)}")
         return render_template('email/delete_account_error.html', 
-                             error=f'Wystąpił błąd: {str(e)}')
+                             error=f'Wystąpił błąd: {str(e)}',
+                             error_code='CRITICAL_ERROR',
+                             email=decoded_email if 'decoded_email' in locals() else email,
+                             timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 def register_for_event(user, event_id):
     """Register existing user for a specific event"""

@@ -52,8 +52,29 @@
                             <i class="fas fa-exclamation-triangle fa-4x text-warning"></i>
                         </div>
                         <h2 class="h3 mb-4">Błąd wypisania z listy mailingowej</h2>
+                        <div class="alert alert-warning mb-4">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Błąd:</strong> {{ error }}
+                        </div>
+                        {% if error_code %}
+                        <div class="mb-4">
+                            <small class="text-muted">
+                                <strong>Kod błędu:</strong> {{ error_code }}<br>
+                                {% if email %}<strong>Email:</strong> {{ email }}<br>{% endif %}
+                                {% if timestamp %}<strong>Data:</strong> {{ timestamp }}{% endif %}
+                            </small>
+                        </div>
+                        {% endif %}
                         <p class="lead text-muted mb-5">
-                            Wystąpił błąd podczas wypisywania z listy mailingowej. Link może być nieprawidłowy lub wygasły.
+                            {% if error_code == 'INVALID_TOKEN' %}
+                                Link jest nieprawidłowy lub wygasł. Sprawdź czy skopiowałeś cały link z emaila.
+                            {% elif error_code == 'USER_NOT_FOUND' %}
+                                Konto o tym adresie email nie zostało znalezione w naszym systemie. Możliwe, że zostało już usunięte lub nigdy nie było zarejestrowane.
+                            {% elif error_code == 'DATABASE_ERROR' %}
+                                Wystąpił błąd techniczny. Spróbuj ponownie za kilka minut.
+                            {% else %}
+                                Wystąpił nieoczekiwany błąd. Skontaktuj się z nami jeśli problem się powtarza.
+                            {% endif %}
                         </p>
                         <div class="d-grid gap-3 d-md-block">
                             <a href="{{ url_for('public.index') }}" class="btn btn-primary btn-lg">
