@@ -312,10 +312,29 @@ class BlogPostsManager {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('Error response:', errorText);
+                
+                // Check if it's an authentication error
+                if (response.status === 401) {
+                    window.toastManager.error('Sesja wygasła. Przekierowuję do logowania...');
+                    setTimeout(() => {
+                        window.location.href = '/auth/login';
+                    }, 2000);
+                    return;
+                }
+                
                 throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
             
             const result = await response.json();
+            
+            // Check if result indicates login is required
+            if (result.requires_login) {
+                window.toastManager.error('Sesja wygasła. Przekierowuję do logowania...');
+                setTimeout(() => {
+                    window.location.href = '/auth/login';
+                }, 2000);
+                return;
+            }
             
             if (result.success) {
                 const post = result.post;

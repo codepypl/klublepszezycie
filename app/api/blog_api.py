@@ -290,6 +290,14 @@ def api_blog_admin_posts():
 @login_required
 def api_blog_admin_post(post_id):
     """Individual admin blog post API"""
+    # Check if user is still authenticated
+    if not current_user.is_authenticated:
+        return jsonify({
+            'success': False,
+            'message': 'Sesja wygasła. Zaloguj się ponownie.',
+            'requires_login': True
+        }), 401
+    
     try:
         post = BlogPost.query.get(post_id)
         if not post:

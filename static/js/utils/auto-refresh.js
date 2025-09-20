@@ -6,6 +6,7 @@
 class AutoRefreshSystem {
     constructor() {
         this.refreshFunctions = new Map();
+        this.disabled = false;
         this.init();
     }
 
@@ -37,6 +38,11 @@ class AutoRefreshSystem {
     }
 
     refreshAfterCRUD(type = null) {
+        if (this.disabled) {
+            console.log('🛑 Auto-refresh is disabled, skipping...');
+            return;
+        }
+        
         console.log('🔄 Auto-refreshing after CRUD operation...');
         
         // Add a small delay to ensure DOM is ready
@@ -494,6 +500,65 @@ const autoRefreshSystem = new AutoRefreshSystem();
 // Global function for CRUD operations
 window.refreshAfterCRUD = function(type = null) {
     autoRefreshSystem.refreshAfterCRUD(type);
+};
+
+// Global functions to control auto-refresh
+window.disableAllAutoRefresh = function() {
+    console.log('🛑 Disabling all auto-refresh...');
+    
+    // Clear all known intervals
+    if (typeof contactsRefreshInterval !== 'undefined' && contactsRefreshInterval) {
+        clearInterval(contactsRefreshInterval);
+        contactsRefreshInterval = null;
+        console.log('✅ Disabled contacts auto-refresh');
+    }
+    
+    if (typeof refreshInterval !== 'undefined' && refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+        console.log('✅ Disabled calls auto-refresh');
+    }
+    
+    if (typeof emailQueueRefreshInterval !== 'undefined' && emailQueueRefreshInterval) {
+        clearInterval(emailQueueRefreshInterval);
+        emailQueueRefreshInterval = null;
+        console.log('✅ Disabled email queue auto-refresh');
+    }
+    
+    if (typeof progressInterval !== 'undefined' && progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+        console.log('✅ Disabled progress monitoring');
+    }
+    
+    // Disable auto-refresh system
+    autoRefreshSystem.disabled = true;
+    console.log('✅ Auto-refresh system disabled');
+};
+
+window.enableAllAutoRefresh = function() {
+    console.log('🔄 Enabling all auto-refresh...');
+    
+    // Re-enable auto-refresh system
+    autoRefreshSystem.disabled = false;
+    
+    // Re-setup auto-refresh for current page
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/crm/contacts')) {
+        if (typeof setupContactsAutoRefresh === 'function') {
+            setupContactsAutoRefresh();
+        }
+    } else if (currentPath.includes('/crm/calls')) {
+        if (typeof setupAutoRefresh === 'function') {
+            setupAutoRefresh();
+        }
+    } else if (currentPath.includes('/admin/email-queue')) {
+        if (typeof setupEmailQueueAutoRefresh === 'function') {
+            setupEmailQueueAutoRefresh();
+        }
+    }
+    
+    console.log('✅ Auto-refresh system enabled');
 };
 
 // Export for use in other modules
