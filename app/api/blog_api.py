@@ -290,7 +290,19 @@ def api_blog_admin_posts():
 @login_required
 def api_blog_admin_post(post_id):
     """Individual admin blog post API"""
-    post = BlogPost.query.get_or_404(post_id)
+    try:
+        post = BlogPost.query.get(post_id)
+        if not post:
+            return jsonify({
+                'success': False,
+                'message': f'Post o ID {post_id} nie został znaleziony'
+            }), 404
+    except Exception as e:
+        logging.error(f"Error querying post {post_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Błąd podczas wyszukiwania posta: {str(e)}'
+        }), 500
     
     try:
         if request.method == 'GET':

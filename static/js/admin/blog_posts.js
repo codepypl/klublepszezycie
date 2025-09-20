@@ -299,9 +299,22 @@ class BlogPostsManager {
                 return;
             }
 
-            const response = await fetch(`/api/blog/admin/posts/${postId}`, {
+            const url = `/api/blog/admin/posts/${postId}`;
+            console.log('Fetching post data from:', url);
+            
+            const response = await fetch(url, {
                 credentials: 'include'
             });
+            
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+            
             const result = await response.json();
             
             if (result.success) {
