@@ -915,6 +915,42 @@ def email_groups():
         
         group_list = []
         for group in pagination.items:
+            # Znajdź szablon dla grupy
+            template_id = None
+            template_name = None
+            
+            # Dla grup wydarzeń, znajdź szablon z wydarzenia
+            if group.group_type == 'event_based' and group.criteria:
+                try:
+                    import json
+                    criteria = json.loads(group.criteria)
+                    event_id = criteria.get('event_id')
+                    if event_id:
+                        # Znajdź szablon dla wydarzenia (domyślnie event_reminder_24h)
+                        template = EmailTemplate.query.filter_by(name='event_reminder_24h').first()
+                        if template:
+                            template_id = template.id
+                            template_name = template.name
+                except (json.JSONDecodeError, KeyError):
+                    pass
+            
+            # Jeśli nie znaleziono szablonu dla wydarzenia, sprawdź kampanie
+            if not template_id:
+                campaigns_using_group = EmailCampaign.query.filter(
+                    EmailCampaign.recipient_groups.contains(str(group.id))
+                ).all()
+                
+                if campaigns_using_group:
+                    # Weź pierwszą kampanię z szablonem
+                    for campaign in campaigns_using_group:
+                        if campaign.template_id:
+                            template_id = campaign.template_id
+                            # Pobierz nazwę szablonu
+                            template = EmailTemplate.query.get(campaign.template_id)
+                            if template:
+                                template_name = template.name
+                            break
+            
             group_list.append({
                 'id': group.id,
                 'name': group.name,
@@ -923,7 +959,9 @@ def email_groups():
                 'member_count': group.member_count,
                 'is_active': group.is_active,
                 'is_default': group.group_type in default_groups,
-                'created_at': group.created_at.isoformat()
+                'created_at': group.created_at.isoformat(),
+                'template_id': template_id,
+                'template_name': template_name
             })
         
         return jsonify({

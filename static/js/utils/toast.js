@@ -31,7 +31,7 @@ class ToastManager {
             case 'success':
                 bgColor = '#000000';
                 textColor = '#ffffff';
-                borderColor = '#28a745';
+                borderColor = '#000000';
                 break;
             case 'error':
             case 'danger':
@@ -46,9 +46,9 @@ class ToastManager {
                 break;
             case 'info':
             default:
-                bgColor = '#17a2b8';
-                textColor = '#ffffff';
-                borderColor = '#17a2b8';
+                bgColor = '#ffc107';
+                textColor = '#000000';
+                borderColor = '#ffc107';
                 break;
         }
         
@@ -62,7 +62,7 @@ class ToastManager {
             box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
         `;
         
-        // Use white close button for dark backgrounds
+        // Use white close button for dark backgrounds, black for light backgrounds
         const closeButtonClass = (type === 'success' || type === 'danger' || type === 'error') 
             ? 'btn-close btn-close-white' 
             : 'btn-close';

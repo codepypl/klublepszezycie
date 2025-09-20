@@ -5,6 +5,7 @@ from flask import request, jsonify, flash, redirect, url_for
 from flask_login import login_required, current_user
 from app.models import db, BlogCategory, BlogPost, BlogTag, BlogComment, User
 from datetime import datetime
+from sqlalchemy import and_, or_
 import re
 import logging
 
@@ -56,9 +57,11 @@ class BlogController:
             # Search functionality
             if search:
                 posts_query = posts_query.filter(
-                    BlogPost.title.ilike(f'%{search}%') |
-                    BlogPost.content.ilike(f'%{search}%') |
-                    BlogPost.excerpt.ilike(f'%{search}%')
+                    or_(
+                        BlogPost.title.ilike(f'%{search}%'),
+                        BlogPost.content.ilike(f'%{search}%'),
+                        BlogPost.excerpt.ilike(f'%{search}%')
+                    )
                 )
             
             # Paginate
@@ -374,12 +377,17 @@ class BlogController:
                     'error': 'Post nie został znaleziony'
                 }
             
+            # Clean up associated files before deleting the post
+            from app.utils.file_utils import cleanup_blog_post_files
+            cleanup_result = cleanup_blog_post_files(post)
+            
             db.session.delete(post)
             db.session.commit()
             
             return {
                 'success': True,
-                'message': 'Post został usunięty'
+                'message': 'Post został usunięty',
+                'files_cleaned': cleanup_result
             }
         except Exception as e:
             db.session.rollback()
@@ -424,13 +432,14 @@ class BlogController:
     
     @staticmethod
     def get_tags():
-        """Get all tags"""
+        """Get all tags with their posts"""
         try:
             tags = BlogTag.query.filter_by(is_active=True).order_by(BlogTag.name).all()
             
-            # Add posts count for each tag
+            # Load posts for each tag to avoid N+1 queries
             for tag in tags:
-                tag.posts_count = len(tag.posts)
+                # This will load the posts relationship
+                _ = tag.posts
             
             return {
                 'success': True,

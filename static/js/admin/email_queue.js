@@ -115,9 +115,9 @@ function displayQueue(emails) {
         else if (email.status === 'pending') statusClass = 'warning';
         
         row.innerHTML = `
-            <td>${email.id}</td>
+            <td><span class="badge admin-badge admin-badge-primary">${email.id}</span></td>
             <td>${email.to_email}</td>
-            <td>${email.subject}</td>
+            <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">${email.subject}</td>
             <td><span class="admin-badge admin-badge-${statusClass}">${email.status}</span></td>
             <td>${email.scheduled_at ? new Date(email.scheduled_at + 'Z').toLocaleString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'}) : '-'}</td>
             <td>${email.sent_at ? new Date(email.sent_at + 'Z').toLocaleString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'}) : '-'}</td>

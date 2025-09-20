@@ -31,6 +31,7 @@
                                 <th>
                                     <input type="checkbox" id="selectAll">
                                 </th>
+                                <th>ID</th>
                                 <th>Kolejność</th>
                                 <th>Nazwa</th>
                                 <th>URL (Strona główna)</th>
@@ -45,6 +46,9 @@
                             <tr data-menu-id="{{ item.id }}" data-item-id="{{ item.id }}">
                                 <td>
                                     <input type="checkbox" name="itemIds" value="{{ item.id }}">
+                                </td>
+                                <td>
+                                    <span class="badge admin-badge admin-badge-primary">{{ item.id }}</span>
                                 </td>
                                 <td>
                                     <span class="badge admin-badge admin-badge-primary">{{ item.order }}</span>
@@ -78,7 +82,7 @@
                                         <button class="btn btn-sm admin-btn-outline" onclick="editMenuItem({{ item.id }})">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteMenuItem({{ item.id }})">
+                                        <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteMenuItem({{ item.id }})">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>

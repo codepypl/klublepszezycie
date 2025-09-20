@@ -294,6 +294,7 @@ class EventsManager {
                             <th>
                                 <input type="checkbox" id="selectAll">
                             </th>
+                            <th>ID</th>
                             <th>Tytuł</th>
                             <th>Typ</th>
                             <th>Data</th>
@@ -371,6 +372,9 @@ class EventsManager {
                     <input type="checkbox" name="itemIds" value="${event.id}">
                 </td>
                 <td>
+                    <span class="badge admin-badge admin-badge-primary">${event.id}</span>
+                </td>
+                <td>
                     <strong>${event.title}</strong>
                 </td>
                 <td>
@@ -384,7 +388,7 @@ class EventsManager {
                         <button class="btn btn-sm admin-btn-outline" onclick="eventsManager.editEvent(${event.id})">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm admin-btn-danger" onclick="eventsManager.deleteEvent(${event.id})">
+                        <button class="btn btn-sm admin-btn-danger-outline" onclick="eventsManager.deleteEvent(${event.id})">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>

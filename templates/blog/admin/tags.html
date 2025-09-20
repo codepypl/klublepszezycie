@@ -31,9 +31,9 @@
                                 <th>
                                     <input type="checkbox" id="selectAll">
                                 </th>
+                                <th>ID</th>
                                 <th>Nazwa</th>
-                                <th>Slug</th>
-                                <th>Artykułów</th>
+                                <th>Artykuł</th>
                                 <th>Status</th>
                                 <th>Data utworzenia</th>
                                 <th>Akcje</th>
@@ -46,15 +46,27 @@
                                     <input type="checkbox" name="itemIds" value="{{ tag.id }}">
                                 </td>
                                 <td>
+                                    <span class="badge admin-badge admin-badge-primary">{{ tag.id }}</span>
+                                </td>
+                                <td>
                                     <div class="d-flex align-items-center">
                                         <span class="badge bg-primary me-2">{{ tag.name }}</span>
                                     </div>
                                 </td>
-                                <td>
-                                    <code>{{ tag.slug }}</code>
-                                </td>
-                                <td>
-                                    <span class="badge bg-secondary">{{ tag.posts_count }}</span>
+                                <td class="article-ids">
+                                    {% if tag.posts %}
+                                        {% for post in tag.posts %}
+                                            <a href="#" onclick="editPost({{ post.id }})" 
+                                               class="badge admin-badge admin-badge-primary me-1" 
+                                               data-bs-toggle="tooltip" 
+                                               data-bs-placement="top" 
+                                               title="{{ post.title }}">
+                                                {{ post.id }}
+                                            </a>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">Brak artykułów</span>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if tag.is_active %}
@@ -71,7 +83,7 @@
                                         <button class="btn btn-sm admin-btn-outline" onclick="editTag({{ tag.id }})" title="Edytuj">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteTag({{ tag.id }})" title="Usuń">
+                                        <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteTag({{ tag.id }})" title="Usuń">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -173,21 +185,69 @@
     </div>
 {% endblock %}
 
-{% block scripts %}
+{% block extra_css %}
+<style>
+.badge.bg-primary:hover {
+    background-color: #0d6efd !important;
+    color: white !important;
+    text-decoration: none;
+}
+
+/* Hover effect for article IDs */
+.badge.admin-badge-primary:hover {
+    color: white !important;
+    background-color: #1e3a8a !important;
+}
+
+/* Zawijanie ID artykułów */
+.article-ids {
+    max-width: 200px;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+.article-ids .badge {
+    display: inline-block;
+    margin: 2px;
+    word-break: keep-all;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/utils/tooltip.js') }}"></script>
 <script src="{{ url_for('static', filename='js/admin/blog_tags.js') }}"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Set up pagination handlers for auto-initialization
-    window.paginationHandlers = {
-        onPageChange: (page) => {
-            // Tags don't have server-side pagination, so this is just for UI
-            console.log('Page changed to:', page);
-        },
-        onPerPageChange: (newPage, perPage) => {
-            // Tags don't have server-side pagination, so this is just for UI
-            console.log('Per page changed to:', perPage);
-        }
-    };
-});
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up pagination handlers for auto-initialization
+        window.paginationHandlers = {
+            onPageChange: (page) => {
+                // Tags don't have server-side pagination, so this is just for UI
+                console.log('Page changed to:', page);
+            },
+            onPerPageChange: (newPage, perPage) => {
+                // Tags don't have server-side pagination, so this is just for UI
+                console.log('Per page changed to:', perPage);
+            }
+        };
+    });
+
+// Edit post function - opens post editing modal in new window
+function editPost(postId) {
+    // Otwórz nowe okno ze stroną artykułów z parametrem edit
+    const newWindow = window.open(`/blog/admin?edit=${postId}`, '_blank');
+}
 </script>
+
+<style>
+/* Hover effect for post IDs */
+.badge.admin-badge-primary:hover {
+    color: white !important;
+    background-color: #1e3a8a !important;
+}
+</style>
+
+<!-- Include blog posts JavaScript for editPost function -->
+<script src="{{ url_for('static', filename='js/admin/blog_posts.js') }}"></script>
 {% endblock %}

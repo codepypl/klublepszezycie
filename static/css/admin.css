@@ -366,7 +366,7 @@
 }
 
 .admin-btn:hover {
-    background: #1e40af;
+    background: #1e3a8a;
     color: var(--admin-white);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
@@ -430,7 +430,7 @@
 }
 
 .admin-btn:hover {
-    background: #1e40af;
+    background: #1e3a8a;
     color: var(--admin-white);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
@@ -912,8 +912,8 @@
 }
 
 .admin-alert-info {
-    background: rgba(59, 130, 246, 0.1);
-    color: #1e40af;
+    background: rgba(30, 58, 138, 0.1);
+    color: #1e3a8a;
     border-left: 4px solid var(--admin-info);
 }
 
@@ -961,7 +961,7 @@ a {
 }
 
 a:hover {
-    color: #1e40af;
+    color: #1e3a8a;
     text-decoration: underline;
 }
 
@@ -1519,6 +1519,40 @@ hr {
     border-color: #ffc107 !important;
 }
 
+/* Bootstrap Color Overrides for Admin */
+.bg-primary {
+    background-color: #1e3a8a !important;
+}
+
+.text-primary {
+    color: #1e3a8a !important;
+}
+
+.btn-primary {
+    background-color: #1e3a8a !important;
+    border-color: #1e3a8a !important;
+}
+
+.btn-primary:hover {
+    background-color: #1e3a8a !important;
+    border-color: #1e3a8a !important;
+}
+
+.btn-primary:focus {
+    background-color: #1e3a8a !important;
+    border-color: #1e3a8a !important;
+    box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.25) !important;
+}
+
+.btn-primary:active {
+    background-color: #1e3a8a !important;
+    border-color: #1e3a8a !important;
+}
+
+.badge.bg-primary {
+    background-color: #1e3a8a !important;
+}
+
 /* Info toast - black text on blue background */
 #toast-container .alert-info {
     background-color: #0dcaf0 !important;
@@ -1638,4 +1672,59 @@ hr {
     border: none !important;
     margin: 0.125rem !important;
     display: inline-block !important;
+}
+
+/* Pagination Styles for Admin Panel */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.pagination {
+    margin: 0;
+    background: white;
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.page-link {
+    color: #1e3a8a !important;
+    border: 1px solid #e5e7eb;
+    padding: 0.5rem 0.75rem;
+    margin: 0 0.125rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    background: white;
+}
+
+.page-link:hover {
+    background: #f8fafc !important;
+    border-color: #1e3a8a !important;
+    color: #1e3a8a !important;
+    transform: translateY(-1px);
+}
+
+.page-item.active .page-link {
+    background: #1e3a8a !important;
+    border-color: #1e3a8a !important;
+    color: white !important;
+}
+
+.page-item.disabled .page-link {
+    color: #cbd5e1 !important;
+    cursor: not-allowed;
+    background: #f8fafc !important;
+    border-color: #e5e7eb !important;
+}
+
+.page-item.disabled .page-link:hover {
+    transform: none;
+    background: #f8fafc !important;
+    border-color: #e5e7eb !important;
+    color: #cbd5e1 !important;
 }

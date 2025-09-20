@@ -20,6 +20,74 @@
         </li>
         {% endif %}
         
+        <!-- Użytkownicy - Tylko dla administratorów -->
+        {% if current_user.is_admin_role() %}
+        <li class="nav-item">
+            <a href="{{ url_for('users.index') }}" class="nav-link {% if request.endpoint == 'users.index' %}active{% endif %}">
+                <i class="fas fa-users"></i>
+                <span class="nav-link-text">Użytkownicy</span>
+            </a>
+        </li>
+        {% endif %}
+        
+        {% if current_user.is_admin_role() %}
+                <li class="nav-item">
+                    <a href="{{ url_for('events.index') }}" class="nav-link {% if request.endpoint == 'events.index' %}active{% endif %}">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span class="nav-link-text">Wydarzenia</span>
+                    </a>
+                </li>
+        {% endif %}
+        <!-- Grupa: Zarządzanie treścią - Tylko dla administratorów -->
+        {% if current_user.is_admin_role() %}
+            <li class="nav-item">
+                <a href="#contentSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['admin.menu', 'admin.sections', 'admin.benefits', 'admin.testimonials', 'admin.faq', 'footer.index'] %}true{% else %}false{% endif %}">
+                    <i class="fas fa-edit me-2"></i>
+                    <span class="nav-link-text">Treść</span>
+                    <i class="fas fa-chevron-down ms-auto"></i>
+                </a>
+                <div class="collapse{% if request.endpoint in ['admin.menu', 'admin.sections', 'admin.benefits', 'admin.testimonials', 'admin.faq', 'footer.index'] %} show{% endif %}" id="contentSubmenu">
+                    <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                            <a href="{{ url_for('admin.menu') }}" class="nav-link {% if request.endpoint == 'admin.menu' %}active{% endif %}">
+                            <i class="fas fa-bars"></i>
+                            <span class="nav-link-text">Menu</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ url_for('admin.sections') }}" class="nav-link {% if request.endpoint == 'admin.sections' %}active{% endif %}">
+                                <i class="fas fa-th-large"></i>
+                                <span class="nav-link-text">Sekcje</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ url_for('admin.benefits') }}" class="nav-link {% if request.endpoint == 'admin.benefits' %}active{% endif %}">
+                                <i class="fas fa-star"></i>
+                                <span class="nav-link-text">Korzyści</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ url_for('admin.testimonials') }}" class="nav-link {% if request.endpoint == 'admin.testimonials' %}active{% endif %}">
+                            <i class="fas fa-quote-left"></i>
+                            <span class="nav-link-text">Opinie</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ url_for('admin.faq') }}" class="nav-link {% if request.endpoint == 'admin.faq' %}active{% endif %}">
+                                <i class="fas fa-question-circle"></i>
+                                <span class="nav-link-text">FAQ</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ url_for('footer.index') }}" class="nav-link {% if request.endpoint == 'footer.index' %}active{% endif %}">
+                                <i class="fas fa-shoe-prints"></i>
+                                <span class="nav-link-text">Stopka</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+        {% endif %}
         <!-- Grupa: Mailing - Tylko dla administratorów -->
         {% if current_user.is_admin_role() %}
         <li class="nav-item">
@@ -65,56 +133,7 @@
         </li>
         {% endif %}
         
-        <!-- Grupa: Zarządzanie treścią - Tylko dla administratorów -->
-        {% if current_user.is_admin_role() %}
-        <li class="nav-item">
-            <a href="#contentSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['admin.menu', 'admin.sections', 'admin.benefits', 'admin.testimonials', 'admin.faq', 'footer.index'] %}true{% else %}false{% endif %}">
-                <i class="fas fa-edit me-2"></i>
-                <span class="nav-link-text">Treść</span>
-                <i class="fas fa-chevron-down ms-auto"></i>
-            </a>
-            <div class="collapse{% if request.endpoint in ['admin.menu', 'admin.sections', 'admin.benefits', 'admin.testimonials', 'admin.faq', 'footer.index'] %} show{% endif %}" id="contentSubmenu">
-                <ul class="nav flex-column ms-3">
-                    <li class="nav-item">
-                        <a href="{{ url_for('admin.menu') }}" class="nav-link {% if request.endpoint == 'admin.menu' %}active{% endif %}">
-                            <i class="fas fa-bars"></i>
-                            <span class="nav-link-text">Menu</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ url_for('admin.sections') }}" class="nav-link {% if request.endpoint == 'admin.sections' %}active{% endif %}">
-                            <i class="fas fa-th-large"></i>
-                            <span class="nav-link-text">Sekcje</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ url_for('admin.benefits') }}" class="nav-link {% if request.endpoint == 'admin.benefits' %}active{% endif %}">
-                            <i class="fas fa-star"></i>
-                            <span class="nav-link-text">Korzyści</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ url_for('admin.testimonials') }}" class="nav-link {% if request.endpoint == 'admin.testimonials' %}active{% endif %}">
-                            <i class="fas fa-quote-left"></i>
-                            <span class="nav-link-text">Opinie</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ url_for('admin.faq') }}" class="nav-link {% if request.endpoint == 'admin.faq' %}active{% endif %}">
-                            <i class="fas fa-question-circle"></i>
-                            <span class="nav-link-text">FAQ</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ url_for('footer.index') }}" class="nav-link {% if request.endpoint == 'footer.index' %}active{% endif %}">
-                            <i class="fas fa-shoe-prints"></i>
-                            <span class="nav-link-text">Stopka</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </li>
-        {% endif %}
+
         
         <!-- Grupa: Blog - Tylko dla administratorów -->
         {% if current_user.is_admin_role() %}
@@ -155,32 +174,9 @@
         </li>
         {% endif %}
         
-        <!-- Grupa: Wydarzenia i użytkownicy - Tylko dla administratorów -->
-        {% if current_user.is_admin_role() %}
-        <li class="nav-item">
-            <a href="#eventsSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['events.index', 'events.registrations', 'users.index'] %}true{% else %}false{% endif %}">
-                <i class="fas fa-calendar me-2"></i>
-                <span class="nav-link-text">Wydarzenia</span>
-                <i class="fas fa-chevron-down ms-auto"></i>
-            </a>
-            <div class="collapse{% if request.endpoint in ['events.index', 'events.registrations', 'users.index'] %} show{% endif %}" id="eventsSubmenu">
-                <ul class="nav flex-column ms-3">
-                    <li class="nav-item">
-                        <a href="{{ url_for('events.index') }}" class="nav-link {% if request.endpoint == 'events.index' %}active{% endif %}">
-                            <i class="fas fa-calendar-alt"></i>
-                            <span class="nav-link-text">Harmonogram wydarzeń</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ url_for('users.index') }}" class="nav-link {% if request.endpoint == 'users.index' %}active{% endif %}">
-                            <i class="fas fa-users"></i>
-                            <span class="nav-link-text">Użytkownicy</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </li>
-        {% endif %}
+
+           
+
         
         <!-- Grupa: SEO i social media - Tylko dla administratorów -->
         {% if current_user.is_admin_role() %}
@@ -247,6 +243,7 @@
             </div>
         </li>
         {% endif %}
+
 
     </ul>
     

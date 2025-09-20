@@ -150,15 +150,24 @@
                     {% block page_actions %}{% endblock %}
                 </div>
                 
-                <!-- Flash Messages -->
+                <!-- Flash Messages - Converted to Toasts -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                {% for category, message in messages %}
+                                    {% if category == 'error' %}
+                                        window.toastManager.error('{{ message|e }}');
+                                    {% elif category == 'success' %}
+                                        window.toastManager.success('{{ message|e }}');
+                                    {% elif category == 'warning' %}
+                                        window.toastManager.warning('{{ message|e }}');
+                                    {% else %}
+                                        window.toastManager.info('{{ message|e }}');
+                                    {% endif %}
+                                {% endfor %}
+                            });
+                        </script>
                     {% endif %}
                 {% endwith %}
                 

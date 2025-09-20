@@ -30,10 +30,15 @@ def index():
     from app.blueprints.public_controller import PublicController
     db_data = PublicController.get_database_data()
     
+    # Get popular tags for tag cloud
+    tags_data = BlogController.get_tags()
+    popular_tags = tags_data['tags'] if tags_data['success'] else []
+    
     return render_template('blog/index.html', 
                          posts=data['posts'], 
                          categories=data['categories'], 
                          tags=data['tags'],
+                         popular_tags=popular_tags,
                          search=data['search'],
                          category_slug=data['category_slug'],
                          tag_slug=data['tag_slug'],
@@ -325,6 +330,7 @@ def admin_index():
     page = request.args.get('page', 1, type=int)
     status = request.args.get('status')
     search = request.args.get('search')
+    edit_post_id = request.args.get('edit', type=int)
     
     data = BlogController.get_admin_posts(page=page, status=status, search=search)
     
@@ -332,7 +338,7 @@ def admin_index():
         flash(f'Błąd: {data["error"]}', 'error')
         return redirect(url_for('blog.index'))
     
-    return render_template('blog/admin/posts.html', posts=data['posts'])
+    return render_template('blog/admin/posts.html', posts=data['posts'], edit_post_id=edit_post_id)
 
 @blog_bp.route('/admin/create', methods=['GET', 'POST'])
 @login_required

@@ -70,7 +70,7 @@ function displayCampaigns(campaigns) {
     tbody.innerHTML = '';
     
     if (campaigns.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Brak kampanii</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Brak kampanii</td></tr>';
         return;
     }
     
@@ -86,8 +86,9 @@ function displayCampaigns(campaigns) {
             <td>
                 ${campaign.status !== 'sending' && campaign.status !== 'sent' && campaign.status !== 'completed' ? `<input type="checkbox" name="itemIds" value="${campaign.id}">` : ''}
             </td>
+            <td><span class="badge admin-badge admin-badge-primary">${campaign.id}</span></td>
             <td>${campaign.name}</td>
-            <td>${campaign.subject}</td>
+            <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">${campaign.subject}</td>
             <td><span class="admin-badge admin-badge-${statusClass}">${campaign.status}</span></td>
             <td>${campaign.total_recipients}</td>
             <td>${campaign.sent_count}</td>

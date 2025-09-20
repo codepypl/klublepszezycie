@@ -12,6 +12,16 @@ document.addEventListener('DOMContentLoaded', function() {
     loadTemplates();
     initializeModalListeners();
     
+    // Check for edit parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const editTemplateId = urlParams.get('edit');
+    if (editTemplateId) {
+        // Automatically open edit modal for the specified template
+        setTimeout(() => {
+            editTemplate(parseInt(editTemplateId));
+        }, 1000); // Wait for templates to load
+    }
+    
     // Set up pagination handlers for auto-initialization
     window.paginationHandlers = {
         onPageChange: (page) => {
@@ -304,7 +314,7 @@ function displayTemplates(templates) {
     tbody.innerHTML = '';
     
     if (templates.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Brak szablonów</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Brak szablonów</td></tr>';
         return;
     }
     
@@ -327,10 +337,11 @@ function displayTemplates(templates) {
         
         const deleteButtonHtml = template.is_default ? 
             '<button class="btn btn-sm admin-btn-outline" disabled title="Nie można usuwać szablonów domyślnych"><i class="fas fa-lock"></i></button>' :
-            '<button class="btn btn-sm admin-btn-danger" onclick="deleteTemplate(' + template.id + ')" title="Usuń szablon"><i class="fas fa-trash"></i></button>';
+            '<button class="btn btn-sm admin-btn-danger-outline" onclick="deleteTemplate(' + template.id + ')" title="Usuń szablon"><i class="fas fa-trash"></i></button>';
         
         row.innerHTML = `
             <td>${checkboxHtml}</td>
+            <td><span class="badge admin-badge admin-badge-primary">${template.id}</span></td>
             <td>${template.name} ${template.is_default ? '<span class="admin-badge admin-badge-info ms-1">Domyślny</span>' : ''}</td>
             <td>${template.subject}</td>
             <td>${template.template_type}</td>

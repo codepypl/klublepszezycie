@@ -31,6 +31,7 @@
                                 <th>
                                     <input type="checkbox" id="selectAll">
                                 </th>
+                                <th>ID</th>
                                 <th>Kolejność</th>
                                 <th>Tytuł</th>
                                 <th>Opis</th>
@@ -47,13 +48,16 @@
                                     <input type="checkbox" name="itemIds" value="{{ benefit.id }}">
                                 </td>
                                 <td>
+                                    <span class="badge admin-badge admin-badge-primary">{{ benefit.id }}</span>
+                                </td>
+                                <td>
                                     <span class="badge admin-badge admin-badge-primary">{{ benefit.order }}</span>
                                 </td>
                                 <td>
                                     <strong>{{ benefit.title }}</strong>
                                 </td>
-                                <td>
-                                    {{ benefit.description[:100] }}{% if benefit.description|length > 100 %}...{% endif %}
+                                <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">
+                                    {{ benefit.description }}
                                 </td>
                                 <td>
                                     <i class="fas fa-{{ benefit.icon }} text-primary"></i>
@@ -77,7 +81,7 @@
                                         <button class="btn btn-sm admin-btn-outline" onclick="editBenefit({{ benefit.id }})" title="Edytuj korzyść">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteBenefit({{ benefit.id }})" title="Usuń korzyść">
+                                        <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteBenefit({{ benefit.id }})" title="Usuń korzyść">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>

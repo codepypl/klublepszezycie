@@ -28,6 +28,8 @@ class TagSelector {
             
             if (result.success) {
                 this.availableTags = result.tags;
+            } else {
+                console.error('Failed to load tags:', result.message);
             }
         } catch (error) {
             console.error('Error loading tags:', error);
@@ -36,8 +38,14 @@ class TagSelector {
 
     render() {
         this.container.innerHTML = `
-            <div class="tag-selector-container">
-                <div class="tag-input-container">
+            <div class="tag-selector-container" style="position: relative;">
+                <div class="mb-2">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Wpisz nazwę tagu i naciśnij Enter, aby go dodać
+                    </small>
+                </div>
+                <div class="tag-input-container" style="position: relative;">
                     <input type="text" class="form-control tag-input" placeholder="${this.options.placeholder}" autocomplete="off">
                     <div class="tag-suggestions" style="display: none;"></div>
                 </div>
@@ -45,17 +53,127 @@ class TagSelector {
                 <input type="hidden" class="tag-values" name="tags">
             </div>
         `;
+        
+        // Add CSS for tag styling
+        this.addTagStyles();
+    }
+    
+    addTagStyles() {
+        if (document.getElementById('tag-selector-styles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'tag-selector-styles';
+        style.textContent = `
+            .selected-tag {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                background: var(--admin-primary, #1e3a8a);
+                color: var(--admin-white, #ffffff);
+                border: none;
+                padding: 0.5rem 1rem;
+                border-radius: 0.5rem;
+                font-weight: 500;
+                font-size: 0.875rem;
+                margin: 0.25rem;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            
+            .selected-tag:hover {
+                background: #1e40af;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+            }
+            
+            .tag-remove {
+                background: none;
+                border: none;
+                color: var(--admin-white, #ffffff);
+                cursor: pointer;
+                padding: 0;
+                margin-left: 0.25rem;
+                border-radius: 50%;
+                width: 1.25rem;
+                height: 1.25rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+            }
+            
+            .tag-remove:hover {
+                background: rgba(255, 255, 255, 0.2);
+                transform: scale(1.1);
+            }
+            
+            .tag-suggestions {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 0.5rem;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+                max-height: 200px;
+                overflow-y: auto;
+            }
+            
+            .suggestion-item {
+                padding: 0.75rem 1rem;
+                cursor: pointer;
+                border-bottom: 1px solid #f3f4f6;
+                transition: background-color 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            
+            .suggestion-item:hover {
+                background-color: #f8fafc;
+            }
+            
+            .suggestion-item:last-child {
+                border-bottom: none;
+            }
+            
+            .suggestion-item.add-new {
+                color: var(--admin-primary, #1e3a8a);
+                font-weight: 500;
+            }
+        `;
+        document.head.appendChild(style);
     }
 
     bindEvents() {
         const input = this.container.querySelector('.tag-input');
-        const suggestions = this.container.querySelector('.tag-suggestions');
 
         // Input events
         input.addEventListener('input', (e) => this.handleInput(e));
         input.addEventListener('keydown', (e) => this.handleKeydown(e));
-        input.addEventListener('blur', () => this.hideSuggestions());
+        input.addEventListener('blur', () => {
+            // Delay hiding suggestions to allow click events to be processed
+            setTimeout(() => this.hideSuggestions(), 150);
+        });
         input.addEventListener('focus', () => this.showSuggestions());
+
+        // Use event delegation on the main container for suggestion clicks
+        this.container.addEventListener('mousedown', (e) => {
+            // Check if click is on a suggestion item
+            const item = e.target.closest('.suggestion-item');
+            if (item) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (item.classList.contains('add-new')) {
+                    this.addNewTag(item.dataset.query);
+                } else {
+                    this.selectTag(JSON.parse(item.dataset.tag));
+                }
+            }
+        });
 
         // Click outside to hide suggestions
         document.addEventListener('click', (e) => {
@@ -74,10 +192,12 @@ class TagSelector {
         }
 
         // Filter available tags
-        const filtered = this.availableTags.filter(tag => 
-            tag.name.toLowerCase().includes(query) && 
-            !this.selectedTags.some(selected => selected.id === tag.id)
-        );
+        const filtered = this.availableTags.filter(tag => {
+            const nameMatch = tag.name.toLowerCase().includes(query);
+            const notSelected = !this.selectedTags.some(selected => String(selected.id) === String(tag.id));
+            return nameMatch && notSelected;
+        });
+        
 
         this.showSuggestions(filtered, query);
     }
@@ -154,17 +274,6 @@ class TagSelector {
 
         suggestions.innerHTML = html;
         suggestions.style.display = 'block';
-
-        // Bind click events
-        suggestions.querySelectorAll('.suggestion-item').forEach(item => {
-            item.addEventListener('click', () => {
-                if (item.classList.contains('add-new')) {
-                    this.addNewTag(item.dataset.query);
-                } else {
-                    this.selectTag(JSON.parse(item.dataset.tag));
-                }
-            });
-        });
     }
 
     hideSuggestions() {
@@ -179,7 +288,7 @@ class TagSelector {
             return;
         }
 
-        if (!this.selectedTags.some(selected => selected.id === tag.id)) {
+        if (!this.selectedTags.some(selected => String(selected.id) === String(tag.id))) {
             this.selectedTags.push(tag);
             this.updateDisplay();
             this.clearInput();
@@ -217,13 +326,23 @@ class TagSelector {
     }
 
     removeTag(tagId) {
-        this.selectedTags = this.selectedTags.filter(tag => tag.id !== tagId);
+        this.selectedTags = this.selectedTags.filter(tag => String(tag.id) !== String(tagId));
         this.updateDisplay();
     }
 
     updateDisplay() {
         const container = this.container.querySelector('.selected-tags');
         const hiddenInput = this.container.querySelector('.tag-values');
+        
+        if (!container) {
+            console.error('Selected tags container not found!');
+            return;
+        }
+        
+        if (!hiddenInput) {
+            console.error('Hidden input not found!');
+            return;
+        }
         
         // Clear container
         container.innerHTML = '';
@@ -270,7 +389,8 @@ class TagSelector {
     }
 
     getTagNames() {
-        return this.selectedTags.map(tag => tag.name);
+        const tagNames = this.selectedTags.map(tag => tag.name);
+        return tagNames;
     }
 
     slugify(text) {

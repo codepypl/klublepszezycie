@@ -31,6 +31,7 @@
                                 <th width="50">
                                     <input type="checkbox" id="selectAll" class="form-check-input">
                                 </th>
+                                <th>ID</th>
                                 <th>Kolejność</th>
                                 <th>Platforma</th>
                                 <th>URL</th>
@@ -44,6 +45,9 @@
                             <tr data-link-id="{{ link.id }}">
                                 <td>
                                     <input type="checkbox" class="form-check-input item-checkbox" value="{{ link.id }}">
+                                </td>
+                                <td>
+                                    <span class="badge admin-badge admin-badge-primary">{{ link.id }}</span>
                                 </td>
                                 <td>
                                     <span class="badge admin-badge admin-badge-primary">{{ link.order }}</span>
@@ -83,7 +87,7 @@
                                         <button class="btn btn-sm admin-btn-outline" onclick="editLink({{ link.id }})">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteLink({{ link.id }})">
+                                        <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteLink({{ link.id }})">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>

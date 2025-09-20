@@ -181,12 +181,15 @@ def api_blog_admin_posts():
                         import time
                         filename = f"{int(time.time())}_{filename}"
                         
-                        upload_folder = os.path.join(current_app.static_folder, 'uploads')
-                        os.makedirs(upload_folder, exist_ok=True)
+                        # Create blog-specific upload folder structure for featured images
+                        # We'll use a temporary ID for new posts, will be updated after post creation
+                        temp_id = data.get('temp_id', 'temp')
+                        featured_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', temp_id, 'featured')
+                        os.makedirs(featured_folder, exist_ok=True)
                         
-                        file_path = os.path.join(upload_folder, filename)
+                        file_path = os.path.join(featured_folder, filename)
                         file.save(file_path)
-                        featured_image_url = f'/static/uploads/{filename}'
+                        featured_image_url = f'/static/uploads/blog/article/{temp_id}/featured/{filename}'
             
             post = BlogPost(
                 title=data['title'],
@@ -233,9 +236,40 @@ def api_blog_admin_posts():
                         if tag:
                             tags.append(tag)
                 post.tags = tags
+            else:
+                # Clear all tags if empty array or no tags provided
+                post.tags = []
             
             db.session.add(post)
             db.session.commit()
+            
+            # Move files from temp folder to proper post folder if needed
+            if featured_image_url and 'temp' in featured_image_url:
+                new_featured_url = featured_image_url.replace('temp', str(post.id))
+                new_featured_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post.id), 'featured')
+                old_featured_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', 'temp', 'featured')
+                
+                # Create new directory
+                os.makedirs(new_featured_path, exist_ok=True)
+                
+                # Move file
+                filename = os.path.basename(featured_image_url)
+                old_file_path = os.path.join(old_featured_path, filename)
+                new_file_path = os.path.join(new_featured_path, filename)
+                
+                if os.path.exists(old_file_path):
+                    import shutil
+                    shutil.move(old_file_path, new_file_path)
+                    # Remove temp directory if empty
+                    try:
+                        os.rmdir(old_featured_path)
+                        os.rmdir(os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', 'temp'))
+                    except:
+                        pass
+                    
+                    # Update post with correct URL
+                    post.featured_image = new_featured_url
+                    db.session.commit()
             
             return jsonify({
                 'success': True,
@@ -315,12 +349,13 @@ def api_blog_admin_post(post_id):
                         import time
                         filename = f"{int(time.time())}_{filename}"
                         
-                        upload_folder = os.path.join(current_app.static_folder, 'uploads')
-                        os.makedirs(upload_folder, exist_ok=True)
+                        # Create blog-specific upload folder structure for featured images
+                        featured_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post_id), 'featured')
+                        os.makedirs(featured_folder, exist_ok=True)
                         
-                        file_path = os.path.join(upload_folder, filename)
+                        file_path = os.path.join(featured_folder, filename)
                         file.save(file_path)
-                        data['featured_image'] = f'/static/uploads/{filename}'
+                        data['featured_image'] = f'/static/uploads/blog/article/{post_id}/featured/{filename}'
             
             if 'title' in data:
                 post.title = data['title']
@@ -1061,17 +1096,18 @@ def api_upload_image():
             import time
             filename = f"{int(time.time())}_{filename}"
             
-            upload_folder = os.path.join(current_app.static_folder, 'uploads')
-            os.makedirs(upload_folder, exist_ok=True)
+            # Create blog-specific upload folder structure
+            blog_upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog')
+            os.makedirs(blog_upload_folder, exist_ok=True)
             
-            file_path = os.path.join(upload_folder, filename)
+            file_path = os.path.join(blog_upload_folder, filename)
             file.save(file_path)
             
             return jsonify({
                 'success': True,
                 'message': 'Image uploaded successfully',
                 'filename': filename,
-                'url': f'/static/uploads/{filename}'
+                'url': f'/static/uploads/blog/{filename}'
             })
         else:
             return jsonify({'success': False, 'message': 'Invalid file type'}), 400
@@ -1123,12 +1159,13 @@ def api_blog_post_images(post_id):
                         import time
                         filename = f"{int(time.time())}_{filename}"
                         
-                        upload_folder = os.path.join(current_app.static_folder, 'uploads')
-                        os.makedirs(upload_folder, exist_ok=True)
+                        # Create blog-specific upload folder structure for gallery
+                        gallery_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post_id), 'gallery')
+                        os.makedirs(gallery_folder, exist_ok=True)
                         
-                        file_path = os.path.join(upload_folder, filename)
+                        file_path = os.path.join(gallery_folder, filename)
                         file.save(file_path)
-                        data['image_url'] = f'/static/uploads/{filename}'
+                        data['image_url'] = f'/static/uploads/blog/article/{post_id}/gallery/{filename}'
             
             # Validate required fields
             if not data.get('image_url'):
@@ -1187,12 +1224,13 @@ def api_blog_post_image(post_id, image_id):
                         import time
                         filename = f"{int(time.time())}_{filename}"
                         
-                        upload_folder = os.path.join(current_app.static_folder, 'uploads')
-                        os.makedirs(upload_folder, exist_ok=True)
+                        # Create blog-specific upload folder structure for gallery
+                        gallery_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post_id), 'gallery')
+                        os.makedirs(gallery_folder, exist_ok=True)
                         
-                        file_path = os.path.join(upload_folder, filename)
+                        file_path = os.path.join(gallery_folder, filename)
                         file.save(file_path)
-                        data['image_url'] = f'/static/uploads/{filename}'
+                        data['image_url'] = f'/static/uploads/blog/article/{post_id}/gallery/{filename}'
             
             # Update image fields
             if 'image_url' in data:

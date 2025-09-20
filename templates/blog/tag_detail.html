@@ -17,6 +17,7 @@
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/blog-tag.css') }}">
 </head>
 <body>
     <!-- Navigation -->
@@ -138,6 +139,13 @@
                                         {% endfor %}
                                     </div>
                                     {% endif %}
+                                    
+                                    <!-- Przycisk Czytaj więcej -->
+                                    <div class="d-flex justify-content-end mt-3">
+                                        <a href="{{ get_post_url_with_category(post) }}" class="read-more">
+                                            Czytaj więcej <i class="fas fa-arrow-right ms-1"></i>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </article>
@@ -242,10 +250,11 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="d-flex flex-wrap gap-2">
+                        <div class="tag-cloud">
                             {% for popular_tag in popular_tags %}
                             <a href="{{ url_for('blog.tag_detail', slug=popular_tag.slug) }}" 
-                               class="badge bg-light text-dark text-decoration-none {% if popular_tag.id == tag.id %}bg-primary text-white{% endif %}">
+                               class="tag-cloud-item {% if popular_tag.id == tag.id %}current-tag{% endif %}" 
+                               data-count="{{ popular_tag.posts_count }}">
                                 {{ popular_tag.name }}
                             </a>
                             {% endfor %}

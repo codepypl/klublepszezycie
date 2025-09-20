@@ -31,9 +31,9 @@
                                 <th>
                                     <input type="checkbox" id="selectAll">
                                 </th>
+                                <th>ID</th>
                                 <th>Nazwa</th>
                                 <th>Slug</th>
-                                <th>Ścieżka</th>
                                 <th>Artykuły</th>
                                 <th>Status</th>
                                 <th>Utworzono</th>
@@ -47,23 +47,24 @@
                                     <input type="checkbox" name="itemIds" value="{{ category.id }}">
                                 </td>
                                 <td>
+                                    <span class="badge admin-badge admin-badge-primary">{{ category.id }}</span>
+                                </td>
+                                <td>
                                     <strong>{{ category.title }}</strong>
-                                    {% if category.description %}
-                                    <br><small class="text-muted">{{ category.description[:100] }}{% if category.description|length > 100 %}...{% endif %}</small>
-                                    {% endif %}
                                 </td>
                                 <td>
                                     <code>{{ category.slug }}</code>
                                 </td>
                                 <td>
-                                    {% if category.parent %}
-                                        <span class="text-muted">{{ category.parent.title }} / </span>{{ category.title }}
-                                    {% else %}
-                                        {{ category.title }}
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="badge admin-badge admin-badge-info">{{ category.posts_count }}</span>
+                                    {% for post in category.posts %}
+                                        <a href="#" onclick="editPost({{ post.id }})" 
+                                           class="badge admin-badge admin-badge-primary me-1" 
+                                           data-bs-toggle="tooltip" 
+                                           data-bs-placement="top" 
+                                           title="{{ post.title }}">
+                                            {{ post.id }}
+                                        </a>
+                                    {% endfor %}
                                 </td>
                                 <td>
                                     {% if category.is_active %}
@@ -249,5 +250,22 @@
         };
         {% endif %}
     });
+
+// Edit post function - opens post editing modal in new window
+function editPost(postId) {
+    // Otwórz nowe okno ze stroną artykułów z parametrem edit
+    const newWindow = window.open(`/blog/admin?edit=${postId}`, '_blank');
+}
 </script>
+
+<style>
+/* Hover effect for post IDs */
+.badge.admin-badge-primary:hover {
+    color: white !important;
+    background-color: #1e3a8a !important;
+}
+</style>
+
+<!-- Include blog posts JavaScript for editPost function -->
+<script src="{{ url_for('static', filename='js/admin/blog_posts.js') }}"></script>
 {% endblock %}

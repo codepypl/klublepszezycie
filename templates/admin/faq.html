@@ -31,6 +31,7 @@
                                 <th>
                                     <input type="checkbox" id="selectAll">
                                 </th>
+                                <th>ID</th>
                                 <th>Kolejność</th>
                                 <th>Pytanie</th>
                                 <th>Odpowiedź</th>
@@ -45,13 +46,16 @@
                                     <input type="checkbox" name="itemIds" value="{{ faq.id }}">
                                 </td>
                                 <td>
+                                    <span class="badge admin-badge admin-badge-primary">{{ faq.id }}</span>
+                                </td>
+                                <td>
                                     <span class="badge admin-badge admin-badge-primary">{{ faq.order }}</span>
                                 </td>
                                 <td>
                                     <strong>{{ faq.question }}</strong>
                                 </td>
-                                <td>
-                                    {{ faq.answer[:100] }}{% if faq.answer|length > 100 %}...{% endif %}
+                                <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">
+                                    {{ faq.answer }}
                                 </td>
 
                                 <td>
@@ -66,7 +70,7 @@
                                         <button class="btn btn-sm admin-btn-outline" onclick="editFaq({{ faq.id }})">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteFaq({{ faq.id }})">
+                                        <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteFaq({{ faq.id }})">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>

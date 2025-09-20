@@ -7,15 +7,7 @@ class BlogTagsManager {
     }
 
     init() {
-        // Initialize bulk delete manager
-        this.bulkDeleteManager = new BulkDeleteManager({
-            itemSelector: '.tag-checkbox',
-            selectAllSelector: '#selectAll',
-            bulkDeleteBtnSelector: '#bulkDeleteBtn',
-            deleteEndpoint: '/api/blog/tags/bulk-delete',
-            getSelectedIds: () => this.getSelectedTagIds(),
-            onDeleteSuccess: () => this.loadTags()
-        });
+        // Bulk delete is now handled by the BulkDelete in the template
 
         // Initialize pagination if needed
         this.initPagination();

@@ -288,54 +288,30 @@ function performDeleteTestimonial(testimonialId) {
 
 // Utility Functions
 function showSuccessMessage(message) {
-    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-    document.getElementById('successMessage').textContent = message;
-    successModal.show();
-    
-    // Auto-hide after 3 seconds
-    setTimeout(() => {
-        successModal.hide();
-    }, 3000);
+    window.toastManager.success(message);
 }
 
 function showErrorMessage(message) {
-    // Create a temporary error alert
-    const alertDiv = document.createElement('div');
-    alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
-    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(alertDiv);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        if (alertDiv.parentNode) {
-            alertDiv.remove();
-        }
-    }, 5000);
+    window.toastManager.error(message);
 }
 
 function showNotification(message, type = 'info') {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    notification.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
+    switch(type) {
+        case 'success':
+            window.toastManager.success(message);
+            break;
+        case 'error':
+        case 'danger':
+            window.toastManager.error(message);
+            break;
+        case 'warning':
+            window.toastManager.warning(message);
+            break;
+        case 'info':
+        default:
+            window.toastManager.info(message);
+            break;
+    }
 }
 
 // Export functionality

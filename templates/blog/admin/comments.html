@@ -27,6 +27,7 @@
                                 <th>
                                     <input type="checkbox" id="selectAll">
                                 </th>
+                                <th>ID</th>
                                 <th>Autor</th>
                                 <th>Artykuł</th>
                                 <th>Status</th>
@@ -39,6 +40,9 @@
                             <tr>
                                 <td>
                                     <input type="checkbox" name="itemIds" value="{{ comment.id }}">
+                                </td>
+                                <td>
+                                    <span class="badge admin-badge admin-badge-primary">{{ comment.id }}</span>
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
@@ -86,7 +90,7 @@
                                             <i class="fas fa-times"></i>
                                         </button>
                                         {% endif %}
-                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteComment({{ comment.id }})" title="Usuń">
+                                        <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteComment({{ comment.id }})" title="Usuń">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>

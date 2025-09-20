@@ -2,8 +2,8 @@
 
 :root {
     --primary-color: #1e3a8a;
-    --primary-dark: #1e40af;
-    --primary-light: #3b82f6;
+    --primary-dark: #1e3a8a;
+    --primary-light: #1e3a8a;
     --success-color: #059669;
     --warning-color: #f59e0b;
     --danger-color: #ef4444;
@@ -18,8 +18,8 @@
     --shadow-lg: 0 20px 40px rgba(30, 58, 138, 0.2);
     --shadow-xl: 0 25px 50px rgba(30, 58, 138, 0.25);
     --shadow-2xl: 0 35px 60px rgba(30, 58, 138, 0.3);
-    --blue-gradient: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-    --blue-light-gradient: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+    --blue-gradient: linear-gradient(135deg, #1e3a8a 0%, #1e3a8a 100%);
+    --blue-light-gradient: linear-gradient(135deg, #1e3a8a 0%, #1e3a8a 100%);
     --glass-bg: rgba(255, 255, 255, 0.1);
     --glass-border: rgba(255, 255, 255, 0.2);
 }
@@ -1207,6 +1207,69 @@ body {
         background: var(--white-color) !important;
         color: var(--dark-color) !important;
     }
+}
+
+/* Bootstrap Color Overrides */
+.text-primary {
+    color: #1e3a8a !important;
+}
+
+.bg-primary {
+    background-color: #1e3a8a !important;
+}
+
+.btn-primary {
+    background-color: #1e3a8a !important;
+    border-color: #1e3a8a !important;
+}
+
+.btn-primary:hover {
+    background-color: #1e3a8a !important;
+    border-color: #1e3a8a !important;
+}
+
+.btn-primary:focus {
+    background-color: #1e3a8a !important;
+    border-color: #1e3a8a !important;
+    box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.25) !important;
+}
+
+.btn-primary:active {
+    background-color: #1e3a8a !important;
+    border-color: #1e3a8a !important;
+}
+
+.btn-outline-primary {
+    color: #1e3a8a !important;
+    border-color: #1e3a8a !important;
+}
+
+.btn-outline-primary:hover {
+    background-color: #1e3a8a !important;
+    border-color: #1e3a8a !important;
+    color: white !important;
+}
+
+.badge.bg-primary {
+    background-color: #1e3a8a !important;
+}
+
+/* Force color changes - visible test */
+.navbar-brand {
+    color: #1e3a8a !important;
+    font-weight: bold !important;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3) !important;
+}
+
+/* Additional Bootstrap overrides */
+:root {
+    --bs-primary: #1e3a8a !important;
+    --bs-primary-rgb: 30, 58, 138 !important;
+}
+
+/* Force visible changes - test */
+body {
+    border-top: 5px solid #1e3a8a !important;
 }
 
 /* Enhanced dark mode support */
@@ -2771,7 +2834,7 @@ html {
 }
 
 .related-posts .card-title a:hover {
-    color: #007bff;
+    color: #1e3a8a;
 }
 
 /* Tag Styling Variations */
@@ -2958,7 +3021,7 @@ html {
 }
 
 #eventRegistrationModal .modal-header {
-    background: linear-gradient(135deg, var(--primary-color) 0%, #1e40af 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, #1e3a8a 100%);
     color: white;
     border-radius: 16px 16px 0 0;
 }
@@ -3110,3 +3173,4 @@ html {
         padding: 0.625rem 1rem;
     }
 }
+

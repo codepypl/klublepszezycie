@@ -324,4 +324,14 @@ function deleteCategory(categoryId) {
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     window.blogCategoriesManager = new BlogCategoriesManager();
+    
+    // Check for edit parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const editCategoryId = urlParams.get('edit');
+    if (editCategoryId) {
+        // Automatically open edit modal for the specified category
+        setTimeout(() => {
+            editCategory(parseInt(editCategoryId));
+        }, 1000); // Wait for categories to load
+    }
 });

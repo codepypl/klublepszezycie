@@ -30,14 +30,19 @@ class PublicController:
                 has_request_context = False
             
             # Menu items - filter by blog column for blog pages
-            if has_request_context and request.endpoint.startswith('blog.'):
-                # For blog pages, show items marked for blog OR items for all pages (None)
+            # Check if we're on a blog page by looking at the endpoint
+            is_blog_page = False
+            if has_request_context and request.endpoint:
+                is_blog_page = request.endpoint.startswith('blog.')
+            
+            if is_blog_page:
+                # For blog pages, show ONLY items marked for blog (True) OR items for all pages (None)
                 menu_items_db = MenuItem.query.filter(
                     MenuItem.is_active == True,
                     (MenuItem.blog == True) | (MenuItem.blog.is_(None))
                 ).order_by(MenuItem.order.asc()).all()
             else:
-                # For other pages, show items NOT marked for blog (False or None)
+                # For other pages, show items NOT marked for blog (False) OR items for all pages (None)
                 menu_items_db = MenuItem.query.filter(
                     MenuItem.is_active == True,
                     (MenuItem.blog == False) | (MenuItem.blog.is_(None))
@@ -46,7 +51,7 @@ class PublicController:
             menu_items = []
             for item in menu_items_db:
                 # Use blog_url if available and we're on blog pages, otherwise use regular url
-                if has_request_context and request.endpoint.startswith('blog.') and item.blog_url:
+                if is_blog_page and item.blog_url:
                     url = item.blog_url
                 else:
                     url = item.url
@@ -55,6 +60,7 @@ class PublicController:
                     'url': url, 
                     'is_active': item.is_active
                 })
+            
             
             # All active sections (for dynamic display)
             sections_db = Section.query.filter_by(is_active=True).order_by(Section.order.asc()).all()

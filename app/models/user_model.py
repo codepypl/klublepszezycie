@@ -23,6 +23,9 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     last_login = db.Column(db.DateTime)
     
+    # Relationships
+    user_group = db.relationship('UserGroup', backref='users', lazy=True)
+    
     def check_password(self, password):
         """Check if provided password matches the hash"""
         from werkzeug.security import check_password_hash

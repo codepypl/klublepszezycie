@@ -68,7 +68,7 @@ def extract_filename_from_url(url):
     Extract filename from a URL path
     
     Args:
-        url (str): URL path (e.g., '/static/uploads/filename.jpg')
+        url (str): URL path (e.g., '/static/uploads/blog/article/123/featured/filename.jpg')
     
     Returns:
         str: Filename or None if not found
@@ -77,11 +77,23 @@ def extract_filename_from_url(url):
         if not url:
             return None
             
-        # Remove leading slash and static/uploads prefix
-        if url.startswith('/static/uploads/'):
-            return url[16:]  # Remove '/static/uploads/'
+        # Remove leading slash and extract filename
+        if url.startswith('/static/uploads/blog/article/'):
+            return url.split('/')[-1]  # Get filename from end of path
+        elif url.startswith('static/uploads/blog/article/'):
+            return url.split('/')[-1]  # Get filename from end of path
+        elif url.startswith('/static/uploads/blog/'):
+            return url[22:]  # Remove '/static/uploads/blog/'
+        elif url.startswith('static/uploads/blog/'):
+            return url[21:]  # Remove 'static/uploads/blog/'
+        elif url.startswith('/static/images/blog/'):
+            return url[20:]  # Remove '/static/images/blog/' (legacy)
+        elif url.startswith('static/images/blog/'):
+            return url[19:]  # Remove 'static/images/blog/' (legacy)
+        elif url.startswith('/static/uploads/'):
+            return url[16:]  # Remove '/static/uploads/' (legacy)
         elif url.startswith('static/uploads/'):
-            return url[15:]  # Remove 'static/uploads/'
+            return url[15:]  # Remove 'static/uploads/' (legacy)
         else:
             # Try to extract filename from path
             return os.path.basename(url)
@@ -107,21 +119,66 @@ def cleanup_blog_post_files(post):
     try:
         # Delete featured image
         if post.featured_image:
-            filename = extract_filename_from_url(post.featured_image)
-            if filename:
-                deleted_files['featured_image'] = delete_file_if_exists(filename)
+            if post.featured_image.startswith('/static/uploads/blog/article/'):
+                # New structure: /static/uploads/blog/article/<id>/featured/filename
+                filename = post.featured_image.split('/')[-1]  # Get filename
+                featured_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post.id), 'featured', filename)
+                if os.path.exists(featured_path):
+                    os.remove(featured_path)
+                    deleted_files['featured_image'] = True
+                    logging.info(f"Deleted featured image: {featured_path}")
+            else:
+                # Legacy structure: /static/uploads/filename or /static/images/blog/featured/filename
+                filename = extract_filename_from_url(post.featured_image)
+                if filename:
+                    deleted_files['featured_image'] = delete_file_if_exists(filename)
         
         # Delete gallery images
         if hasattr(post, 'images') and post.images:
             for image in post.images:
                 if image.image_url:
-                    filename = extract_filename_from_url(image.image_url)
-                    if filename:
-                        success = delete_file_if_exists(filename)
-                        deleted_files['gallery_images'].append({
-                            'filename': filename,
-                            'deleted': success
-                        })
+                    if image.image_url.startswith(f'/static/uploads/blog/article/{post.id}/gallery/'):
+                        # New structure: /static/uploads/blog/article/<id>/gallery/filename
+                        filename = image.image_url.split('/')[-1]  # Get filename
+                        gallery_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post.id), 'gallery', filename)
+                        if os.path.exists(gallery_path):
+                            os.remove(gallery_path)
+                            deleted_files['gallery_images'].append({
+                                'filename': filename,
+                                'deleted': True
+                            })
+                            logging.info(f"Deleted gallery image: {gallery_path}")
+                    else:
+                        # Legacy structure: /static/uploads/filename or /static/images/blog/article/<id>/gallery/filename
+                        filename = extract_filename_from_url(image.image_url)
+                        if filename:
+                            success = delete_file_if_exists(filename)
+                            deleted_files['gallery_images'].append({
+                                'filename': filename,
+                                'deleted': success
+                            })
+        
+        # Clean up empty directories
+        try:
+            # Remove gallery directory if empty
+            gallery_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post.id), 'gallery')
+            if os.path.exists(gallery_dir) and not os.listdir(gallery_dir):
+                os.rmdir(gallery_dir)
+                logging.info(f"Removed empty gallery directory: {gallery_dir}")
+            
+            # Remove featured directory if empty
+            featured_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post.id), 'featured')
+            if os.path.exists(featured_dir) and not os.listdir(featured_dir):
+                os.rmdir(featured_dir)
+                logging.info(f"Removed empty featured directory: {featured_dir}")
+            
+            # Remove article directory if empty
+            article_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post.id))
+            if os.path.exists(article_dir) and not os.listdir(article_dir):
+                os.rmdir(article_dir)
+                logging.info(f"Removed empty article directory: {article_dir}")
+        except Exception as e:
+            logging.warning(f"Could not remove empty directories: {str(e)}")
         
         logging.info(f"Blog post files cleanup completed for post {post.id}: {deleted_files}")
         return deleted_files

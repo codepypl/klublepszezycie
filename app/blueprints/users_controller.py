@@ -44,7 +44,8 @@ class UsersController:
             if group_filter:
                 query = query.filter(User.group_id == group_filter)
             
-            users = query.order_by(User.created_at.desc()).paginate(
+            # Join with UserGroup to get group name
+            users = query.join(UserGroup, User.group_id == UserGroup.id, isouter=True).order_by(User.created_at.desc()).paginate(
                 page=page, per_page=per_page, error_out=False
             )
             

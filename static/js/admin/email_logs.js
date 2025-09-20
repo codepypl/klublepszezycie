@@ -119,9 +119,9 @@ function displayLogs(logs) {
             '-';
         
         row.innerHTML = `
-            <td>${log.id}</td>
+            <td><span class="badge admin-badge admin-badge-primary">${log.id}</span></td>
             <td>${log.email}</td>
-            <td>${log.subject}</td>
+            <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">${log.subject}</td>
             <td><span class="admin-badge admin-badge-${statusClass}">${statusText}</span></td>
             <td>${log.sent_at ? new Date(log.sent_at + 'Z').toLocaleString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'}) : '-'}</td>
             <td title="${log.error_message || ''}">${errorMessage}</td>

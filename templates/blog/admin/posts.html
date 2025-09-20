@@ -31,6 +31,7 @@
                                 <th>
                                     <input type="checkbox" id="selectAll">
                                 </th>
+                                <th>ID</th>
                                 <th>Tytuł</th>
                                 <th>Slug</th>
                                 <th>Kategorie</th>
@@ -47,22 +48,28 @@
                                     <input type="checkbox" name="itemIds" value="{{ post.id }}">
                                 </td>
                                 <td>
+                                    <span class="badge admin-badge admin-badge-primary">{{ post.id }}</span>
+                                </td>
+                                <td>
                                     <div class="d-flex align-items-center">
                                         {% if post.featured_image %}
                                             <img src="{{ post.featured_image }}" alt="{{ post.title }}" class="img-thumbnail me-2" style="width: 40px; height: 40px; object-fit: cover;">
                                         {% endif %}
                                         <div>
                                             <strong>{{ post.title }}</strong>
-                                            {% if post.excerpt %}
-                                                <br><small class="text-muted">{{ post.excerpt[:100] }}{% if post.excerpt|length > 100 %}...{% endif %}</small>
-                                            {% endif %}
                                         </div>
                                     </div>
                                 </td>
                                 <td><code>{{ post.slug }}</code></td>
                                 <td>
                                     {% for category in post.categories %}
-                                        <span class="badge admin-badge admin-badge-secondary me-1">{{ category.title }}</span>
+                                        <a href="#" onclick="editCategory({{ category.id }})" 
+                                           class="badge admin-badge admin-badge-primary me-1" 
+                                           data-bs-toggle="tooltip" 
+                                           data-bs-placement="top" 
+                                           title="{{ category.title }}">
+                                            {{ category.id }}
+                                        </a>
                                     {% endfor %}
                                 </td>
                                 <td>
@@ -153,6 +160,11 @@
                                 <div class="mb-3">
                                     <label for="postFeaturedImage" class="form-label">Zdjęcie główne</label>
                                     <input type="file" class="form-control" id="postFeaturedImage" name="featured_image" accept="image/*">
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        <strong>Zalecany rozmiar:</strong> 1200×675px (16:9) lub 1200×800px (3:2)<br>
+                                        <strong>Format:</strong> JPG, PNG, WebP | <strong>Maksymalny rozmiar:</strong> 5MB
+                                    </div>
                                     <div class="form-text">Opcjonalnie</div>
                                 </div>
                                 <div class="mb-3">
@@ -237,6 +249,11 @@
                                 <div class="mb-3">
                                     <label for="editPostFeaturedImage" class="form-label">Zdjęcie główne</label>
                                     <input type="file" class="form-control" id="editPostFeaturedImage" name="featured_image" accept="image/*">
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        <strong>Zalecany rozmiar:</strong> 1200×675px (16:9) lub 1200×800px (3:2)<br>
+                                        <strong>Format:</strong> JPG, PNG, WebP | <strong>Maksymalny rozmiar:</strong> 5MB
+                                    </div>
                                     <div class="form-text">Wybierz nowe zdjęcie (opcjonalnie)</div>
                                     <div id="currentFeaturedImage" class="mt-2" style="display: none;">
                                         <small class="text-muted">Aktualne zdjęcie:</small>
@@ -348,6 +365,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/utils/tooltip.js') }}"></script>
 <script src="{{ url_for('static', filename='js/admin/tag_selector.js') }}"></script>
 <script src="{{ url_for('static', filename='js/admin/blog_posts.js') }}"></script>
 
@@ -357,15 +375,24 @@ function editPost(postId) {
     if (window.blogPostsManager) {
         window.blogPostsManager.editPost(postId);
     } else {
-        console.error('blogPostsManager not initialized yet');
-        // Retry after a short delay
-        setTimeout(() => {
+        // Wait for initialization with multiple retries
+        let retries = 0;
+        const maxRetries = 10;
+        const retryInterval = 100;
+        
+        const checkAndRetry = () => {
             if (window.blogPostsManager) {
                 window.blogPostsManager.editPost(postId);
+            } else if (retries < maxRetries) {
+                retries++;
+                setTimeout(checkAndRetry, retryInterval);
             } else {
+                console.error('blogPostsManager failed to initialize after', maxRetries, 'retries');
                 showError('Błąd: Menedżer postów nie jest jeszcze załadowany. Spróbuj ponownie.');
             }
-        }, 100);
+        };
+        
+        checkAndRetry();
     }
 }
 
@@ -373,15 +400,24 @@ function deletePost(postId) {
     if (window.blogPostsManager) {
         window.blogPostsManager.deletePost(postId);
     } else {
-        console.error('blogPostsManager not initialized yet');
-        // Retry after a short delay
-        setTimeout(() => {
+        // Wait for initialization with multiple retries
+        let retries = 0;
+        const maxRetries = 10;
+        const retryInterval = 100;
+        
+        const checkAndRetry = () => {
             if (window.blogPostsManager) {
                 window.blogPostsManager.deletePost(postId);
+            } else if (retries < maxRetries) {
+                retries++;
+                setTimeout(checkAndRetry, retryInterval);
             } else {
+                console.error('blogPostsManager failed to initialize after', maxRetries, 'retries');
                 showError('Błąd: Menedżer postów nie jest jeszcze załadowany. Spróbuj ponownie.');
             }
-        }, 100);
+        };
+        
+        checkAndRetry();
     }
 }
 
@@ -433,5 +469,22 @@ function validateImageFile() {
     }
     return true;
 }
+
+// Tooltips are now handled by the universal tooltip.js utility
+
+// Set edit post ID from template variable
+{% if edit_post_id %}
+window.editPostId = {{ edit_post_id }};
+{% endif %}
 </script>
+
+<style>
+/* Hover effect for category IDs */
+.badge.admin-badge-primary:hover {
+    color: white !important;
+    background-color: #1e3a8a !important;
+}
+</style>
+
+
 {% endblock %}

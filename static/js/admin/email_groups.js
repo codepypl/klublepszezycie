@@ -9,6 +9,16 @@ let currentGroupId = null;
 document.addEventListener('DOMContentLoaded', function() {
     loadGroups();
     
+    // Check for viewMembers parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewMembersId = urlParams.get('viewMembers');
+    if (viewMembersId) {
+        // Wait a bit for page to load, then open group members modal
+        setTimeout(() => {
+            viewGroupMembers(parseInt(viewMembersId));
+        }, 1000);
+    }
+    
     // Set up pagination handlers for auto-initialization
     window.paginationHandlers = {
         onPageChange: (page) => {
@@ -42,6 +52,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Load groups
 function loadGroups() {
+    // Check if we're on the groups page
+    const tbody = document.getElementById('groupsTableBody');
+    if (!tbody) {
+        console.log('Not on groups page - skipping loadGroups');
+        return;
+    }
+    
     const params = new URLSearchParams({
         page: currentPage,
         per_page: currentPerPage
@@ -72,10 +89,17 @@ function loadGroups() {
 // Display groups
 function displayGroups(groups) {
     const tbody = document.getElementById('groupsTableBody');
+    
+    // Check if we're on the groups page
+    if (!tbody) {
+        console.log('groupsTableBody not found - not on groups page');
+        return;
+    }
+    
     tbody.innerHTML = '';
     
     if (groups.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Brak grup</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Brak grup</td></tr>';
         return;
     }
     
@@ -100,13 +124,24 @@ function displayGroups(groups) {
             '<div class="btn-group" role="group">' +
                 '<button class="btn btn-sm admin-btn-outline" onclick="editGroup(' + group.id + ')" title="Edytuj grupę"><i class="fas fa-edit"></i></button>' +
                 '<button class="btn btn-sm admin-btn-info" onclick="viewGroupMembers(' + group.id + ')" title="Zarządzaj członkami"><i class="fas fa-users"></i></button>' +
-                '<button class="btn btn-sm admin-btn-danger" onclick="deleteGroup(' + group.id + ')" title="Usuń grupę"><i class="fas fa-trash"></i></button>' +
+                '<button class="btn btn-sm admin-btn-danger-outline" onclick="deleteGroup(' + group.id + ')" title="Usuń grupę"><i class="fas fa-trash"></i></button>' +
             '</div>';
         
         row.innerHTML = `
             <td>${checkboxHtml}</td>
-            <td>${group.name} ${group.is_default ? '<span class="admin-badge admin-badge-info ms-1">Systemowa</span>' : ''} ${group.group_type === 'event_based' ? '<span class="admin-badge admin-badge-warning ms-1">Wydarzenie</span>' : ''}</td>
-            <td>${group.group_type}</td>
+            <td><span class="badge admin-badge admin-badge-primary">${group.id}</span></td>
+            <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">${group.name} ${group.is_default ? '<span class="admin-badge admin-badge-info ms-1">Systemowa</span>' : ''} ${group.group_type === 'event_based' ? '<span class="admin-badge admin-badge-warning ms-1">Wydarzenie</span>' : ''}</td>
+            <td>
+                ${group.template_id ? 
+                    `<a href="#" onclick="editTemplate(${group.template_id})" 
+                       data-bs-toggle="tooltip" 
+                       data-bs-placement="top" 
+                       title="${group.template_name || 'Szablon e-mail'}">
+                        <span class="badge admin-badge admin-badge-primary">${group.template_id}</span>
+                     </a>` : 
+                    `<span class="text-muted">${group.group_type}</span>`
+                }
+            </td>
             <td>${group.member_count}</td>
             <td><span class="admin-badge admin-badge-${group.is_active ? 'success' : 'secondary'}">${group.is_active ? 'Aktywna' : 'Nieaktywna'}</span></td>
             <td>${new Date(group.created_at + 'Z').toLocaleDateString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'})}</td>
@@ -114,6 +149,12 @@ function displayGroups(groups) {
         `;
         
         tbody.appendChild(row);
+    });
+    
+    // Initialize tooltips for template IDs
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
     });
     
     // Initialize bulk delete after loading groups
@@ -266,6 +307,22 @@ function saveGroup() {
 
 // Edit group
 function editGroup(groupId) {
+    // Exception for group ID 19 - do not open for editing
+    if (groupId === 19) {
+        console.log('Group ID 19 is excluded from editing');
+        toastManager.warning('Ta grupa nie może być edytowana');
+        return;
+    }
+    
+    // Check if we're on the groups page
+    const groupForm = document.getElementById('groupForm');
+    if (!groupForm) {
+        console.log('Not on groups page - opening new window for group members management');
+        // If not on groups page, open new window and show group members modal
+        const newWindow = window.open(`/admin/email-groups?viewMembers=${groupId}`, '_blank');
+        return;
+    }
+    
     fetch(`/api/email/groups/${groupId}`)
         .then(response => response.json())
         .then(data => {
@@ -277,17 +334,27 @@ function editGroup(groupId) {
                     toastManager.error('Nie można edytować grup wydarzeń - są zarządzane automatycznie przez system');
                     return;
                 }
-                document.getElementById('group_id').value = group.id;
-                document.getElementById('group_name').value = group.name;
-                document.getElementById('group_description').value = group.description || '';
-                document.getElementById('group_type').value = group.group_type;
-                document.getElementById('group_is_active').checked = group.is_active;
+                
+                // Check if form elements exist before setting values
+                const groupIdField = document.getElementById('group_id');
+                const groupNameField = document.getElementById('group_name');
+                const groupDescField = document.getElementById('group_description');
+                const groupTypeField = document.getElementById('group_type');
+                const groupActiveField = document.getElementById('group_is_active');
+                
+                if (groupIdField) groupIdField.value = group.id;
+                if (groupNameField) groupNameField.value = group.name;
+                if (groupDescField) groupDescField.value = group.description || '';
+                if (groupTypeField) groupTypeField.value = group.group_type;
+                if (groupActiveField) groupActiveField.checked = group.is_active;
                 
                 // Load group type specific fields
-                toggleGroupTypeFields();
+                if (typeof toggleGroupTypeFields === 'function') {
+                    toggleGroupTypeFields();
+                }
                 
                 // If it's a manual group, load current members and pre-select them
-                if (group.group_type === 'manual') {
+                if (group.group_type === 'manual' && typeof loadGroupMembersForEdit === 'function') {
                     loadGroupMembersForEdit(groupId);
                 }
                 
@@ -310,8 +377,11 @@ function editGroup(groupId) {
                     }
                 }
                 
-                const modal = new bootstrap.Modal(document.getElementById('groupModal'));
-                modal.show();
+                const groupModal = document.getElementById('groupModal');
+                if (groupModal) {
+                    const modal = new bootstrap.Modal(groupModal);
+                    modal.show();
+                }
             } else {
                 toastManager.error('Błąd ładowania grupy: ' + data.error);
             }
@@ -676,6 +746,64 @@ function updateMemberCountPreview() {
     const countElement = document.getElementById('selectedCount');
     if (countElement) {
         countElement.textContent = checkboxes.length;
+    }
+}
+
+// Edit template function
+function editTemplate(templateId) {
+    // Sprawdź czy jesteśmy na stronie szablonów
+    if (window.location.pathname.includes('email-templates')) {
+        // Jeśli jesteśmy na stronie szablonów, wywołaj funkcję editTemplate
+        if (typeof window.editTemplate === 'function') {
+            window.editTemplate(templateId);
+        } else {
+            // Fallback - przekieruj do strony szablonów
+            window.location.href = `/admin/email-templates?edit=${templateId}`;
+        }
+    } else {
+        // Jeśli nie jesteśmy na stronie szablonów, otwórz modal w nowym oknie
+        const newWindow = window.open('/admin/email-templates', '_blank');
+        
+        // Poczekaj na załadowanie strony i otwórz modal
+        newWindow.addEventListener('load', function() {
+            setTimeout(() => {
+                if (typeof newWindow.editTemplate === 'function') {
+                    newWindow.editTemplate(templateId);
+                } else {
+                    // Fallback - przekieruj z parametrem
+                    newWindow.location.href = `/admin/email-templates?edit=${templateId}`;
+                }
+            }, 1000);
+        });
+    }
+}
+
+// Edit category function
+function editCategory(categoryId) {
+    // Sprawdź czy jesteśmy na stronie kategorii
+    if (window.location.pathname.includes('blog/admin/categories')) {
+        // Jeśli jesteśmy na stronie kategorii, wywołaj funkcję editCategory
+        if (typeof window.editCategory === 'function') {
+            window.editCategory(categoryId);
+        } else {
+            // Fallback - przekieruj do strony kategorii
+            window.location.href = `/blog/admin/categories?edit=${categoryId}`;
+        }
+    } else {
+        // Jeśli nie jesteśmy na stronie kategorii, otwórz modal w nowym oknie
+        const newWindow = window.open('/blog/admin/categories', '_blank');
+        
+        // Poczekaj na załadowanie strony i otwórz modal
+        newWindow.addEventListener('load', function() {
+            setTimeout(() => {
+                if (typeof newWindow.editCategory === 'function') {
+                    newWindow.editCategory(categoryId);
+                } else {
+                    // Fallback - przekieruj z parametrem
+                    newWindow.location.href = `/blog/admin/categories?edit=${categoryId}`;
+                }
+            }, 1000);
+        });
     }
 }
 

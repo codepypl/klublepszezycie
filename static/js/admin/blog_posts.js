@@ -54,27 +54,44 @@ class BlogPostsManager {
     }
 
     setupTagSelectors() {
-        // Wait for TagSelector to be available
+        // Check if we're on a page that needs TagSelector
+        const addContainer = document.getElementById('postTagsSelector');
+        const editContainer = document.getElementById('editPostTagsSelector');
+        
+        if (!addContainer && !editContainer) {
+            // No tag selectors needed on this page
+            return;
+        }
+
+        // Wait for TagSelector to be available with retry mechanism
         if (typeof TagSelector === 'undefined') {
-            console.error('TagSelector not loaded');
+            console.warn('TagSelector not loaded, retrying in 100ms...');
+            setTimeout(() => this.setupTagSelectors(), 100);
             return;
         }
 
         // Initialize tag selectors for add and edit forms
         try {
-            this.tagSelectors.add = new TagSelector('postTagsSelector', {
-                placeholder: 'Wpisz tagi lub wybierz z listy...',
-                allowNew: true,
-                maxTags: 10
-            });
+            if (!addContainer) {
+                console.warn('postTagsSelector container not found');
+            } else {
+                this.tagSelectors.add = new TagSelector('postTagsSelector', {
+                    placeholder: 'Wpisz tagi lub wybierz z listy...',
+                    allowNew: true,
+                    maxTags: 10
+                });
+            }
 
-            this.tagSelectors.edit = new TagSelector('editPostTagsSelector', {
-                placeholder: 'Wpisz tagi lub wybierz z listy...',
-                allowNew: true,
-                maxTags: 10
-            });
+            if (!editContainer) {
+                console.warn('editPostTagsSelector container not found');
+            } else {
+                this.tagSelectors.edit = new TagSelector('editPostTagsSelector', {
+                    placeholder: 'Wpisz tagi lub wybierz z listy...',
+                    allowNew: true,
+                    maxTags: 10
+                });
+            }
             
-            console.log('Tag selectors initialized');
         } catch (error) {
             console.error('Error initializing tag selectors:', error);
         }
@@ -92,7 +109,7 @@ class BlogPostsManager {
         if (editForm) {
             editForm.addEventListener('submit', (e) => this.handleEditPost(e));
         }
-        }
+    }
 
     setupSlugGeneration() {
         // Use centralized slug generator - always generate slug
@@ -113,6 +130,7 @@ class BlogPostsManager {
         
         const formData = new FormData(e.target);
         
+        
         // Get content from TinyMCE
         const content = this.getTinyMCEContent('postContent');
         formData.set('content', content);
@@ -126,7 +144,10 @@ class BlogPostsManager {
         }
         
         // Get tags from tag selector
-        const tagNames = this.tagSelectors.add.getTagNames();
+        let tagNames = [];
+        if (this.tagSelectors.add && typeof this.tagSelectors.add.getTagNames === 'function') {
+            tagNames = this.tagSelectors.add.getTagNames();
+        }
         formData.delete('tags');
         if (tagNames.length > 0) {
             formData.append('tags', JSON.stringify(tagNames));
@@ -135,6 +156,7 @@ class BlogPostsManager {
         // Handle allow_comments checkbox
         const allowComments = document.getElementById('postAllowComments').checked;
         formData.set('allow_comments', allowComments);
+
 
         try {
             const response = await fetch('/api/blog/admin/posts', {
@@ -168,8 +190,6 @@ class BlogPostsManager {
                 // Wywołaj globalne odświeżenie
                 if (typeof window.refreshAfterCRUD === 'function') {
                     window.refreshAfterCRUD();
-                } else {
-                    console.warn('window.refreshAfterCRUD is not available');
                 }
             } else {
                 window.toastManager.error(result.error || 'Błąd podczas dodawania artykułu');
@@ -208,10 +228,15 @@ class BlogPostsManager {
         }
         
         // Get tags from tag selector
-        const tagNames = this.tagSelectors.edit.getTagNames();
+        let tagNames = [];
+        if (this.tagSelectors.edit && typeof this.tagSelectors.edit.getTagNames === 'function') {
+            tagNames = this.tagSelectors.edit.getTagNames();
+        }
         formData.delete('tags');
         if (tagNames.length > 0) {
             formData.append('tags', JSON.stringify(tagNames));
+        } else {
+            formData.append('tags', JSON.stringify([]));
         }
 
         // Handle allow_comments checkbox
@@ -250,8 +275,6 @@ class BlogPostsManager {
                 // Wywołaj globalne odświeżenie
                 if (typeof window.refreshAfterCRUD === 'function') {
                     window.refreshAfterCRUD();
-                } else {
-                    console.warn('window.refreshAfterCRUD is not available');
                 }
             } else {
                 window.toastManager.error(result.error || 'Błąd podczas aktualizacji artykułu');
@@ -268,6 +291,14 @@ class BlogPostsManager {
 
     async editPost(postId) {
         try {
+            // Check if we're on the posts page (has edit form elements)
+            const editPostId = document.getElementById('editPostId');
+            if (!editPostId) {
+                console.warn('Edit form not available on this page. Opening new window...');
+                window.open(`/blog/admin?edit=${postId}`, '_blank');
+                return;
+            }
+
             const response = await fetch(`/api/blog/admin/posts/${postId}`, {
                 credentials: 'include'
             });
@@ -276,13 +307,26 @@ class BlogPostsManager {
             if (result.success) {
                 const post = result.post;
                 
+                // Check if edit form elements exist
+                const editPostTitle = document.getElementById('editPostTitle');
+                const editPostSlug = document.getElementById('editPostSlug');
+                const editPostExcerpt = document.getElementById('editPostExcerpt');
+                const editPostStatus = document.getElementById('editPostStatus');
+                const editPostAllowComments = document.getElementById('editPostAllowComments');
+                
+                if (!editPostTitle || !editPostSlug || !editPostExcerpt || !editPostStatus || !editPostAllowComments) {
+                    console.error('Edit form elements not found. Modal may not be loaded yet.');
+                    window.toastManager.error('Formularz edycji nie jest jeszcze załadowany. Spróbuj ponownie.');
+                    return;
+                }
+                
                 // Fill edit form
-                document.getElementById('editPostId').value = post.id;
-                document.getElementById('editPostTitle').value = post.title;
-                document.getElementById('editPostSlug').value = post.slug;
-                document.getElementById('editPostExcerpt').value = post.excerpt || '';
-                document.getElementById('editPostStatus').value = post.status;
-                document.getElementById('editPostAllowComments').checked = post.allow_comments || false;
+                editPostId.value = post.id;
+                editPostTitle.value = post.title;
+                editPostSlug.value = post.slug;
+                editPostExcerpt.value = post.excerpt || '';
+                editPostStatus.value = post.status;
+                editPostAllowComments.checked = post.allow_comments || false;
                 
                 // Set content in TinyMCE
                 this.setTinyMCEContent('editPostContent', post.content);
@@ -295,7 +339,9 @@ class BlogPostsManager {
                 
                 // Set tags in tag selector
                 const tags = post.tags || [];
-                this.tagSelectors.edit.setTags(tags);
+                if (this.tagSelectors.edit && typeof this.tagSelectors.edit.setTags === 'function') {
+                    this.tagSelectors.edit.setTags(tags);
+                }
                 
                 // Set featured image preview
                 const currentImageDiv = document.getElementById('currentFeaturedImage');
@@ -312,7 +358,14 @@ class BlogPostsManager {
                 await this.loadPostImages(post.id);
                 
                 // Show modal
-                const modal = new bootstrap.Modal(document.getElementById('editPostModal'));
+                const modalElement = document.getElementById('editPostModal');
+                if (!modalElement) {
+                    console.error('Edit modal not found in DOM');
+                    window.toastManager.error('Modal edycji nie został znaleziony. Odśwież stronę i spróbuj ponownie.');
+                    return;
+                }
+                
+                const modal = new bootstrap.Modal(modalElement);
                 modal.show();
             } else {
                 window.toastManager.error(result.message || 'Błąd podczas ładowania artykułu');
@@ -347,12 +400,12 @@ class BlogPostsManager {
                 window.toastManager.success(result.message || 'Artykuł został usunięty pomyślnie');
                 location.reload();
                 
-                // Wywołaj globalne odświeżenie
-                if (typeof window.refreshAfterCRUD === 'function') {
-                    window.refreshAfterCRUD();
-                } else {
-                    console.warn('window.refreshAfterCRUD is not available');
-                }
+                // Wywołaj globalne odświeżenie - temporarily disabled for debugging
+                // if (typeof window.refreshAfterCRUD === 'function') {
+                //     window.refreshAfterCRUD();
+                // } else {
+                //     console.warn('window.refreshAfterCRUD is not available');
+                // }
             } else {
                 window.toastManager.error(result.error || 'Błąd podczas usuwania artykułu');
             }
@@ -369,9 +422,9 @@ class BlogPostsManager {
         }
         
         // Clear tag selectors when closing modals
-        if (modalId === 'addPostModal' && this.tagSelectors.add) {
+        if (modalId === 'addPostModal' && this.tagSelectors.add && typeof this.tagSelectors.add.setTags === 'function') {
             this.tagSelectors.add.setTags([]);
-        } else if (modalId === 'editPostModal' && this.tagSelectors.edit) {
+        } else if (modalId === 'editPostModal' && this.tagSelectors.edit && typeof this.tagSelectors.edit.setTags === 'function') {
             this.tagSelectors.edit.setTags([]);
         }
     }
@@ -656,5 +709,40 @@ class BlogPostsManager {
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     window.blogPostsManager = new BlogPostsManager();
-    console.log('BlogPostsManager initialized:', window.blogPostsManager);
+});
+
+// Also try to initialize immediately if DOM is already loaded
+if (document.readyState === 'loading') {
+    // DOM is still loading, wait for DOMContentLoaded
+} else {
+    // DOM is already loaded
+    window.blogPostsManager = new BlogPostsManager();
+}
+
+// Global editPost function
+function editPost(postId) {
+    if (window.blogPostsManager && typeof window.blogPostsManager.editPost === 'function') {
+        window.blogPostsManager.editPost(postId);
+    } else {
+        console.error('BlogPostsManager not available');
+    }
+}
+
+// Check for edit parameter in URL or template variable
+document.addEventListener('DOMContentLoaded', function() {
+    // Check URL parameter first
+    const urlParams = new URLSearchParams(window.location.search);
+    const editPostId = urlParams.get('edit');
+    
+    // Check template variable
+    const templateEditPostId = window.editPostId;
+    
+    const postIdToEdit = editPostId || templateEditPostId;
+    
+    if (postIdToEdit) {
+        // Automatically open edit modal for the specified post
+        setTimeout(() => {
+            editPost(parseInt(postIdToEdit));
+        }, 1000); // Wait for posts to load
+    }
 });

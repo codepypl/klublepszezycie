@@ -253,7 +253,7 @@
                                     <input type="checkbox" name="itemIds" value="{{ user.id }}">
                                     {% endif %}
                                 </td>
-                                <td>{{ user.id }}</td>
+                                <td><span class="badge admin-badge admin-badge-primary">{{ user.id }}</span></td>
                                 <td>
                                     <strong>{{ user.first_name }}</strong>
                                 </td>
@@ -263,7 +263,7 @@
                                     </a>
                                 </td>
                                 <td>
-                                    {% if user.event_id %}
+                                    {% if not user.club_member and user.event_id %}
                                         <span class="badge admin-badge admin-badge-info">{{ user.event_id }}</span>
                                     {% else %}
                                         <span class="text-muted">-</span>
@@ -271,7 +271,23 @@
                                 </td>
                                 <td>
                                     {% if user.group_id %}
-                                        <span class="badge admin-badge admin-badge-info">{{ user.group_id }}</span>
+                                        {% if user.group_id == 19 %}
+                                            <span class="badge admin-badge admin-badge-secondary" 
+                                                  data-bs-toggle="tooltip" 
+                                                  data-bs-placement="top" 
+                                                  title="{{ user.user_group.name if user.user_group else 'Grupa ID: ' + user.group_id|string }} (Nie można edytować)">
+                                                {{ user.group_id }}
+                                            </span>
+                                        {% else %}
+                                            <a href="#" 
+                                               onclick="editGroup({{ user.group_id }})"
+                                               class="badge admin-badge admin-badge-primary" 
+                                               data-bs-toggle="tooltip" 
+                                               data-bs-placement="top" 
+                                               title="{{ user.user_group.name if user.user_group else 'Grupa ID: ' + user.group_id|string }}">
+                                                {{ user.group_id }}
+                                            </a>
+                                        {% endif %}
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
@@ -285,9 +301,6 @@
                                         <span class="badge admin-badge admin-badge-info">Rejestracja na wydarzenia</span>
                                     {% else %}
                                         <span class="badge admin-badge admin-badge-secondary">Użytkownik</span>
-                                    {% endif %}
-                                    {% if user.club_member %}
-                                        <span class="badge admin-badge admin-badge-success ms-1">Członek klubu</span>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -310,7 +323,7 @@
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         {% if not user.is_admin %}
-                                        <button type="button" class="btn btn-sm admin-btn-danger" 
+                                        <button type="button" class="btn btn-sm admin-btn-danger-outline" 
                                                 onclick="deleteUser({{ user.id }})" 
                                                 title="Usuń użytkownika">
                                             <i class="fas fa-trash"></i>
@@ -368,6 +381,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/utils/tooltip.js') }}"></script>
 <script>
     // Initialize page
     document.addEventListener('DOMContentLoaded', function() {
@@ -500,7 +514,16 @@
         return formatted;
     }
     
+    
 </script>
+
+<style>
+/* Hover effect for group IDs */
+.badge.admin-badge-primary:hover {
+    color: white !important;
+    background-color: #1e3a8a !important;
+}
+</style>
 
 <!-- Bulk Edit Modal -->
 <div class="modal fade" id="bulkEditModal" tabindex="-1" aria-labelledby="bulkEditModalLabel" aria-hidden="true">
@@ -561,4 +584,5 @@
 
 <!-- External JavaScript -->
 <script src="{{ url_for('static', filename='js/admin/users.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/email_groups.js') }}"></script>
 {% endblock %}

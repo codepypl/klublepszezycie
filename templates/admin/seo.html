@@ -70,6 +70,7 @@
                                     <table class="table admin-table">
                                         <thead>
                                             <tr>
+                                                <th>ID</th>
                                                 <th>Strona</th>
                                                 <th>Meta Title</th>
                                                 <th>Meta Description</th>
@@ -81,6 +82,9 @@
                                         <tbody>
                                             {% for seo in seo_settings %}
                                             <tr>
+                                                <td>
+                                                    <span class="badge admin-badge admin-badge-primary">{{ seo.id }}</span>
+                                                </td>
                                                 <td>
                                                     <span class="admin-badge admin-badge-primary">{{ seo.page_type }}</span>
                                                 </td>
@@ -110,7 +114,7 @@
                                                                 onclick="editSeo({{ seo.id }}, {{ seo.page_type|tojson }}, {{ (seo.page_title or '')|tojson }}, {{ (seo.meta_description or '')|tojson }}, {{ (seo.og_title or '')|tojson }}, {{ (seo.og_description or '')|tojson }}, {{ (seo.og_image or '')|tojson }}, {{ (seo.twitter_card or '')|tojson }}, {{ (seo.twitter_title or '')|tojson }}, {{ (seo.twitter_description or '')|tojson }}, {{ (seo.structured_data or '')|tojson }})">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
-                                                        <button class="btn btn-sm admin-btn-danger" 
+                                                        <button class="btn btn-sm admin-btn-danger-outline" 
                                                                 onclick="deleteSeo({{ seo.id }})">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
