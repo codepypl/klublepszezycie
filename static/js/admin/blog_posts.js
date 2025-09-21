@@ -731,6 +731,15 @@ class BlogPostsManager {
             
             if (result.success) {
                 window.toastManager.success(result.message);
+                
+                // Show additional details if available
+                if (result.details) {
+                    console.log('Image deletion details:', result.details);
+                    if (result.details.file_deleted) {
+                        console.log(`✅ File deleted from server: ${result.details.image_url}`);
+                    }
+                }
+                
                 await this.loadPostImages(postId);
             } else {
                 window.toastManager.error(result.error || 'Błąd podczas usuwania obrazu');
@@ -792,6 +801,17 @@ class BlogPostsManager {
             
             if (result.success) {
                 window.toastManager.success(result.message);
+                
+                // Show additional details if available
+                if (result.details) {
+                    console.log('Featured image deletion details:', result.details);
+                    if (result.details.file_deleted) {
+                        console.log(`✅ Featured image file deleted from server: ${result.details.featured_image_url}`);
+                    } else {
+                        console.log(`⚠️ Featured image file was not deleted from server: ${result.details.featured_image_url}`);
+                    }
+                }
+                
                 // Hide the featured image preview
                 const currentImageDiv = document.getElementById('currentFeaturedImage');
                 if (currentImageDiv) {

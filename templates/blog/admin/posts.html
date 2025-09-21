@@ -426,6 +426,11 @@ function deletePost(postId) {
     }
 }
 
+function editCategory(categoryId) {
+    // Redirect to categories page with edit parameter
+    window.location.href = `/blog/admin/categories?edit=${categoryId}`;
+}
+
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
     // Set up pagination handlers for auto-initialization
