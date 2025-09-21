@@ -1290,3 +1290,59 @@ def api_blog_post_image(post_id, image_id):
         db.session.rollback()
         logging.error(f"Error with blog post image: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+@blog_api_bp.route('/blog/admin/posts/<int:post_id>/featured-image', methods=['DELETE'])
+@login_required
+def api_blog_post_delete_featured_image(post_id):
+    """Delete featured image from blog post"""
+    post = BlogPost.query.get_or_404(post_id)
+    
+    try:
+        if post.featured_image:
+            logging.info(f"Attempting to delete featured image: {post.featured_image}")
+            
+            # Delete the file from storage
+            try:
+                if post.featured_image.startswith('/static/'):
+                    # Remove leading / and use the path directly
+                    relative_path = post.featured_image[1:]  # Remove leading /
+                    file_path = os.path.join(current_app.root_path, relative_path)
+                    logging.info(f"Constructed file path (with /): {file_path}")
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                        logging.info(f"Successfully deleted featured image file: {file_path}")
+                    else:
+                        logging.warning(f"File does not exist: {file_path}")
+                elif post.featured_image.startswith('static/'):
+                    file_path = os.path.join(current_app.root_path, post.featured_image)
+                    logging.info(f"Constructed file path (without /): {file_path}")
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                        logging.info(f"Successfully deleted featured image file: {file_path}")
+                    else:
+                        logging.warning(f"File does not exist: {file_path}")
+                else:
+                    logging.warning(f"Featured image path does not start with /static/ or static/: {post.featured_image}")
+            except Exception as e:
+                logging.error(f"Error deleting featured image file: {str(e)}")
+                logging.error(f"Featured image path: {post.featured_image}")
+            
+            # Clear the featured_image field
+            post.featured_image = None
+            db.session.commit()
+            
+            logging.info(f"Deleted featured image for post {post_id}")
+            return jsonify({
+                'success': True,
+                'message': 'Zdjęcie główne zostało usunięte'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Artykuł nie ma zdjęcia głównego'
+            }), 400
+            
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting featured image for post {post_id}: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500

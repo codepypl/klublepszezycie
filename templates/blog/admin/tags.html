@@ -56,7 +56,7 @@
                                 <td class="article-ids">
                                     {% if tag.posts %}
                                         {% for post in tag.posts %}
-                                            <a href="#" onclick="editPost({{ post.id }})" 
+                                            <a href="#" onclick="editPost({{ post.id if post.id else 0 }})" 
                                                class="badge admin-badge admin-badge-primary me-1" 
                                                data-bs-toggle="tooltip" 
                                                data-bs-placement="top" 

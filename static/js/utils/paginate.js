@@ -56,8 +56,8 @@ class Pagination {
         
         // Per page selector (if enabled)
         if (this.options.showPerPage) {
-            html += `<div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
+            html += `<div class="d-flex justify-content-center align-items-center mb-3">
+                <div class="text-center">
                     <label for="perPageSelect" class="form-label me-2">Elementów na stronę:</label>
                     <select id="perPageSelect" class="form-select d-inline-block w-auto">
                         ${this.options.perPageOptions.map(option => 

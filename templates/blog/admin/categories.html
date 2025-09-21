@@ -57,7 +57,7 @@
                                 </td>
                                 <td>
                                     {% for post in category.posts %}
-                                        <a href="#" onclick="editPost({{ post.id }})" 
+                                        <a href="#" onclick="editPost({{ post.id if post.id else 0 }})" 
                                            class="badge admin-badge admin-badge-primary me-1" 
                                            data-bs-toggle="tooltip" 
                                            data-bs-placement="top" 

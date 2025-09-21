@@ -87,10 +87,10 @@
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
-                                        <button class="btn btn-sm admin-btn-outline" onclick="editPost({{ post.id }})" title="Edytuj">
+                                        <button class="btn btn-sm admin-btn-outline" onclick="editPost({{ post.id if post.id else 0 }})" title="Edytuj">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-sm admin-btn-danger" onclick="deletePost({{ post.id }})" title="Usuń">
+                                        <button class="btn btn-sm admin-btn-danger-outline" onclick="deletePost({{ post.id if post.id else 0 }})" title="Usuń">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -256,7 +256,12 @@
                                     </div>
                                     <div class="form-text">Wybierz nowe zdjęcie (opcjonalnie)</div>
                                     <div id="currentFeaturedImage" class="mt-2" style="display: none;">
-                                        <small class="text-muted">Aktualne zdjęcie:</small>
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <small class="text-muted">Aktualne zdjęcie:</small>
+                                            <button type="button" class="btn btn-sm admin-btn-danger-outline" onclick="window.blogPostsManager.deleteFeaturedImage()" title="Usuń zdjęcie główne">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
                                         <img id="currentFeaturedImagePreview" src="" alt="Aktualne zdjęcie" class="img-thumbnail mt-1" style="max-width: 200px; max-height: 150px;">
                                     </div>
                                 </div>
@@ -473,8 +478,13 @@ function validateImageFile() {
 // Tooltips are now handled by the universal tooltip.js utility
 
 // Set edit post ID from template variable
-{% if edit_post_id %}
+{% if edit_post_id and edit_post_id is number and edit_post_id > 0 %}
 window.editPostId = {{ edit_post_id }};
+console.log('Template editPostId set to:', {{ edit_post_id }});
+{% else %}
+// No valid edit_post_id provided - explicitly set to undefined
+window.editPostId = undefined;
+console.log('No valid edit_post_id provided:', {{ edit_post_id|default('undefined')|tojson }});
 {% endif %}
 </script>
 

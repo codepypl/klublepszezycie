@@ -1,13 +1,13 @@
 // Main JavaScript for Lepsze Życie Club Landing Page
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize AOS (Animate On Scroll)
-    AOS.init({
-        duration: 800,
-        easing: 'ease-in-out',
-        once: true,
-        offset: 100
-    });
+    // Initialize AOS (Animate On Scroll) - disabled to avoid conflicts
+    // AOS.init({
+    //     duration: 800,
+    //     easing: 'ease-in-out',
+    //     once: true,
+    //     offset: 100
+    // });
 
     // Initialize counters
     initializeCounters();
@@ -489,6 +489,48 @@ revealStyle.textContent = `
     section.revealed {
         opacity: 1;
         transform: translateY(0);
+    }
+    
+    /* Hero section should be visible immediately */
+    section#hero {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+    
+    /* Blog pages main content should be visible immediately */
+    main {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+    
+    /* Blog post hero section should be visible immediately */
+    section.blog-post-hero {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+    
+    /* Blog index hero section should be visible immediately */
+    section.blog-hero {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+    
+    /* Blog header should be visible immediately */
+    .blog-header {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+    
+    /* Search header should be visible immediately */
+    section.search-header {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+    
+    /* Search header content should be visible immediately */
+    .search-header-content {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
     }
     
     section:first-child {

@@ -291,15 +291,30 @@ class BlogPostsManager {
 
     async editPost(postId) {
         try {
+            // Validate postId
+            if (!postId || postId === 'undefined' || postId === 'null' || isNaN(postId)) {
+                console.error('Invalid postId for editing:', postId);
+                window.toastManager.error('Nieprawidłowy ID artykułu');
+                return;
+            }
+
+            // Convert to number if it's a string
+            const numericPostId = parseInt(postId);
+            if (isNaN(numericPostId) || numericPostId <= 0) {
+                console.error('Invalid numeric postId:', postId, 'converted to:', numericPostId);
+                window.toastManager.error('Nieprawidłowy ID artykułu');
+                return;
+            }
+
             // Check if we're on the posts page (has edit form elements)
             const editPostId = document.getElementById('editPostId');
             if (!editPostId) {
                 console.warn('Edit form not available on this page. Opening new window...');
-                window.open(`/blog/admin?edit=${postId}`, '_blank');
+                window.open(`/blog/admin?edit=${numericPostId}`, '_blank');
                 return;
             }
 
-            const url = `/api/blog/admin/posts/${postId}`;
+            const url = `/api/blog/admin/posts/${numericPostId}`;
             console.log('Fetching post data from:', url);
             
             const response = await fetch(url, {
@@ -338,6 +353,15 @@ class BlogPostsManager {
             
             if (result.success) {
                 const post = result.post;
+                
+                // Validate post data
+                if (!post || !post.id) {
+                    console.error('Invalid post data received:', post);
+                    window.toastManager.error('Nieprawidłowe dane artykułu');
+                    return;
+                }
+                
+                console.log('Loaded post data:', post);
                 
                 // Check if edit form elements exist
                 const editPostTitle = document.getElementById('editPostTitle');
@@ -604,13 +628,33 @@ class BlogPostsManager {
 
     async loadPostImages(postId) {
         try {
+            // Validate postId
+            if (!postId || postId === 'undefined' || postId === 'null') {
+                console.error('Invalid postId for loading images:', postId);
+                return;
+            }
+
+            console.log('Loading images for post ID:', postId);
             const response = await fetch(`/api/blog/admin/posts/${postId}/images`, {
                 credentials: 'include'
             });
+
+            if (!response.ok) {
+                console.error(`HTTP ${response.status}: ${response.statusText}`);
+                if (response.status === 404) {
+                    console.error(`Post with ID ${postId} not found`);
+                } else if (response.status === 403) {
+                    console.error(`Access denied for post ID ${postId}`);
+                }
+                return;
+            }
+
             const result = await response.json();
             
             if (result.success) {
                 this.renderImages(result.images, postId);
+            } else {
+                console.error('Failed to load images:', result);
             }
         } catch (error) {
             console.error('Error loading images:', error);
@@ -638,10 +682,10 @@ class BlogPostsManager {
                     <div class="image-title">${image.alt_text || 'Brak opisu'}</div>
                     <div class="image-caption">${image.caption || ''}</div>
                     <div class="image-actions">
-                        <button class="btn btn-sm admin-btn-outline" onclick="window.blogPostsManager.showEditImageModal(${image.id}, ${JSON.stringify(image).replace(/"/g, '&quot;')})">
+                        <button type="button" class="btn btn-sm admin-btn-outline" onclick="window.blogPostsManager.showEditImageModal(${image.id}, ${JSON.stringify(image).replace(/"/g, '&quot;')})">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm admin-btn-danger" onclick="window.blogPostsManager.deleteImage(${image.id}, ${postId})">
+                        <button type="button" class="btn btn-sm admin-btn-danger-outline" onclick="window.blogPostsManager.deleteImage(${image.id}, ${postId})">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -655,7 +699,7 @@ class BlogPostsManager {
             'obraz',
             () => {
                 // Continue with deletion
-                performDeleteImage(imageId);
+                this.performDeleteImage(imageId, postId);
             },
             'obraz'
         );
@@ -663,10 +707,25 @@ class BlogPostsManager {
 
     async performDeleteImage(imageId, postId) {
         try {
+            // Validate parameters
+            if (!imageId || !postId) {
+                console.error('Missing parameters for delete image:', { imageId, postId });
+                window.toastManager.error('Brak wymaganych parametrów');
+                return;
+            }
+
+            console.log('Deleting image:', { imageId, postId });
+            
             const response = await fetch(`/api/blog/admin/posts/${postId}/images/${imageId}`, {
                 method: 'DELETE',
                 credentials: 'include'
             });
+
+            if (!response.ok) {
+                console.error(`HTTP ${response.status}: ${response.statusText}`);
+                window.toastManager.error(`Błąd HTTP ${response.status}`);
+                return;
+            }
 
             const result = await response.json();
             
@@ -674,7 +733,7 @@ class BlogPostsManager {
                 window.toastManager.success(result.message);
                 await this.loadPostImages(postId);
             } else {
-                window.toastManager.error(result.error);
+                window.toastManager.error(result.error || 'Błąd podczas usuwania obrazu');
             }
         } catch (error) {
             console.error('Error deleting image:', error);
@@ -686,6 +745,70 @@ class BlogPostsManager {
         document.getElementById('imageForm').reset();
         document.getElementById('imageId').value = '';
         document.getElementById('postId').value = '';
+    }
+
+    async deleteFeaturedImage() {
+        const postId = document.getElementById('editPostId').value;
+        
+        if (!postId) {
+            console.error('No post ID available for deleting featured image');
+            window.toastManager.error('Brak ID artykułu');
+            return;
+        }
+
+        window.deleteConfirmation.showSingleDelete(
+            'zdjęcie główne',
+            () => {
+                // Continue with deletion
+                this.performDeleteFeaturedImage(postId);
+            },
+            'zdjęcie główne'
+        );
+    }
+
+    async performDeleteFeaturedImage(postId) {
+        try {
+            // Validate postId
+            if (!postId) {
+                console.error('Missing postId for deleting featured image');
+                window.toastManager.error('Brak ID artykułu');
+                return;
+            }
+
+            console.log('Deleting featured image for post:', postId);
+            
+            const response = await fetch(`/api/blog/admin/posts/${postId}/featured-image`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                console.error(`HTTP ${response.status}: ${response.statusText}`);
+                window.toastManager.error(`Błąd HTTP ${response.status}`);
+                return;
+            }
+
+            const result = await response.json();
+            
+            if (result.success) {
+                window.toastManager.success(result.message);
+                // Hide the featured image preview
+                const currentImageDiv = document.getElementById('currentFeaturedImage');
+                if (currentImageDiv) {
+                    currentImageDiv.style.display = 'none';
+                }
+                // Clear the image preview
+                const currentImagePreview = document.getElementById('currentFeaturedImagePreview');
+                if (currentImagePreview) {
+                    currentImagePreview.src = '';
+                }
+            } else {
+                window.toastManager.error(result.error || 'Błąd podczas usuwania zdjęcia głównego');
+            }
+        } catch (error) {
+            console.error('Error deleting featured image:', error);
+            window.toastManager.error('Błąd podczas usuwania zdjęcia głównego');
+        }
     }
 
     // TinyMCE helper functions
@@ -764,17 +887,34 @@ function editPost(postId) {
 document.addEventListener('DOMContentLoaded', function() {
     // Check URL parameter first
     const urlParams = new URLSearchParams(window.location.search);
-    const editPostId = urlParams.get('edit');
+    const urlEditPostId = urlParams.get('edit');
     
     // Check template variable
     const templateEditPostId = window.editPostId;
     
-    const postIdToEdit = editPostId || templateEditPostId;
+    // Debug template variable
+    console.log('Template variable window.editPostId:', templateEditPostId, 'type:', typeof templateEditPostId);
     
-    if (postIdToEdit) {
+    const postIdToEdit = urlEditPostId || templateEditPostId;
+    
+    // More detailed validation
+    if (postIdToEdit && postIdToEdit !== "" && postIdToEdit !== "undefined" && postIdToEdit !== "null" && postIdToEdit !== undefined) {
+        console.log('Attempting to auto-edit post with ID:', postIdToEdit);
+        
+        // Validate postId before parsing
+        const numericPostId = parseInt(postIdToEdit);
+        if (isNaN(numericPostId) || numericPostId <= 0) {
+            console.error('Invalid postId for automatic edit:', postIdToEdit, 'parsed as:', numericPostId);
+            console.error('URL editPostId:', urlEditPostId);
+            console.error('Template editPostId:', templateEditPostId);
+            return;
+        }
+        
         // Automatically open edit modal for the specified post
         setTimeout(() => {
-            editPost(parseInt(postIdToEdit));
+            editPost(numericPostId);
         }, 1000); // Wait for posts to load
+    } else {
+        console.log('No valid postId for automatic edit. URL:', urlEditPostId, 'Template:', templateEditPostId);
     }
 });
