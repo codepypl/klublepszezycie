@@ -116,7 +116,7 @@ class BlogPostImage(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    post = db.relationship('BlogPost', backref=db.backref('images', cascade='all, delete-orphan'))
+    post = db.relationship('BlogPost', backref=db.backref('images', cascade='all, delete-orphan', lazy='dynamic'))
     
     def __repr__(self):
         return f'<BlogPostImage {self.id} for post {self.post_id}>'

@@ -1277,8 +1277,38 @@ def api_blog_post_image(post_id, image_id):
             })
         
         elif request.method == 'DELETE':
-            # Soft delete - set is_active to False
-            image.is_active = False
+            # Hard delete - actually delete the image from database and file system
+            try:
+                # Delete the file from storage
+                if image.image_url:
+                    logging.info(f"Attempting to delete image file: {image.image_url}")
+                    
+                    if image.image_url.startswith('/static/'):
+                        # Remove leading / and use the path directly
+                        relative_path = image.image_url[1:]  # Remove leading /
+                        file_path = os.path.join(current_app.root_path, relative_path)
+                        logging.info(f"Constructed file path: {file_path}")
+                        if os.path.exists(file_path):
+                            os.remove(file_path)
+                            logging.info(f"Successfully deleted image file: {file_path}")
+                        else:
+                            logging.warning(f"Image file does not exist: {file_path}")
+                    elif image.image_url.startswith('static/'):
+                        file_path = os.path.join(current_app.root_path, image.image_url)
+                        logging.info(f"Constructed file path: {file_path}")
+                        if os.path.exists(file_path):
+                            os.remove(file_path)
+                            logging.info(f"Successfully deleted image file: {file_path}")
+                        else:
+                            logging.warning(f"Image file does not exist: {file_path}")
+                    else:
+                        logging.warning(f"Image URL does not start with /static/ or static/: {image.image_url}")
+            except Exception as e:
+                logging.error(f"Error deleting image file: {str(e)}")
+                logging.error(f"Image URL: {image.image_url}")
+            
+            # Delete from database
+            db.session.delete(image)
             db.session.commit()
             
             return jsonify({

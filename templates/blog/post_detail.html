@@ -120,11 +120,11 @@
                             </div>
 
                             <!-- Post Images Gallery -->
-                            {% if post.images %}
+                            {% if post.images.filter_by(is_active=True).all() %}
                             <div class="post-images-gallery mb-5">
                                 <h5 class="mb-3">Galeria zdjęć</h5>
                                 <div class="row g-3" id="imagesGallery">
-                                    {% for image in post.images %}
+                                    {% for image in post.images.filter_by(is_active=True).all() %}
                                     <div class="col-md-4 col-sm-6">
                                         <div class="image-gallery-item" data-bs-toggle="modal" data-bs-target="#imageLightboxModal" 
                                              data-image-src="{{ image.image_url }}" data-image-caption="{{ image.caption or '' }}">
