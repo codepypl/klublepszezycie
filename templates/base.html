@@ -7,20 +7,11 @@
     <meta name="description" content="{% block description %}{{ config.get('SITE_DESCRIPTION', 'Dołącz do Klubu Lepsze Życie i popraw swoją sytuację finansową, zdrowie, relacje oraz naucz się korzystać z AI.') }}{% endblock %}">
     {% block meta %}{% endblock %}
     
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- AOS Animation -->
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     
-    <!-- Custom CSS -->
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     
     <!-- TinyMCE for frontend -->
-    <script src="https://cdn.tiny.cloud/1/nzk6x47f5uoxs3thrhw5hjtjhrby1u3skrpld6z2z032z7tv/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 <body>
     <!-- Navigation -->
@@ -103,39 +94,10 @@
         </div>
     </footer>
 
-    <!-- Bootstrap 5 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- AOS Animation -->
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script>
-        AOS.init();
-    </script>
     
-    <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     
     <!-- TinyMCE Initialization for frontend -->
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize TinyMCE for frontend forms
-        tinymce.init({
-            selector: 'textarea[data-tinymce]',
-            height: 300,
-            plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
-            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
-            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
-            setup: function (editor) {
-                editor.on('init', function () {
-                    console.log('TinyMCE initialized for:', editor.id);
-                });
-                editor.on('ready', function () {
-                    console.log('TinyMCE ready for:', editor.id);
-                });
-            }
-        });
-    });
-    </script>
     
     {% block scripts %}{% endblock %}
 
@@ -161,7 +123,6 @@
     </div>
 
     <!-- Modal Manager Script -->
-    <script src="{{ url_for('static', filename='js/utils/modal.js') }}"></script>
     
     <!-- Global Refresh System -->
 </body>

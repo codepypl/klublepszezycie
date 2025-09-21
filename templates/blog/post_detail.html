@@ -7,18 +7,7 @@
     {% set seo_data = get_blog_post_seo(post) %}
     {% include 'seo/meta_tags.html' %}
     
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
-    <!-- AOS Animation Library -->
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/user/blog/blog-post.css') }}">
 </head>
 <body>
     <!-- Navigation -->
@@ -72,7 +61,7 @@
     </nav>
 
     <!-- Main Content -->
-    <main style="padding-top: 80px;">
+    <main>
         <!-- Hero Section -->
         <section class="blog-post-hero">
             <div class="container">
@@ -220,7 +209,7 @@
                                         {% endif %}
                                         
                                         <!-- Reply Form (hidden by default) -->
-                                        <div class="reply-form mt-3" style="display: none;">
+                                        <div class="reply-form mt-3">
                                             <div class="card border-primary">
                                                 <div class="card-header bg-light">
                                                     <h6 class="card-title mb-0 text-primary">
@@ -463,151 +452,9 @@
         </div>
     </footer>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- AOS Animation -->
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script>
-        AOS.init();
-    </script>
     
-    <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/word-cloud.js') }}"></script>
 
-<script>
-// Comment form handling
-document.getElementById('commentForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    submitComment(this);
-});
-
-// Reply form handling
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('reply-btn')) {
-        const commentId = e.target.getAttribute('data-comment-id');
-        const replyForm = document.querySelector(`[data-comment-id="${commentId}"] .reply-form`);
-        replyForm.style.display = replyForm.style.display === 'none' ? 'block' : 'none';
-    }
-    
-    if (e.target.classList.contains('cancel-reply')) {
-        const replyForm = e.target.closest('.reply-form');
-        replyForm.style.display = 'none';
-    }
-});
-
-document.addEventListener('submit', function(e) {
-    if (e.target.classList.contains('reply-comment-form')) {
-        e.preventDefault();
-        submitComment(e.target);
-    }
-});
-
-function submitComment(form) {
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData);
-    
-    // Map form field names to expected API names
-    const apiData = {
-        post_id: data.post_id,
-        name: data.author_name,
-        email: data.author_email,
-        content: data.content,
-        parent_id: data.parent_id || null
-    };
-    
-    fetch('{{ url_for("blog.add_comment") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(apiData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showSuccess(data.message);
-            form.reset();
-            // Hide reply form if it's a reply
-            if (form.classList.contains('reply-comment-form')) {
-                form.closest('.reply-form').style.display = 'none';
-            }
-            // Reload page to show new comment
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            showError('Błąd: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showError('Wystąpił błąd podczas dodawania komentarza');
-    });
-}
-
-// Copy to clipboard function
-function copyToClipboard(text) {
-    if (navigator.clipboard && window.isSecureContext) {
-        // Use modern clipboard API
-        navigator.clipboard.writeText(text).then(function() {
-            showCopyNotification('Link skopiowany do schowka!');
-        }).catch(function(err) {
-            console.error('Could not copy text: ', err);
-            fallbackCopyTextToClipboard(text);
-        });
-    } else {
-        // Fallback for older browsers
-        fallbackCopyTextToClipboard(text);
-    }
-}
-
-function fallbackCopyTextToClipboard(text) {
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    
-    // Avoid scrolling to bottom
-    textArea.style.top = "0";
-    textArea.style.left = "0";
-    textArea.style.position = "fixed";
-    
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    
-    try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-            showCopyNotification('Link skopiowany do schowka!');
-        } else {
-            showCopyNotification('Nie udało się skopiować linku', 'error');
-        }
-    } catch (err) {
-        console.error('Fallback: Oops, unable to copy', err);
-        showCopyNotification('Nie udało się skopiować linku', 'error');
-    }
-    
-    document.body.removeChild(textArea);
-}
-
-function showCopyNotification(message, type = 'success') {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
-    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    notification.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto remove after 3 seconds
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.parentNode.removeChild(notification);
-        }
-    }, 3000);
-}
-</script>
 
 <!-- Image Lightbox Modal -->
 <div class="modal fade" id="imageLightboxModal" tabindex="-1" aria-hidden="true">
@@ -618,14 +465,14 @@ function showCopyNotification(message, type = 'success') {
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center p-0">
-                <img id="lightboxImage" src="" class="img-fluid" alt="" style="max-height: 80vh; object-fit: contain;">
-                <div id="lightboxCaption" class="text-white p-3" style="display: none;"></div>
+                <img id="lightboxImage" src="" class="img-fluid" alt="">
+                <div id="lightboxCaption" class="text-white p-3"></div>
             </div>
             <div class="modal-footer border-0 justify-content-center">
-                <button type="button" class="btn btn-outline-light" id="prevImageBtn" style="display: none;">
+                <button type="button" class="btn btn-outline-light" id="prevImageBtn">
                     <i class="fas fa-chevron-left me-1"></i>Poprzedni
                 </button>
-                <button type="button" class="btn btn-outline-light" id="nextImageBtn" style="display: none;">
+                <button type="button" class="btn btn-outline-light" id="nextImageBtn">
                     Następny<i class="fas fa-chevron-right ms-1"></i>
                 </button>
             </div>
@@ -633,76 +480,5 @@ function showCopyNotification(message, type = 'success') {
     </div>
 </div>
 
-<script>
-// Image Lightbox functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const galleryItems = document.querySelectorAll('.image-gallery-item');
-    const lightboxModal = new bootstrap.Modal(document.getElementById('imageLightboxModal'));
-    const lightboxImage = document.getElementById('lightboxImage');
-    const lightboxCaption = document.getElementById('lightboxCaption');
-    const prevBtn = document.getElementById('prevImageBtn');
-    const nextBtn = document.getElementById('nextImageBtn');
-    
-    let currentImageIndex = 0;
-    let images = [];
-    
-    // Initialize images array
-    galleryItems.forEach((item, index) => {
-        images.push({
-            src: item.dataset.imageSrc,
-            caption: item.dataset.imageCaption
-        });
-        
-        item.addEventListener('click', () => {
-            currentImageIndex = index;
-            showImage(currentImageIndex);
-            lightboxModal.show();
-        });
-    });
-    
-    function showImage(index) {
-        if (images.length === 0) return;
-        
-        const image = images[index];
-        lightboxImage.src = image.src;
-        lightboxImage.alt = image.caption || '';
-        
-        if (image.caption) {
-            lightboxCaption.textContent = image.caption;
-            lightboxCaption.style.display = 'block';
-        } else {
-            lightboxCaption.style.display = 'none';
-        }
-        
-        // Show/hide navigation buttons
-        prevBtn.style.display = images.length > 1 ? 'inline-block' : 'none';
-        nextBtn.style.display = images.length > 1 ? 'inline-block' : 'none';
-    }
-    
-    // Navigation
-    prevBtn.addEventListener('click', () => {
-        currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
-        showImage(currentImageIndex);
-    });
-    
-    nextBtn.addEventListener('click', () => {
-        currentImageIndex = (currentImageIndex + 1) % images.length;
-        showImage(currentImageIndex);
-    });
-    
-    // Keyboard navigation
-    document.addEventListener('keydown', (e) => {
-        if (lightboxModal._isShown) {
-            if (e.key === 'ArrowLeft') {
-                prevBtn.click();
-            } else if (e.key === 'ArrowRight') {
-                nextBtn.click();
-            } else if (e.key === 'Escape') {
-                lightboxModal.hide();
-            }
-        }
-    });
-});
-</script>
 
 

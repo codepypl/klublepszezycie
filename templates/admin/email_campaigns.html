@@ -3,24 +3,6 @@
 {% block title %}Kampanie Emaili - Panel Admin{% endblock %}
 
 {% block head %}
-<style>
-.email-preview-container {
-    isolation: isolate;
-    contain: layout style;
-    position: relative;
-    z-index: 1;
-}
-
-.email-preview-container * {
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-}
-
-.email-preview-container img {
-    max-width: 100% !important;
-    height: auto !important;
-}
-</style>
 {% endblock %}
 
 {% block page_title %}
@@ -32,7 +14,7 @@
         <button class="btn admin-btn" onclick="showCampaignModal()">
             <i class="fas fa-plus me-2"></i>Nowa kampania
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn">
             <i class="fas fa-trash me-2"></i>Usuń Zaznaczone
         </button>
     </div>
@@ -116,7 +98,7 @@
                         <div class="form-text">Przytrzymaj Ctrl (Cmd na Mac) aby wybrać wiele grup</div>
                     </div>
                     
-                    <div id="templateVariables" class="mb-3" style="display: none;">
+                    <div id="templateVariables" class="mb-3">
                         <label class="form-label">Treść do wstawienia w szablon</label>
                         <div id="variablesContainer">
                             <!-- Variables will be loaded here dynamically -->
@@ -125,7 +107,7 @@
                     
                     <div class="mb-3">
                         <label class="form-label">Podgląd emaila</label>
-                        <div id="emailPreview" class="border p-3 bg-light" style="min-height: 200px; isolation: isolate; contain: layout style;">
+                        <div id="emailPreview" class="border p-3 bg-light">
                             <p class="text-muted">Wybierz szablon aby zobaczyć podgląd</p>
                         </div>
                     </div>
@@ -140,6 +122,3 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/admin/email_campaigns.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
-{% endblock %}

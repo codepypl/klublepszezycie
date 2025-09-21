@@ -14,7 +14,7 @@
         <button class="btn admin-btn" onclick="showGroupModal()">
             <i class="fas fa-plus me-2"></i>Nowa grupa
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn">
             <i class="fas fa-trash me-2"></i>Usuń Zaznaczone
         </button>
     </div>
@@ -92,7 +92,7 @@
                     </div>
                     
                     <!-- Event selection for event_based groups -->
-                    <div class="mb-3" id="event_selection" style="display: none;">
+                    <div class="mb-3" id="event_selection">
                         <label for="selected_event" class="form-label">Wybierz wydarzenie *</label>
                         <select class="form-select" id="selected_event" name="selected_event">
                             <option value="">Wybierz wydarzenie</option>
@@ -100,9 +100,9 @@
                     </div>
                     
                     <!-- User selection for manual groups -->
-                    <div class="mb-3" id="user_selection" style="display: none;">
+                    <div class="mb-3" id="user_selection">
                         <label class="form-label">Wybierz użytkowników</label>
-                        <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                        <div class="border rounded p-3">
                             <div class="mb-2">
                                 <input type="text" class="form-control form-control-sm" id="search_users" placeholder="Szukaj użytkowników...">
                             </div>
@@ -144,13 +144,13 @@
                         <div class="mb-3">
                             <input type="text" class="form-control" id="searchUsers" placeholder="Szukaj użytkowników...">
                         </div>
-                        <div id="availableUsers" class="list-group" style="max-height: 300px; overflow-y: auto;">
+                        <div id="availableUsers" class="list-group">
                             <!-- Available users will be loaded here -->
                         </div>
                     </div>
                     <div class="col-md-6">
                         <h6>Członkowie grupy</h6>
-                        <div id="groupMembers" class="list-group" style="max-height: 300px; overflow-y: auto;">
+                        <div id="groupMembers" class="list-group">
                             <!-- Group members will be loaded here -->
                         </div>
                     </div>
@@ -164,6 +164,3 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/admin/email_groups.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
-{% endblock %}

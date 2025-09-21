@@ -2,6 +2,7 @@
 
 {% block title %}Korzyści{% endblock %}
 
+
 {% block page_title %}
     <i class="fas fa-star me-2"></i>Zarządzanie Korzyściami
 {% endblock %}
@@ -12,7 +13,7 @@
             <i class="fas fa-plus me-2"></i>
             Dodaj Korzyść
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
@@ -56,7 +57,7 @@
                                 <td>
                                     <strong>{{ benefit.title }}</strong>
                                 </td>
-                                <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">
+                                <td>
                                     {{ benefit.description }}
                                 </td>
                                 <td>
@@ -64,7 +65,7 @@
                                 </td>
                                 <td>
                                     {% if benefit.image %}
-                                        <img src="{{ url_for('static', filename=benefit.image) }}" alt="{{ benefit.title }}" class="img-thumbnail" style="max-width: 50px; max-height: 50px;">
+                                        <img src="{{ url_for('static', filename=benefit.image) }}" alt="{{ benefit.title }}" class="img-thumbnail">
                                     {% else %}
                                         <span class="text-muted">Brak obrazu</span>
                                     {% endif %}
@@ -79,7 +80,7 @@
                                 <td>
                                     <div class="btn-group" role="group">
                                         <button class="btn btn-sm admin-btn-outline" onclick="editBenefit({{ benefit.id }})" title="Edytuj korzyść">
-                                            <i class="fas fa-edit"></i>
+                                            <i class="fas fa-pen"></i>
                                         </button>
                                         <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteBenefit({{ benefit.id }})" title="Usuń korzyść">
                                             <i class="fas fa-trash"></i>
@@ -164,7 +165,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-edit me-2"></i>Edytuj Korzyść
+                        <i class="fas fa-pen me-2"></i>Edytuj Korzyść
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -187,10 +188,10 @@
                             <label for="editBenefitImage" class="form-label">Obraz</label>
                             <input type="file" class="form-control" id="editBenefitImage" name="image" accept="image/*">
                             <div class="form-text">Dozwolone formaty: PNG, JPG, JPEG, GIF, WEBP (max 100MB)</div>
-                            <div id="currentImagePreview" class="mt-2" style="display: none;">
+                            <div id="currentImagePreview" class="mt-2">
                                 <small class="text-muted">Aktualny obraz:</small>
                                 <div class="mt-1">
-                                    <img id="currentImage" src="" alt="Aktualny obraz" class="img-thumbnail" style="max-width: 100px; max-height: 100px;">
+                                    <img id="currentImage" src="" alt="Aktualny obraz" class="img-thumbnail">
                                 </div>
                             </div>
                         </div>
@@ -217,22 +218,3 @@
     </div>
 {% endblock %}
 
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/admin/benefits.js') }}"></script>
-<script>
-    // Initialize pagination for benefits
-    document.addEventListener('DOMContentLoaded', function() {
-        // Set up pagination handlers for auto-initialization
-        window.paginationHandlers = {
-            onPageChange: (page) => {
-                // Benefits don't have server-side pagination, so this is just for UI
-                console.log('Page changed to:', page);
-            },
-            onPerPageChange: (newPage, perPage) => {
-                // Benefits don't have server-side pagination, so this is just for UI
-                console.log('Per page changed to:', perPage);
-            }
-        };
-    });
-</script>
-{% endblock %}

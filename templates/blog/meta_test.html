@@ -44,16 +44,6 @@
     <meta property="twitter:site" content="@{{ config.get('SITE_NAME', 'KlubLepszeZycie') }}">
     <meta property="twitter:creator" content="@{{ config.get('SITE_NAME', 'KlubLepszeZycie') }}">
     
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .meta-section { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
-        .meta-item { margin: 5px 0; }
-        .meta-label { font-weight: bold; color: #333; }
-        .meta-value { color: #666; word-break: break-all; }
-        .test-links { margin: 20px 0; }
-        .test-links a { display: inline-block; margin: 5px; padding: 10px 15px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
-        .test-links a:hover { background: #0056b3; }
-    </style>
 </head>
 <body>
     <h1>Test Meta Tagów dla: {{ post.title }}</h1>
@@ -126,7 +116,7 @@
     <div class="meta-section">
         <h3>Obraz podglądu</h3>
         {% if image_url %}
-        <img src="{{ image_url }}" alt="{{ post.title }}" style="max-width: 400px; height: auto;">
+        <img src="{{ image_url }}" alt="{{ post.title }}">
         {% else %}
         <p>Brak obrazu</p>
         {% endif %}

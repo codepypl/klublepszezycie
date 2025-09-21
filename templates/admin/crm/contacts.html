@@ -38,7 +38,7 @@
                                     </div>
                                     <input type="file" class="form-control d-none" id="importFile" name="file" accept=".xlsx,.xls,.csv">
                                 </div>
-                                <div id="fileInfo" class="mt-2" style="display: none;">
+                                <div id="fileInfo" class="mt-2">
                                     <div class="alert alert-info">
                                         <i class="fas fa-file me-2"></i>
                                         <span id="fileName"></span>
@@ -51,7 +51,7 @@
                                 <div class="form-text">Obsługiwane formaty: .xlsx, .xls, .csv</div>
                             </div>
                             
-                            <div class="mb-3" id="csvSeparatorGroup" style="display: none;">
+                            <div class="mb-3" id="csvSeparatorGroup">
                                 <label for="csvSeparator" class="form-label">Separator kolumn (dla plików CSV)</label>
                                 <select class="form-select" id="csvSeparator" name="csv_separator">
                                     <option value=",">Przecinek (,)</option>
@@ -69,7 +69,7 @@
                     </div>
 
                     <!-- Step 2: Column Mapping -->
-                    <div id="importStep2" style="display: none;">
+                    <div id="importStep2">
                         <h6 class="mb-3">Mapowanie kolumn</h6>
                         <p class="text-muted mb-3">Przypisz kolumny z pliku do pól w systemie CRM</p>
                         
@@ -143,7 +143,7 @@
                     </div>
 
                     <!-- Step 3: Preview Mapping -->
-                    <div id="importStep3" style="display: none;">
+                    <div id="importStep3">
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="mb-0">
@@ -185,15 +185,15 @@
                     </div>
 
                     <!-- Step 4: Import Progress -->
-                    <div id="importStep4" style="display: none;">
+                    <div id="importStep4">
                         <div class="text-center">
                             <div class="spinner-border text-primary mb-3" role="status">
                                 <span class="visually-hidden">Importowanie...</span>
                             </div>
                             <h6 id="importStatus">Importowanie kontaktów...</h6>
                             <p class="text-muted" id="importMessage">Proszę czekać, trwa przetwarzanie pliku</p>
-                            <div class="progress mt-3" style="height: 6px;">
-                                <div class="progress-bar" id="importProgressBar" role="progressbar" style="width: 0%"></div>
+                            <div class="progress mt-3">
+                                <div class="progress-bar" id="importProgressBar" role="progressbar"></div>
                             </div>
                         </div>
                     </div>
@@ -447,117 +447,5 @@
 </div>
 
 <!-- External JavaScript -->
-<script src="{{ url_for('static', filename='js/utils/fetch-helper.js') }}"></script>
-<script src="{{ url_for('static', filename='js/crm/import.js') }}"></script>
 
-<script>
-// Global variables
-let contactsRefreshInterval;
-
-// Refresh contacts page
-function refreshContacts() {
-    // Reload the page to get fresh data
-    window.location.reload();
-}
-
-// Setup auto-refresh ONLY during import step 4 (Import Progress)
-function setupContactsAutoRefresh() {
-    // Only refresh if we're in import step 4 (Import Progress)
-    const importStep4 = document.getElementById('importStep4');
-    if (!importStep4) {
-        console.log('No import step 4 found, auto-refresh disabled');
-        return;
-    }
-    
-    const isVisible = importStep4.style.display !== 'none' && 
-                     window.getComputedStyle(importStep4).display !== 'none';
-    
-    if (!isVisible) {
-        console.log('Import step 4 not visible, auto-refresh disabled');
-        return;
-    }
-    
-    console.log('Import step 4 visible, starting auto-refresh');
-    // Refresh every 30 seconds ONLY during step 4 (Import Progress)
-    contactsRefreshInterval = setInterval(() => {
-        window.location.reload();
-    }, 30000); // 30 seconds
-}
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Only setup auto-refresh if we're in import step 3
-    // Auto-refresh is NOT needed for normal contacts page viewing
-    setupContactsAutoRefresh();
-    
-    // Setup import history functionality using bulk-delete.js
-    if (document.getElementById('importsTable')) {
-        new BulkDelete('importsTable', '/api/crm/imports/bulk-delete', {
-            selectAllId: 'selectAll',
-            deleteButtonId: 'bulkDeleteBtn',
-            confirmMessage: 'Czy na pewno chcesz usunąć wybrane importy?',
-            successMessage: 'Importy zostały usunięte pomyślnie',
-            errorMessage: 'Wystąpił błąd podczas usuwania importów'
-        });
-    }
-});
-
-function deleteImport(importId) {
-    // Use Bootstrap modal instead of custom toast
-    const modal = document.getElementById('bulkDeleteModal');
-    const messageElement = document.getElementById('bulkDeleteMessage');
-    const confirmButton = document.getElementById('confirmBulkDelete');
-    
-    if (modal && messageElement && confirmButton) {
-        // Update message
-        messageElement.textContent = 'Czy na pewno chcesz usunąć ten import? Tej operacji nie można cofnąć.';
-        
-        // Remove existing event listeners
-        const newConfirmButton = confirmButton.cloneNode(true);
-        confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
-        const updatedConfirmButton = newConfirmButton;
-        
-        // Add new event listener
-        updatedConfirmButton.addEventListener('click', () => {
-            bootstrap.Modal.getInstance(modal).hide();
-            confirmDeleteImport(importId);
-        });
-        
-        // Show modal
-        const bsModal = new bootstrap.Modal(modal);
-        bsModal.show();
-    } else {
-        // Fallback to confirm() if modal not available
-        if (confirm('Czy na pewno chcesz usunąć ten import? Tej operacji nie można cofnąć.')) {
-            confirmDeleteImport(importId);
-        }
-    }
-}
-
-function confirmDeleteImport(importId) {
-    // Proceed with deletion
-    fetch(`/api/crm/imports/${importId}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const message = data.contacts_deleted > 0 
-                ? `Import usunięty pomyślnie. Usunięto ${data.contacts_deleted} kontaktów.`
-                : 'Import usunięty pomyślnie.';
-            window.toastManager.show(message, 'success');
-            location.reload();
-        } else {
-            window.toastManager.show('Błąd usuwania importu: ' + data.error, 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        window.toastManager.show('Błąd usuwania importu', 'error');
-    });
-}
-</script>
 {% endblock %}

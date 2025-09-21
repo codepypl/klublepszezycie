@@ -183,32 +183,5 @@
     </div>
 </div>
 
-<script>
-// Ładowanie statystyk
-function loadStats() {
-    fetch('/api/crm/queue/stats')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('today-calls').textContent = data.stats.today_calls || 0;
-                document.getElementById('today-leads').textContent = data.stats.today_leads || 0;
-                document.getElementById('queue-count').textContent = data.stats.queue_count || 0;
-                document.getElementById('success-rate').textContent = data.stats.success_rate || '0%';
-            }
-        })
-        .catch(error => {
-            console.error('Błąd ładowania statystyk:', error);
-        });
-}
-
-function refreshStats() {
-    loadStats();
-}
-
-// Ładowanie przy starcie
-document.addEventListener('DOMContentLoaded', function() {
-    loadStats();
-});
-</script>
 
 {% endblock %}

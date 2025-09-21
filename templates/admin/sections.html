@@ -2,6 +2,7 @@
 
 {% block title %}Sekcje{% endblock %}
 
+
 {% block page_title %}
     <i class="fas fa-th-large me-2"></i>Zarządzanie Sekcjami
 {% endblock %}
@@ -12,7 +13,7 @@
             <i class="fas fa-plus me-2"></i>
             Dodaj Sekcję
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
@@ -58,7 +59,7 @@
                                 <td>
                                     {{ section.title or 'Brak tytułu' }}
                                 </td>
-                                <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">
+                                <td>
                                     {{ section.subtitle or 'Brak opisu' }}
                                 </td>
 
@@ -72,7 +73,7 @@
                                 <td>
                                     <div class="btn-group" role="group">
                                         <button class="btn btn-sm admin-btn-outline" onclick="editSection({{ section.id }})" title="Edytuj sekcję">
-                                            <i class="fas fa-edit"></i>
+                                            <i class="fas fa-pen"></i>
                                         </button>
                                         {% if section.enable_pillars %}
                                         <button class="btn btn-sm admin-btn-outline" onclick="editPillars({{ section.id }})" title="Edytuj filary">
@@ -163,7 +164,7 @@
                             </div>
                         </div>
                         
-                        <div class="mb-3" id="pillarsConfig" style="display: none;">
+                        <div class="mb-3" id="pillarsConfig">
                             <label for="sectionPillarsCount" class="form-label">Liczba filarów</label>
                             <input type="number" class="form-control" id="sectionPillarsCount" name="pillars_count" value="4" min="1" max="6">
                         </div>
@@ -179,7 +180,7 @@
                             </div>
                         </div>
                         
-                        <div class="mb-3" id="floatingCardsConfig" style="display: none;">
+                        <div class="mb-3" id="floatingCardsConfig">
                             <label for="sectionFloatingCardsCount" class="form-label">Liczba kart unoszących się</label>
                             <input type="number" class="form-control" id="sectionFloatingCardsCount" name="floating_cards_count" value="3" min="1" max="5">
                         </div>
@@ -199,7 +200,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-edit me-2"></i>Edytuj Sekcję
+                        <i class="fas fa-pen me-2"></i>Edytuj Sekcję
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -247,7 +248,7 @@
                             </div>
                         </div>
                         
-                        <div class="mb-3" id="editPillarsConfig" style="display: none;">
+                        <div class="mb-3" id="editPillarsConfig">
                             <label for="editSectionPillarsCount" class="form-label">Liczba filarów</label>
                             <input type="number" class="form-control" id="editSectionPillarsCount" name="pillars_count" value="4" min="1" max="6">
                             <div class="form-text">Każdy filar może mieć tytuł, opis, ikonę, link do podstrony oraz kolor ikony</div>
@@ -264,7 +265,7 @@
                             </div>
                         </div>
                         
-                        <div class="mb-3" id="editFloatingCardsConfig" style="display: none;">
+                        <div class="mb-3" id="editFloatingCardsConfig">
                             <label for="editSectionFloatingCardsCount" class="form-label">Liczba kart unoszących się</label>
                             <input type="number" class="form-control" id="editSectionFloatingCardsCount" name="floating_cards_count" value="3" min="1" max="5">
                             <div class="form-text">Każda karta może mieć tytuł, opis, ikonę, link do podstrony oraz kolor ikony</div>
@@ -362,23 +363,3 @@
     </div>
 {% endblock %}
 
-{% block extra_js %}
-<!-- TinyMCE WYSIWYG Editor -->
-
-<script src="{{ url_for('static', filename='js/admin/sections.js') }}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Set up pagination handlers for auto-initialization
-    window.paginationHandlers = {
-        onPageChange: (page) => {
-            // Sections don't have server-side pagination, so this is just for UI
-            console.log('Page changed to:', page);
-        },
-        onPerPageChange: (newPage, perPage) => {
-            // Sections don't have server-side pagination, so this is just for UI
-            console.log('Per page changed to:', perPage);
-        }
-    };
-});
-</script>
-{% endblock %}

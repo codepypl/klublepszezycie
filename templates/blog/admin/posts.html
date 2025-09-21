@@ -12,7 +12,7 @@
             <i class="fas fa-plus me-2"></i>
             Dodaj Artykuł
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
@@ -53,7 +53,7 @@
                                 <td>
                                     <div class="d-flex align-items-center">
                                         {% if post.featured_image %}
-                                            <img src="{{ post.featured_image }}" alt="{{ post.title }}" class="img-thumbnail me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                            <img src="{{ post.featured_image }}" alt="{{ post.title }}" class="img-thumbnail me-2">
                                         {% endif %}
                                         <div>
                                             <strong>{{ post.title }}</strong>
@@ -88,7 +88,7 @@
                                 <td>
                                     <div class="btn-group" role="group">
                                         <button class="btn btn-sm admin-btn-outline" onclick="editPost({{ post.id if post.id else 0 }})" title="Edytuj">
-                                            <i class="fas fa-edit"></i>
+                                            <i class="fas fa-pen"></i>
                                         </button>
                                         <button class="btn btn-sm admin-btn-danger-outline" onclick="deletePost({{ post.id if post.id else 0 }})" title="Usuń">
                                             <i class="fas fa-trash"></i>
@@ -216,7 +216,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-edit me-2"></i>Edytuj Artykuł
+                        <i class="fas fa-pen me-2"></i>Edytuj Artykuł
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -255,14 +255,14 @@
                                         <strong>Format:</strong> JPG, PNG, WebP | <strong>Maksymalny rozmiar:</strong> 5MB
                                     </div>
                                     <div class="form-text">Wybierz nowe zdjęcie (opcjonalnie)</div>
-                                    <div id="currentFeaturedImage" class="mt-2" style="display: none;">
+                                    <div id="currentFeaturedImage" class="mt-2">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <small class="text-muted">Aktualne zdjęcie:</small>
                                             <button type="button" class="btn btn-sm admin-btn-danger-outline" onclick="window.blogPostsManager.deleteFeaturedImage()" title="Usuń zdjęcie główne">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>
-                                        <img id="currentFeaturedImagePreview" src="" alt="Aktualne zdjęcie" class="img-thumbnail mt-1" style="max-width: 200px; max-height: 150px;">
+                                        <img id="currentFeaturedImagePreview" src="" alt="Aktualne zdjęcie" class="img-thumbnail mt-1">
                                     </div>
                                 </div>
                                 <div class="mb-3">
@@ -369,137 +369,4 @@
 
 {% endblock %}
 
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/utils/tooltip.js') }}"></script>
-<script src="{{ url_for('static', filename='js/admin/tag_selector.js') }}"></script>
-<script src="{{ url_for('static', filename='js/admin/blog_posts.js') }}"></script>
 
-<script>
-// Global functions for compatibility
-function editPost(postId) {
-    if (window.blogPostsManager) {
-        window.blogPostsManager.editPost(postId);
-    } else {
-        // Wait for initialization with multiple retries
-        let retries = 0;
-        const maxRetries = 10;
-        const retryInterval = 100;
-        
-        const checkAndRetry = () => {
-            if (window.blogPostsManager) {
-                window.blogPostsManager.editPost(postId);
-            } else if (retries < maxRetries) {
-                retries++;
-                setTimeout(checkAndRetry, retryInterval);
-            } else {
-                console.error('blogPostsManager failed to initialize after', maxRetries, 'retries');
-                showError('Błąd: Menedżer postów nie jest jeszcze załadowany. Spróbuj ponownie.');
-            }
-        };
-        
-        checkAndRetry();
-    }
-}
-
-function deletePost(postId) {
-    if (window.blogPostsManager) {
-        window.blogPostsManager.deletePost(postId);
-    } else {
-        // Wait for initialization with multiple retries
-        let retries = 0;
-        const maxRetries = 10;
-        const retryInterval = 100;
-        
-        const checkAndRetry = () => {
-            if (window.blogPostsManager) {
-                window.blogPostsManager.deletePost(postId);
-            } else if (retries < maxRetries) {
-                retries++;
-                setTimeout(checkAndRetry, retryInterval);
-            } else {
-                console.error('blogPostsManager failed to initialize after', maxRetries, 'retries');
-                showError('Błąd: Menedżer postów nie jest jeszcze załadowany. Spróbuj ponownie.');
-            }
-        };
-        
-        checkAndRetry();
-    }
-}
-
-function editCategory(categoryId) {
-    // Redirect to categories page with edit parameter
-    window.location.href = `/blog/admin/categories?edit=${categoryId}`;
-}
-
-// Initialize page
-document.addEventListener('DOMContentLoaded', function() {
-    // Set up pagination handlers for auto-initialization
-    {% if posts %}
-    window.flaskPaginationData = {
-        page: {{ posts.page }},
-        pages: {{ posts.pages }},
-        total: {{ posts.total }},
-        per_page: {{ posts.per_page }}
-    };
-    
-    window.paginationHandlers = {
-        onPageChange: (page) => {
-            const perPage = {{ posts.per_page if posts else 10 }};
-            window.location.href = `{{ url_for('blog.admin_index') }}?page=${page}&per_page=${perPage}`;
-        },
-        onPerPageChange: (newPage, perPage) => {
-            window.location.href = `{{ url_for('blog.admin_index') }}?page=${newPage}&per_page=${perPage}`;
-        }
-    };
-    {% endif %}
-});
-
-// Validate image file size
-function validateImageFile() {
-    const fileInput = document.getElementById('imageFile');
-    if (fileInput.files && fileInput.files[0]) {
-        const file = fileInput.files[0];
-        const maxSize = 100 * 1024 * 1024; // 100MB
-        
-        if (file.size > maxSize) {
-            window.toastManager.error('Plik jest za duży. Maksymalny rozmiar: 100MB');
-            fileInput.value = ''; // Clear the input
-            return false;
-        }
-        
-        // Check file type
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-        if (!allowedTypes.includes(file.type)) {
-            window.toastManager.error('Nieprawidłowy typ pliku. Dozwolone: JPG, PNG, GIF, WEBP');
-            fileInput.value = ''; // Clear the input
-            return false;
-        }
-        
-        window.toastManager.success('Plik został zaakceptowany');
-    }
-    return true;
-}
-
-// Tooltips are now handled by the universal tooltip.js utility
-
-// Set edit post ID from template variable
-{% if edit_post_id and edit_post_id is number and edit_post_id > 0 %}
-window.editPostId = {{ edit_post_id }};
-console.log('Template editPostId set to:', {{ edit_post_id }});
-{% else %}
-// No valid edit_post_id provided - explicitly set to undefined
-window.editPostId = undefined;
-console.log('No valid edit_post_id provided:', {{ edit_post_id|default('undefined')|tojson }});
-{% endif %}
-</script>
-
-<style>
-/* Hover effect for category IDs */
-.badge.admin-badge-primary:hover {
-    color: white !important;
-    background-color: #1e3a8a !important;
-}
-</style>
-
-
-{% endblock %}

@@ -10,30 +10,9 @@
     </div>
 {% endblock %}
 
-{% block extra_css %}
-<style>
-.admin-header {
-    position: relative;
-}
-#callbackCountdownHeader {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 1.2em;
-    font-weight: bold;
-    color: #dc3545;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 5px 10px;
-    border-radius: 5px;
-    border: 2px solid #dc3545;
-    display: none;
-}
-</style>
-{% endblock %}
 
 <!-- Callback Countdown Alert -->
-<div class="row mb-3" id="callbackAlert" style="display: none;">
+<div class="row mb-3" id="callbackAlert">
     <div class="col-12">
         <div class="alert alert-warning alert-dismissible fade show" role="alert">
             <i class="fas fa-clock me-2"></i>
@@ -77,7 +56,7 @@
     </div>
 
     <!-- Current Call Panel -->
-    <div class="row mb-4" id="currentCallPanel" style="display: none;">
+    <div class="row mb-4" id="currentCallPanel">
         <div class="col-12">
             <div class="admin-card">
                 <div class="admin-card-header">
@@ -132,7 +111,7 @@
     </div>
 
     <!-- Call Outcome Panel -->
-    <div class="row mb-4" id="outcomePanel" style="display: none;">
+    <div class="row mb-4" id="outcomePanel">
         <div class="col-12">
             <div class="admin-card">
                 <div class="admin-card-header">
@@ -170,7 +149,7 @@
                     </div>
 
                     <!-- Callback Scheduling (for callback outcome) -->
-                    <div class="row mt-3" id="callbackScheduling" style="display: none;">
+                    <div class="row mt-3" id="callbackScheduling">
                         <div class="col-12">
                             <h6>Zaplanuj oddzwonienie:</h6>
                             <div class="row">
@@ -202,7 +181,3 @@
 
 {% endblock %}
 
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/utils/fetch-helper.js') }}"></script>
-<script src="{{ url_for('static', filename='js/crm/agent_work.js') }}"></script>
-{% endblock %}

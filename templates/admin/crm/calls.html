@@ -107,7 +107,7 @@
     {% endif %}
 
     <!-- Call Form -->
-    <div class="row" id="callForm" style="display: none;">
+    <div class="row" id="callForm">
         <div class="col-12">
             <div class="card admin-card">
                 <div class="card-header">
@@ -143,7 +143,7 @@
                             </div>
                         </div>
                         
-                        <div class="row mb-3" id="callbackDateRow" style="display: none;">
+                        <div class="row mb-3" id="callbackDateRow">
                             <div class="col-md-6">
                                 <label for="callbackDate" class="form-label">Data i godzina przełożenia</label>
                                 <input type="datetime-local" class="form-control" id="callbackDate" name="callback_date">
@@ -170,140 +170,7 @@
     </div>
 </div>
 
-<script>
-// Call form management
-function startCall(contactId) {
-    document.getElementById('contactId').value = contactId;
-    document.getElementById('callForm').style.display = 'block';
-    document.getElementById('callForm').scrollIntoView({ behavior: 'smooth' });
-}
-
-function cancelCall() {
-    document.getElementById('callForm').style.display = 'none';
-    document.getElementById('callResultForm').reset();
-}
-
-// Show/hide callback date field
-const callStatus = document.getElementById('callStatus');
-if (callStatus) {
-    callStatus.addEventListener('change', function() {
-    const callbackDateRow = document.getElementById('callbackDateRow');
-    const eventIdField = document.getElementById('eventId');
-    
-    if (this.value === 'callback') {
-        callbackDateRow.style.display = 'block';
-        eventIdField.required = false;
-    } else if (this.value === 'lead') {
-        callbackDateRow.style.display = 'none';
-        eventIdField.required = true;
-    } else {
-        callbackDateRow.style.display = 'none';
-        eventIdField.required = false;
-    }
-});
-}
-
-// Form submission
-const callResultForm = document.getElementById('callResultForm');
-if (callResultForm) {
-    callResultForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData.entries());
-    
-    // Convert callback date to ISO format
-    if (data.callback_date) {
-        data.callback_date = new Date(data.callback_date).toISOString();
-    }
-    
-    // Show loading
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Zapisywanie...';
-    submitBtn.disabled = true;
-    
-    fetch('/api/crm/calls/process', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Show success message
-            showSuccess('Połączenie przetworzone pomyślnie!');
-            // Reload page to get next contact
-            window.location.reload();
-        } else {
-            showError('Błąd: ' + data.error);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showError('Wystąpił błąd podczas przetwarzania połączenia');
-    })
-    .finally(() => {
-        // Reset button
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    });
-});
-}
-</script>
 
 <!-- External JavaScript -->
-<script src="{{ url_for('static', filename='js/utils/fetch-helper.js') }}"></script>
-<script src="{{ url_for('static', filename='js/crm/calls.js') }}"></script>
 
-<script>
-// Global variables
-let callsRefreshInterval;
-
-// Refresh calls page
-function refreshCalls() {
-    // Reload the page to get fresh data
-    window.location.reload();
-}
-
-// Setup auto-refresh like email queue
-function setupCallsAutoRefresh() {
-    // Refresh every 30 seconds
-    callsRefreshInterval = setInterval(() => {
-        // Don't refresh if import is in progress
-        if (typeof isImporting !== 'undefined' && isImporting) {
-            return;
-        }
-        
-        window.location.reload();
-    }, 30000); // 30 seconds
-}
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if import is in progress first (localStorage)
-    const importInProgress = localStorage.getItem('crm_import_in_progress') === 'true';
-    if (importInProgress) {
-        console.log('Import in progress (localStorage), auto-refresh disabled');
-        return;
-    }
-    
-    // Check if import is in progress by looking for step 3
-    const importStep3 = document.getElementById('importStep3');
-    if (importStep3) {
-        const isVisible = importStep3.style.display !== 'none' && 
-                         window.getComputedStyle(importStep3).display !== 'none';
-        if (isVisible) {
-            // Import is in progress, don't start auto-refresh
-            console.log('Import in progress (step 3 visible), auto-refresh disabled');
-            return;
-        }
-    }
-    
-    // Setup auto refresh only if no import is running
-    setupCallsAutoRefresh();
-});
-</script>
 {% endblock %}

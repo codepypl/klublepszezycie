@@ -1,5 +1,113 @@
 // Users Management JavaScript
 
+// View user profile function
+function viewUserProfile(userId) {
+    const modal = new bootstrap.Modal(document.getElementById('userProfileModal'));
+    const content = document.getElementById('userProfileContent');
+    
+    // Show loading
+    content.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Ładowanie...</span>
+            </div>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // Fetch user profile data
+    fetch(`/api/users/profile/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const user = data.user;
+                const eventHistory = data.event_history || [];
+                
+                content.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Podstawowe dane</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Imię:</strong></td>
+                                    <td>${user.first_name}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Email:</strong></td>
+                                    <td><a href="mailto:${user.email}">${user.email}</a></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Członek klubu:</strong></td>
+                                    <td>
+                                        <span class="badge ${user.club_member ? 'bg-success' : 'bg-secondary'}">
+                                            ${user.club_member ? 'Tak' : 'Nie'}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Ostatnie logowanie:</strong></td>
+                                    <td>${user.last_login ? formatDate(user.last_login) : 'Nigdy'}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Data utworzenia konta:</strong></td>
+                                    <td>${formatDate(user.created_at)}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Historia wydarzeń</h6>
+                            ${eventHistory.length > 0 ? `
+                                <div class="list-group">
+                                    ${eventHistory.map(event => `
+                                        <div class="list-group-item">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h6 class="mb-1">${event.event_title}</h6>
+                                                <small>${new Date(event.registration_date).toLocaleDateString('pl-PL')}</small>
+                                            </div>
+                                            <p class="mb-1">Data wydarzenia: ${event.event_date ? new Date(event.event_date).toLocaleDateString('pl-PL') : 'Nie określono'}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : `
+                                <p class="text-muted">Brak historii wydarzeń</p>
+                            `}
+                        </div>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Błąd ładowania profilu: ${data.error}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            content.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Błąd ładowania profilu: ${error.message}
+                </div>
+            `;
+        });
+}
+
+// Date formatting function
+function formatDate(dateString) {
+    if (!dateString) return 'Brak';
+    const date = new Date(dateString);
+    const formatted = date.toLocaleDateString('pl-PL', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    return formatted;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Obsługa filtrów
     const filtersCollapse = document.getElementById('filtersCollapse');
@@ -61,6 +169,26 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Obsługa bulk edit
     initializeBulkEdit();
+    
+    // Set up pagination handlers for auto-initialization
+    {% if pagination %}
+    window.flaskPaginationData = {
+        page: {{ pagination.page }},
+        pages: {{ pagination.pages }},
+        total: {{ pagination.total }},
+        per_page: {{ pagination.per_page }}
+    };
+    
+    window.paginationHandlers = {
+        onPageChange: (page) => {
+            const perPage = {{ pagination.per_page if pagination else 10 }};
+            window.location.href = `{{ url_for('users.index') }}?page=${page}&per_page=${perPage}`;
+        },
+        onPerPageChange: (newPage, perPage) => {
+            window.location.href = `{{ url_for('users.index') }}?page=${newPage}&per_page=${perPage}`;
+        }
+    };
+    {% endif %}
     
     // Obsługa formularza edycji użytkownika
     const editUserForm = document.getElementById('editUserForm');

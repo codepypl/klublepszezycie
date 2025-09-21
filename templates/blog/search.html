@@ -7,18 +7,7 @@
     {% set seo_data = get_seo_settings('blog_search') %}
     {% include 'seo/meta_tags.html' %}
     
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
-    <!-- AOS Animation Library -->
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/user/blog/blog-search.css') }}">
 </head>
 <body>
     <!-- Navigation -->
@@ -113,7 +102,7 @@
     </section>
 
     <!-- Main Content -->
-    <main style="padding-top: 0;">
+    <main>
         <div class="container py-5">
 
             <div class="row">
@@ -350,120 +339,13 @@
         </div>
     </footer>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- AOS Animation -->
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script>
-        AOS.init();
-    </script>
     
-    <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     
     <!-- Pagination Script -->
-    <script src="{{ url_for('static', filename='js/utils/paginate.js') }}"></script>
     
     <!-- Word Cloud Script -->
     <script src="{{ url_for('static', filename='js/word-cloud.js') }}"></script>
     
     <!-- Pagination Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Pagination debug - posts data:', {
-                page: {{ posts.page }},
-                pages: {{ posts.pages }},
-                total: {{ posts.total }},
-                per_page: {{ posts.per_page }}
-            });
-            
-            // Set up Flask pagination data for paginator.js
-            window.flaskPaginationData = {
-                page: {{ posts.page }},
-                pages: {{ posts.pages }},
-                total: {{ posts.total }},
-                per_page: {{ posts.per_page }}
-            };
-            
-            // Set up pagination handlers
-            window.paginationHandlers = {
-                onPageChange: function(page, perPage) {
-                    // Redirect to the new page
-                    const url = new URL(window.location);
-                    url.searchParams.set('page', page);
-                    window.location.href = url.toString();
-                }
-            };
-            
-            // Initialize pagination manually
-            const paginationContainer = document.getElementById('pagination');
-            console.log('Pagination container found:', paginationContainer);
-            console.log('Pagination class available:', window.Pagination);
-            
-            if (paginationContainer) {
-                // Try to use the existing pagination system
-                if (window.Pagination) {
-                    console.log('Using window.Pagination');
-                    const pagination = new window.Pagination({
-                        containerId: 'pagination',
-                        showInfo: true,
-                        showPerPage: false,
-                        maxVisiblePages: 5
-                    });
-                    
-                    pagination.setData({
-                        page: {{ posts.page }},
-                        pages: {{ posts.pages }},
-                        total: {{ posts.total }},
-                        per_page: {{ posts.per_page }}
-                    });
-                    
-                    pagination.onPageChange = function(page, perPage) {
-                        const url = new URL(window.location);
-                        url.searchParams.set('page', page);
-                        window.location.href = url.toString();
-                    };
-                } else {
-                    // Fallback: create simple pagination
-                    console.log('Creating fallback pagination');
-                    createSimplePagination(paginationContainer);
-                }
-            }
-        });
-        
-        function createSimplePagination(container) {
-            const page = {{ posts.page }};
-            const pages = {{ posts.pages }};
-            const total = {{ posts.total }};
-            
-            if (pages <= 1) {
-                container.innerHTML = '<p class="text-muted text-center">Strona 1 z 1 ({{ posts.total }} artykułów)</p>';
-                return;
-            }
-            
-            let html = '<nav><ul class="pagination justify-content-center">';
-            
-            // Previous button
-            if (page > 1) {
-                html += `<li class="page-item"><a class="page-link" href="?q={{ query }}&page=${page - 1}">Poprzednia</a></li>`;
-            }
-            
-            // Page numbers
-            for (let i = 1; i <= pages; i++) {
-                const active = i === page ? 'active' : '';
-                html += `<li class="page-item ${active}"><a class="page-link" href="?q={{ query }}&page=${i}">${i}</a></li>`;
-            }
-            
-            // Next button
-            if (page < pages) {
-                html += `<li class="page-item"><a class="page-link" href="?q={{ query }}&page=${page + 1}">Następna</a></li>`;
-            }
-            
-            html += '</ul></nav>';
-            html += `<p class="text-muted text-center mt-2">Strona ${page} z ${pages} (${total} artykułów)</p>`;
-            
-            container.innerHTML = html;
-        }
-    </script>
 </body>
 </html>
