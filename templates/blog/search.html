@@ -89,7 +89,7 @@
                 <!-- Search Form -->
                 <form method="GET" action="{{ url_for('blog.search') }}" class="search-form">
                     <div class="search-input-group">
-                        <input type="text" name="q" class="form-control" placeholder="Szukaj w tytule, treści, tagach..." value="{{ search_query or '' }}">
+                        <input type="text" name="q" class="form-control" placeholder="Szukaj w tytule, treści, tagach..." value="{{ query or '' }}">
                         <button type="submit" class="btn">
                             <i class="fas fa-search"></i>
                         </button>
@@ -103,8 +103,8 @@
         <div class="row">
             <!-- Main Content -->
             <div class="col-lg-8">
-                {% if search_query %}
-                    <h2 class="mb-4">Wyniki wyszukiwania dla: "{{ search_query }}"</h2>
+                {% if query %}
+                    <h2 class="mb-4">Wyniki wyszukiwania dla: "{{ query }}"</h2>
                     
                     {% if posts.items %}
                         <div class="featured-posts">

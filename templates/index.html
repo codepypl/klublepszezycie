@@ -487,12 +487,12 @@
             <div class="col-lg-4 mb-4">
                 <h5 class="fw-bold mb-3">{{ footer_settings.social_title or 'Śledź nas' }}</h5>
                 <div class="d-flex gap-3">
-                    {% for social_link in social_links %}
+                    {% for social_link in active_social_links %}
                         <a href="{{ social_link.url }}" target="{{ social_link.target or '_blank' }}" rel="noopener noreferrer" class="text-white" title="{{ social_link.platform }}">
-                            <i class="fab fa-{{ social_link.platform.lower() }} fa-2x"></i>
+                            <i class="fab fa-{{ social_link.icon or social_link.platform.lower() }} fa-2x"></i>
                         </a>
                     {% endfor %}
-                    {% if not social_links %}
+                    {% if not active_social_links %}
                         <span class="text-muted">Brak aktywnych linków</span>
                     {% endif %}
                 </div>
