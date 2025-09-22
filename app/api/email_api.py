@@ -72,18 +72,16 @@ def email_queue_stats():
     try:
         from app.models import Stats
         
-        total = Stats.get_total_emails()
-        pending = Stats.get_pending_emails()
-        sent = Stats.get_sent_emails()
-        failed = Stats.get_failed_emails()
+        # Update stats from database before returning
+        stats_data = Stats.update_email_stats()
         
         return jsonify({
             'success': True,
             'stats': {
-                'total': total,
-                'pending': pending,
-                'sent': sent,
-                'failed': failed
+                'total': stats_data['total_emails'],
+                'pending': stats_data['pending_emails'],
+                'sent': stats_data['sent_emails'],
+                'failed': stats_data['failed_emails']
             }
         })
     except Exception as e:
@@ -215,6 +213,41 @@ def email_delete_from_queue(email_id):
         db.session.commit()
         
         return jsonify({'success': True, 'message': 'Email usunięty z kolejki'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@email_bp.route('/bulk-delete/email-queue', methods=['POST'])
+@login_required
+def bulk_delete_email_queue():
+    """Bulk delete emails from queue"""
+    try:
+        data = request.get_json()
+        email_ids = data.get('ids', [])
+        
+        if not email_ids:
+            return jsonify({'success': False, 'error': 'Brak emaili do usunięcia'}), 400
+        
+        # Delete emails from queue
+        deleted_count = 0
+        for email_id in email_ids:
+            email = EmailQueue.query.get(email_id)
+            if email:
+                # Nie można usuwać już wysłanych e-maili
+                if email.status == 'sent':
+                    continue  # Skip sent emails
+                
+                db.session.delete(email)
+                deleted_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Usunięto {deleted_count} emaili z kolejki',
+            'deleted_count': deleted_count
+        })
         
     except Exception as e:
         db.session.rollback()

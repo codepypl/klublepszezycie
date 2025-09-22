@@ -706,6 +706,7 @@ def delete_account_api(email, token):
     import logging
     from flask import request
     from datetime import datetime
+    from app.utils.crypto_utils import decrypt_email
     
     try:
         # Decrypt email from URL parameter

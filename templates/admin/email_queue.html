@@ -7,13 +7,20 @@
 {% endblock %}
 
 {% block page_actions %}
-    <div class="d-flex justify-content-end gap-2 mb-3">
-        <button class="btn admin-btn-warning" onclick="processQueue()">
-            <i class="fas fa-play me-2"></i>Przetwórz kolejkę
-        </button>
-        <button class="btn admin-btn-secondary" onclick="retryFailed()">
-            <i class="fas fa-redo me-2"></i>Ponów nieudane
-        </button>
+    <div class="d-flex justify-content-between gap-2 mb-3">
+        <div>
+            <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;" disabled>
+                <i class="fas fa-trash me-2"></i>Usuń zaznaczone
+            </button>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn admin-btn-warning" onclick="processQueue()">
+                <i class="fas fa-play me-2"></i>Przetwórz kolejkę
+            </button>
+            <button class="btn admin-btn-secondary" onclick="retryFailed()">
+                <i class="fas fa-redo me-2"></i>Ponów nieudane
+            </button>
+        </div>
     </div>
 {% endblock %}
 
@@ -116,9 +123,12 @@
                     </div>
                     
                     <div class="table-responsive">
-                        <table class="table admin-table">
+                        <table class="table admin-table bulk-delete-table" id="queueTable" data-delete-endpoint="/api/bulk-delete/email-queue">
                             <thead>
                                 <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAll">
+                                    </th>
                                     <th>ID</th>
                                     <th>Do</th>
                                     <th>Temat</th>
@@ -130,8 +140,25 @@
                             </thead>
                             <tbody id="queueTableBody">
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted">
+                                    <td colspan="8" class="text-center text-muted">
                                         <i class="fas fa-spinner fa-spin me-2"></i>Ładowanie...
+                                    </td>
+                                </tr>
+                                <!-- Test row for debugging -->
+                                <tr style="display: none;" id="testRow">
+                                    <td><input type="checkbox" name="itemIds" value="999"></td>
+                                    <td><span class="badge admin-badge admin-badge-primary">999</span></td>
+                                    <td>test@example.com</td>
+                                    <td>Test Email</td>
+                                    <td><span class="admin-badge admin-badge-warning">pending</span></td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm admin-btn-danger" title="Usuń email">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>

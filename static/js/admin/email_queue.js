@@ -9,21 +9,16 @@ let progressStartTime = null;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
+    if (!window.location.pathname.includes('email_queue')) {
+        return;
+    }
+    
     loadStats();
     loadQueue('pending');
     
-    // Set up pagination handlers for auto-initialization
-    window.paginationHandlers = {
-        onPageChange: (page) => {
-            currentPage = page;
-            loadQueue(currentFilter);
-        },
-        onPerPageChange: (newPage, perPage) => {
-            currentPerPage = perPage;
-            currentPage = newPage; // Use the page passed by pagination
-            loadQueue(currentFilter);
-        }
-    };
+    // BulkDelete will auto-initialize due to bulk-delete-table class
+    console.log('🔍 BulkDelete should auto-initialize for queueTable');
+    
     
     // Setup auto-refresh
     setupEmailQueueAutoRefresh();
@@ -38,23 +33,69 @@ document.addEventListener('DOMContentLoaded', function() {
     window.hideProgressBar = hideProgressBar;
     window.startProgressMonitoring = startProgressMonitoring;
     window.updateProgress = updateProgress;
+    window.showTestRow = () => {
+        const testRow = document.getElementById('testRow');
+        if (testRow) {
+            testRow.style.display = '';
+            console.log('🧪 Test row shown');
+            // Reinitialize bulk delete
+            if (window.emailQueueBulkDelete) {
+                window.emailQueueBulkDelete = null;
+            }
+            window.emailQueueBulkDelete = new BulkDelete('queueTable', '/api/bulk-delete/email-queue', {
+                selectAllId: 'selectAll',
+                deleteButtonId: 'bulkDeleteBtn',
+                confirmMessage: 'Czy na pewno chcesz usunąć wybrane emaile z kolejki?',
+                successMessage: 'Emaile zostały usunięte z kolejki pomyślnie',
+                errorMessage: 'Wystąpił błąd podczas usuwania emaili'
+            });
+        }
+    };
+    
+    // Test functions
+    window.testStats = () => {
+        console.log('🧪 Testing stats...');
+        loadStats();
+    };
+    
+    window.testQueue = () => {
+        console.log('🧪 Testing queue...');
+        loadQueue('pending');
+    };
+    
+    window.testPagination = () => {
+        console.log('🧪 Testing pagination...');
+        const paginationElement = document.getElementById('pagination');
+        console.log('Pagination element:', paginationElement);
+        console.log('Pagination instance:', paginationElement?.paginationInstance);
+    };
 });
 
 
 // Load statistics
 function loadStats() {
+    console.log('📊 Loading email queue stats...');
     fetch('/api/email/queue-stats')
-        .then(response => response.json())
+        .then(response => {
+            console.log('📡 Stats API response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('📊 Stats API response data:', data);
             if (data.success) {
                 document.getElementById('totalEmails').textContent = data.stats.total;
                 document.getElementById('pendingEmails').textContent = data.stats.pending;
                 document.getElementById('sentEmails').textContent = data.stats.sent;
                 document.getElementById('failedEmails').textContent = data.stats.failed;
+                console.log('✅ Stats updated:', data.stats);
+            } else {
+                console.log('❌ Stats API error:', data.error);
+                toastManager.error('Błąd ładowania statystyk: ' + data.error);
             }
         })
         .catch(error => {
-            console.error('Error loading stats:', error);
+            console.error('❌ Error loading stats:', error);
+            toastManager.error('Błąd ładowania statystyk');
         });
 }
 
@@ -74,19 +115,49 @@ function loadQueue(filter) {
         filter: filter
     });
     
+    console.log('🔍 Loading queue with params:', params.toString());
     fetch(`/api/email/queue?${params}`)
-        .then(response => response.json())
+        .then(response => {
+            console.log('📡 Queue API response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('📊 Queue API response data:', data);
             if (data.success) {
                 displayQueue(data.emails);
                 if (data.pagination) {
-                    // Update pagination if it exists
+                    console.log('📄 Pagination data:', data.pagination);
+                    // Initialize or update pagination
                     const paginationElement = document.getElementById('pagination');
-                    if (paginationElement && paginationElement.paginationInstance) {
-                        paginationElement.paginationInstance.setData(data.pagination);
+                    if (paginationElement) {
+                        if (paginationElement.paginationInstance) {
+                            console.log('🔄 Updating existing pagination');
+                            paginationElement.paginationInstance.setData(data.pagination);
+                        } else {
+                            console.log('🆕 Initializing new pagination');
+                            // Initialize pagination for the first time
+                            paginationElement.paginationInstance = new Pagination(paginationElement, data.pagination, {
+                                onPageChange: (page) => {
+                                    console.log('📄 Page changed to:', page);
+                                    currentPage = page;
+                                    loadQueue(currentFilter);
+                                },
+                                onPerPageChange: (newPage, perPage) => {
+                                    console.log('📄 Per page changed to:', perPage, 'page:', newPage);
+                                    currentPerPage = perPage;
+                                    currentPage = newPage;
+                                    loadQueue(currentFilter);
+                                }
+                            });
+                        }
+                    } else {
+                        console.log('❌ Pagination element not found');
                     }
+                } else {
+                    console.log('❌ No pagination data received');
                 }
             } else {
+                console.log('❌ Queue API error:', data.error);
                 toastManager.error('Błąd ładowania kolejki: ' + data.error);
             }
         })
@@ -102,7 +173,7 @@ function displayQueue(emails) {
     tbody.innerHTML = '';
     
     if (emails.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Brak emaili</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Brak emaili</td></tr>';
         return;
     }
     
@@ -114,7 +185,13 @@ function displayQueue(emails) {
         else if (email.status === 'failed') statusClass = 'danger';
         else if (email.status === 'pending') statusClass = 'warning';
         
+        const checkboxHtml = email.status !== 'sent' ? `<input type="checkbox" name="itemIds" value="${email.id}">` : '';
+        console.log(`📧 Email ${email.id} (${email.status}): checkbox = ${checkboxHtml ? 'YES' : 'NO'}`);
+        
         row.innerHTML = `
+            <td>
+                ${checkboxHtml}
+            </td>
             <td><span class="badge admin-badge admin-badge-primary">${email.id}</span></td>
             <td>${email.to_email}</td>
             <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">${email.subject}</td>
@@ -137,6 +214,28 @@ function displayQueue(emails) {
         
         tbody.appendChild(row);
     });
+    
+    // Reinitialize bulk delete after table update
+    console.log('🔄 Reinitializing BulkDelete after table update...');
+    
+    // Check if checkboxes exist
+    const checkboxes = document.querySelectorAll('#queueTable input[type="checkbox"][name="itemIds"]');
+    console.log(`🔍 Found ${checkboxes.length} checkboxes in table`);
+    
+    // Create new BulkDelete instance
+    if (window.emailQueueBulkDelete) {
+        window.emailQueueBulkDelete = null;
+    }
+    
+    window.emailQueueBulkDelete = new BulkDelete('queueTable', '/api/bulk-delete/email-queue', {
+        selectAllId: 'selectAll',
+        deleteButtonId: 'bulkDeleteBtn',
+        confirmMessage: 'Czy na pewno chcesz usunąć wybrane emaile z kolejki?',
+        successMessage: 'Emaile zostały usunięte z kolejki pomyślnie',
+        errorMessage: 'Wystąpił błąd podczas usuwania emaili'
+    });
+    
+    console.log('✅ BulkDelete reinitialized');
 }
 
 // Process queue
