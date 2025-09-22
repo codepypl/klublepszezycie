@@ -1,0 +1,198 @@
+/* Admin Login Page Styles */
+/* Using the same blue color as the main site logo: #1e3a8a */
+
+.admin-login-body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #1e3a8a 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 20px;
+}
+
+/* Background decorative elements */
+.admin-login-body::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: float 20s ease-in-out infinite;
+    z-index: 1;
+}
+
+.admin-login-container {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 1400px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+/* Login Card */
+.admin-login-card {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 50px;
+    box-shadow: 
+        0 25px 50px rgba(30, 58, 138, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.admin-login-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    border-radius: 24px;
+    z-index: -1;
+}
+
+.admin-login-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.admin-login-header i {
+    color: #1e3a8a;
+    margin-bottom: 20px;
+}
+
+.admin-login-header h1 {
+    color: #1e3a8a;
+    font-weight: 700;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.admin-login-header p {
+    color: #6b7280;
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Form Styles */
+.admin-login-form .form-label {
+    color: #374151;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.admin-form-control {
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    background: #ffffff;
+    color: #1e3a8a;
+    font-weight: 500;
+}
+
+.admin-form-control:focus {
+    border-color: #1e3a8a;
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+    background: #ffffff;
+    color: #1e3a8a;
+    outline: none;
+}
+
+.admin-form-control::placeholder {
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+.admin-btn {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 18px 24px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
+}
+
+.admin-btn:hover {
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(30, 58, 138, 0.4);
+}
+
+.admin-btn:active {
+    transform: translateY(0);
+}
+
+/* Footer */
+.admin-login-footer {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(229, 231, 235, 0.5);
+}
+
+.admin-login-footer a {
+    color: #6b7280;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.admin-login-footer a:hover {
+    color: #1e3a8a;
+}
+
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .admin-login-container {
+        padding: 20px;
+    }
+    
+    .admin-login-card {
+        padding: 40px 25px;
+        margin: 0;
+        max-width: 100%;
+    }
+    
+    .admin-login-header h1 {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-login-body {
+        padding: 10px;
+    }
+    
+    .admin-login-card {
+        padding: 35px 20px;
+    }
+    
+    .admin-login-header h1 {
+        font-size: 1.75rem;
+    }
+    
+    .admin-login-header p {
+        font-size: 0.9rem;
+    }
+}

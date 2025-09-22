@@ -65,7 +65,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="border rounded p-3">
+                    <div class="border rounded p-3" style="min-height: 200px;">
                         {{ document.content|safe }}
                     </div>
                 </div>
@@ -76,6 +76,9 @@
 </div>
 {% endblock %}
 
+{% block extra_js %}
+<!-- TinyMCE is now initialized globally in admin/base.html -->
+{% endblock %}
 
 
 

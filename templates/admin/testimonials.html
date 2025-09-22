@@ -2,7 +2,6 @@
 
 {% block title %}Opinie{% endblock %}
 
-
 {% block page_title %}
     <i class="fas fa-comments me-2"></i>Zarządzanie Opiniami
 {% endblock %}
@@ -13,7 +12,7 @@
             <i class="fas fa-plus me-2"></i>
             Dodaj Opinię
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
@@ -58,7 +57,7 @@
                                     <strong>{{ testimonial.author_name }}</strong>
 
                                 </td>
-                                <td>
+                                <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">
                                     {{ testimonial.content }}
                                 </td>
                                 <td>
@@ -86,7 +85,7 @@
                                 <td>
                                     <div class="btn-group" role="group">
                                         <button class="btn btn-sm admin-btn-outline" onclick="editTestimonial({{ testimonial.id }})">
-                                            <i class="fas fa-pen"></i>
+                                            <i class="fas fa-edit"></i>
                                         </button>
                                         <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteTestimonial({{ testimonial.id }})">
                                             <i class="fas fa-trash"></i>
@@ -178,7 +177,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-pen me-2"></i>Edytuj Opinię
+                        <i class="fas fa-edit me-2"></i>Edytuj Opinię
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -231,3 +230,21 @@
     </div>
 {% endblock %}
 
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin/testimonials.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up pagination handlers for auto-initialization
+    window.paginationHandlers = {
+        onPageChange: (page) => {
+            // Testimonials don't have server-side pagination, so this is just for UI
+            console.log('Page changed to:', page);
+        },
+        onPerPageChange: (newPage, perPage) => {
+            // Testimonials don't have server-side pagination, so this is just for UI
+            console.log('Per page changed to:', perPage);
+        }
+    };
+});
+</script>
+{% endblock %}

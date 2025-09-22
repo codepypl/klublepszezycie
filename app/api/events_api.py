@@ -125,7 +125,6 @@ def api_event_schedule():
             return jsonify({'success': False, 'message': str(e)}), 500
 
 @events_api_bp.route('/event-schedule/<int:event_id>', methods=['GET', 'PUT', 'DELETE'])
-@login_required
 def api_event(event_id):
     """Individual event API"""
     event = EventSchedule.query.get_or_404(event_id)
@@ -561,3 +560,48 @@ def api_cleanup_orphaned_groups():
     except Exception as e:
         logging.error(f"Error cleaning up orphaned groups: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+@events_api_bp.route('/events/register', methods=['POST'])
+def api_register_event():
+    """Register for event via API"""
+    try:
+        data = request.get_json()
+        print(f"🔍 API Event registration data: {data}")
+        
+        # Check if data is valid JSON
+        if not data:
+            print("❌ No data received")
+            return jsonify({'success': False, 'message': 'Nieprawidłowe dane JSON'}), 400
+        
+        # Validate input
+        if not data.get('first_name') or not data.get('email') or not data.get('event_id'):
+            return jsonify({'success': False, 'message': 'Imię, email i ID wydarzenia są wymagane'}), 400
+        
+        event_id = data['event_id']
+        
+        # Import functions from public_route
+        from app.routes.public_route import register_event
+        
+        # Create a mock request object with the data
+        class MockRequest:
+            def __init__(self, json_data):
+                self.json_data = json_data
+            def get_json(self):
+                return self.json_data
+        
+        # Temporarily replace request with mock
+        original_request = request
+        import app.api.events_api
+        app.api.events_api.request = MockRequest(data)
+        
+        try:
+            # Call the existing register_event function
+            response = register_event(event_id)
+            return response
+        finally:
+            # Restore original request
+            app.api.events_api.request = original_request
+            
+    except Exception as e:
+        logging.error(f"Error in API event registration: {str(e)}")
+        return jsonify({'success': False, 'message': 'Wystąpił błąd podczas rejestracji'}), 500

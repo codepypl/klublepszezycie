@@ -8,7 +8,7 @@
 
 {% block page_actions %}
     <div class="d-flex justify-content-end gap-2 mb-3">
-        <button id="bulkDeleteBtn" class="btn admin-btn-danger" onclick="confirmBulkDelete()">
+        <button id="bulkDeleteBtn" class="btn admin-btn-danger" style="display: none;" onclick="confirmBulkDelete()">
             <i class="fas fa-trash me-2"></i>
             Usuń zaznaczone (<span id="selectedCount">0</span>)
         </button>
@@ -85,7 +85,7 @@
                                 <td>
                                     <div class="btn-group" role="group">
                                         <button class="btn btn-sm admin-btn-outline" onclick="editLink({{ link.id }})">
-                                            <i class="fas fa-pen"></i>
+                                            <i class="fas fa-edit"></i>
                                         </button>
                                         <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteLink({{ link.id }})">
                                             <i class="fas fa-trash"></i>
@@ -173,7 +173,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-pen me-2"></i>Edytuj Link Social Media
+                        <i class="fas fa-edit me-2"></i>Edytuj Link Social Media
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -230,3 +230,438 @@
 
 {% endblock %}
 
+{% block extra_js %}
+<script>
+    // Show add link modal
+    function showAddLinkModal() {
+        document.getElementById('addLinkForm').reset();
+        const modal = new bootstrap.Modal(document.getElementById('addLinkModal'));
+        modal.show();
+    }
+
+    // Edit link function
+    function editLink(linkId) {
+        fetch(`/api/social/${linkId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const link = data.link;
+                    document.getElementById('editLinkId').value = link.id;
+                    document.getElementById('editLinkPlatform').value = link.platform;
+                    document.getElementById('editLinkUrl').value = link.url;
+                    document.getElementById('editLinkTarget').value = link.target || '_blank';
+                    document.getElementById('editLinkOrder').value = link.order || 1;
+                    document.getElementById('editLinkActive').checked = link.is_active;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('editLinkModal'));
+                    modal.show();
+                } else {
+                    window.toastManager.error('Błąd podczas ładowania linku: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.toastManager.error('Wystąpił błąd podczas ładowania linku');
+            });
+    }
+
+    // Delete link function
+    function deleteLink(linkId) {
+        // Set up modal for single delete
+        document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz usunąć ten link?<br><small class="text-muted">Ta operacja nie może być cofnięta.</small>';
+        
+        const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+        modal.show();
+        
+        // Store linkId for deletion
+        window.currentDeleteLinkId = linkId;
+        
+        // Update confirm button
+        const confirmBtn = document.getElementById('confirmBulkDelete');
+        confirmBtn.onclick = function() {
+            performDeleteLink(linkId);
+            modal.hide();
+        };
+    }
+    
+    // Perform actual delete operation
+    function performDeleteLink(linkId) {
+        fetch(`/api/social/${linkId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.toastManager.success('Link został usunięty pomyślnie!');
+                // Usuń wiersz z tabeli
+                const row = document.querySelector(`tr[data-link-id="${linkId}"]`);
+                if (row) {
+                    row.remove();
+                }
+                updateBulkDeleteUI();
+            } else {
+                window.toastManager.error('Błąd podczas usuwania: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            window.toastManager.error('Wystąpił błąd podczas usuwania linku');
+        });
+    }
+
+    // Form submissions
+    const addLinkForm = document.getElementById('addLinkForm');
+    if (addLinkForm) {
+        addLinkForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        // Always send is_active field as string
+        formData.set('is_active', document.getElementById('linkActive').checked ? 'true' : 'false');
+        
+        // Convert FormData to JSON
+        const jsonData = {
+            platform: formData.get('platform'),
+            url: formData.get('url'),
+            target: formData.get('target'),
+            icon: formData.get('icon') || '',
+            order: parseInt(formData.get('order')) || 0,
+            is_active: formData.get('is_active') === 'true'
+        };
+        
+        console.log('Sending social link data:', jsonData);
+        
+        fetch('/api/social', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(jsonData)
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            
+            if (data.success) {
+                window.toastManager.success('Link został dodany pomyślnie!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addLinkModal'));
+                modal.hide();
+                // Odśwież stronę
+                window.location.reload();
+            } else {
+                window.toastManager.error('Błąd podczas dodawania: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error details:', error);
+            console.error('Error message:', error.message);
+            window.toastManager.error('Wystąpił błąd podczas dodawania linku: ' + error.message);
+        });
+    });
+    }
+
+    const editLinkForm = document.getElementById('editLinkForm');
+    if (editLinkForm) {
+        editLinkForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        // Convert FormData to JSON
+        const jsonData = {
+            platform: formData.get('platform'),
+            url: formData.get('url'),
+            target: formData.get('target'),
+            icon: formData.get('icon') || '',
+            order: parseInt(formData.get('order')) || 0,
+            is_active: document.getElementById('editLinkActive').checked
+        };
+        
+        const linkId = formData.get('id');
+        
+        fetch(`/api/social/${linkId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(jsonData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.toastManager.success('Link został zaktualizowany pomyślnie!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editLinkModal'));
+                modal.hide();
+                // Odśwież stronę
+                window.location.reload();
+            } else {
+                window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            window.toastManager.error('Wystąpił błąd podczas aktualizacji linku');
+        });
+    });
+    }
+    
+    // Bulk delete functionality
+    function updateBulkDeleteUI() {
+        const checkboxes = document.querySelectorAll('.item-checkbox');
+        const selectedCheckboxes = document.querySelectorAll('.item-checkbox:checked');
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        const selectedCount = document.getElementById('selectedCount');
+        const selectAllCheckbox = document.getElementById('selectAll');
+        
+        selectedCount.textContent = selectedCheckboxes.length;
+        
+        if (selectedCheckboxes.length > 0) {
+            bulkDeleteBtn.style.display = 'inline-block';
+        } else {
+            bulkDeleteBtn.style.display = 'none';
+        }
+        
+        // Update select all checkbox state
+        if (checkboxes.length === 0) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        } else if (selectedCheckboxes.length === checkboxes.length) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = true;
+        } else if (selectedCheckboxes.length > 0) {
+            selectAllCheckbox.indeterminate = true;
+        } else {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        }
+    }
+    
+    function confirmBulkDelete() {
+        const selectedCheckboxes = document.querySelectorAll('.item-checkbox:checked');
+        const count = selectedCheckboxes.length;
+        
+        if (count === 0) {
+            window.toastManager.error('Nie wybrano żadnych linków do usunięcia');
+            return;
+        }
+        
+        document.getElementById('bulkDeleteMessage').innerHTML = 
+            `Czy na pewno chcesz usunąć <strong>${count}</strong> link${count === 1 ? '' : count < 5 ? 'i' : 'ów'}?<br><small class="text-muted">Ta operacja nie może być cofnięta.</small>`;
+        
+        const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+        modal.show();
+        
+        // Update confirm button for bulk delete
+        const confirmBtn = document.getElementById('confirmBulkDelete');
+        confirmBtn.onclick = function() {
+            performBulkDelete();
+            modal.hide();
+        };
+    }
+    
+    function performBulkDelete() {
+        const selectedCheckboxes = document.querySelectorAll('.item-checkbox:checked');
+        const linkIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+        
+        if (linkIds.length === 0) return;
+        
+        fetch('/api/social/bulk-delete', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ ids: linkIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const count = data.deleted_count || linkIds.length;
+                window.toastManager.success(`Usunięto ${count} link${count === 1 ? '' : count < 5 ? 'i' : 'ów'} pomyślnie!`);
+                
+                // Remove deleted rows from table
+                linkIds.forEach(linkId => {
+                    const row = document.querySelector(`tr[data-link-id="${linkId}"]`);
+                    if (row) {
+                        row.remove();
+                    }
+                });
+                
+                updateBulkDeleteUI();
+            } else {
+                window.toastManager.error('Błąd podczas usuwania: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            window.toastManager.error('Wystąpił błąd podczas usuwania linków');
+        });
+    }
+    
+    // Event listeners for checkboxes
+    document.addEventListener('DOMContentLoaded', function() {
+        // Select all checkbox
+        const selectAllCheckbox = document.getElementById('selectAll');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateBulkDeleteUI();
+        });
+        }
+        
+        // Individual checkboxes
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('item-checkbox')) {
+                updateBulkDeleteUI();
+            }
+        });
+        
+        updateBulkDeleteUI();
+    });
+    
+    // Global functions for edit and delete
+    function editLink(linkId) {
+        // Find the link data from the table row
+        const row = document.querySelector(`tr[data-link-id="${linkId}"]`);
+        if (!row) {
+            console.error('Link row not found for ID:', linkId);
+            return;
+        }
+        
+        // Extract data from the row
+        const platform = row.querySelector('td:nth-child(3) strong').textContent.trim(); // Platform is 3rd column, get text from strong tag
+        const url = row.querySelector('td:nth-child(4) a').href; // URL is 4th column, get href from link
+        const order = row.querySelector('td:nth-child(2) .badge').textContent.trim(); // Order is 2nd column, get text from badge
+        
+        // Extract target value from badge text
+        const targetBadge = row.querySelector('td:nth-child(5) .badge');
+        let target = '_blank'; // default
+        if (targetBadge) {
+            const targetText = targetBadge.textContent.trim();
+            if (targetText.includes('Ta sama karta')) {
+                target = '_self';
+            } else if (targetText.includes('Ramka nadrzędna')) {
+                target = '_parent';
+            } else if (targetText.includes('Najwyższe okno')) {
+                target = '_top';
+            }
+        }
+        
+        // Extract active status from badge
+        const statusBadge = row.querySelector('td:nth-child(6) .badge');
+        const isActive = statusBadge ? statusBadge.textContent.includes('Aktywny') : false;
+        
+        // Populate the edit form
+        const editLinkId = document.getElementById('editLinkId');
+        const editLinkPlatform = document.getElementById('editLinkPlatform');
+        const editLinkUrl = document.getElementById('editLinkUrl');
+        const editLinkTarget = document.getElementById('editLinkTarget');
+        const editLinkOrder = document.getElementById('editLinkOrder');
+        const editLinkActive = document.getElementById('editLinkActive');
+        
+        if (editLinkId) editLinkId.value = linkId;
+        if (editLinkPlatform) editLinkPlatform.value = platform;
+        if (editLinkUrl) editLinkUrl.value = url;
+        if (editLinkTarget) editLinkTarget.value = target;
+        if (editLinkOrder) editLinkOrder.value = order;
+        if (editLinkActive) editLinkActive.checked = isActive;
+        
+        // Show the edit modal
+        const modal = new bootstrap.Modal(document.getElementById('editLinkModal'));
+        modal.show();
+    }
+    
+    function deleteLink(linkId) {
+        if (confirm('Czy na pewno chcesz usunąć ten link? Tej operacji nie można cofnąć.')) {
+            fetch(`/api/social/${linkId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.toastManager.success('Link został usunięty pomyślnie!');
+                    // Remove the row from the table
+                    const row = document.querySelector(`tr[data-link-id="${linkId}"]`);
+                    if (row) {
+                        row.remove();
+                    }
+                    updateBulkDeleteUI();
+                } else {
+                    window.toastManager.error('Błąd podczas usuwania: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.toastManager.error('Wystąpił błąd podczas usuwania linku');
+            });
+        }
+    }
+    
+    function showAddLinkModal() {
+        document.getElementById('addLinkForm').reset();
+        const modal = new bootstrap.Modal(document.getElementById('addLinkModal'));
+        modal.show();
+    }
+    
+    function confirmBulkDelete() {
+        const selectedCheckboxes = document.querySelectorAll('.item-checkbox:checked');
+        if (selectedCheckboxes.length === 0) {
+            window.toastManager.error('Nie wybrano żadnych linków do usunięcia');
+            return;
+        }
+        
+        if (confirm(`Czy na pewno chcesz usunąć ${selectedCheckboxes.length} wybranych linków? Tej operacji nie można cofnąć.`)) {
+            const linkIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+            
+            fetch('/api/social/bulk-delete', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ ids: linkIds })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.toastManager.success(`Usunięto ${data.deleted_count} linków pomyślnie!`);
+                    // Remove selected rows
+                    selectedCheckboxes.forEach(cb => {
+                        const row = cb.closest('tr');
+                        if (row) {
+                            row.remove();
+                        }
+                    });
+                    updateBulkDeleteUI();
+                } else {
+                    window.toastManager.error('Błąd podczas usuwania: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.toastManager.error('Wystąpił błąd podczas usuwania linków');
+            });
+        }
+    }
+</script>
+{% endblock %}

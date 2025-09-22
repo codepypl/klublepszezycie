@@ -134,3 +134,63 @@
 </div>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+    // View Registration
+    function viewRegistration(id, name, email, phone, presentationDate, status) {
+        document.getElementById('view_name').textContent = name;
+        document.getElementById('view_email').textContent = email;
+        document.getElementById('view_phone').textContent = phone;
+        document.getElementById('view_presentation_date').textContent = presentationDate || 'Brak daty';
+        document.getElementById('view_status').innerHTML = '<span class="admin-badge admin-badge-success">Potwierdzona</span>';
+        document.getElementById('view_date').textContent = new Date().toLocaleDateString('pl-PL');
+        new bootstrap.Modal(document.getElementById('viewRegistrationModal')).show();
+    }
+
+    // Delete Registration
+    function deleteRegistration(id, name) {
+        if (confirm(`Czy na pewno chcesz usunąć rejestrację użytkownika "${name}"?`)) {
+            fetch(`/api/registrations/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.toastManager.success('Rejestracja została usunięta!');
+                    location.reload();
+                } else {
+                    window.toastManager.error('Błąd: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.toastManager.error('Wystąpił błąd podczas usuwania rejestracji');
+            });
+        }
+    }
+
+    // Event listeners for buttons
+    document.addEventListener('click', function(event) {
+        if (event.target.closest('[data-action]')) {
+            const button = event.target.closest('[data-action]');
+            const action = button.dataset.action;
+            const id = button.dataset.id;
+            
+            switch (action) {
+                case 'view':
+                    const name = button.dataset.name;
+                    const email = button.dataset.email;
+                    const phone = button.dataset.phone;
+                    const presentationDate = button.dataset.presentationDate;
+                    const status = button.dataset.status;
+                    viewRegistration(id, name, email, phone, presentationDate, status);
+                    break;
+                case 'delete':
+                    const deleteName = button.dataset.name;
+                    deleteRegistration(id, deleteName);
+                    break;
+            }
+        }
+    });
+</script>
+{% endblock %}

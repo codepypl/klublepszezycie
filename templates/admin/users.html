@@ -8,11 +8,11 @@
 
 {% block page_actions %}
     <div class="d-flex justify-content-end gap-2 mb-3">
-        <button class="btn btn-warning" id="bulkEditBtn">
-            <i class="fas fa-pen me-2"></i>
+        <button class="btn btn-warning" id="bulkEditBtn" style="display: none; background-color: #d97706 !important; border-color: #d97706 !important; color: white !important;">
+            <i class="fas fa-edit me-2"></i>
             Edytuj Zaznaczone
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
@@ -320,7 +320,7 @@
                                         <button type="button" class="btn btn-sm admin-btn-outline" 
                                                 onclick="editUser({{ user.id }})" 
                                                 title="Edytuj użytkownika">
-                                            <i class="fas fa-pen"></i>
+                                            <i class="fas fa-edit"></i>
                                         </button>
                                         {% if not user.is_admin %}
                                         <button type="button" class="btn btn-sm admin-btn-danger-outline" 
@@ -380,3 +380,209 @@
     </div>
 {% endblock %}
 
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/utils/tooltip.js') }}"></script>
+<script>
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up pagination handlers for auto-initialization
+        {% if pagination %}
+        window.flaskPaginationData = {
+            page: {{ pagination.page }},
+            pages: {{ pagination.pages }},
+            total: {{ pagination.total }},
+            per_page: {{ pagination.per_page }}
+        };
+        
+        window.paginationHandlers = {
+            onPageChange: (page) => {
+                const perPage = {{ pagination.per_page if pagination else 10 }};
+                window.location.href = `{{ url_for('users.index') }}?page=${page}&per_page=${perPage}`;
+            },
+            onPerPageChange: (newPage, perPage) => {
+                window.location.href = `{{ url_for('users.index') }}?page=${newPage}&per_page=${perPage}`;
+            }
+        };
+        {% endif %}
+    });
+    
+    // View user profile function
+    function viewUserProfile(userId) {
+        const modal = new bootstrap.Modal(document.getElementById('userProfileModal'));
+        const content = document.getElementById('userProfileContent');
+        
+        // Show loading
+        content.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Ładowanie...</span>
+                </div>
+            </div>
+        `;
+        
+        modal.show();
+        
+        // Fetch user profile data
+        fetch(`/api/users/profile/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const user = data.user;
+                    const eventHistory = data.event_history || [];
+                    
+                    content.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-3">Podstawowe dane</h6>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Imię:</strong></td>
+                                        <td>${user.first_name}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Email:</strong></td>
+                                        <td><a href="mailto:${user.email}">${user.email}</a></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Członek klubu:</strong></td>
+                                        <td>
+                                            <span class="badge ${user.club_member ? 'bg-success' : 'bg-secondary'}">
+                                                ${user.club_member ? 'Tak' : 'Nie'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Ostatnie logowanie:</strong></td>
+                                        <td>${user.last_login ? formatDate(user.last_login) : 'Nigdy'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Data utworzenia konta:</strong></td>
+                                        <td>${formatDate(user.created_at)}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-3">Historia wydarzeń</h6>
+                                ${eventHistory.length > 0 ? `
+                                    <div class="list-group">
+                                        ${eventHistory.map(event => `
+                                            <div class="list-group-item">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1">${event.event_title}</h6>
+                                                    <small>${new Date(event.registration_date).toLocaleDateString('pl-PL')}</small>
+                                                </div>
+                                                <p class="mb-1">Data wydarzenia: ${event.event_date ? new Date(event.event_date).toLocaleDateString('pl-PL') : 'Nie określono'}</p>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : `
+                                    <p class="text-muted">Brak historii wydarzeń</p>
+                                `}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Błąd ładowania profilu: ${data.error}
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                content.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Błąd ładowania profilu: ${error.message}
+                    </div>
+                `;
+            });
+    }
+    
+    // Date formatting function
+    function formatDate(dateString) {
+        if (!dateString) return 'Brak';
+        const date = new Date(dateString);
+        const formatted = date.toLocaleDateString('pl-PL', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        return formatted;
+    }
+    
+    
+</script>
+
+<style>
+/* Hover effect for group IDs */
+.badge.admin-badge-primary:hover {
+    color: white !important;
+    background-color: #1e3a8a !important;
+}
+</style>
+
+<!-- Bulk Edit Modal -->
+<div class="modal fade" id="bulkEditModal" tabindex="-1" aria-labelledby="bulkEditModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkEditModalLabel">
+                    <i class="fas fa-edit me-2"></i>Edycja masowa użytkowników
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Zaznaczono <strong id="selectedCount">0</strong> użytkowników do edycji.
+                </div>
+                
+                <form id="bulkEditForm">
+                    <div class="mb-3">
+                        <label class="form-label">Członkostwo w klubie</label>
+                        <select class="form-select" id="bulkClubMember" name="club_member">
+                            <option value="">Nie zmieniaj</option>
+                            <option value="true">Ustaw jako członka klubu</option>
+                            <option value="false">Usuń z klubu</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Status konta</label>
+                        <select class="form-select" id="bulkStatus" name="is_active">
+                            <option value="">Nie zmieniaj</option>
+                            <option value="true">Aktywuj konto</option>
+                            <option value="false">Dezaktywuj konto</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Typ konta</label>
+                        <select class="form-select" id="bulkAccountType" name="account_type">
+                            <option value="">Nie zmieniaj</option>
+                            <option value="user">Użytkownik</option>
+                            <option value="admin">Administrator</option>
+                            <option value="ankieter">Ankieter</option>
+                            <option value="event_registration">Rejestracja na wydarzenia</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="button" class="btn btn-primary" id="confirmBulkEdit">
+                    <i class="fas fa-save me-2"></i>Zapisz zmiany
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- External JavaScript -->
+<script src="{{ url_for('static', filename='js/admin/users.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/email_groups.js') }}"></script>
+{% endblock %}

@@ -1,16 +1,19 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+{% extends "base.html" %}
+
+{% block title %}{{ tag.name }} - {{ config.get('SITE_NAME', 'Klub Lepsze Życie') }}{% endblock %}
+
+{% block description %}Artykuły z tagiem {{ tag.name }} na blogu Klubu Lepsze Życie{% endblock %}
+
+{% block meta %}
     {% set seo_data = get_blog_tag_seo(tag) %}
     {% include 'seo/meta_tags.html' %}
-    
-    
-</head>
-<body>
-    <!-- Navigation -->
+{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/user/blog/blog-tag.css') }}">
+{% endblock %}
+
+{% block navigation %}
     <nav class="navbar navbar-expand-lg navbar-light fixed-top bg-white shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bold text-primary" href="{{ url_for('public.index') }}">
@@ -59,226 +62,157 @@
             </div>
         </div>
     </nav>
+{% endblock %}
 
-    <!-- Main Content -->
-    <main>
-<div class="container py-5">
-    <div class="row">
-        <!-- Main Content -->
-        <div class="col-lg-8">
-            <div class="blog-header mb-5">
-                <!-- Breadcrumb -->
-                <nav aria-label="breadcrumb" class="mb-4">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{{ url_for('public.index') }}">Strona główna</a></li>
-                        <li class="breadcrumb-item"><a href="{{ url_for('blog.index') }}">Blog</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Tag: {{ tag.name }}</li>
-                    </ol>
-                </nav>
+{% block content %}
+    <!-- Tag Header -->
+    <section class="tag-header">
+        <div class="container">
+            <h1 class="tag-title">#{{ tag.name }}</h1>
+            <p class="tag-description">Artykuły z tagiem {{ tag.name }}</p>
+        </div>
+    </section>
 
-                <h1 class="display-4 fw-bold text-primary mb-3">
-                    <i class="fas fa-tag me-2"></i>
-                    Tag: {{ tag.name }}
-                </h1>
-                
+    <div class="container py-5">
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8">
                 <!-- Tag Stats -->
-                <div class="d-flex align-items-center text-muted mb-3">
-                    <span class="me-3">
-                        <i class="fas fa-file-alt me-1"></i>
-                        {{ posts.total }} artykułów
-                    </span>
+                <div class="tag-stats">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="tag-stat-item">
+                                <span class="tag-stat-number">{{ tag.posts_count }}</span>
+                                <span class="tag-stat-label">Artykułów</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="tag-stat-item">
+                                <span class="tag-stat-number">{{ tag.posts_count }}</span>
+                                <span class="tag-stat-label">Wszystkich postów</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Posts List -->
-            {% if posts.items %}
-                <div class="row">
+                <!-- Tag Posts -->
+                {% if posts.items %}
+                <div class="tag-posts">
                     {% for post in posts.items %}
-                    <div class="col-md-6 mb-4">
-                        <article class="card h-100 blog-card">
+                    <div class="tag-post-card">
+                        <div class="card">
                             {% if post.featured_image %}
                             <img src="{{ post.featured_image }}" class="card-img-top" alt="{{ post.title }}">
                             {% endif %}
-                            <div class="card-body d-flex flex-column">
-                                <div class="mb-2">
-                                    {% for category in post.categories %}
-                                    <span class="badge bg-primary me-1">{{ category.title }}</span>
-                                    {% endfor %}
-                                </div>
+                            <div class="card-body">
                                 <h5 class="card-title">
-                                    <a href="{{ get_post_url_with_category(post) }}" class="text-decoration-none">
-                                        {{ post.title }}
-                                    </a>
+                                    <a href="{{ get_post_url_with_category(post) }}">{{ post.title }}</a>
                                 </h5>
-                                <p class="card-text text-muted">{{ (post.excerpt or post.content[:150] + '...' if post.content|length > 150 else post.content)|safe }}</p>
-                                <div class="mt-auto">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">
-                                            <i class="fas fa-user me-1"></i>
-                                            {{ post.author.first_name or post.author.email }}
-                                        </small>
-                                        <small class="text-muted">
-                                            <i class="fas fa-calendar me-1"></i>
-                                            {{ post.published_at.strftime('%d.%m.%Y') if post.published_at else post.created_at.strftime('%d.%m.%Y') }}
-                                        </small>
-                                    </div>
-                                    {% if post.tags %}
-                                    <div class="mt-2">
-                                        {% for post_tag in post.tags %}
-                                        <span class="badge bg-light text-dark me-1 {% if post_tag.id == tag.id %}bg-primary text-white{% endif %}">{{ post_tag.name }}</span>
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                    
-                                    <!-- Przycisk Czytaj więcej -->
-                                    <div class="d-flex justify-content-end mt-3">
-                                        <a href="{{ get_post_url_with_category(post) }}" class="read-more">
-                                            Czytaj więcej <i class="fas fa-arrow-right ms-1"></i>
-                                        </a>
-                                    </div>
+                                <p class="card-text">{{ (post.excerpt or post.content[:150] + '...' if post.content|length > 150 else post.content)|striptags }}</p>
+                                <div class="card-meta">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>
+                                        {{ post.author.first_name or post.author.email }}
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ post.created_at.strftime('%d.%m.%Y') }}
+                                    </small>
                                 </div>
+                                <a href="{{ get_post_url_with_category(post) }}" class="read-more">
+                                    Czytaj więcej <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
                             </div>
-                        </article>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
 
                 <!-- Pagination -->
-                {% if posts.pages > 1 %}
-                <nav aria-label="Tag pagination">
-                    <ul class="pagination justify-content-center">
-                        {% if posts.has_prev %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('blog.tag_detail', slug=tag.slug, page=posts.prev_num) }}">Poprzednia</a>
-                        </li>
-                        {% endif %}
-                        
-                        {% for page_num in posts.iter_pages() %}
-                            {% if page_num %}
-                                {% if page_num != posts.page %}
-                                <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('blog.tag_detail', slug=tag.slug, page=page_num) }}">{{ page_num }}</a>
-                                </li>
-                                {% else %}
-                                <li class="page-item active">
-                                    <span class="page-link">{{ page_num }}</span>
-                                </li>
-                                {% endif %}
-                            {% else %}
-                            <li class="page-item disabled">
-                                <span class="page-link">…</span>
-                            </li>
-                            {% endif %}
-                        {% endfor %}
-                        
-                        {% if posts.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('blog.tag_detail', slug=tag.slug, page=posts.next_num) }}">Następna</a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
-            {% else %}
+                <div class="blog-pagination">
+                    <div id="pagination" class="pagination-container" 
+                         data-show-info="true" 
+                         data-show-per-page="false" 
+                         data-max-visible-pages="5">
+                    </div>
+                </div>
+                {% else %}
                 <div class="text-center py-5">
                     <i class="fas fa-tag fa-3x text-muted mb-3"></i>
                     <h3 class="text-muted">Brak artykułów z tym tagiem</h3>
-                    <p class="text-muted">Wkrótce pojawią się tutaj pierwsze artykuły z tagiem "{{ tag.name }}".</p>
-                    <a href="{{ url_for('blog.index') }}" class="btn btn-primary">Wróć do bloga</a>
-                </div>
-            {% endif %}
-        </div>
-
-        <!-- Sidebar -->
-        <div class="col-lg-4">
-            <div class="blog-sidebar">
-                <!-- Categories -->
-                {% if categories %}
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-folder me-2"></i>
-                            Kategorie
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <ul class="list-unstyled mb-0">
-                            {% for category in categories %}
-                            <li class="mb-2">
-                                <a href="{{ get_category_url_with_hierarchy(category) }}" class="text-decoration-none">
-                                    {{ category.title }}
-                                    <span class="badge bg-secondary ms-2">{{ category.posts_count }}</span>
-                                </a>
-                                {% if category.children %}
-                                <ul class="list-unstyled ms-3 mt-1">
-                                    {% for child in category.children %}
-                                    {% if child.is_active %}
-                                    <li class="mb-1">
-                                        <a href="{{ get_category_url_with_hierarchy(child) }}" class="text-decoration-none text-muted small">
-                                            {{ child.title }}
-                                            <span class="badge bg-light text-dark ms-1">{{ child.posts_count }}</span>
-                                        </a>
-                                    </li>
-                                    {% endif %}
-                                    {% endfor %}
-                                </ul>
-                                {% endif %}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
+                    <p class="text-muted">Wkrótce pojawią się tutaj pierwsze artykuły.</p>
                 </div>
                 {% endif %}
+            </div>
 
-                <!-- Popular Tags -->
-                {% if popular_tags %}
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-tags me-2"></i>
-                            Popularne tagi
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="tag-cloud">
-                            {% for popular_tag in popular_tags %}
-                            <a href="{{ url_for('blog.tag_detail', slug=popular_tag.slug) }}" 
-                               class="tag-cloud-item {% if popular_tag.id == tag.id %}current-tag{% endif %}" 
-                               data-count="{{ popular_tag.posts_count }}">
-                                {{ popular_tag.name }}
-                            </a>
-                            {% endfor %}
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <div class="blog-sidebar">
+                    <!-- Categories -->
+                    {% if categories %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="mb-3">
+                                <i class="fas fa-folder me-2"></i>
+                                Kategorie
+                            </h5>
+                            <ul class="categories-list">
+                                {% for category in categories %}
+                                <li>
+                                    <a href="{{ get_category_url_with_hierarchy(category) }}">
+                                        {{ category.title }}
+                                        <span class="badge">{{ category.posts_count }}</span>
+                                    </a>
+                                    {% if category.children %}
+                                    <ul class="categories-list ms-3 mt-2">
+                                        {% for child in category.children %}
+                                        {% if child.is_active %}
+                                        <li>
+                                            <a href="{{ get_category_url_with_hierarchy(child) }}" class="small">
+                                                {{ child.title }}
+                                                <span class="badge">{{ child.posts_count }}</span>
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
                         </div>
                     </div>
-                </div>
-                {% endif %}
+                    {% endif %}
 
-                <!-- Tag Info -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Informacje o tagu
-                        </h5>
+                    <!-- Tag Cloud -->
+                    {% if popular_tags %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="mb-3">
+                                <i class="fas fa-tags me-2"></i>
+                                Tagi
+                            </h5>
+                            <div class="tag-cloud">
+                                <div class="tag-cloud-container">
+                                    {% for tag_item in popular_tags %}
+                                    <a href="{{ url_for('blog.tag_detail', slug=tag_item.slug) }}" 
+                                       class="tag-cloud-item {% if tag_item.id == tag.id %}current-tag{% endif %}" 
+                                       data-count="{{ tag_item.posts_count }}">
+                                        {{ tag_item.name }}
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <p class="card-text">
-                            <strong>Nazwa:</strong> {{ tag.name }}<br>
-                            <strong>Artykułów:</strong> {{ posts.total }}<br>
-                            {% if tag.created_at %}
-                            <strong>Utworzony:</strong> {{ tag.created_at.strftime('%d.%m.%Y') }}
-                            {% endif %}
-                        </p>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
-</div>
-</div>
-    </main>
+{% endblock %}
 
-    <!-- Footer -->
+{% block footer %}
     <footer class="bg-dark text-white py-5">
         <div class="container">
             <div class="row">
@@ -317,7 +251,7 @@
             <hr class="my-4">
             <div class="row align-items-center">
                 <div class="col-md-6">
-                    <p class="mb-0 text-light">&copy; 2024 {{ footer_settings.company_name or 'Klub Lepsze Życie' }}. Wszystkie prawa zastrzeżone.</p>
+                    <p class="mb-0 text-light">&copy; 2025 {{ footer_settings.company_name or 'Klub Lepsze Życie' }}. Wszystkie prawa zastrzeżone.</p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     {% if footer_settings.show_privacy_policy %}
@@ -330,7 +264,4 @@
             </div>
         </div>
     </footer>
-
-    
-</body>
-</html>
+{% endblock %}

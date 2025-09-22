@@ -397,7 +397,7 @@ function toggleSidebar() {
         // Expand sidebar
         sidebar.classList.remove('collapsed');
         if (mainContent) {
-            mainContent.style.marginLeft = '280px';
+            mainContent.style.marginLeft = '';
             mainContent.style.marginRight = '';
             mainContent.style.maxWidth = '';
         }
@@ -429,7 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     } else {
         if (mainContent) {
-            mainContent.style.marginLeft = '280px';
+            mainContent.style.marginLeft = '';
             mainContent.style.marginRight = '';
             mainContent.style.maxWidth = '';
         }

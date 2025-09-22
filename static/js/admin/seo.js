@@ -163,6 +163,11 @@ function deleteSeo(id) {
 
 // Initialize event listeners when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    if (!window.location.pathname.includes('seo')) {
+        console.log('Not on SEO page, skipping initialization');
+        return;
+    }
+    
     // Form submissions
     const addSeoForm = document.getElementById('addSeoForm');
     if (addSeoForm) {

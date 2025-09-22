@@ -147,3 +147,82 @@
     </div>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+// Global variables
+let dashboardRefreshInterval;
+
+// Load statistics from API
+async function loadDashboardStats() {
+    try {
+        const response = await fetch('/api/crm/agent/queue-status');
+        const data = await response.json();
+        
+        if (data.success) {
+            // Today's statistics
+            document.getElementById('leadsToday').textContent = data.today_stats.leads || 0;
+            document.getElementById('answeredToday').textContent = (data.today_stats.leads || 0) + (data.today_stats.rejections || 0) + (data.today_stats.callbacks || 0);
+            document.getElementById('notAnsweredToday').textContent = (data.today_stats.no_answer || 0) + (data.today_stats.busy || 0) + (data.today_stats.wrong_number || 0);
+            document.getElementById('callbacksToday').textContent = data.today_stats.callbacks || 0;
+            
+            // Total statistics
+            document.getElementById('totalAnswered').textContent = (data.total_stats.leads || 0) + (data.total_stats.rejections || 0) + (data.total_stats.callbacks || 0);
+            document.getElementById('totalNotAnswered').textContent = (data.total_stats.no_answer || 0) + (data.total_stats.busy || 0) + (data.total_stats.wrong_number || 0);
+            document.getElementById('totalCallbacks').textContent = data.total_stats.callbacks || 0;
+            
+            // Time statistics
+            document.getElementById('longestCallToday').textContent = formatDuration(data.today_stats.longest_call_seconds || 0);
+            document.getElementById('avgCallTime').textContent = formatDuration(data.today_stats.avg_call_time_seconds || 0);
+            
+            // Calculate success rate
+            const totalCalls = (data.today_stats.leads || 0) + (data.today_stats.rejections || 0) + 
+                              (data.today_stats.callbacks || 0) + (data.today_stats.no_answer || 0) + 
+                              (data.today_stats.busy || 0) + (data.today_stats.wrong_number || 0);
+            const successRate = totalCalls > 0 ? Math.round((data.today_stats.leads || 0) / totalCalls * 100) : 0;
+            document.getElementById('successRate').textContent = successRate + '%';
+            
+            // Queue count
+            const queueCount = (data.queue.callbacks || 0) + (data.queue.potentials || 0) + (data.queue.new_contacts || 0);
+            document.getElementById('queueCount').textContent = queueCount;
+            
+            // Total contacts
+            document.getElementById('totalContacts').textContent = data.total_contacts || 0;
+        } else {
+            console.error('Error loading dashboard stats:', data.error);
+        }
+    } catch (error) {
+        console.error('Error loading dashboard stats:', error);
+    }
+}
+
+function formatDuration(seconds) {
+    if (!seconds || seconds < 0) return '0:00';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    } else {
+        return `${minutes}:${secs.toString().padStart(2, '0')}`;
+    }
+}
+
+// Refresh dashboard manually
+function refreshDashboard() {
+    loadDashboardStats();
+}
+
+// Auto-refresh is now handled by refreshAfterCRUD() system
+
+// Load stats on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Load initial data
+    loadDashboardStats();
+    
+    // Global refresh system will handle auto-refresh
+    console.log('🔄 CRM Dashboard initialized - global refresh system will handle updates');
+});
+</script>
+{% endblock %}

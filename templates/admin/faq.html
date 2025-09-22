@@ -12,7 +12,7 @@
             <i class="fas fa-plus me-2"></i>
             Dodaj Pytanie
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
@@ -54,7 +54,7 @@
                                 <td>
                                     <strong>{{ faq.question }}</strong>
                                 </td>
-                                <td>
+                                <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">
                                     {{ faq.answer }}
                                 </td>
 
@@ -68,7 +68,7 @@
                                 <td>
                                     <div class="btn-group" role="group">
                                         <button class="btn btn-sm admin-btn-outline" onclick="editFaq({{ faq.id }})">
-                                            <i class="fas fa-pen"></i>
+                                            <i class="fas fa-edit"></i>
                                         </button>
                                         <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteFaq({{ faq.id }})">
                                             <i class="fas fa-trash"></i>
@@ -145,7 +145,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-pen me-2"></i>Edytuj Pytanie FAQ
+                        <i class="fas fa-edit me-2"></i>Edytuj Pytanie FAQ
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -184,3 +184,21 @@
     </div>
 {% endblock %}
 
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin/faq.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up pagination handlers for auto-initialization
+    window.paginationHandlers = {
+        onPageChange: (page) => {
+            // FAQ don't have server-side pagination, so this is just for UI
+            console.log('Page changed to:', page);
+        },
+        onPerPageChange: (newPage, perPage) => {
+            // FAQ don't have server-side pagination, so this is just for UI
+            console.log('Per page changed to:', perPage);
+        }
+    };
+});
+</script>
+{% endblock %}

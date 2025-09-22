@@ -97,11 +97,15 @@ class GroupManager:
     def add_user_to_club_members(self, user_id):
         """Dodaje użytkownika do grupy członków klubu"""
         try:
-            # Znajdź lub utwórz grupę członków
-            group = UserGroup.query.filter_by(
-                name="Członkowie klubu",
-                group_type='club_members'
-            ).first()
+            # Znajdź grupę członków klubu (ID 19)
+            group = UserGroup.query.get(19)
+            
+            # Fallback: jeśli grupa o ID 19 nie istnieje, szukaj po nazwie
+            if not group:
+                group = UserGroup.query.filter_by(
+                    name="Członkowie klubu",
+                    group_type='club_members'
+                ).first()
             
             if not group:
                 group = UserGroup(
@@ -137,6 +141,10 @@ class GroupManager:
             )
             
             db.session.add(member)
+            
+            # Ustaw group_id w tabeli users
+            user.group_id = group.id
+            db.session.add(user)
             
             # Aktualizuj liczbę członków
             group.member_count = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).count()

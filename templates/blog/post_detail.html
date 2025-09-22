@@ -1,16 +1,19 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }} - {{ config.get('SITE_NAME', 'Klub Lepsze Życie') }}{% endblock %}
+
+{% block description %}{{ post.excerpt or post.content[:160]|striptags }}{% endblock %}
+
+{% block meta %}
     {% set seo_data = get_blog_post_seo(post) %}
     {% include 'seo/meta_tags.html' %}
-    
-    
-</head>
-<body>
-    <!-- Navigation -->
+{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/user/blog/blog-post.css') }}">
+{% endblock %}
+
+{% block navigation %}
     <nav class="navbar navbar-expand-lg navbar-light fixed-top bg-white shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bold text-primary" href="{{ url_for('public.index') }}">
@@ -59,347 +62,160 @@
             </div>
         </div>
     </nav>
+{% endblock %}
+
+{% block content %}
+    <!-- Hero Section -->
+    <section class="blog-post-hero">
+        <div class="container">
+            <div class="blog-post-hero-content text-center">
+                <!-- Post Title -->
+                <h1 class="blog-post-title">{{ post.title }}</h1>
+            </div>
+        </div>
+    </section>
 
     <!-- Main Content -->
-    <main>
-        <!-- Hero Section -->
-        <section class="blog-post-hero">
-            <div class="container">
-                <div class="blog-post-hero-content text-center">
-                    <!-- Post Header -->
-                    <header class="mb-5">
-                        <h1 class="blog-post-title">{{ post.title }}</h1>
-                    </header>
-                </div>
-            </div>
-        </section>
-
-        <!-- Article Content -->
-        <section class="blog-post-content">
-            <div class="container">
-                <!-- Breadcrumb -->
-                <nav aria-label="breadcrumb" class="py-4">
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="{{ url_for('public.index') }}">Strona główna</a></li>
-                        <li class="breadcrumb-item"><a href="{{ url_for('blog.index') }}">Blog</a></li>
-                        {% if primary_category %}
-                            {% if primary_category.parent %}
-                                <li class="breadcrumb-item"><a href="{{ get_category_url_with_hierarchy(primary_category.parent) }}">{{ primary_category.parent.title }}</a></li>
-                            {% endif %}
-                            <li class="breadcrumb-item"><a href="{{ get_category_url_with_hierarchy(primary_category) }}">{{ primary_category.title }}</a></li>
+    <div class="blog-post-content">
+        <div class="container">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('public.index') }}">Strona główna</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('blog.index') }}">Blog</a>
+                    </li>
+                    {% if post.category %}
+                    <li class="breadcrumb-item">
+                        <a href="{{ get_category_url_with_hierarchy(post.category) }}">{{ post.category.title }}</a>
+                    </li>
+                    {% endif %}
+                    <li class="breadcrumb-item active" aria-current="page">{{ post.title }}</li>
+                </ol>
+            </nav>
+            
+            <div class="row">
+                <!-- Main Article -->
+                <div class="col-lg-8">
+                    <article class="blog-post-article">
+                        <!-- Featured Image -->
+                        {% if post.featured_image %}
+                        <div class="post-featured-image mb-4">
+                            <img src="{{ post.featured_image }}" alt="{{ post.title }}" class="img-fluid">
+                        </div>
                         {% endif %}
-                        <li class="breadcrumb-item active" aria-current="page">{{ post.title }}</li>
-                    </ol>
-                </nav>
-                <!-- Featured Image -->
-                {% if post.featured_image %}
-                <div class="post-featured-image mb-4">
-                    <img src="{{ post.featured_image }}" alt="{{ post.title }}">
+
+                        <!-- Post Content -->
+                        <div class="post-content">
+                            {{ post.content|safe }}
+                        </div>
+
+                        <!-- Social Sharing -->
+                        <div class="social-sharing">
+                            <h5>Udostępnij ten artykuł:</h5>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url }}" target="_blank" class="btn btn-primary btn-sm">
+                                    <i class="fab fa-facebook-f me-1"></i>Facebook
+                                </a>
+                                <a href="https://twitter.com/intent/tweet?url={{ request.url }}&text={{ post.title }}" target="_blank" class="btn btn-info btn-sm">
+                                    <i class="fab fa-twitter me-1"></i>Twitter
+                                </a>
+                                <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.url }}" target="_blank" class="btn btn-secondary btn-sm">
+                                    <i class="fab fa-linkedin-in me-1"></i>LinkedIn
+                                </a>
+                                <a href="mailto:?subject={{ post.title }}&body={{ request.url }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-envelope me-1"></i>Email
+                                </a>
+                            </div>
+                        </div>
+                    </article>
                 </div>
-                {% endif %}
-                
-                <div class="row">
-                    <!-- Main Content -->
-                    <div class="col-lg-8">
-                        <article class="blog-post-article">
 
-                            <!-- Post Content -->
-                            <div class="post-content">
-                                {{ post.content|safe }}
-                            </div>
-
-                            <!-- Post Images Gallery -->
-                            {% if post.images.filter_by(is_active=True).all() %}
-                            <div class="post-images-gallery mb-5">
-                                <h5 class="mb-3">Galeria zdjęć</h5>
-                                <div class="row g-3" id="imagesGallery">
-                                    {% for image in post.images.filter_by(is_active=True).all() %}
-                                    <div class="col-md-4 col-sm-6">
-                                        <div class="image-gallery-item" data-bs-toggle="modal" data-bs-target="#imageLightboxModal" 
-                                             data-image-src="{{ image.image_url }}" data-image-caption="{{ image.caption or '' }}">
-                                            <img src="{{ image.image_url }}" class="img-fluid rounded" alt="{{ image.alt_text or '' }}" 
-                                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjhGQUZDIi8+CjxwYXRoIGQ9Ik0xMjUgMTAwTDE0MCA4NUwxNjAgMTAwTDE4MCA4MEwyMDAgMTAwVjEzMEgxMDBWMTAwWiIgZmlsbD0iI0QxRDVEQiIvPgo8L3N2Zz4K'">
-                                            {% if image.caption %}
-                                            <div class="image-caption-overlay">
-                                                <small class="text-white">{{ image.caption }}</small>
-                                            </div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            {% endif %}
-
-
-                            <!-- Comments Section -->
-                            {% if post.allow_comments %}
-                            <div class="comments-section">
-                                <h5 class="mb-4">Komentarze ({{ post.comments.count() }})</h5>
-                                
-                                <!-- Add Comment Form -->
-                                <div class="card mb-4">
-                                    <div class="card-body">
-                                        <h6 class="card-title">Dodaj komentarz</h6>
-                                        <form id="commentForm">
-                                            <input type="hidden" name="post_id" value="{{ post.id }}">
-                                            <div class="row">
-                                                <div class="col-md-6 mb-3">
-                                                    <label for="author_name" class="form-label">Nick lub imię *</label>
-                                                    <input type="text" class="form-control" id="author_name" name="author_name" required>
-                                                </div>
-                                                <div class="col-md-6 mb-3">
-                                                    <label for="author_email" class="form-label">Email *</label>
-                                                    <input type="email" class="form-control" id="author_email" name="author_email" required>
-                                                </div>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="content" class="form-label">Komentarz *</label>
-                                                <textarea class="form-control" id="content" name="content" rows="4" required></textarea>
-                                            </div>
-                                            <button type="submit" class="btn btn-primary">Dodaj komentarz</button>
-                                        </form>
-                                    </div>
-                                </div>
-
-                                <!-- Comments List -->
-                                {% if comments %}
-                                <div class="comments-list">
-                                    {% for comment in comments %}
-                                    {% if not comment.parent_id %}
-                                    <div class="comment-item mb-4" data-comment-id="{{ comment.id }}">
-                                        <div class="card shadow-sm">
-                                            <div class="card-body">
-                                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                                    <h6 class="card-title mb-0 text-dark">
-                                                        <i class="fas fa-user me-2 text-muted"></i>{{ comment.author_name }}
-                                                    </h6>
-                                                    <small class="text-muted">
-                                                        <i class="fas fa-clock me-1"></i>{{ comment.created_at.strftime('%d.%m.%Y %H:%M') }}
-                                                    </small>
-                                                </div>
-                                                <p class="card-text mb-3">{{ comment.content }}</p>
-                                                <div class="comment-actions">
-                                                    <button class="btn btn-sm btn-outline-primary reply-btn" data-comment-id="{{ comment.id }}">
-                                                        <i class="fas fa-reply me-1"></i>Odpowiedz
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Replies -->
-                                        {% if comment.replies %}
-                                        <div class="replies ms-4 mt-2">
-                                            {% for reply in comment.replies %}
-                                            <div class="reply-item mb-2">
-                                                <div class="card border-start border-3 border-primary">
-                                                    <div class="card-body py-2">
-                                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                                            <h6 class="card-title mb-0 small text-primary">
-                                                                <i class="fas fa-reply me-1"></i>{{ reply.author_name }}
-                                                            </h6>
-                                                            <small class="text-muted">{{ reply.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
-                                                        </div>
-                                                        <p class="card-text small mb-0">{{ reply.content }}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {% endfor %}
-                                        </div>
-                                        {% endif %}
-                                        
-                                        <!-- Reply Form (hidden by default) -->
-                                        <div class="reply-form mt-3">
-                                            <div class="card border-primary">
-                                                <div class="card-header bg-light">
-                                                    <h6 class="card-title mb-0 text-primary">
-                                                        <i class="fas fa-reply me-2"></i>Odpowiedz na komentarz
-                                                    </h6>
-                                                </div>
-                                                <div class="card-body">
-                                                    <form class="reply-comment-form">
-                                                        <input type="hidden" name="post_id" value="{{ post.id }}">
-                                                        <input type="hidden" name="parent_id" value="{{ comment.id }}">
-                                                        <div class="row">
-                                                            <div class="col-md-6 mb-2">
-                                                                <input type="text" class="form-control form-control-sm" name="author_name" placeholder="Nick lub imię" required>
-                                                            </div>
-                                                            <div class="col-md-6 mb-2">
-                                                                <input type="email" class="form-control form-control-sm" name="author_email" placeholder="Email" required>
-                                                            </div>
-                                                        </div>
-                                                        <div class="mb-2">
-                                                            <textarea class="form-control form-control-sm" name="content" rows="2" placeholder="Twoja odpowiedź..." required></textarea>
-                                                        </div>
-                                                        <div class="d-flex gap-2">
-                                                            <button type="submit" class="btn btn-primary btn-sm">
-                                                                <i class="fas fa-paper-plane me-1"></i>Wyślij odpowiedź
-                                                            </button>
-                                                            <button type="button" class="btn btn-outline-secondary btn-sm cancel-reply">Anuluj</button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <div class="blog-sidebar">
+                        <!-- Post Meta Info -->
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="mb-3">Informacje o artykule</h5>
+                                <div class="post-meta-info">
+                                    <p><strong>Autor:</strong> <span class="text-muted">{{ post.author.first_name or post.author.email }}</span></p>
+                                    <p><strong>Data publikacji:</strong> <span class="text-muted">{{ post.created_at.strftime('%d.%m.%Y') }}</span></p>
+                                    {% if post.category %}
+                                    <p><strong>Kategoria:</strong> 
+                                        <a href="{{ get_category_url_with_hierarchy(post.category) }}" class="post-category-badge">
+                                            {{ post.category.title }}
+                                        </a>
+                                    </p>
+                                    {% endif %}
+                                    {% if post.tags %}
+                                    <p><strong>Tagi:</strong></p>
+                                    <div class="post-tags-list">
+                                        {% for tag in post.tags %}
+                                        <a href="{{ url_for('blog.tag_detail', slug=tag.slug) }}" class="post-tag-badge">
+                                            {{ tag.name }}
+                                        </a>
+                                        {% endfor %}
                                     </div>
                                     {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Categories -->
+                        {% if categories %}
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-folder me-2"></i>
+                                    Kategorie
+                                </h5>
+                                <ul class="list-unstyled">
+                                    {% for category in categories %}
+                                    <li>
+                                        <a href="{{ get_category_url_with_hierarchy(category) }}">
+                                            {{ category.title }}
+                                            <span class="badge">{{ category.posts_count }}</span>
+                                        </a>
+                                    </li>
                                     {% endfor %}
-                                </div>
-                                {% else %}
-                                <div class="text-center text-muted py-4">
-                                    <i class="fas fa-comments fa-2x mb-2"></i>
-                                    <p>Brak komentarzy. Bądź pierwszy!</p>
-                                </div>
-                                {% endif %}
+                                </ul>
                             </div>
-                            {% endif %}
+                        </div>
+                        {% endif %}
 
-                        </article>
-                    </div>
-
-                    <!-- Sidebar -->
-                    <div class="col-lg-4">
-                        <div class="blog-sidebar">
-                            <!-- Post Meta Info -->
-                            <div class="card mb-4">
-                                <div class="card-body">
-                                    <h5 class="mb-3">
-                                        <i class="fas fa-info-circle me-2"></i>
-                                        Informacje o artykule
-                                    </h5>
-                                    <div class="post-meta-info">
-                                        <div class="mb-3">
-                                            <strong><i class="fas fa-user me-2"></i>Autor:</strong>
-                                            <span class="text-muted">{{ post.author.first_name or post.author.email }}</span>
-                                        </div>
-                                        <div class="mb-3">
-                                            <strong><i class="fas fa-calendar me-2"></i>Data publikacji:</strong>
-                                            <span class="text-muted">{{ post.published_at.strftime('%d.%m.%Y') if post.published_at else post.created_at.strftime('%d.%m.%Y') }}</span>
-                                        </div>
-                                        {% if post.comments.count() > 0 %}
-                                        <div class="mb-3">
-                                            <strong><i class="fas fa-comments me-2"></i>Komentarze:</strong>
-                                            <span class="text-muted">{{ post.comments.count() }}</span>
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Categories -->
-                            {% if categories %}
-                            <div class="card mb-4">
-                                <div class="card-body">
-                                    <h5 class="mb-3">
-                                        <i class="fas fa-folder me-2"></i>
-                                        Kategorie
-                                    </h5>
-                                    <ul class="list-unstyled mb-0">
-                                        {% for category in categories %}
-                                        <li class="mb-2">
-                                            <a href="{{ url_for('blog.category_detail', slug=category.slug) }}" class="text-decoration-none">
-                                                {{ category.title }}
-                                                <span class="badge bg-secondary ms-2">{{ category.posts_count }}</span>
-                                            </a>
-                                        </li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            <!-- Post Tags -->
-                            {% if post.tags %}
-                            <div class="card mb-4">
-                                <div class="card-body">
-                                    <h5 class="mb-3">
-                                        <i class="fas fa-tags me-2"></i>
-                                        Tagi artykułu
-                                    </h5>
-                                    <div class="d-flex flex-wrap gap-2">
-                                        {% for tag in post.tags %}
-                                        <a href="{{ url_for('blog.tag_detail', slug=tag.slug) }}" class="badge bg-primary text-decoration-none tag-badge">
+                        <!-- Tag Cloud -->
+                        {% if popular_tags %}
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-tags me-2"></i>
+                                    Tagi
+                                </h5>
+                                <div class="tag-cloud">
+                                    <div class="tag-cloud-container">
+                                        {% for tag in popular_tags %}
+                                        <a href="{{ url_for('blog.tag_detail', slug=tag.slug) }}" 
+                                           class="tag-cloud-item" 
+                                           data-count="{{ tag.posts_count }}">
                                             {{ tag.name }}
                                         </a>
                                         {% endfor %}
                                     </div>
                                 </div>
                             </div>
-                            {% endif %}
-
-                            <!-- Related Posts -->
-                            {% if related_posts %}
-                            <div class="card mb-4">
-                                <div class="card-body">
-                                    <h5 class="mb-3">
-                                        <i class="fas fa-newspaper me-2"></i>
-                                        Podobne artykuły
-                                    </h5>
-                                    {% for related_post in related_posts %}
-                                    <div class="mb-3">
-                                        <h6 class="mb-1">
-                                            <a href="{{ get_post_url_with_category(related_post) }}" class="text-decoration-none">
-                                                {{ related_post.title }}
-                                            </a>
-                                        </h6>
-                                        <small class="text-muted">
-                                            <i class="fas fa-calendar me-1"></i>
-                                            {{ related_post.published_at.strftime('%d.%m.%Y') if related_post.published_at else related_post.created_at.strftime('%d.%m.%Y') }}
-                                        </small>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            {% endif %}
-
-
-                            <!-- Social Sharing -->
-                            <div class="social-sharing">
-                                <h5>Udostępnij artykuł:</h5>
-                                <div class="d-flex gap-2 flex-wrap">
-                                    <!-- Facebook -->
-                                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url|urlencode }}&quote={{ (post.title + ' - ' + (post.excerpt or post.content[:100]|striptags))|urlencode }}" 
-                                       target="_blank" class="btn btn-outline-primary btn-sm" title="Udostępnij na Facebook">
-                                        <i class="fab fa-facebook-f me-1"></i>
-                                        Facebook
-                                    </a>
-                                    
-                                    <!-- Twitter/X -->
-                                    <a href="https://twitter.com/intent/tweet?url={{ request.url|urlencode }}&text={{ (post.title + ' - ' + (post.excerpt or post.content[:100]|striptags))|urlencode }}&via={{ config.get('SITE_NAME', 'KlubLepszeZycie')|urlencode }}" 
-                                       target="_blank" class="btn btn-outline-info btn-sm" title="Udostępnij na X (Twitter)">
-                                        <i class="fab fa-x-twitter me-1"></i>
-                                        X
-                                    </a>
-                                    
-                                    <!-- LinkedIn -->
-                                    <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.url|urlencode }}&title={{ post.title|urlencode }}&summary={{ (post.excerpt or post.content[:100]|striptags)|urlencode }}" 
-                                       target="_blank" class="btn btn-outline-primary btn-sm" title="Udostępnij na LinkedIn">
-                                        <i class="fab fa-linkedin-in me-1"></i>
-                                        LinkedIn
-                                    </a>
-                                    
-                                    <!-- WhatsApp -->
-                                    <a href="https://wa.me/?text={{ (post.title + ' - ' + (post.excerpt or post.content[:100]|striptags) + ' ' + request.url)|urlencode }}" 
-                                       target="_blank" class="btn btn-outline-success btn-sm" title="Udostępnij na WhatsApp">
-                                        <i class="fab fa-whatsapp me-1"></i>
-                                        WhatsApp
-                                    </a>
-                                    
-                                    <!-- Copy Link -->
-                                    <button onclick="copyToClipboard('{{ request.url }}')" class="btn btn-outline-dark btn-sm" title="Skopiuj link">
-                                        <i class="fas fa-copy me-1"></i>
-                                        Kopiuj
-                                    </button>
-                                </div>
-                            </div>
                         </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
-        </section>
-    </main>
+        </div>
+    </div>
+{% endblock %}
 
-    <!-- Footer -->
+{% block footer %}
     <footer class="bg-dark text-white py-5">
         <div class="container">
             <div class="row">
@@ -438,7 +254,7 @@
             <hr class="my-4">
             <div class="row align-items-center">
                 <div class="col-md-6">
-                    <p class="mb-0 text-light">&copy; 2024 {{ footer_settings.company_name or 'Klub Lepsze Życie' }}. Wszystkie prawa zastrzeżone.</p>
+                    <p class="mb-0 text-light">&copy; 2025 {{ footer_settings.company_name or 'Klub Lepsze Życie' }}. Wszystkie prawa zastrzeżone.</p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     {% if footer_settings.show_privacy_policy %}
@@ -451,34 +267,4 @@
             </div>
         </div>
     </footer>
-
-    
-    <script src="{{ url_for('static', filename='js/word-cloud.js') }}"></script>
-
-
-<!-- Image Lightbox Modal -->
-<div class="modal fade" id="imageLightboxModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content bg-dark">
-            <div class="modal-header border-0">
-                <h5 class="modal-title text-white" id="lightboxImageTitle">Obraz</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center p-0">
-                <img id="lightboxImage" src="" class="img-fluid" alt="">
-                <div id="lightboxCaption" class="text-white p-3"></div>
-            </div>
-            <div class="modal-footer border-0 justify-content-center">
-                <button type="button" class="btn btn-outline-light" id="prevImageBtn">
-                    <i class="fas fa-chevron-left me-1"></i>Poprzedni
-                </button>
-                <button type="button" class="btn btn-outline-light" id="nextImageBtn">
-                    Następny<i class="fas fa-chevron-right ms-1"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
+{% endblock %}

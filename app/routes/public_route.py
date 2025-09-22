@@ -382,6 +382,11 @@ def check_registration(event_id):
 def register_event(event_id):
     """Register for event with new user management logic"""
     try:
+        # Only accept JSON data
+        if not request.is_json:
+            print("❌ Content-Type must be application/json")
+            return jsonify({'success': False, 'message': 'Content-Type must be application/json'}), 400
+        
         data = request.get_json()
         print(f"🔍 Event registration data: {data}")
         
@@ -415,7 +420,7 @@ def register_event(event_id):
         # Get event
         event = EventSchedule.query.get(event_id)
         if not event:
-            return jsonify({'error': 'Event not found'}), 404
+            return jsonify({'success': False, 'message': 'Wydarzenie nie zostało znalezione'}), 404
         
         # Check if registration is still open
         now = get_local_now()

@@ -78,7 +78,8 @@ class PublicController:
                     'floating_cards_data': section.floating_cards_data,
                     'final_text': section.final_text,
                     'background_image': section.background_image,
-                    'subtitle': section.subtitle
+                    'subtitle': section.subtitle,
+                    'css_class': section.css_class
                 } for section in sections_db
             ]
             

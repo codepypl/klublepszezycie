@@ -1,16 +1,19 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+{% extends "base.html" %}
+
+{% block title %}Wyszukiwanie - {{ config.get('SITE_NAME', 'Klub Lepsze Życie') }}{% endblock %}
+
+{% block description %}Wyszukaj artykuły na blogu Klubu Lepsze Życie{% endblock %}
+
+{% block meta %}
     {% set seo_data = get_seo_settings('blog_search') %}
     {% include 'seo/meta_tags.html' %}
-    
-    
-</head>
-<body>
-    <!-- Navigation -->
+{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/user/blog/blog-search.css') }}">
+{% endblock %}
+
+{% block navigation %}
     <nav class="navbar navbar-expand-lg navbar-light fixed-top bg-white shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bold text-primary" href="{{ url_for('public.index') }}">
@@ -59,56 +62,50 @@
             </div>
         </div>
     </nav>
+{% endblock %}
 
+{% block content %}
     <!-- Search Header -->
     <section class="search-header">
         <div class="container">
-            <div class="search-header-content text-center">
+            <div class="search-header-content">
                 <!-- Breadcrumb -->
                 <nav aria-label="breadcrumb" class="mb-4">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{{ url_for('public.index') }}">Strona główna</a></li>
-                        <li class="breadcrumb-item"><a href="{{ url_for('blog.index') }}">Blog</a></li>
+                        <li class="breadcrumb-item">
+                            <a href="{{ url_for('public.index') }}">Strona główna</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="{{ url_for('blog.index') }}">Blog</a>
+                        </li>
                         <li class="breadcrumb-item active" aria-current="page">Wyszukiwanie</li>
                     </ol>
                 </nav>
 
-                <h1 class="search-title">
-                    <i class="fas fa-search me-2"></i>
-                    Wyniki wyszukiwania
-                </h1>
-                
-                <!-- Search Query Info -->
-                <div class="search-info mb-4">
-                    <p class="search-subtitle">
-                        Wyszukiwana fraza: <strong>"{{ query }}"</strong>
-                    </p>
-                    <p class="text-white-50">
-                        Znaleziono <strong>{{ posts.total }}</strong> artykułów
-                    </p>
-                </div>
+                <!-- Search Title -->
+                <h1 class="search-title">Wyszukiwanie</h1>
+                <p class="search-subtitle">Znajdź interesujące Cię artykuły</p>
 
                 <!-- Search Form -->
-                <div class="search-form">
-                    <form method="GET" action="{{ url_for('blog.search') }}" class="d-flex">
-                        <input type="text" name="q" class="form-control form-control-lg" placeholder="Szukaj w tytule, treści, tagach..." value="{{ query }}">
-                        <button type="submit" class="btn btn-light ms-2">
+                <form method="GET" action="{{ url_for('blog.search') }}" class="search-form">
+                    <div class="search-input-group">
+                        <input type="text" name="q" class="form-control" placeholder="Szukaj w tytule, treści, tagach..." value="{{ search_query or '' }}">
+                        <button type="submit" class="btn">
                             <i class="fas fa-search"></i>
                         </button>
-                    </form>
-                </div>
+                    </div>
+                </form>
             </div>
         </div>
     </section>
 
-    <!-- Main Content -->
-    <main>
-        <div class="container py-5">
-
-            <div class="row">
-                <!-- Main Content -->
-                <div class="col-lg-8" id="posts">
-                    <!-- Posts List -->
+    <div class="container py-5">
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8">
+                {% if search_query %}
+                    <h2 class="mb-4">Wyniki wyszukiwania dla: "{{ search_query }}"</h2>
+                    
                     {% if posts.items %}
                         <div class="featured-posts">
                             <div class="row">
@@ -131,7 +128,7 @@
                                             </h5>
                                             
                                             <!-- Krótki opis -->
-                                            <p class="card-text mb-3">{{ (post.excerpt or post.content[:150] + '...' if post.content|length > 150 else post.content)|safe }}</p>
+                                            <p class="card-text mb-3">{{ (post.excerpt or post.content[:150] + '...' if post.content|length > 150 else post.content)|striptags }}</p>
                                             
                                             <!-- Meta informacje -->
                                             <div class="card-meta mb-3">
@@ -141,18 +138,9 @@
                                                 </small>
                                                 <small class="text-muted">
                                                     <i class="fas fa-calendar me-1"></i>
-                                                    {{ post.published_at.strftime('%d.%m.%Y') if post.published_at else post.created_at.strftime('%d.%m.%Y') }}
+                                                    {{ post.created_at.strftime('%d.%m.%Y') }}
                                                 </small>
                                             </div>
-                                            
-                                            <!-- Tagi -->
-                                            {% if post.tags %}
-                                            <div class="mb-3">
-                                                {% for tag in post.tags %}
-                                                <span class="badge bg-light text-dark me-1">{{ tag.name }}</span>
-                                                {% endfor %}
-                                            </div>
-                                            {% endif %}
                                             
                                             <!-- Przycisk Czytaj więcej -->
                                             <div class="d-flex justify-content-end">
@@ -167,126 +155,98 @@
                             </div>
                         </div>
 
+                        <!-- Pagination -->
+                        <div class="blog-pagination">
+                            <div id="pagination" class="pagination-container" 
+                                 data-show-info="true" 
+                                 data-show-per-page="false" 
+                                 data-max-visible-pages="5">
+                            </div>
+                        </div>
                     {% else %}
                         <div class="text-center py-5">
                             <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                            <h3 class="text-muted">Brak wyników wyszukiwania</h3>
-                            <p class="text-muted">Nie znaleziono artykułów dla frazy "{{ query }}".</p>
-                            <div class="mt-4">
-                                <a href="{{ url_for('blog.index') }}" class="btn btn-primary me-2">Wróć do bloga</a>
-                                <button onclick="document.querySelector('input[name=q]').focus()" class="btn btn-outline-primary">Spróbuj ponownie</button>
-                            </div>
+                            <h3 class="text-muted">Nie znaleziono artykułów</h3>
+                            <p class="text-muted">Spróbuj użyć innych słów kluczowych lub przeglądnij nasze kategorie.</p>
                         </div>
                     {% endif %}
-                </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h3 class="text-muted">Wprowadź frazę wyszukiwania</h3>
+                        <p class="text-muted">Użyj formularza powyżej, aby znaleźć interesujące Cię artykuły.</p>
+                    </div>
+                {% endif %}
+            </div>
 
-                <!-- Sidebar -->
-                <div class="col-lg-4">
-                    <div class="blog-sidebar">
-                        <!-- Categories -->
-                        {% if categories %}
-                        <div class="card mb-4">
-                            <div class="card-body">
-                                <h5 class="mb-3">
-                                    <i class="fas fa-folder me-2"></i>
-                                    Kategorie
-                                </h5>
-                                <ul class="categories-list">
-                                    {% for category in categories %}
-                                    <li>
-                                        <a href="{{ get_category_url_with_hierarchy(category) }}" class="text-decoration-none">
-                                            {{ category.title }}
-                                            <span class="badge">{{ category.posts_count }}</span>
-                                        </a>
-                                        {% if category.children %}
-                                        <ul class="categories-list ms-3 mt-2">
-                                            {% for child in category.children %}
-                                            {% if child.is_active %}
-                                            <li>
-                                                <a href="{{ get_category_url_with_hierarchy(child) }}" class="small text-decoration-none">
-                                                    {{ child.title }}
-                                                    <span class="badge">{{ child.posts_count }}</span>
-                                                </a>
-                                            </li>
-                                            {% endif %}
-                                            {% endfor %}
-                                        </ul>
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <div class="blog-sidebar">
+                    <!-- Categories -->
+                    {% if categories %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="mb-3">
+                                <i class="fas fa-folder me-2"></i>
+                                Kategorie
+                            </h5>
+                            <ul class="categories-list">
+                                {% for category in categories %}
+                                <li>
+                                    <a href="{{ get_category_url_with_hierarchy(category) }}">
+                                        {{ category.title }}
+                                        <span class="badge">{{ category.posts_count }}</span>
+                                    </a>
+                                    {% if category.children %}
+                                    <ul class="categories-list ms-3 mt-2">
+                                        {% for child in category.children %}
+                                        {% if child.is_active %}
+                                        <li>
+                                            <a href="{{ get_category_url_with_hierarchy(child) }}" class="small">
+                                                {{ child.title }}
+                                                <span class="badge">{{ child.posts_count }}</span>
+                                            </a>
+                                        </li>
                                         {% endif %}
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                        </div>
-                        {% endif %}
-
-                        <!-- Popular Tags -->
-                        {% if popular_tags %}
-                        <div class="card mb-4">
-                            <div class="card-body">
-                                <h5 class="mb-3">
-                                    <i class="fas fa-tags me-2"></i>
-                                    Popularne tagi
-                                </h5>
-                                <div class="tag-cloud">
-                                    <div class="tag-cloud-container">
-                                        {% for tag in popular_tags %}
-                                        <a href="{{ url_for('blog.tag_detail', slug=tag.slug) }}" 
-                                           class="tag-cloud-item" 
-                                           data-count="{{ tag.posts_count }}">
-                                            {{ tag.name }}
-                                        </a>
                                         {% endfor %}
-                                    </div>
+                                    </ul>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Tag Cloud -->
+                    {% if popular_tags %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="mb-3">
+                                <i class="fas fa-tags me-2"></i>
+                                Tagi
+                            </h5>
+                            <div class="tag-cloud">
+                                <div class="tag-cloud-container">
+                                    {% for tag in popular_tags %}
+                                    <a href="{{ url_for('blog.tag_detail', slug=tag.slug) }}" 
+                                       class="tag-cloud-item" 
+                                       data-count="{{ tag.posts_count }}">
+                                        {{ tag.name }}
+                                    </a>
+                                    {% endfor %}
                                 </div>
                             </div>
                         </div>
-                        {% endif %}
-
-                        <!-- Search Tips -->
-                        <div class="card mb-4">
-                            <div class="card-body">
-                                <h5 class="mb-3">
-                                    <i class="fas fa-lightbulb me-2"></i>
-                                    Wskazówki wyszukiwania
-                                </h5>
-                                <ul class="list-unstyled mb-0 small">
-                                    <li class="mb-2">
-                                        <i class="fas fa-check text-success me-1"></i>
-                                        Użyj prostych słów kluczowych
-                                    </li>
-                                    <li class="mb-2">
-                                        <i class="fas fa-check text-success me-1"></i>
-                                        Sprawdź pisownię
-                                    </li>
-                                    <li class="mb-2">
-                                        <i class="fas fa-check text-success me-1"></i>
-                                        Spróbuj synonimów
-                                    </li>
-                                    <li class="mb-2">
-                                        <i class="fas fa-check text-success me-1"></i>
-                                        Użyj mniej słów
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
-            
-            <!-- Pagination -->
-            {% if posts.items %}
-            <div class="blog-pagination">
-                <div id="pagination" class="pagination-container" 
-                     data-show-info="true" 
-                     data-show-per-page="false" 
-                     data-max-visible-pages="5">
-                </div>
-            </div>
-            {% endif %}
         </div>
-    </main>
+    </div>
+{% endblock %}
 
-    <!-- Footer -->
+{% block footer %}
     <footer class="bg-dark text-white py-5">
         <div class="container">
             <div class="row">
@@ -325,7 +285,7 @@
             <hr class="my-4">
             <div class="row align-items-center">
                 <div class="col-md-6">
-                    <p class="mb-0 text-light">&copy; 2024 {{ footer_settings.company_name or 'Klub Lepsze Życie' }}. Wszystkie prawa zastrzeżone.</p>
+                    <p class="mb-0 text-light">&copy; 2025 {{ footer_settings.company_name or 'Klub Lepsze Życie' }}. Wszystkie prawa zastrzeżone.</p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     {% if footer_settings.show_privacy_policy %}
@@ -338,14 +298,4 @@
             </div>
         </div>
     </footer>
-
-    
-    
-    <!-- Pagination Script -->
-    
-    <!-- Word Cloud Script -->
-    <script src="{{ url_for('static', filename='js/word-cloud.js') }}"></script>
-    
-    <!-- Pagination Script -->
-</body>
-</html>
+{% endblock %}

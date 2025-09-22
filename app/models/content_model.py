@@ -30,6 +30,7 @@ class Section(db.Model):
     subtitle = db.Column(db.Text)
     content = db.Column(db.Text)
     background_image = db.Column(db.String(200))
+    css_class = db.Column(db.String(200))  # CSS classes for styling
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
     

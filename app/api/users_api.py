@@ -269,15 +269,40 @@ def api_user(user_id):
             user_email = user.email
             user_id = user.id
             
+            # Remove user from all groups before deleting (like in delete_user_account)
+            try:
+                from app.services.group_manager import GroupManager
+                group_manager = GroupManager()
+                
+                # Get all groups where user is a member
+                from app.models import UserGroupMember
+                user_memberships = UserGroupMember.query.filter_by(
+                    user_id=user_id,
+                    is_active=True
+                ).all()
+                
+                print(f"🔍 Usuwanie użytkownika {user_email} (ID: {user_id}) z {len(user_memberships)} grup")
+                
+                # Remove from each group
+                for membership in user_memberships:
+                    group = membership.group
+                    if group:
+                        print(f"🔍 Usuwanie z grupy: {group.name}")
+                        success, message = group_manager.remove_user_from_group(group.id, user_id)
+                        if success:
+                            print(f"✅ Usunięto z grupy: {group.name}")
+                        else:
+                            print(f"❌ Błąd usuwania z grupy {group.name}: {message}")
+                            
+            except Exception as group_error:
+                print(f"❌ Błąd usuwania użytkownika z grup: {str(group_error)}")
+            
             # Delete user from database
             db.session.delete(user)
             db.session.commit()
             
             # Synchronize groups after user deletion
             try:
-                from app.services.group_manager import GroupManager
-                group_manager = GroupManager()
-                
                 # Synchronize club members group
                 success, message = group_manager.sync_club_members_group()
                 if success:
@@ -417,6 +442,10 @@ def api_bulk_delete_users():
         deleted_count = 0
         deleted_users = []  # Store user info for group synchronization
         
+        # Remove users from all groups before deleting them
+        from app.services.group_manager import GroupManager
+        group_manager = GroupManager()
+        
         for user_id in user_ids:
             user = User.query.get(user_id)
             if user:
@@ -426,6 +455,31 @@ def api_bulk_delete_users():
                     'email': user.email,
                     'club_member': user.club_member
                 })
+                
+                # Remove user from all groups before deleting
+                try:
+                    from app.models import UserGroupMember
+                    user_memberships = UserGroupMember.query.filter_by(
+                        user_id=user.id,
+                        is_active=True
+                    ).all()
+                    
+                    print(f"🔍 Bulk delete: Usuwanie użytkownika {user.email} (ID: {user.id}) z {len(user_memberships)} grup")
+                    
+                    # Remove from each group
+                    for membership in user_memberships:
+                        group = membership.group
+                        if group:
+                            print(f"🔍 Bulk delete: Usuwanie z grupy: {group.name}")
+                            success, message = group_manager.remove_user_from_group(group.id, user.id)
+                            if success:
+                                print(f"✅ Bulk delete: Usunięto z grupy: {group.name}")
+                            else:
+                                print(f"❌ Bulk delete: Błąd usuwania z grupy {group.name}: {message}")
+                                
+                except Exception as group_error:
+                    print(f"❌ Bulk delete: Błąd usuwania użytkownika {user.email} z grup: {str(group_error)}")
+                
                 db.session.delete(user)
                 deleted_count += 1
         
@@ -434,8 +488,6 @@ def api_bulk_delete_users():
         # Synchronize groups after bulk deletion
         if deleted_users:
             try:
-                from app.services.group_manager import GroupManager
-                group_manager = GroupManager()
                 
                 # Synchronize club members group
                 success, message = group_manager.sync_club_members_group()

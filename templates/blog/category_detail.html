@@ -1,16 +1,19 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+{% extends "base.html" %}
+
+{% block title %}{{ category.title }} - {{ config.get('SITE_NAME', 'Klub Lepsze Życie') }}{% endblock %}
+
+{% block description %}{{ category.description or 'Artykuły w kategorii ' + category.title }}{% endblock %}
+
+{% block meta %}
     {% set seo_data = get_blog_category_seo(category) %}
     {% include 'seo/meta_tags.html' %}
-    
-    
-</head>
-<body>
-    <!-- Navigation -->
+{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/user/blog/blog-category.css') }}">
+{% endblock %}
+
+{% block navigation %}
     <nav class="navbar navbar-expand-lg navbar-light fixed-top bg-white shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bold text-primary" href="{{ url_for('public.index') }}">
@@ -59,191 +62,184 @@
             </div>
         </div>
     </nav>
+{% endblock %}
 
-    <!-- Main Content -->
-    <main>
-        <div class="container py-5">
-            <!-- Category Header -->
-            <div class="blog-header mb-5">
-                <!-- Breadcrumb -->
-                <nav aria-label="breadcrumb" class="mb-4">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{{ url_for('public.index') }}">Strona główna</a></li>
-                        <li class="breadcrumb-item"><a href="{{ url_for('blog.index') }}">Blog</a></li>
-                        {% if parent_category %}
-                            <li class="breadcrumb-item"><a href="{{ get_category_url_with_hierarchy(parent_category) }}">{{ parent_category.title }}</a></li>
-                        {% endif %}
-                        <li class="breadcrumb-item active" aria-current="page">{{ category.title }}</li>
-                    </ol>
-                </nav>
-
-                <h1 class="display-4 fw-bold text-primary mb-3">{{ category.title }}</h1>
+{% block content %}
+    <!-- Category Header -->
+    <section class="category-header">
+        <div class="container">
+            <div class="text-center">
+                <h1 class="category-title">{{ category.title }}</h1>
                 {% if category.description %}
-                <p class="lead text-muted">{{ category.description }}</p>
+                <p class="category-description">{{ category.description }}</p>
                 {% endif %}
-                
-                <!-- Category Stats -->
-                <div class="d-flex align-items-center text-muted mb-3">
-                    <span class="me-3">
-                        <i class="fas fa-file-alt me-1"></i>
-                        {{ posts.total }} artykułów
-                    </span>
-                    {% if category.parent %}
-                    <span class="me-3">
-                        <i class="fas fa-folder me-1"></i>
-                        Podkategoria: {{ category.parent.title }}
-                    </span>
-                    {% endif %}
-                </div>
             </div>
+        </div>
+    </section>
 
-            <div class="row">
-                <!-- Main Content -->
-                <div class="col-lg-8" id="posts">
-                    <!-- Posts List -->
-                    {% if posts.items %}
-                        <div class="featured-posts">
-                            <div class="row">
-                                {% for post in posts.items %}
-                                <div class="col-md-6 mb-4">
-                                    <article class="featured-post-card">
-                                        <div class="card-body">
-                                            <!-- Miniaturka -->
-                                            {% if post.featured_image %}
-                                            <div class="post-thumbnail mb-3">
-                                                <img src="{{ post.featured_image }}" class="img-fluid rounded" alt="{{ post.title }}">
-                                            </div>
-                                            {% endif %}
-                                            
-                                            <!-- Tytuł -->
-                                            <h5 class="card-title mb-3">
-                                                <a href="{{ get_post_url_with_category(post) }}" class="text-decoration-none">
-                                                    {{ post.title }}
-                                                </a>
-                                            </h5>
-                                            
-                                            <!-- Krótki opis -->
-                                            <p class="card-text mb-3">{{ (post.excerpt or post.content[:150] + '...' if post.content|length > 150 else post.content)|safe }}</p>
-                                            
-                                            <!-- Meta informacje -->
-                                            <div class="card-meta mb-3">
-                                                <small class="text-muted me-3">
-                                                    <i class="fas fa-user me-1"></i>
-                                                    {{ post.author.first_name or post.author.email }}
-                                                </small>
-                                                <small class="text-muted">
-                                                    <i class="fas fa-calendar me-1"></i>
-                                                    {{ post.published_at.strftime('%d.%m.%Y') if post.published_at else post.created_at.strftime('%d.%m.%Y') }}
-                                                </small>
-                                            </div>
-                                            
-                                            <!-- Tagi -->
-                                            {% if post.tags %}
-                                            <div class="mb-3">
-                                                {% for tag in post.tags %}
-                                                <span class="badge bg-light text-dark me-1">{{ tag.name }}</span>
-                                                {% endfor %}
-                                            </div>
-                                            {% endif %}
-                                            
-                                            <!-- Przycisk Czytaj więcej -->
-                                            <div class="d-flex justify-content-end">
-                                                <a href="{{ get_post_url_with_category(post) }}" class="read-more">
-                                                    Czytaj więcej <i class="fas fa-arrow-right ms-1"></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </article>
-                                </div>
-                                {% endfor %}
+    <div class="container py-5">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{{ url_for('public.index') }}">Strona główna</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{{ url_for('blog.index') }}">Blog</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">{{ category.title }}</li>
+            </ol>
+        </nav>
+        
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8">
+                <!-- Category Stats -->
+                <div class="category-stats">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ category.posts_count }}</span>
+                                <span class="stat-label">Artykułów</span>
                             </div>
                         </div>
-
-                    {% else %}
-                        <div class="text-center py-5">
-                            <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
-                            <h3 class="text-muted">Brak artykułów w tej kategorii</h3>
-                            <p class="text-muted">Wkrótce pojawią się tutaj pierwsze artykuły w kategorii "{{ category.title }}".</p>
-                            <a href="{{ url_for('blog.index') }}" class="btn btn-primary">Wróć do bloga</a>
-                        </div>
-                    {% endif %}
-                </div>
-
-                <!-- Sidebar -->
-                <div class="col-lg-4">
-                    <div class="blog-sidebar">
-                        <!-- Categories -->
-                        {% if categories %}
-                        <div class="card mb-4">
-                            <div class="card-body">
-                                <h5 class="mb-3">
-                                    <i class="fas fa-folder me-2"></i>
-                                    Kategorie
-                                </h5>
-                                <ul class="categories-list">
-                                    {% for cat in categories %}
-                                    <li>
-                                        <a href="{{ get_category_url_with_hierarchy(cat) }}" 
-                                           class="{% if cat.id == category.id %}fw-bold text-primary{% endif %}">
-                                            {{ cat.title }}
-                                            <span class="badge">{{ cat.posts_count }}</span>
-                                        </a>
-                                        {% if cat.children %}
-                                        <ul class="categories-list ms-3 mt-2">
-                                            {% for child in cat.children %}
-                                            {% if child.is_active %}
-                                            <li>
-                                                <a href="{{ get_category_url_with_hierarchy(child) }}" 
-                                                   class="small {% if child.id == category.id %}fw-bold text-primary{% endif %}">
-                                                    {{ child.title }}
-                                                    <span class="badge">{{ child.posts_count }}</span>
-                                                </a>
-                                            </li>
-                                            {% endif %}
-                                            {% endfor %}
-                                        </ul>
-                                        {% endif %}
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                                
-                                <!-- Tag Cloud under categories -->
-                                {% if popular_tags %}
-                                <div class="mt-4">
-                                <div class="tag-cloud">
-                                    <div class="tag-cloud-container">
-                                        {% for tag in popular_tags %}
-                                        <a href="{{ url_for('blog.tag_detail', slug=tag.slug) }}" 
-                                           class="tag-cloud-item" 
-                                           data-count="{{ tag.posts_count }}">
-                                            {{ tag.name }}
-                                        </a>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                                </div>
-                                {% endif %}
+                        <div class="col-md-4">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ category.children|length if category.children else 0 }}</span>
+                                <span class="stat-label">Podkategorii</span>
                             </div>
                         </div>
-                        {% endif %}
+                        <div class="col-md-4">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ category.total_posts_count if category.total_posts_count else category.posts_count }}</span>
+                                <span class="stat-label">Wszystkich postów</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Category Posts -->
+                {% if posts.items %}
+                <div class="category-posts">
+                    {% for post in posts.items %}
+                    <div class="category-post-card">
+                        <div class="card">
+                            {% if post.featured_image %}
+                            <img src="{{ post.featured_image }}" class="card-img-top" alt="{{ post.title }}">
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <a href="{{ get_post_url_with_category(post) }}">{{ post.title }}</a>
+                                </h5>
+                                <p class="card-text">{{ (post.excerpt or post.content[:150] + '...' if post.content|length > 150 else post.content)|striptags }}</p>
+                                <div class="card-meta">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>
+                                        {{ post.author.first_name or post.author.email }}
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ post.created_at.strftime('%d.%m.%Y') }}
+                                    </small>
+                                </div>
+                                <a href="{{ get_post_url_with_category(post) }}" class="read-more">
+                                    Czytaj więcej <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                <div class="blog-pagination">
+                    <div id="pagination" class="pagination-container" 
+                         data-show-info="true" 
+                         data-show-per-page="false" 
+                         data-max-visible-pages="5">
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                    <h3 class="text-muted">Brak artykułów w tej kategorii</h3>
+                    <p class="text-muted">Wkrótce pojawią się tutaj pierwsze artykuły.</p>
+                </div>
+                {% endif %}
             </div>
-            
-            <!-- Pagination -->
-            {% if posts.items %}
-            <div class="blog-pagination">
-                <div id="pagination" class="pagination-container" 
-                     data-show-info="true" 
-                     data-show-per-page="false" 
-                     data-max-visible-pages="5">
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <div class="category-sidebar">
+                    <!-- Categories -->
+                    {% if categories %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-folder me-2"></i>
+                                Kategorie
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="categories-list">
+                                {% for cat in categories %}
+                                <li>
+                                    <a href="{{ get_category_url_with_hierarchy(cat) }}" {% if cat.id == category.id %}class="active"{% endif %}>
+                                        {{ cat.title }}
+                                        <span class="badge">{{ cat.posts_count }}</span>
+                                    </a>
+                                    {% if cat.children and cat.id == category.id %}
+                                    <ul class="categories-list ms-3 mt-2">
+                                        {% for child in cat.children %}
+                                        {% if child.is_active %}
+                                        <li>
+                                            <a href="{{ get_category_url_with_hierarchy(child) }}" class="small">
+                                                {{ child.title }}
+                                                <span class="badge">{{ child.posts_count }}</span>
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Tag Cloud -->
+                    {% if popular_tags %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-tags me-2"></i>
+                                Tagi
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="tag-cloud">
+                                <div class="tag-cloud-container">
+                                    {% for tag in popular_tags %}
+                                    <a href="{{ url_for('blog.tag_detail', slug=tag.slug) }}" 
+                                       class="tag-cloud-item" 
+                                       data-count="{{ tag.posts_count }}">
+                                        {{ tag.name }}
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
-            {% endif %}
         </div>
-    </main>
+    </div>
+{% endblock %}
 
-    <!-- Footer -->
+{% block footer %}
     <footer class="bg-dark text-white py-5">
         <div class="container">
             <div class="row">
@@ -282,7 +278,7 @@
             <hr class="my-4">
             <div class="row align-items-center">
                 <div class="col-md-6">
-                    <p class="mb-0 text-light">&copy; 2024 {{ footer_settings.company_name or 'Klub Lepsze Życie' }}. Wszystkie prawa zastrzeżone.</p>
+                    <p class="mb-0 text-light">&copy; 2025 {{ footer_settings.company_name or 'Klub Lepsze Życie' }}. Wszystkie prawa zastrzeżone.</p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     {% if footer_settings.show_privacy_policy %}
@@ -295,14 +291,4 @@
             </div>
         </div>
     </footer>
-
-    
-    
-    <!-- Pagination Script -->
-    
-    <!-- Word Cloud Script -->
-    <script src="{{ url_for('static', filename='js/word-cloud.js') }}"></script>
-    
-    <!-- Pagination Script -->
-</body>
-</html>
+{% endblock %}

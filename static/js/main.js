@@ -1,66 +1,76 @@
-// Main JavaScript for Lepsze Życie Club Landing Page
+/**
+ * Main JavaScript file for Klub Lepsze Życie
+ * Simple, clean, and maintainable code
+ */
 
+// Global variables
+let observerOptions = {
+    root: null,
+    rootMargin: '0px',
+    threshold: 0.1
+};
+
+// Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize AOS (Animate On Scroll) - disabled to avoid conflicts
-    // AOS.init({
-    //     duration: 800,
-    //     easing: 'ease-in-out',
-    //     once: true,
-    //     offset: 100
-    // });
-
-    // Initialize counters
+    console.log('🚀 Main.js loaded');
+    
+    // Initialize all components
+    console.log('🚀 Starting component initialization...');
+    initializeAnimations();
     initializeCounters();
-    
-    // Initialize smooth scrolling for navigation links
     initializeSmoothScrolling();
+    initializeClubRegistration();
+    console.log('🎯 About to initialize event registration...');
+    initializeEventRegistration();
+    initializeCountdown();
+    initializeTooltips();
     
-    // Initialize form validation and submission
-    initializeFormHandling();
-    
-    // Initialize navbar scroll effects
-    initializeNavbarEffects();
-    
-    // Initialize floating elements
-    initializeFloatingElements();
-    
-    // Initialize parallax effects
-    initializeParallaxEffects();
-    
-    // Initialize loading animations
-    initializeLoadingAnimations();
+    console.log('✅ All components initialized');
 });
 
-// Counter Animation
+/**
+ * Initialize AOS animations
+ */
+function initializeAnimations() {
+    if (typeof AOS !== 'undefined') {
+        AOS.init({
+            duration: 1000,
+            once: true,
+            offset: 100
+        });
+        console.log('✅ AOS animations initialized');
+    }
+}
+
+/**
+ * Initialize counter animations
+ */
 function initializeCounters() {
     const counters = document.querySelectorAll('.counter');
     
+    if (counters.length === 0) {
+        return;
+    }
+    
     const animateCounter = (counter) => {
-        const target = parseInt(counter.textContent.replace(/\D/g, ''));
+        const target = parseInt(counter.getAttribute('data-target'));
         const increment = target / 100;
         let current = 0;
         
         const updateCounter = () => {
             if (current < target) {
                 current += increment;
-                if (current > target) current = target;
-                
-                if (counter.textContent.includes('+')) {
-                    counter.textContent = Math.ceil(current) + '+';
-                } else if (counter.textContent.includes('%')) {
-                    counter.textContent = Math.ceil(current) + '%';
-                } else {
-                    counter.textContent = Math.ceil(current);
-                }
-                
+                counter.textContent = Math.ceil(current);
                 requestAnimationFrame(updateCounter);
+            } else {
+                counter.textContent = target;
             }
         };
         
         updateCounter();
     };
     
-    // Intersection Observer for counters
+    // Use Intersection Observer to trigger animations
     const counterObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -68,346 +78,142 @@ function initializeCounters() {
                 counterObserver.unobserve(entry.target);
             }
         });
-    }, { threshold: 0.5 });
+    }, observerOptions);
     
-    counters.forEach(counter => counterObserver.observe(counter));
+    counters.forEach(counter => {
+        counterObserver.observe(counter);
+    });
+    
+    console.log('✅ Counter animations initialized');
 }
 
-// Smooth Scrolling
+/**
+ * Initialize smooth scrolling for anchor links
+ */
 function initializeSmoothScrolling() {
-    const navLinks = document.querySelectorAll('a[href^="#"]');
+    const anchorLinks = document.querySelectorAll('a[href^="#"]');
     
-    navLinks.forEach(link => {
+    anchorLinks.forEach(link => {
         link.addEventListener('click', function(e) {
-            e.preventDefault();
+            const href = this.getAttribute('href');
             
-            const targetId = this.getAttribute('href');
-            const targetSection = document.querySelector(targetId);
+            // Skip if it's just '#'
+            if (href === '#') {
+                return;
+            }
             
-            if (targetSection) {
-                const offsetTop = targetSection.offsetTop - 80; // Account for fixed navbar
+            const target = document.querySelector(href);
+            
+            if (target) {
+                e.preventDefault();
+                
+                const offsetTop = target.offsetTop - 80; // Account for fixed navbar
                 
                 window.scrollTo({
                     top: offsetTop,
                     behavior: 'smooth'
                 });
-                
-                // Close mobile menu if open
-                const navbarCollapse = document.querySelector('.navbar-collapse');
-                if (navbarCollapse.classList.contains('show')) {
-                    const bsCollapse = new bootstrap.Collapse(navbarCollapse);
-                    bsCollapse.hide();
-                }
             }
         });
     });
+    
+    console.log('✅ Smooth scrolling initialized');
 }
 
-// Form Handling
-function initializeFormHandling() {
-    const form = document.querySelector('.registration-form');
-    
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault(); // Blokujemy domyślne wysłanie
-            
-            const submitButton = this.querySelector('button[type="submit"]');
-            const originalText = submitButton.innerHTML;
-            
-            // Show loading state
-            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
-            submitButton.disabled = true;
-            
-            // Get form data as JSON
-            const wantsClubNewsInput = this.querySelector('input[name="wants_club_news"]');
-            const jsonData = {
-                first_name: this.querySelector('input[name="first_name"]').value,
-                email: this.querySelector('input[name="email"]').value,
-                phone: this.querySelector('input[name="phone"]').value || '',
-                wants_club_news: wantsClubNewsInput ? wantsClubNewsInput.checked : false
-            };
-            
-            // Send AJAX request
-            console.log('Sending registration request to: /register');
-            console.log('Form data:', jsonData);
-            
-            fetch('/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(jsonData)
-            })
-            .then(response => {
-                console.log('Response status:', response.status);
-                console.log('Response headers:', response.headers);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Response data:', data);
-                if (data.success) {
-                    // Show success message
-                    showNotification(data.message, 'success');
-                    // Reset form
-                    this.reset();
-                    // Reset button
-                    submitButton.innerHTML = originalText;
-                    submitButton.disabled = false;
-                } else {
-                    // Show error message
-                    showNotification(data.error || 'Wystąpił błąd podczas rejestracji.', 'error');
-                    // Reset button
-                    submitButton.innerHTML = originalText;
-                    submitButton.disabled = false;
-                }
-            })
-            .catch(error => {
-                console.error('Fetch error:', error);
-                showNotification('Wystąpił błąd podczas rejestracji. Spróbuj ponownie.', 'error');
-                // Reset button
-                submitButton.innerHTML = originalText;
-                submitButton.disabled = false;
-            });
+/**
+ * Initialize Bootstrap tooltips
+ */
+function initializeTooltips() {
+    // Initialize tooltips if Bootstrap is available
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
         });
-        
-        // Real-time form validation
-        const inputs = form.querySelectorAll('input[required]');
-        inputs.forEach(input => {
-            input.addEventListener('blur', validateField);
-            input.addEventListener('input', clearFieldError);
-        });
-    }
-    
-    // Initialize timeline event registration forms
-    initializeTimelineForms();
-}
-
-// Field Validation
-function validateField(e) {
-    const field = e.target;
-    const value = field.value.trim();
-    
-    // Remove existing error styling
-    field.classList.remove('is-invalid');
-    
-    // Check if field is empty
-    if (!value) {
-        field.classList.add('is-invalid');
-        showFieldError(field, 'To pole jest wymagane.');
-        return false;
-    }
-    
-    // Email validation
-    if (field.type === 'email' && !isValidEmail(value)) {
-        field.classList.add('is-invalid');
-        showFieldError(field, 'Proszę wprowadzić poprawny adres email.');
-        return false;
-    }
-    
-    return true;
-}
-
-// Email validation helper
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-}
-
-// Show field error
-function showFieldError(field, message) {
-    // Remove existing error message
-    const existingError = field.parentNode.querySelector('.invalid-feedback');
-    if (existingError) {
-        existingError.remove();
-    }
-    
-    // Create and show error message
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'invalid-feedback';
-    errorDiv.textContent = message;
-    field.parentNode.appendChild(errorDiv);
-}
-
-// Clear field error
-function clearFieldError(e) {
-    const field = e.target;
-    field.classList.remove('is-invalid');
-    
-    const errorDiv = field.parentNode.querySelector('.invalid-feedback');
-    if (errorDiv) {
-        errorDiv.remove();
+        console.log('✅ Tooltips initialized');
     }
 }
 
-// Notification System
-function showNotification(message, type = 'info') {
-    // Remove existing notifications
-    const existingNotifications = document.querySelectorAll('.custom-notification');
-    existingNotifications.forEach(notification => notification.remove());
+/**
+ * Utility function to show error messages
+ * @param {string} message - Error message to display
+ */
+function showError(message) {
+    showAlert(message, 'danger');
+}
+
+/**
+ * Utility function to show success messages
+ * @param {string} message - Success message to display
+ */
+function showSuccess(message) {
+    showAlert(message, 'success');
+}
+
+/**
+ * Show alert message
+ * @param {string} message - Message to display
+ * @param {string} type - Alert type (success, danger, warning, info)
+ */
+function showAlert(message, type = 'info') {
+    // Remove existing alerts
+    const existingAlerts = document.querySelectorAll('.alert-positioned');
+    existingAlerts.forEach(alert => alert.remove());
     
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `custom-notification alert alert-${type} alert-dismissible fade show`;
-    notification.style.cssText = `
-        position: fixed;
-        top: 100px;
-        right: 20px;
-        z-index: 9999;
-        min-width: 300px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    `;
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-positioned`;
+    alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 500px;';
     
-    notification.innerHTML = `
+    const iconClass = type === 'success' ? 'fa-check-circle' : 
+                     type === 'danger' ? 'fa-exclamation-circle' :
+                     type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+    
+    alertDiv.innerHTML = `
+        <i class="fas ${iconClass} me-2"></i>
         ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     `;
     
-    // Add to page
-    document.body.appendChild(notification);
+    document.body.appendChild(alertDiv);
     
-    // Auto-remove after 5 seconds
+    // Auto remove after 5 seconds
     setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
+        if (alertDiv.parentNode) {
+            alertDiv.classList.remove('show');
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 150);
         }
     }, 5000);
 }
 
-// Navbar Effects
-function initializeNavbarEffects() {
-    const navbar = document.querySelector('.navbar');
+/**
+ * Utility function to format date
+ * @param {Date} date - Date to format
+ * @param {string} locale - Locale for formatting
+ * @returns {string} Formatted date string
+ */
+function formatDate(date, locale = 'pl-PL') {
+    if (!date) return '';
     
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 100) {
-            navbar.classList.add('navbar-scrolled');
-        } else {
-            navbar.classList.remove('navbar-scrolled');
-        }
+    const d = new Date(date);
+    return d.toLocaleDateString(locale, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
     });
 }
 
-// Floating Elements Animation
-function initializeFloatingElements() {
-    const floatingCards = document.querySelectorAll('.floating-card');
-    
-    floatingCards.forEach((card, index) => {
-        // Add random delay for more natural movement
-        const randomDelay = Math.random() * 2;
-        card.style.animationDelay = `${randomDelay}s`;
-        
-        // Add hover effect
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'scale(1.05) translateY(-10px)';
-            this.style.zIndex = '10';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'scale(1) translateY(0)';
-            this.style.zIndex = '1';
-        });
-    });
-}
-
-// Parallax Effects
-function initializeParallaxEffects() {
-    const parallaxElements = document.querySelectorAll('.hero-bg-animation');
-    
-    window.addEventListener('scroll', () => {
-        const scrolled = window.pageYOffset;
-        
-        parallaxElements.forEach(element => {
-            const speed = 0.5;
-            element.style.transform = `translateY(${scrolled * speed}px)`;
-        });
-    });
-}
-
-// Loading Animations
-function initializeLoadingAnimations() {
-    // Add loading class to elements
-    const loadingElements = document.querySelectorAll('.benefit-card, .testimonial-card, .pillar-item');
-    
-    loadingElements.forEach((element, index) => {
-        element.classList.add('loading');
-        
-        // Stagger the loading animation
-        setTimeout(() => {
-            element.classList.add('loaded');
-        }, index * 100);
-    });
-}
-
-// Intersection Observer for animations
-const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-};
-
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.classList.add('animate-in');
-        }
-    });
-}, observerOptions);
-
-// Observe elements for animation
-document.addEventListener('DOMContentLoaded', () => {
-    const animateElements = document.querySelectorAll('.benefit-card, .testimonial-card, .pillar-item');
-    animateElements.forEach(el => observer.observe(el));
-});
-
-// Add CSS for loading animations
-const style = document.createElement('style');
-style.textContent = `
-    .loading {
-        opacity: 0;
-        transform: translateY(30px);
-        transition: all 0.6s ease;
-    }
-    
-    .loading.loaded {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    
-    .navbar-scrolled {
-        background-color: rgba(255, 255, 255, 0.98) !important;
-        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1) !important;
-    }
-    
-    .animate-in {
-        animation: slideInUp 0.6s ease forwards;
-    }
-    
-    @keyframes slideInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .invalid-feedback {
-        display: block;
-        color: #dc3545;
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
-    }
-    
-    .form-control.is-invalid {
-        border-color: #dc3545;
-        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-    }
-`;
-
-document.head.appendChild(style);
-
-// Performance optimization: Debounce scroll events
+/**
+ * Utility function to debounce function calls
+ * @param {Function} func - Function to debounce
+ * @param {number} wait - Wait time in milliseconds
+ * @returns {Function} Debounced function
+ */
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -420,178 +226,308 @@ function debounce(func, wait) {
     };
 }
 
-// Apply debouncing to scroll events
-const debouncedScrollHandler = debounce(() => {
-    // Handle scroll events here
-}, 16); // ~60fps
-
-window.addEventListener('scroll', debouncedScrollHandler);
-
-// Add some interactive hover effects for cards
-document.addEventListener('DOMContentLoaded', () => {
-    const cards = document.querySelectorAll('.benefit-card, .testimonial-card');
-    
-    cards.forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-10px) scale(1.02)';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0) scale(1)';
-        });
-    });
-});
-
-// Initialize tooltips if Bootstrap is available
-if (typeof bootstrap !== 'undefined') {
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+/**
+ * Utility function to throttle function calls
+ * @param {Function} func - Function to throttle
+ * @param {number} limit - Time limit in milliseconds
+ * @returns {Function} Throttled function
+ */
+function throttle(func, limit) {
+    let inThrottle;
+    return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
 }
 
-// Add some Easter eggs for fun
-document.addEventListener('keydown', (e) => {
-    // Konami code: ↑↑↓↓←→←→BA
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        // You could add some fun effects here
-        console.log('🎮 Easter egg detected!');
-    }
-});
-
-// Smooth reveal animation for sections
-const revealSections = () => {
-    const sections = document.querySelectorAll('section');
+/**
+ * Initialize Event Registration Modal
+ */
+function initializeEventRegistration() {
+    console.log('🔍 Looking for event registration elements...');
     
-    sections.forEach(section => {
-        const sectionTop = section.offsetTop;
-        const sectionHeight = section.offsetHeight;
-        const windowHeight = window.innerHeight;
-        const scrollY = window.scrollY;
+    const eventRegistrationModal = document.getElementById('eventRegistrationModal');
+    const modalEventId = document.getElementById('modalEventId');
+    const submitBtn = document.getElementById('submitEventRegistration');
+    
+    console.log('🔍 Elements found:');
+    console.log('  - eventRegistrationModal:', eventRegistrationModal ? '✅' : '❌');
+    console.log('  - modalEventId:', modalEventId ? '✅' : '❌');
+    console.log('  - submitBtn:', submitBtn ? '✅' : '❌');
+    
+    if (!eventRegistrationModal || !modalEventId || !submitBtn) {
+        console.log('❌ Event registration modal not found, skipping initialization');
+        return;
+    }
+    
+    console.log('🎯 Initializing event registration modal');
+    
+    // Check if modal elements exist
+    const modalEventTitleText = document.getElementById('modalEventTitleText');
+    const modalEventStartDate = document.getElementById('modalEventStartDate');
+    const modalEventEndDate = document.getElementById('modalEventEndDate');
+    const modalEventLocation = document.getElementById('modalEventLocation');
+    
+    // Handle modal show
+    eventRegistrationModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const eventId = button.getAttribute('data-event-id');
+        const eventTitle = button.getAttribute('data-event-title');
         
-        if (scrollY + windowHeight > sectionTop + 100) {
-            section.classList.add('revealed');
+        // Reset form first
+        const form = document.getElementById('eventRegistrationForm');
+        if (form) {
+            form.reset();
+        }
+        
+        // Set basic data
+        modalEventId.value = eventId;
+        
+        // Set event title
+        const modalEventTitle = document.getElementById('modalEventTitle');
+        if (modalEventTitle) {
+            modalEventTitle.textContent = eventTitle || 'Wydarzenie';
+        }
+        
+        // Fetch full event details from API
+        if (eventId) {
+            fetch(`/api/event-schedule/${eventId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(eventData => {
+                    if (eventData.success && eventData.event) {
+                        const event = eventData.event;
+                        
+                        // Update modal with event details
+                        if (modalEventTitleText) {
+                            modalEventTitleText.textContent = event.title;
+                        }
+                        
+                        // Update dates
+                        if (event.event_date && modalEventStartDate) {
+                            const startDate = new Date(event.event_date);
+                            const formattedStart = startDate.toLocaleDateString('pl-PL') + ' o ' + 
+                                startDate.toLocaleTimeString('pl-PL', {hour: '2-digit', minute: '2-digit'});
+                            modalEventStartDate.textContent = formattedStart;
+                        }
+                        
+                        if (event.end_date && modalEventEndDate) {
+                            const endDate = new Date(event.end_date);
+                            const formattedEnd = endDate.toLocaleDateString('pl-PL') + ' o ' + 
+                                endDate.toLocaleTimeString('pl-PL', {hour: '2-digit', minute: '2-digit'});
+                            modalEventEndDate.textContent = formattedEnd;
+                        } else if (modalEventEndDate) {
+                            modalEventEndDate.textContent = 'Nie określono';
+                        }
+                        
+                        // Update location
+                        if (modalEventLocation) {
+                            modalEventLocation.textContent = event.location || 'Nie podano';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching event details:', error);
+                    showError('Nie udało się pobrać danych wydarzenia. Spróbuj ponownie.');
+                });
         }
     });
-};
-
-window.addEventListener('scroll', debounce(revealSections, 16));
-
-// Add CSS for reveal animation
-const revealStyle = document.createElement('style');
-revealStyle.textContent = `
-    section {
-        opacity: 0;
-        transform: translateY(20px);
-        transition: all 0.8s ease;
-    }
     
-    section.revealed {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    
-    /* Hero section should be visible immediately */
-    section#hero {
-        opacity: 1 !important;
-        transform: translateY(0) !important;
-    }
-    
-    /* Blog pages main content should be visible immediately */
-    main {
-        opacity: 1 !important;
-        transform: translateY(0) !important;
-    }
-    
-    /* Blog post hero section should be visible immediately */
-    section.blog-post-hero {
-        opacity: 1 !important;
-        transform: translateY(0) !important;
-    }
-    
-    /* Blog index hero section should be visible immediately */
-    section.blog-hero {
-        opacity: 1 !important;
-        transform: translateY(0) !important;
-    }
-    
-    /* Blog header should be visible immediately */
-    .blog-header {
-        opacity: 1 !important;
-        transform: translateY(0) !important;
-    }
-    
-    /* Search header should be visible immediately */
-    section.search-header {
-        opacity: 1 !important;
-        transform: translateY(0) !important;
-    }
-    
-    /* Search header content should be visible immediately */
-    .search-header-content {
-        opacity: 1 !important;
-        transform: translateY(0) !important;
-    }
-    
-    section:first-child {
-        opacity: 1;
-        transform: translateY(0);
-    }
-`;
-
-document.head.appendChild(revealStyle);
-
-// Timeline Event Registration Forms
-function initializeTimelineForms() {
-    const timelineForms = document.querySelectorAll('.event-registration-form');
-    
-    timelineForms.forEach(form => {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const submitButton = this.querySelector('button[type="submit"]');
-            const originalText = submitButton.innerHTML;
-            const eventId = this.getAttribute('data-event-id');
-            
-            // Show loading state
-            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wysyłanie...';
-            submitButton.disabled = true;
-            
-            // Get form data
-            const formData = {
-                first_name: this.querySelector('input[name="first_name"]').value,
-                email: this.querySelector('input[name="email"]').value,
-                event_id: eventId
-            };
-            
-            // Send registration request
-            fetch('/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification(data.message, 'success');
-                    this.reset();
-                } else {
-                    showNotification(data.error || 'Wystąpił błąd podczas rejestracji.', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Registration error:', error);
-                showNotification('Wystąpił błąd podczas rejestracji. Spróbuj ponownie.', 'error');
-            })
-            .finally(() => {
-                // Reset button
-                submitButton.innerHTML = originalText;
-                submitButton.disabled = false;
-            });
+    // Handle form submission
+    submitBtn.addEventListener('click', function() {
+        // Prevent multiple submissions
+        if (submitBtn.disabled) {
+            return;
+        }
+        
+        const form = document.getElementById('eventRegistrationForm');
+        const formData = new FormData(form);
+        
+        // Convert FormData to JSON
+        const data = {
+            first_name: formData.get('first_name'),
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+            wants_club_news: formData.get('wants_club_news') === 'true',
+            event_id: modalEventId.value
+        };
+        
+        // Validate required fields
+        if (!data.first_name || !data.email || !data.event_id) {
+            showError('Wszystkie wymagane pola muszą być wypełnione.');
+            return;
+        }
+        
+        // Disable submit button immediately
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Zapisuję...';
+        
+        console.log('📤 Sending event registration data:', data);
+        console.log('📤 URL:', `/register-event/${data.event_id}`);
+        
+        fetch(`/register-event/${data.event_id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            console.log('📡 Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(responseData => {
+            console.log('📊 Response data:', responseData);
+            if (responseData.success) {
+                showSuccess('Dziękujemy! Zostałeś zapisany na wydarzenie. Sprawdź swój email.');
+                const modal = bootstrap.Modal.getInstance(eventRegistrationModal);
+                modal.hide();
+            } else {
+                showError('Wystąpił błąd: ' + (responseData.message || 'Spróbuj ponownie.'));
+            }
+        })
+        .catch(error => {
+            console.error('Registration error:', error);
+            showError('Wystąpił błąd podczas rejestracji. Spróbuj ponownie.');
+        })
+        .finally(() => {
+            // Re-enable submit button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-calendar-check me-2"></i>Zarezerwuj miejsce';
         });
     });
 }
 
+/**
+ * Initialize Countdown Timer
+ */
+function initializeCountdown() {
+    const countdownElement = document.querySelector('.countdown-timer');
+    if (!countdownElement) {
+        console.log('Countdown timer not found, skipping initialization');
+        return;
+    }
+    
+    console.log('🎯 Initializing countdown timer');
+    
+    function updateCountdown() {
+        const eventDate = new Date(countdownElement.dataset.eventDate);
+        const now = new Date();
+        const timeDiff = eventDate - now;
+        
+        if (timeDiff <= 0) {
+            countdownElement.innerHTML = '<div class="alert alert-warning"><strong>Wydarzenie się rozpoczęło!</strong></div>';
+            return;
+        }
+        
+        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+        
+        // Update countdown display
+        const daysEl = document.getElementById('days');
+        const hoursEl = document.getElementById('hours');
+        const minutesEl = document.getElementById('minutes');
+        const secondsEl = document.getElementById('seconds');
+        
+        if (daysEl) daysEl.textContent = days.toString().padStart(2, '0');
+        if (hoursEl) hoursEl.textContent = hours.toString().padStart(2, '0');
+        if (minutesEl) minutesEl.textContent = minutes.toString().padStart(2, '0');
+        if (secondsEl) secondsEl.textContent = seconds.toString().padStart(2, '0');
+    }
+    
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+}
+
+/**
+ * Initialize Club Registration Form
+ */
+function initializeClubRegistration() {
+    const clubRegistrationForm = document.getElementById('clubRegistrationForm');
+    const clubRegistrationBtn = document.getElementById('clubRegistrationBtn');
+    
+    if (!clubRegistrationForm || !clubRegistrationBtn) {
+        console.log('Club registration form not found, skipping initialization');
+        return;
+    }
+    
+    console.log('🎯 Initializing club registration form');
+    
+    clubRegistrationForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Prevent multiple submissions
+        if (clubRegistrationBtn.disabled) {
+            console.log('Club registration form already submitting, ignoring');
+            return;
+        }
+        
+        const formData = new FormData(clubRegistrationForm);
+        const data = {
+            first_name: formData.get('first_name'),
+            email: formData.get('email'),
+            phone: formData.get('phone') || ''
+        };
+        
+        // Validate required fields
+        if (!data.first_name || !data.email) {
+            showError('Imię i email są wymagane.');
+            return;
+        }
+        
+        // Disable button and show loading
+        clubRegistrationBtn.disabled = true;
+        const originalText = clubRegistrationBtn.innerHTML;
+        clubRegistrationBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Zapisuję...';
+        
+        // Send registration request
+        fetch('/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess(data.message || 'Dziękujemy! Zostałeś dodany do Klubu Lepsze Życie.');
+                clubRegistrationForm.reset();
+            } else {
+                showError(data.message || 'Wystąpił błąd podczas rejestracji. Spróbuj ponownie.');
+            }
+        })
+        .catch(error => {
+            console.error('Club registration error:', error);
+            showError('Wystąpił błąd podczas rejestracji. Spróbuj ponownie.');
+        })
+        .finally(() => {
+            // Re-enable button
+            clubRegistrationBtn.disabled = false;
+            clubRegistrationBtn.innerHTML = originalText;
+        });
+    });
+}
+
+// Export functions for use in other scripts
+window.showError = showError;
+window.showSuccess = showSuccess;
+window.formatDate = formatDate;
+window.debounce = debounce;
+window.throttle = throttle;

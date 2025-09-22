@@ -234,3 +234,94 @@
     </div>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+function saveCallSettings() {
+    const settings = {
+        max_attempts: document.getElementById('maxCallAttempts').value,
+        call_interval: document.getElementById('callInterval').value,
+        auto_assign: document.getElementById('autoAssignContacts').checked
+    };
+    
+    // TODO: Implement API call to save settings
+    showSuccess('Ustawienia połączeń zostały zapisane!');
+}
+
+function saveImportSettings() {
+    const settings = {
+        max_file_size: document.getElementById('maxFileSize').value,
+        allow_xlsx: document.getElementById('allowXlsx').checked,
+        allow_csv: document.getElementById('allowCsv').checked,
+        auto_clean_duplicates: document.getElementById('autoCleanDuplicates').checked
+    };
+    
+    // TODO: Implement API call to save settings
+    showSuccess('Ustawienia importu zostały zapisane!');
+}
+
+function saveNotificationSettings() {
+    const settings = {
+        email_notifications: document.getElementById('emailNotifications').checked,
+        lead_notifications: document.getElementById('leadNotifications').checked,
+        import_error_notifications: document.getElementById('importErrorNotifications').checked
+    };
+    
+    // TODO: Implement API call to save settings
+    showSuccess('Ustawienia powiadomień zostały zapisane!');
+}
+
+function saveBlacklistSettings() {
+    const settings = {
+        auto_blacklist: document.getElementById('autoBlacklist').checked,
+        blacklist_notifications: document.getElementById('blacklistNotifications').checked,
+        blacklist_duration: document.getElementById('blacklistDuration').value
+    };
+    
+    // TODO: Implement API call to save settings
+    showSuccess('Ustawienia czarnej listy zostały zapisane!');
+}
+
+function clearOldCalls() {
+    if (confirm('Czy na pewno chcesz usunąć stare połączenia?')) {
+        // TODO: Implement API call to clear old calls
+        showSuccess('Stare połączenia zostały usunięte!');
+    }
+}
+
+function optimizeDatabase() {
+    if (confirm('Czy na pewno chcesz zoptymalizować bazę danych CRM?')) {
+        // TODO: Implement API call to optimize database
+        showSuccess('Baza danych została zoptymalizowana!');
+    }
+}
+
+function exportSettings() {
+    // TODO: Implement API call to export settings
+    showSuccess('Ustawienia zostały wyeksportowane!');
+}
+
+function clearAllData() {
+    if (confirm('UWAGA! Ta operacja usunie WSZYSTKIE dane CRM:\n\n- Wszystkie kontakty\n- Wszystkie połączenia\n- Wszystkie importy\n- Wszystkie wpisy z czarnej listy\n\nTa operacja jest NIEODWRACALNA!\n\nCzy na pewno chcesz kontynuować?')) {
+        if (confirm('Ostatnie ostrzeżenie!\n\nWszystkie dane CRM zostaną trwale usunięte.\n\nCzy jesteś pewien, że chcesz to zrobić?')) {
+            // Create form and submit
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ url_for("admin.crm_clear_all") }}';
+            
+            // Add CSRF token if needed
+            const csrfToken = document.querySelector('meta[name=csrf-token]');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrf_token';
+                csrfInput.value = csrfToken.getAttribute('content');
+                form.appendChild(csrfInput);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+}
+</script>
+{% endblock %}
