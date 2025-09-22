@@ -116,21 +116,31 @@ class EmailAutomation:
         except Exception as e:
             return False, f"Błąd dodawania do klubu: {str(e)}"
     
-    def schedule_event_reminders(self, event_id):
+    def schedule_event_reminders(self, event_id, group_type='event_based'):
         """Planuje przypomnienia o wydarzeniu"""
         try:
             event = EventSchedule.query.get(event_id)
             if not event:
                 return False, "Wydarzenie nie zostało znalezione"
             
-            # Znajdź grupę wydarzenia
-            group = UserGroup.query.filter_by(
-                name=f"Wydarzenie: {event.title}",
-                group_type='event_based'
-            ).first()
+            # Znajdź odpowiednią grupę
+            if group_type == 'event_based':
+                group = UserGroup.query.filter_by(
+                    name=f"Wydarzenie: {event.title}",
+                    group_type='event_based'
+                ).first()
+                group_name = "wydarzenia"
+            elif group_type == 'club_members':
+                group = UserGroup.query.filter_by(
+                    name="Członkowie klubu",
+                    group_type='club_members'
+                ).first()
+                group_name = "klubu"
+            else:
+                return False, "Nieprawidłowy typ grupy"
             
             if not group:
-                return False, "Grupa wydarzenia nie została znaleziona"
+                return False, f"Grupa {group_name} nie została znaleziona"
             
             # Pobierz członków grupy
             members = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).all()
@@ -151,25 +161,30 @@ class EmailAutomation:
             now = get_local_now()
             
             for member in members:
+                # Pobierz dane użytkownika
+                user = User.query.get(member.user_id)
+                if not user:
+                    continue
+                
                 # Generate unsubscribe and delete account URLs
                 from app.blueprints.public_controller import generate_unsubscribe_token
                 import os
                 
-                unsubscribe_token = generate_unsubscribe_token(member.email, 'unsubscribe')
-                delete_token = generate_unsubscribe_token(member.email, 'delete_account')
+                unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
+                delete_token = generate_unsubscribe_token(user.email, 'delete_account')
                 
                 # Get base URL from environment or use default
                 base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
                 
                 
                 context = {
-                    'user_name': member.name or 'Użytkowniku',
+                    'user_name': user.first_name or 'Użytkowniku',
                     'event_title': event.title,
                     'event_date': event.event_date.strftime('%d.%m.%Y'),
                     'event_time': event.event_date.strftime('%H:%M'),
                     'event_location': event.location or 'Online',
-                    'unsubscribe_url': f'{base_url}/api/unsubscribe/{encrypt_email(member.email)}/{unsubscribe_token}',
-                    'delete_account_url': f'{base_url}/api/delete-account/{encrypt_email(member.email)}/{delete_token}'
+                    'unsubscribe_url': f'{base_url}/api/unsubscribe/{encrypt_email(user.email)}/{unsubscribe_token}',
+                    'delete_account_url': f'{base_url}/api/delete-account/{encrypt_email(user.email)}/{delete_token}'
                 }
                 
                 # 24h przed
@@ -177,10 +192,10 @@ class EmailAutomation:
                 if reminder_24h > now:
                     # Użyj szablonu zamiast generować HTML
                     success, message = self.email_service.send_template_email(
-                        to_email=member.email,
+                        to_email=user.email,
                         template_name='event_reminder_24h',
                         context=context,
-                        to_name=member.name
+                        to_name=user.first_name
                     )
                     if success:
                         reminders_scheduled += 1
@@ -190,10 +205,10 @@ class EmailAutomation:
                 if reminder_1h > now:
                     # Użyj szablonu zamiast generować HTML
                     success, message = self.email_service.send_template_email(
-                        to_email=member.email,
+                        to_email=user.email,
                         template_name='event_reminder_1h',
                         context=context,
-                        to_name=member.name
+                        to_name=user.first_name
                     )
                     if success:
                         reminders_scheduled += 1
@@ -207,10 +222,10 @@ class EmailAutomation:
                     
                     # Użyj szablonu zamiast generować HTML
                     success, message = self.email_service.send_template_email(
-                        to_email=member.email,
+                        to_email=user.email,
                         template_name='event_reminder_5min',
                         context=context_with_link,
-                        to_name=member.name
+                        to_name=user.first_name
                     )
                     if success:
                         reminders_scheduled += 1
@@ -233,17 +248,33 @@ class EmailAutomation:
             processed = 0
             
             for event in future_events:
-                # Sprawdź czy przypomnienia już zostały zaplanowane
-                group = UserGroup.query.filter_by(
+                # Sprawdź czy wydarzenie ma zarejestrowanych uczestników
+                event_group = UserGroup.query.filter_by(
                     name=f"Wydarzenie: {event.title}",
                     group_type='event_based'
                 ).first()
                 
-                if group and group.member_count > 0:
-                    # Zaplanuj przypomnienia
-                    success, message = self.schedule_event_reminders(event.id)
-                    if success:
-                        processed += 1
+                # Sprawdź czy są członkowie klubu
+                club_group = UserGroup.query.filter_by(
+                    name="Członkowie klubu",
+                    group_type='club_members'
+                ).first()
+                
+                has_participants = event_group and event_group.member_count > 0
+                has_club_members = club_group and club_group.member_count > 0
+                
+                if has_participants or has_club_members:
+                    # Zaplanuj przypomnienia dla zarejestrowanych uczestników
+                    if has_participants:
+                        success, message = self.schedule_event_reminders(event.id, group_type='event_based')
+                        if success:
+                            processed += 1
+                    
+                    # Zaplanuj przypomnienia dla członków klubu
+                    if has_club_members:
+                        success, message = self.schedule_event_reminders(event.id, group_type='club_members')
+                        if success:
+                            processed += 1
             
             return True, f"Przetworzono {processed} wydarzeń"
             
