@@ -253,6 +253,43 @@ def bulk_delete_email_queue():
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@email_bp.route('/email/queue/clear-all', methods=['POST'])
+@login_required
+def email_queue_clear_all():
+    """Clear all emails from queue (except sent ones)"""
+    try:
+        # Count emails before deletion
+        total_count = EmailQueue.query.count()
+        pending_count = EmailQueue.query.filter_by(status='pending').count()
+        failed_count = EmailQueue.query.filter_by(status='failed').count()
+        processing_count = EmailQueue.query.filter_by(status='processing').count()
+        sent_count = EmailQueue.query.filter_by(status='sent').count()
+        
+        # Delete all emails except sent ones (keep sent emails as history)
+        deleted_count = EmailQueue.query.filter(
+            EmailQueue.status.in_(['pending', 'failed', 'processing'])
+        ).delete(synchronize_session=False)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Usunięto {deleted_count} emaili z kolejki. Zachowano {sent_count} wysłanych emaili jako historię.',
+            'deleted_count': deleted_count,
+            'kept_count': sent_count,
+            'stats': {
+                'total_before': total_count,
+                'pending_before': pending_count,
+                'failed_before': failed_count,
+                'processing_before': processing_count,
+                'sent_before': sent_count
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @email_bp.route('/email/logs/stats', methods=['GET'])
 @login_required
 def email_logs_stats():

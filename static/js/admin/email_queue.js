@@ -558,6 +558,33 @@ processQueue = function() {
     }, 30000);
 };
 
+// Clear all emails from queue (except sent ones)
+function clearAllQueue() {
+    if (confirm('⚠️ UWAGA: Czy na pewno chcesz wyczyścić całą kolejkę emaili?\n\nTo usunie wszystkie oczekujące, nieudane i przetwarzane emaile.\nWysłane emaile zostaną zachowane jako historia.\n\nTa operacja jest nieodwracalna!')) {
+        fetch('/api/email/queue/clear-all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                toastManager.success(data.message);
+                // Refresh stats and queue
+                loadStats();
+                loadQueue(currentFilter);
+            } else {
+                toastManager.error('Błąd czyszczenia kolejki: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error clearing queue:', error);
+            toastManager.error('Błąd czyszczenia kolejki');
+        });
+    }
+}
+
 // Override retryFailed to track processing state
 const originalRetryFailed = retryFailed;
 retryFailed = function() {
