@@ -51,6 +51,48 @@ class EventSchedule(db.Model):
             return None
         return max(0, self.max_participants - self.current_participants)
     
+    def is_ended(self):
+        """Check if event has ended"""
+        if not self.end_date:
+            # If no end_date, consider event ended if event_date has passed
+            from app.utils.timezone_utils import get_local_now
+            now = get_local_now().replace(tzinfo=None)
+            return now > self.event_date
+        else:
+            from app.utils.timezone_utils import get_local_now
+            now = get_local_now().replace(tzinfo=None)
+            return now > self.end_date
+    
+    def archive(self):
+        """Archive the event and clean up related groups"""
+        try:
+            # Archive the event
+            self.is_archived = True
+            self.is_active = False
+            
+            # Clean up related groups
+            from app.services.group_manager import GroupManager
+            group_manager = GroupManager()
+            
+            # Remove all users from event groups
+            success, message = group_manager.cleanup_event_groups(self.id)
+            if success:
+                print(f"✅ Wyczyściono grupy dla wydarzenia: {self.title}")
+            else:
+                print(f"❌ Błąd czyszczenia grup dla wydarzenia {self.title}: {message}")
+            
+            # Delete event groups
+            success, message = group_manager.delete_event_groups(self.id)
+            if success:
+                print(f"✅ Usunięto grupy dla wydarzenia: {self.title}")
+            else:
+                print(f"❌ Błąd usuwania grup dla wydarzenia {self.title}: {message}")
+            
+            return True, "Wydarzenie zostało zarchiwizowane"
+            
+        except Exception as e:
+            return False, f"Błąd archiwizacji wydarzenia: {str(e)}"
+    
     def __repr__(self):
         return f'<EventSchedule {self.title}>'
 

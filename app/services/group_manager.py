@@ -236,6 +236,79 @@ class GroupManager:
             db.session.rollback()
             return False, f"Błąd czyszczenia grup: {str(e)}"
     
+    def cleanup_event_groups(self, event_id):
+        """Usuwa wszystkich członków z grup wydarzenia"""
+        try:
+            # Find all groups related to this event
+            event_groups = UserGroup.query.filter_by(
+                group_type='event_based'
+            ).all()
+            
+            cleaned_groups = []
+            
+            for group in event_groups:
+                try:
+                    # Check if this group is related to the event
+                    criteria = json.loads(group.criteria) if group.criteria else {}
+                    group_event_id = criteria.get('event_id')
+                    
+                    if group_event_id == event_id:
+                        # Remove all members from this group
+                        UserGroupMember.query.filter_by(group_id=group.id).delete()
+                        cleaned_groups.append(group.name)
+                        print(f"🧹 Wyczyściono grupę: {group.name}")
+                        
+                except (json.JSONDecodeError, TypeError):
+                    continue
+            
+            if cleaned_groups:
+                db.session.commit()
+                return True, f"Wyczyściono {len(cleaned_groups)} grup"
+            else:
+                return True, "Brak grup do wyczyszczenia"
+                
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Błąd czyszczenia grup wydarzenia: {str(e)}"
+    
+    def delete_event_groups(self, event_id):
+        """Usuwa grupy wydarzenia z systemu"""
+        try:
+            # Find all groups related to this event
+            event_groups = UserGroup.query.filter_by(
+                group_type='event_based'
+            ).all()
+            
+            deleted_groups = []
+            
+            for group in event_groups:
+                try:
+                    # Check if this group is related to the event
+                    criteria = json.loads(group.criteria) if group.criteria else {}
+                    group_event_id = criteria.get('event_id')
+                    
+                    if group_event_id == event_id:
+                        # Delete the group
+                        db.session.delete(group)
+                        deleted_groups.append(group.name)
+                        print(f"🗑️ Usunięto grupę: {group.name}")
+                        
+                except (json.JSONDecodeError, TypeError):
+                    # If criteria is invalid, delete the group
+                    db.session.delete(group)
+                    deleted_groups.append(group.name)
+                    print(f"🗑️ Usunięto grupę z nieprawidłowymi kryteriami: {group.name}")
+            
+            if deleted_groups:
+                db.session.commit()
+                return True, f"Usunięto {len(deleted_groups)} grup"
+            else:
+                return True, "Brak grup do usunięcia"
+                
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Błąd usuwania grup wydarzenia: {str(e)}"
+    
     def sync_club_members_group(self):
         """Synchronizuje grupę 'Członkowie klubu' z aktywnymi członkami klubu"""
         try:

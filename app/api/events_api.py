@@ -605,3 +605,39 @@ def api_register_event():
     except Exception as e:
         logging.error(f"Error in API event registration: {str(e)}")
         return jsonify({'success': False, 'message': 'Wystąpił błąd podczas rejestracji'}), 500
+
+
+@events_api_bp.route('/events/archive-ended', methods=['POST'])
+@login_required
+@admin_required_api
+def api_archive_ended_events():
+    """Archive all ended events and clean up their groups"""
+    try:
+        from app.services.email_automation import EmailAutomation
+        from app.services.group_manager import GroupManager
+        
+        email_automation = EmailAutomation()
+        group_manager = GroupManager()
+        
+        # Archive ended events
+        success, message = email_automation.archive_ended_events()
+        if not success:
+            return jsonify({'success': False, 'message': message}), 500
+        
+        # Clean up orphaned groups
+        success, message = group_manager.cleanup_orphaned_groups()
+        if not success:
+            return jsonify({'success': False, 'message': message}), 500
+        
+        # Update all groups
+        success, message = email_automation.update_all_groups()
+        if not success:
+            return jsonify({'success': False, 'message': message}), 500
+        
+        return jsonify({
+            'success': True,
+            'message': 'Wydarzenia zostały zarchiwizowane i grupy wyczyszczone'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500

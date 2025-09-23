@@ -353,9 +353,12 @@ class EmailAutomation:
             
             for event in events:
                 if event.is_ended():
-                    event.archive()
-                    archived_count += 1
-                    print(f"Archiwizowano wydarzenie: {event.title} ({event.event_date})")
+                    success, message = event.archive()
+                    if success:
+                        archived_count += 1
+                        print(f"✅ Zarchiwizowano wydarzenie: {event.title} ({event.event_date})")
+                    else:
+                        print(f"❌ Błąd archiwizacji wydarzenia {event.title}: {message}")
             
             if archived_count > 0:
                 db.session.commit()
