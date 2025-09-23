@@ -16,12 +16,34 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '.'))
 from app import create_app
 from app.services.notification_system import process_event_reminders, process_email_queue
 
-# Setup logging
+# Setup logging with daily rotation
+from logging.handlers import TimedRotatingFileHandler
+import os
+
+# Create logs directory if it doesn't exist
+logs_dir = 'logs'
+os.makedirs(logs_dir, exist_ok=True)
+
+# Create rotating file handler (daily rotation)
+file_handler = TimedRotatingFileHandler(
+    filename=os.path.join(logs_dir, 'notifications.log'),
+    when='midnight',  # Rotate at midnight
+    interval=1,       # Every 1 day
+    backupCount=30,   # Keep 30 days of logs
+    encoding='utf-8',
+    utc=False  # Use local time
+)
+
+# Set log format
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('logs/notifications.log'),
+        file_handler,
         logging.StreamHandler()
     ]
 )

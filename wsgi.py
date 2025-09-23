@@ -8,29 +8,46 @@ from app import create_app
 
 # Configure logging to file
 def setup_logging():
-    """Setup logging to file"""
-    # Create logs directory if it doesn't exist
+    """Setup logging to file with daily rotation"""
     import os
+    from logging.handlers import TimedRotatingFileHandler
+    
+    # Create logs directory if it doesn't exist
     logs_dir = os.path.join(os.getcwd(), 'logs')
     os.makedirs(logs_dir, exist_ok=True)
     
-    # Create log filename with timestamp
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = os.path.join(logs_dir, f'wsgi_{timestamp}.log')
+    # Create log filename (without timestamp - rotation will handle it)
+    log_file = os.path.join(logs_dir, 'wsgi.log')
+    
+    # Create rotating file handler (daily rotation)
+    file_handler = TimedRotatingFileHandler(
+        filename=log_file,
+        when='midnight',  # Rotate at midnight
+        interval=1,       # Every 1 day
+        backupCount=30,   # Keep 30 days of logs
+        encoding='utf-8',
+        utc=False  # Use local time
+    )
+    
+    # Set log format
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    file_handler.setFormatter(formatter)
     
     # Configure logging
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.FileHandler(log_file, encoding='utf-8'),
+            file_handler,
             logging.StreamHandler(sys.stdout)  # Also show in console
         ]
     )
     
     # Log startup message
     logger = logging.getLogger(__name__)
-    logger.info(f"🚀 WSGI Application starting - Logs saved to: {log_file}")
+    logger.info(f"🚀 WSGI Application starting - Logs saved to: {log_file} (daily rotation)")
     
     return log_file
 
