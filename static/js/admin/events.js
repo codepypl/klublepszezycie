@@ -4,6 +4,8 @@
 class EventsManager {
     constructor() {
         this.currentEventId = null;
+        this.currentPage = 1;
+        this.currentPerPage = 10;
         this.initializeEventListeners();
         this.loadEvents();
         this.setMinDates();
@@ -76,7 +78,14 @@ class EventsManager {
     populateEditForm(event) {
         document.getElementById('editEventId').value = event.id;
         document.getElementById('editEventTitle').value = event.title || '';
-        document.getElementById('editEventType').value = event.event_type || '';
+        
+        // Set event type
+        const eventTypeSelect = document.getElementById('editEventType');
+        if (eventTypeSelect) {
+            eventTypeSelect.value = event.event_type || '';
+        } else {
+            console.error('❌ editEventType element not found!');
+        }
         
         // Format dates - handle both ISO strings and Date objects
         if (event.event_date) {
@@ -182,6 +191,7 @@ class EventsManager {
         e.preventDefault();
         
         const formData = new FormData(e.target);
+        
         const eventData = {
             title: formData.get('title'),
             event_type: formData.get('event_type'),
@@ -283,6 +293,10 @@ class EventsManager {
             params.append('show_published', publishedFilter);
         }
         
+        // Add pagination parameters
+        params.append('page', this.currentPage);
+        params.append('per_page', this.currentPerPage);
+        
         const url = `/api/event-schedule${params.toString() ? '?' + params.toString() : ''}`;
         
         fetch(url)
@@ -295,6 +309,10 @@ class EventsManager {
             .then(data => {
                 if (data.success && data.events) {
                     this.displayEvents(data.events);
+                    // Update pagination if data provided
+                    if (data.pagination) {
+                        this.updatePagination(data.pagination);
+                    }
                     // Update active filters count after successful load
                     if (typeof updateActiveFiltersCount === 'function') {
                         updateActiveFiltersCount();
@@ -320,8 +338,6 @@ class EventsManager {
                     <p class="text-muted">Brak wydarzeń w systemie</p>
                 </div>
             `;
-            // Update pagination with 0 items
-            this.updatePagination(0);
             return;
         }
 
@@ -353,9 +369,6 @@ class EventsManager {
         
         // Initialize bulk delete for the dynamically created table
         this.initializeBulkDelete();
-        
-        // Update pagination with actual data
-        this.updatePagination(events.length);
     }
     
     initializeBulkDelete() {
@@ -368,15 +381,33 @@ class EventsManager {
         }
     }
     
-    updatePagination(totalItems) {
+    updatePagination(paginationData) {
         const paginationContainer = document.getElementById('pagination');
-        if (paginationContainer && paginationContainer.paginationInstance) {
-            paginationContainer.paginationInstance.setData({
-                page: 1,
-                pages: 1,
-                total: totalItems,
-                per_page: 10
-            });
+        if (paginationContainer) {
+            if (paginationContainer.paginationInstance) {
+                // Update existing pagination
+                paginationContainer.paginationInstance.setData(paginationData);
+            } else {
+                // Initialize pagination for the first time
+                paginationContainer.paginationInstance = new Pagination({
+                    containerId: 'pagination',
+                    showInfo: true,
+                    showPerPage: true,
+                    perPageOptions: [5, 10, 25, 50, 100],
+                    defaultPerPage: 10,
+                    maxVisiblePages: 5,
+                    onPageChange: (page) => {
+                        this.currentPage = page;
+                        this.loadEvents();
+                    },
+                    onPerPageChange: (newPage, perPage) => {
+                        this.currentPage = newPage;
+                        this.currentPerPage = perPage;
+                        this.loadEvents();
+                    }
+                });
+                paginationContainer.paginationInstance.setData(paginationData);
+            }
         }
     }
 
@@ -396,7 +427,7 @@ class EventsManager {
         
         // Archival status (highest priority)
         if (event.is_archived) {
-            statusBadges.push('<span class="badge admin-badge admin-badge-warning"><i class="fas fa-archive me-1"></i>Archiwalne</span>');
+            statusBadges.push('<span class="badge admin-badge admin-badge-secondary"><i class="fas fa-archive me-1"></i>Archiwalne</span>');
         } else {
             // Active/Inactive status
             if (event.is_active) {

@@ -15,12 +15,12 @@
 
 {% block content %}
 <div class="profile-wrapper">
-    <!-- Profile Header -->
-    <div class="profile-header">
+        <!-- Profile Header -->
+        <div class="profile-header">
         <div class="container">
             <div class="profile-header-content">
-                <div class="profile-avatar">
-                    <i class="fas fa-user"></i>
+            <div class="profile-avatar">
+                <i class="fas fa-user"></i>
                 </div>
                 <div class="profile-info">
                     <h1 id="userName">{{ user_data.display_name }}</h1>
@@ -135,13 +135,13 @@
 
                     <!-- Profile Information Tab -->
                     <div class="tab-pane fade" id="profile-info" role="tabpanel">
-                        <div class="profile-card">
-                            <h3 class="mb-4">
-                                <i class="fas fa-info-circle me-2 text-primary"></i>
-                                Informacje o profilu
-                            </h3>
-                            
-                            <div class="info-item">
+        <div class="profile-card">
+            <h3 class="mb-4">
+                <i class="fas fa-info-circle me-2 text-primary"></i>
+                Informacje o profilu
+            </h3>
+            
+            <div class="info-item">
                                 <span class="info-label">Imię:</span>
                                 <span class="info-value">{{ user_data.first_name or 'Nie podano' }}</span>
                             </div>
@@ -154,15 +154,15 @@
                             <div class="info-item">
                                 <span class="info-label">Numer telefonu:</span>
                                 <span class="info-value">{{ user_data.phone or 'Nie podano' }}</span>
-                            </div>
-                            
-                            <div class="info-item">
-                                <span class="info-label">Data utworzenia konta:</span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Data utworzenia konta:</span>
                                 <span class="info-value">{{ user_data.created_at.strftime('%d.%m.%Y %H:%M') if user_data.created_at else 'Nie znana' }}</span>
-                            </div>
-                            
-                            <div class="info-item">
-                                <span class="info-label">Ostatnie logowanie:</span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Ostatnie logowanie:</span>
                                 <span class="info-value">{{ user_data.last_login.strftime('%d.%m.%Y %H:%M') if user_data.last_login else 'Nigdy' }}</span>
                             </div>
                             
@@ -173,16 +173,16 @@
                                         {{ 'Aktywne' if user_data.is_active else 'Nieaktywne' }}
                                     </span>
                                 </span>
-                            </div>
-                            
-                            <div class="info-item">
-                                <span class="info-label">Status klubu:</span>
-                                <span class="info-value">
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Status klubu:</span>
+                <span class="info-value">
                                     <span class="club-member-badge {{ 'member' if user_data.club_member else 'not-member' }}">
-                                        <i class="fas fa-users me-1"></i>
+                        <i class="fas fa-users me-1"></i>
                                         <span>{{ 'Członek klubu' if user_data.club_member else 'Nie jest członkiem' }}</span>
-                                    </span>
-                                </span>
+                    </span>
+                </span>
                             </div>
                             
                             <div class="info-item">
@@ -191,45 +191,45 @@
                                     <span class="badge bg-info">{{ user_data.role.title() }}</span>
                                 </span>
                             </div>
-                        </div>
-                    </div>
+            </div>
+        </div>
 
                     <!-- Edit Profile Tab -->
                     <div class="tab-pane fade" id="edit-profile" role="tabpanel">
-                        <div class="profile-card">
-                            <h3 class="mb-4">
-                                <i class="fas fa-edit me-2 text-primary"></i>
-                                Edytuj profil
-                            </h3>
-                            
-                            <form id="profileForm">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="name" class="form-label">Imię *</label>
+        <div class="profile-card">
+            <h3 class="mb-4">
+                <i class="fas fa-edit me-2 text-primary"></i>
+                Edytuj profil
+            </h3>
+            
+            <form id="profileForm">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="name" class="form-label">Imię *</label>
                                         <input type="text" class="form-control" id="name" name="first_name" value="{{ user_data.first_name }}" required>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="email" class="form-label">Adres e-mail *</label>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="email" class="form-label">Adres e-mail *</label>
                                         <input type="email" class="form-control" id="email" name="email" value="{{ user_data.email }}" required>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
+                    </div>
+                </div>
+                
+                <div class="row">
                                     <div class="col-md-12 mb-3">
-                                        <label for="phone" class="form-label">Numer telefonu</label>
+                        <label for="phone" class="form-label">Numer telefonu</label>
                                         <input type="tel" class="form-control" id="phone" name="phone" value="{{ user_data.phone or '' }}" placeholder="+48 123 456 789">
-                                    </div>
-                                </div>
-                                
-                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                    <button type="button" class="btn btn-secondary me-md-2" onclick="resetForm()">
-                                        <i class="fas fa-undo me-1"></i>Resetuj
-                                    </button>
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-save me-1"></i>Zapisz zmiany
-                                    </button>
-                                </div>
-                            </form>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="button" class="btn btn-secondary me-md-2" onclick="resetForm()">
+                        <i class="fas fa-undo me-1"></i>Resetuj
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Zapisz zmiany
+                    </button>
+                </div>
+            </form>
                         </div>
                     </div>
 
@@ -283,8 +283,8 @@
                                                 </span>
                                             {% endif %}
                                         </div>
-                                    </div>
-                                    
+        </div>
+
                                     <div class="meeting-details">
                                         <div class="row">
                                             <div class="col-md-6">
@@ -317,8 +317,8 @@
                                                 {% endif %}
                                             </div>
                                         </div>
-                                    </div>
-                                    
+        </div>
+
                                     {% if meeting.description %}
                                     <div class="meeting-description">
                                         <p class="text-muted">{{ meeting.description[:150] }}{% if meeting.description|length > 150 %}...{% endif %}</p>
@@ -344,20 +344,20 @@
 
                     <!-- Security Tab -->
                     <div class="tab-pane fade" id="security" role="tabpanel">
-                        <div class="profile-card">
-                            <h3 class="mb-4">
+        <div class="profile-card">
+            <h3 class="mb-4">
                                 <i class="fas fa-shield-alt me-2 text-primary"></i>
-                                Ustawienia bezpieczeństwa
-                            </h3>
-                            
-                            <div class="info-item">
-                                <div>
-                                    <span class="info-label">Hasło</span>
-                                    <p class="text-muted mb-0">Zmień hasło do swojego konta</p>
-                                </div>
+                Ustawienia bezpieczeństwa
+            </h3>
+            
+            <div class="info-item">
+                <div>
+                    <span class="info-label">Hasło</span>
+                    <p class="text-muted mb-0">Zmień hasło do swojego konta</p>
+                </div>
                                 <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
-                                    <i class="fas fa-key me-1"></i>Zmień hasło
-                                </a>
+                    <i class="fas fa-key me-1"></i>Zmień hasło
+                </a>
                             </div>
                             
                             {% if user_data.is_temporary_password %}
@@ -378,49 +378,49 @@
                                     <i class="fas fa-trash-alt me-1"></i>Usuń konto
                                 </button>
                             </div>
-                        </div>
-                    </div>
+            </div>
+        </div>
 
                     <!-- Club Benefits Tab (only if not a member) -->
                     {% if not is_club_member %}
                     <div class="tab-pane fade" id="benefits" role="tabpanel">
                         <div class="profile-card">
-                            <h3 class="mb-4">
+            <h3 class="mb-4">
                                 <i class="fas fa-star me-2 text-primary"></i>
-                                Korzyści z członkostwa w klubie
-                            </h3>
-                            
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <div class="text-center">
-                                        <i class="fas fa-calendar-alt fa-3x text-primary mb-3"></i>
-                                        <h5>Wydarzenia</h5>
-                                        <p class="text-muted">Otrzymuj powiadomienia o nowych wydarzeniach</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <div class="text-center">
-                                        <i class="fas fa-envelope fa-3x text-success mb-3"></i>
-                                        <h5>Newsletter</h5>
-                                        <p class="text-muted">Dostęp do ekskluzywnych treści i porad</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <div class="text-center">
-                                        <i class="fas fa-users fa-3x text-info mb-3"></i>
-                                        <h5>Społeczność</h5>
-                                        <p class="text-muted">Dołącz do społeczności pasjonatów</p>
+                Korzyści z członkostwa w klubie
+            </h3>
+            
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="text-center">
+                        <i class="fas fa-calendar-alt fa-3x text-primary mb-3"></i>
+                        <h5>Wydarzenia</h5>
+                        <p class="text-muted">Otrzymuj powiadomienia o nowych wydarzeniach</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="text-center">
+                        <i class="fas fa-envelope fa-3x text-success mb-3"></i>
+                        <h5>Newsletter</h5>
+                        <p class="text-muted">Dostęp do ekskluzywnych treści i porad</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="text-center">
+                        <i class="fas fa-users fa-3x text-info mb-3"></i>
+                        <h5>Społeczność</h5>
+                        <p class="text-muted">Dołącz do społeczności pasjonatów</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
     <!-- Success Modal -->
     <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">

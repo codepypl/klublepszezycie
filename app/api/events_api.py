@@ -44,6 +44,10 @@ def api_event_schedule():
             show_published = request.args.get('show_published', 'all')  # 'all', 'true', 'false'
             search = request.args.get('search', '').strip()
             
+            # Get pagination parameters
+            page = int(request.args.get('page', 1))
+            per_page = int(request.args.get('per_page', 10))
+            
             # Build query
             query = EventSchedule.query
             
@@ -65,7 +69,20 @@ def api_event_schedule():
                     EventSchedule.location.ilike(f'%{search}%')
                 )
             
-            events = query.order_by(EventSchedule.event_date.desc()).all()
+            # Apply pagination
+            events_pagination = query.order_by(EventSchedule.event_date.desc()).paginate(
+                page=page, per_page=per_page, error_out=False
+            )
+            
+            events = events_pagination.items
+            pagination_info = {
+                'page': events_pagination.page,
+                'pages': events_pagination.pages,
+                'per_page': events_pagination.per_page,
+                'total': events_pagination.total,
+                'has_next': events_pagination.has_next,
+                'has_prev': events_pagination.has_prev
+            }
             
             return jsonify({
                 'success': True,
@@ -83,7 +100,8 @@ def api_event_schedule():
                     'is_published': event.is_published,
                     'is_archived': event.is_archived,
                     'created_at': event.created_at.isoformat() if event.created_at else None
-                } for event in events]
+                } for event in events],
+                'pagination': pagination_info
             })
         except Exception as e:
             logging.error(f"Error getting event schedule: {str(e)}")
@@ -355,6 +373,24 @@ def api_schedule(schedule_id):
                 print(f"✅ Zsynchronizowano grupę wydarzenia po aktualizacji przez API")
             else:
                 print(f"❌ Błąd synchronizacji grupy wydarzenia: {message}")
+            
+            # Aktualizuj powiadomienia jeśli zmieniła się godzina wydarzenia
+            if 'event_date' in data and 'event_time' in data:
+                from datetime import datetime
+                old_event_date = schedule.event_date
+                new_event_date = datetime.strptime(f"{data['event_date']} {data['event_time']}", "%Y-%m-%d %H:%M")
+                
+                if old_event_date != new_event_date:
+                    print(f"🕐 Godzina wydarzenia zmieniła się z {old_event_date} na {new_event_date}")
+                    
+                    from app.services.notification_system import NotificationProcessor
+                    notification_processor = NotificationProcessor()
+                    success, message = notification_processor.update_event_notifications(schedule_id, new_event_date)
+                    
+                    if success:
+                        print(f"✅ {message}")
+                    else:
+                        print(f"❌ Błąd aktualizacji powiadomień: {message}")
             
             return jsonify({
                 'success': True,

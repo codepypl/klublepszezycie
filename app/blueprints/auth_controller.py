@@ -133,6 +133,43 @@ class AuthController:
             current_user.password_hash = generate_password_hash(new_password)
             db.session.commit()
             
+            # Send password change notification email
+            try:
+                from app.services.email_service import EmailService
+                from app.blueprints.public_controller import generate_unsubscribe_token
+                from app.utils.crypto_utils import encrypt_email
+                import os
+                from datetime import datetime
+                
+                email_service = EmailService()
+                base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
+                
+                # Generate tokens for email
+                unsubscribe_token = generate_unsubscribe_token(current_user.email, 'unsubscribe')
+                delete_token = generate_unsubscribe_token(current_user.email, 'delete_account')
+                
+                context = {
+                    'user_name': current_user.first_name or 'Użytkowniku',
+                    'user_email': current_user.email,
+                    'change_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'login_url': f'{base_url}/login',
+                    'unsubscribe_url': f'{base_url}/api/unsubscribe/{encrypt_email(current_user.email)}/{unsubscribe_token}',
+                    'delete_account_url': f'{base_url}/api/delete-account/{encrypt_email(current_user.email)}/{delete_token}'
+                }
+                
+                # Send password change notification
+                email_service.send_template_email(
+                    to_email=current_user.email,
+                    template_name='password_changed',
+                    context=context,
+                    to_name=current_user.first_name,
+                    use_queue=True
+                )
+                
+            except Exception as email_error:
+                # Don't fail password change if email fails
+                print(f"Failed to send password change notification: {email_error}")
+            
             return {
                 'success': True,
                 'message': 'Hasło zostało zmienione pomyślnie'

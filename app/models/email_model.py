@@ -128,13 +128,15 @@ class EmailQueue(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('email_campaigns.id'), nullable=True)
     template_id = db.Column(db.Integer, db.ForeignKey('email_templates.id'), nullable=True)
-    to_email = db.Column(db.String(120), nullable=False)
-    to_name = db.Column(db.String(120))
+    recipient_email = db.Column(db.String(120), nullable=False)  # Changed from to_email
+    recipient_name = db.Column(db.String(120))  # Changed from to_name
+    template_name = db.Column(db.String(100))  # Template name for new system
     subject = db.Column(db.String(200), nullable=False)
     html_content = db.Column(db.Text)
     text_content = db.Column(db.Text)
     context = db.Column(db.Text)  # JSON string for template variables
     status = db.Column(db.String(20), default='pending')  # pending, sending, sent, failed, cancelled
+    priority = db.Column(db.Integer, default=2)  # Priority: 1=high, 2=normal, 3=low
     retry_count = db.Column(db.Integer, default=0)
     max_retries = db.Column(db.Integer, default=3)
     scheduled_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -143,12 +145,49 @@ class EmailQueue(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Backward compatibility properties
+    @property
+    def to_email(self):
+        return self.recipient_email
+    
+    @to_email.setter
+    def to_email(self, value):
+        self.recipient_email = value
+    
+    @property
+    def to_name(self):
+        return self.recipient_name
+    
+    @to_name.setter
+    def to_name(self, value):
+        self.recipient_name = value
+    
     # Relationships
     email_campaign = db.relationship('EmailCampaign', back_populates='queue_items')
     template = db.relationship('EmailTemplate', backref='email_queue_items')
     
     def __repr__(self):
         return f'<EmailQueue {self.to_email} - {self.status}>'
+
+class EmailReminder(db.Model):
+    """Email reminders tracking"""
+    __tablename__ = 'email_reminders'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    event_id = db.Column(db.Integer, nullable=False)
+    reminder_type = db.Column(db.String(20), nullable=False)  # '24h', '1h', '5min'
+    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    email_queue_id = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Unique constraint to prevent duplicates
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'event_id', 'reminder_type', name='uq_email_reminder'),
+    )
+    
+    def __repr__(self):
+        return f'<EmailReminder user_id={self.user_id} event_id={self.event_id} type={self.reminder_type}>'
 
 class EmailLog(db.Model):
     """Email sending logs"""

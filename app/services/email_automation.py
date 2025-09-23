@@ -3,6 +3,7 @@ Email Automation - automatyzacje emailowe
 """
 from datetime import datetime, timedelta
 from app.models import db, User, EventSchedule, UserGroup, UserGroupMember
+from app.models.email_model import EmailReminder
 from app.services.email_service import EmailService
 from app.services.group_manager import GroupManager
 from app.utils.timezone_utils import get_local_now
@@ -161,74 +162,146 @@ class EmailAutomation:
             now = get_local_now()
             
             for member in members:
-                # Pobierz dane użytkownika
-                user = User.query.get(member.user_id)
-                if not user:
+                # Pobierz dane użytkownika (może być external member)
+                user = None
+                if member.user_id:
+                    user = User.query.get(member.user_id)
+                
+                # Dla external members używamy danych z member
+                if not user and not member.email:
                     continue
                 
-                # Generate unsubscribe and delete account URLs
-                from app.blueprints.public_controller import generate_unsubscribe_token
-                import os
-                
-                unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
-                delete_token = generate_unsubscribe_token(user.email, 'delete_account')
-                
                 # Get base URL from environment or use default
+                import os
                 base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
                 
+                # Base context - tokens will be generated when actually sending emails
+                if user:
+                    user_name = user.first_name or 'Użytkowniku'
+                    user_email = user.email
+                else:
+                    user_name = member.name or 'Użytkowniku'
+                    user_email = member.email
                 
                 context = {
-                    'user_name': user.first_name or 'Użytkowniku',
+                    'user_name': user_name,
                     'event_title': event.title,
                     'event_date': event.event_date.strftime('%d.%m.%Y'),
                     'event_time': event.event_date.strftime('%H:%M'),
-                    'event_location': event.location or 'Online',
-                    'unsubscribe_url': f'{base_url}/api/unsubscribe/{encrypt_email(user.email)}/{unsubscribe_token}',
-                    'delete_account_url': f'{base_url}/api/delete-account/{encrypt_email(user.email)}/{delete_token}'
+                    'event_location': event.location or 'Online'
                 }
                 
                 # 24h przed
                 reminder_24h = event_date_aware - timedelta(hours=24)
                 if reminder_24h > now:
-                    # Użyj szablonu zamiast generować HTML
-                    success, message = self.email_service.send_template_email(
-                        to_email=user.email,
-                        template_name='event_reminder_24h',
-                        context=context,
-                        to_name=user.first_name
-                    )
-                    if success:
-                        reminders_scheduled += 1
+                    # Sprawdź czy email już został wysłany
+                    existing_reminder = EmailReminder.query.filter_by(
+                        user_id=user.id,
+                        event_id=event.id,
+                        reminder_type='24h'
+                    ).first()
+                    
+                    if not existing_reminder:
+                        # Generate tokens only when actually sending email
+                        unsubscribe_token = generate_unsubscribe_token(user_email, 'unsubscribe')
+                        delete_token = generate_unsubscribe_token(user_email, 'delete_account')
+                        
+                        # Update context with fresh tokens
+                        context['unsubscribe_url'] = f'{base_url}/api/unsubscribe/{encrypt_email(user_email)}/{unsubscribe_token}'
+                        context['delete_account_url'] = f'{base_url}/api/delete-account/{encrypt_email(user_email)}/{delete_token}'
+                        
+                        # Użyj szablonu zamiast generować HTML
+                        success, message = self.email_service.send_template_email(
+                            to_email=user_email,
+                            template_name='event_reminder_24h',
+                            context=context,
+                            to_name=user_name
+                        )
+                        if success:
+                            # Zapisz informację o wysłanym emailu
+                            reminder = EmailReminder(
+                                user_id=user.id,
+                                event_id=event.id,
+                                reminder_type='24h'
+                            )
+                            db.session.add(reminder)
+                            reminders_scheduled += 1
                 
                 # 1h przed
                 reminder_1h = event_date_aware - timedelta(hours=1)
                 if reminder_1h > now:
-                    # Użyj szablonu zamiast generować HTML
-                    success, message = self.email_service.send_template_email(
-                        to_email=user.email,
-                        template_name='event_reminder_1h',
-                        context=context,
-                        to_name=user.first_name
-                    )
-                    if success:
-                        reminders_scheduled += 1
+                    # Sprawdź czy email już został wysłany
+                    existing_reminder = EmailReminder.query.filter_by(
+                        user_id=user.id,
+                        event_id=event.id,
+                        reminder_type='1h'
+                    ).first()
+                    
+                    if not existing_reminder:
+                        # Generate tokens only when actually sending email
+                        unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
+                        delete_token = generate_unsubscribe_token(user.email, 'delete_account')
+                        
+                        # Update context with fresh tokens
+                        context['unsubscribe_url'] = f'{base_url}/api/unsubscribe/{encrypt_email(user.email)}/{unsubscribe_token}'
+                        context['delete_account_url'] = f'{base_url}/api/delete-account/{encrypt_email(user.email)}/{delete_token}'
+                        
+                        # Użyj szablonu zamiast generować HTML
+                        success, message = self.email_service.send_template_email(
+                            to_email=user.email,
+                            template_name='event_reminder_1h',
+                            context=context,
+                            to_name=user.first_name
+                        )
+                        if success:
+                            # Zapisz informację o wysłanym emailu
+                            reminder = EmailReminder(
+                                user_id=user.id,
+                                event_id=event.id,
+                                reminder_type='1h'
+                            )
+                            db.session.add(reminder)
+                            reminders_scheduled += 1
                 
                 # 5min przed
                 reminder_5min = event_date_aware - timedelta(minutes=5)
                 if reminder_5min > now:
-                    # Dodaj meeting_link do kontekstu
-                    context_with_link = context.copy()
-                    context_with_link['meeting_link'] = event.meeting_link or ''
+                    # Sprawdź czy email już został wysłany
+                    existing_reminder = EmailReminder.query.filter_by(
+                        user_id=user.id,
+                        event_id=event.id,
+                        reminder_type='5min'
+                    ).first()
                     
-                    # Użyj szablonu zamiast generować HTML
-                    success, message = self.email_service.send_template_email(
-                        to_email=user.email,
-                        template_name='event_reminder_5min',
-                        context=context_with_link,
-                        to_name=user.first_name
-                    )
-                    if success:
-                        reminders_scheduled += 1
+                    if not existing_reminder:
+                        # Generate tokens only when actually sending email
+                        unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
+                        delete_token = generate_unsubscribe_token(user.email, 'delete_account')
+                        
+                        # Dodaj meeting_link do kontekstu
+                        context_with_link = context.copy()
+                        context_with_link['meeting_link'] = event.meeting_link or ''
+                        
+                        # Update context with fresh tokens
+                        context_with_link['unsubscribe_url'] = f'{base_url}/api/unsubscribe/{encrypt_email(user.email)}/{unsubscribe_token}'
+                        context_with_link['delete_account_url'] = f'{base_url}/api/delete-account/{encrypt_email(user.email)}/{delete_token}'
+                        
+                        # Użyj szablonu zamiast generować HTML
+                        success, message = self.email_service.send_template_email(
+                            to_email=user.email,
+                            template_name='event_reminder_5min',
+                            context=context_with_link,
+                            to_name=user.first_name
+                        )
+                        if success:
+                            # Zapisz informację o wysłanym emailu
+                            reminder = EmailReminder(
+                                user_id=user.id,
+                                event_id=event.id,
+                                reminder_type='5min'
+                            )
+                            db.session.add(reminder)
+                            reminders_scheduled += 1
             
             return True, f"Zaplanowano {reminders_scheduled} przypomnień"
             
@@ -241,8 +314,10 @@ class EmailAutomation:
             # Znajdź wydarzenia w najbliższych 25 godzinach
             now = get_local_now()
             future_events = EventSchedule.query.filter(
-                EventSchedule.event_date > now,
-                EventSchedule.event_date <= now + timedelta(hours=25)
+                EventSchedule.is_active == True,
+                EventSchedule.is_published == True,
+                EventSchedule.event_date > now.replace(tzinfo=None),
+                EventSchedule.event_date <= (now + timedelta(hours=25)).replace(tzinfo=None)
             ).all()
             
             processed = 0

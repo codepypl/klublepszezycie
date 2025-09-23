@@ -452,6 +452,7 @@ function loadDefaultVariables() {
         'login_url': 'Link do logowania',
         'unsubscribe_url': 'Link do wypisania się',
         'delete_account_url': 'Link do usunięcia konta',
+        'change_date': 'Data zmiany hasła',
         'post_title': 'Tytuł artykułu',
         'post_url': 'Link do artykułu',
         'comment_author': 'Autor komentarza',

@@ -196,8 +196,8 @@ function displayQueue(emails) {
             <td>${email.to_email}</td>
             <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">${email.subject}</td>
             <td><span class="admin-badge admin-badge-${statusClass}">${email.status}</span></td>
-            <td>${email.scheduled_at ? new Date(email.scheduled_at + 'Z').toLocaleString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'}) : '-'}</td>
-            <td>${email.sent_at ? new Date(email.sent_at + 'Z').toLocaleString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'}) : '-'}</td>
+            <td>${email.scheduled_at ? new Date(email.scheduled_at).toLocaleString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'}) : '-'}</td>
+            <td>${email.sent_at ? new Date(email.sent_at).toLocaleString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'}) : '-'}</td>
             <td>
                 <div class="btn-group" role="group">
                     ${email.status === 'failed' ? `<button class="btn btn-sm admin-btn-warning" onclick="retryEmail(${email.id})" title="Ponów email">

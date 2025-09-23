@@ -748,13 +748,35 @@ def email_create_campaign():
     try:
         data = request.get_json()
         
+        # Handle scheduling - POPRAWIONA LOGIKA
+        send_type = data.get('send_type', 'immediate')
+        scheduled_at = None
+        status = 'draft'  # Zawsze zaczynamy od draft
+        
+        # Sprawdź czy admin chce wysłać natychmiast czy zaplanować
+        if send_type == 'scheduled':
+            if not data.get('scheduled_at'):
+                return jsonify({'success': False, 'error': 'Proszę wybrać datę i czas wysyłki dla zaplanowanej kampanii'}), 400
+            
+            from datetime import datetime
+            scheduled_at = datetime.fromisoformat(data['scheduled_at'].replace('Z', '+00:00'))
+            
+            # Sprawdź czy data jest w przyszłości
+            if scheduled_at <= datetime.utcnow():
+                return jsonify({'success': False, 'error': 'Data wysyłki musi być w przyszłości'}), 400
+            
+            # Kampania zostaje jako draft - będzie zaplanowana gdy admin kliknie "Wyślij"
+            # scheduled_at jest zapisane, ale status pozostaje draft
+        
         campaign = EmailCampaign(
             name=data['name'],
             subject=data['subject'],
             template_id=data.get('template_id'),
             content_variables=json.dumps(data.get('content_variables', {})),
             recipient_groups=json.dumps(data['recipient_groups']),
-            status='draft'
+            send_type=send_type,
+            scheduled_at=scheduled_at,
+            status=status
         )
         
         db.session.add(campaign)
@@ -769,7 +791,12 @@ def email_create_campaign():
         campaign.total_recipients = total_recipients
         db.session.commit()
         
-        return jsonify({'success': True, 'message': 'Kampania utworzona pomyślnie'})
+        # Kampanie są zawsze zapisywane jako draft lub scheduled
+        # Wysyłka następuje dopiero po kliknięciu przycisku "Wyślij"
+        if send_type == 'immediate':
+            return jsonify({'success': True, 'message': 'Kampania utworzona pomyślnie. Możesz ją wysłać używając przycisku "Wyślij".'})
+        else:
+            return jsonify({'success': True, 'message': 'Kampania zaplanowana pomyślnie'})
         
     except Exception as e:
         db.session.rollback()
@@ -918,6 +945,40 @@ def email_send_campaign(campaign_id):
         campaign = EmailCampaign.query.get(campaign_id)
         if not campaign:
             return jsonify({'success': False, 'error': 'Kampania nie została znaleziona'}), 404
+        
+        # POPRAWIONA LOGIKA WYSYŁANIA
+        # Draft NIGDY nie może być wysłany - tylko aktywowany
+        if campaign.status == 'draft':
+            return jsonify({'success': False, 'error': 'Kampania jest szkicem. Najpierw ją aktywuj.'}), 400
+        
+        # Kampania może być wysłana tylko jeśli jest ready, scheduled lub active
+        if campaign.status not in ['ready', 'scheduled']:
+            if campaign.status in ['sent', 'sending', 'completed']:
+                return jsonify({'success': False, 'error': 'Kampania została już wysłana'}), 400
+            else:
+                return jsonify({'success': False, 'error': 'Kampania nie może być wysłana w obecnym statusie'}), 400
+        
+        # Sprawdź logikę wysyłki
+        from datetime import datetime
+        now = datetime.utcnow()
+        
+        # Jeśli kampania ma scheduled_at - zaplanuj ją
+        if campaign.scheduled_at:
+            if campaign.scheduled_at > now:
+                # Zaplanuj na przyszłość
+                campaign.status = 'scheduled'
+                db.session.commit()
+                return jsonify({
+                    'success': True, 
+                    'message': f'Kampania zaplanowana na {campaign.scheduled_at.strftime("%Y-%m-%d %H:%M")}'
+                })
+            else:
+                # Data już minęła - wyślij natychmiast
+                campaign.scheduled_at = None  # Usuń datę
+                campaign.status = 'sending'
+        else:
+            # Brak daty - wyślij natychmiast
+            campaign.status = 'sending'
         
         # Pobierz grupy odbiorców
         if not campaign.recipient_groups:
@@ -1563,3 +1624,87 @@ def delete_event_groups(event_id):
         
     except Exception as e:
         return False, f"Błąd usuwania grup: {str(e)}"
+
+@email_bp.route('/email/queue-stats', methods=['GET'])
+@login_required
+def get_queue_stats():
+    """Zwraca statystyki kolejki emaili"""
+    try:
+        from app.services.notification_system import NotificationProcessor
+        
+        processor = NotificationProcessor()
+        stats = processor.get_queue_stats()
+        
+        if stats:
+            return jsonify({
+                'success': True,
+                'stats': stats
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Błąd pobierania statystyk kolejki'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Błąd: {str(e)}'
+        })
+
+@email_bp.route('/email/campaigns/<int:campaign_id>/activate', methods=['POST'])
+@login_required
+def email_activate_campaign(campaign_id):
+    """Aktywuje kampanię (zmienia z draft na ready)"""
+    try:
+        # Pobierz kampanię
+        campaign = EmailCampaign.query.get(campaign_id)
+        if not campaign:
+            return jsonify({'success': False, 'error': 'Kampania nie została znaleziona'}), 404
+        
+        # Można aktywować tylko draft
+        if campaign.status != 'draft':
+            return jsonify({'success': False, 'error': 'Można aktywować tylko kampanie w statusie draft'}), 400
+        
+        # Sprawdź czy kampania ma wszystkie wymagane dane
+        if not campaign.name or not campaign.subject:
+            return jsonify({'success': False, 'error': 'Kampania musi mieć nazwę i temat'}), 400
+        
+        if not campaign.recipient_groups:
+            return jsonify({'success': False, 'error': 'Kampania musi mieć przypisane grupy odbiorców'}), 400
+        
+        # Aktywuj kampanię
+        from datetime import datetime
+        now = datetime.utcnow()
+        
+        # Sprawdź czy kampania ma datę planowania
+        if campaign.scheduled_at:
+            if campaign.scheduled_at > now:
+                # Zaplanuj kampanię
+                campaign.status = 'scheduled'
+                db.session.commit()
+                return jsonify({
+                    'success': True, 
+                    'message': f'Kampania została zaplanowana na {campaign.scheduled_at.strftime("%Y-%m-%d %H:%M")}'
+                })
+            else:
+                # Data już minęła - usuń datę i ustaw jako ready
+                campaign.scheduled_at = None
+                campaign.status = 'ready'
+                db.session.commit()
+                return jsonify({
+                    'success': True, 
+                    'message': 'Data wysyłki już minęła. Kampania jest gotowa do natychmiastowej wysyłki.'
+                })
+        else:
+            # Brak daty - ustaw jako ready
+            campaign.status = 'ready'
+            db.session.commit()
+            return jsonify({
+                'success': True, 
+                'message': 'Kampania została aktywowana. Możesz ją teraz wysłać.'
+            })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500

@@ -567,31 +567,72 @@ def generate_unsubscribe_token(email, action):
     """Generate unsubscribe token for email with expiration"""
     try:
         secret_key = os.environ.get('SECRET_KEY', 'default-secret-key')
-        # Add timestamp for expiration (30 days from now)
         import time
-        timestamp = int(time.time()) + (30 * 24 * 60 * 60)  # 30 days
-        message = f"{email}:{action}:{timestamp}"
+        
+        # Generate token with current timestamp (30 days from now)
+        current_time = int(time.time())
+        expiration_timestamp = current_time + (30 * 24 * 60 * 60)  # 30 days from now
+        
+        # Create message with email, action, and expiration timestamp
+        message = f"{email}:{action}:{expiration_timestamp}"
+        
+        # Generate HMAC-SHA256 token
         token = hmac.new(
             secret_key.encode('utf-8'),
             message.encode('utf-8'),
             hashlib.sha256
         ).hexdigest()
+        
+        print(f"🔑 Generated token for {email}:{action} - expires in 30 days")
+        print(f"   Token: {token}")
+        print(f"   Generated at: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))}")
+        print(f"   Expires at: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(expiration_timestamp))}")
         return token
-    except Exception:
+    except Exception as e:
+        print(f"❌ Error generating token: {e}")
         return None
 
 def verify_unsubscribe_token(email, action, token):
-    """Verify unsubscribe token"""
+    """Verify unsubscribe token with proper expiration check"""
     try:
         secret_key = os.environ.get('SECRET_KEY', 'default-secret-key')
         import time
         current_time = int(time.time())
         
-        # Check token for different expiration times (backward compatibility)
-        # Try current token (30 days)
-        expected_token = generate_unsubscribe_token(email, action)
-        if hmac.compare_digest(token, expected_token):
-            return True
+        print(f"🔍 Verifying token for {email}:{action}")
+        print(f"   Token: {token}")
+        print(f"   Current time: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))}")
+        
+        # Check if token was generated within last 30 days
+        # We need to check all possible generation timestamps from 30 days ago to now
+        for days_ago in range(30):  # Check last 30 days
+            for hour in range(24):  # Check all hours in each day
+                for minute in range(0, 60, 5):  # Check every 5 minutes
+                    # Calculate when the token was generated (days_ago days, hour hours, minute minutes ago)
+                    generation_time = current_time - (days_ago * 24 * 60 * 60) - (hour * 60 * 60) - (minute * 60)
+                    # Calculate expiration timestamp (30 days from generation time)
+                    expiration_timestamp = generation_time + (30 * 24 * 60 * 60)
+                
+                    message = f"{email}:{action}:{expiration_timestamp}"
+                    expected_token = hmac.new(
+                        secret_key.encode('utf-8'),
+                        message.encode('utf-8'),
+                        hashlib.sha256
+                    ).hexdigest()
+                    
+                    if hmac.compare_digest(token, expected_token):
+                        # Check if token is still valid (not expired)
+                        if expiration_timestamp > current_time:
+                            days_remaining = int((expiration_timestamp - current_time) / (24 * 60 * 60))
+                            print(f"✅ Valid token for {email}:{action} - expires in {days_remaining} days")
+                            print(f"   Generated {days_ago} days, {hour} hours, {minute} minutes ago at: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(generation_time))}")
+                            print(f"   Expires at: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(expiration_timestamp))}")
+                            return True
+                        else:
+                            print(f"❌ Expired token for {email}:{action}")
+                            print(f"   Generated {days_ago} days, {hour} hours, {minute} minutes ago at: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(generation_time))}")
+                            print(f"   Expired at: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(expiration_timestamp))}")
+                            return False
             
         # Try old format without timestamp (backward compatibility)
         message = f"{email}:{action}"
@@ -601,8 +642,11 @@ def verify_unsubscribe_token(email, action, token):
             hashlib.sha256
         ).hexdigest()
         if hmac.compare_digest(token, old_token):
+            print(f"✅ Valid old format token for {email}:{action}")
             return True
             
+        print(f"❌ Invalid token for {email}:{action}")
         return False
-    except Exception:
+    except Exception as e:
+        print(f"❌ Error verifying token: {e}")
         return False

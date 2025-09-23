@@ -8,6 +8,9 @@ let availableGroups = [];
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize global CRUD refresh manager for this page
+    window.crudRefreshManager.init(loadCampaigns);
+    
     loadCampaigns();
     loadTemplates();
     loadGroups();
@@ -24,14 +27,6 @@ document.addEventListener('DOMContentLoaded', function() {
             loadCampaigns();
         }
     };
-    
-    // Add event listener for campaign modal close to refresh campaigns list
-    const campaignModal = document.getElementById('campaignModal');
-    if (campaignModal) {
-        campaignModal.addEventListener('hidden.bs.modal', function() {
-            loadCampaigns(); // Odśwież listę kampanii po zamknięciu modala
-        });
-    }
 });
 
 
@@ -78,9 +73,27 @@ function displayCampaigns(campaigns) {
         const row = document.createElement('tr');
         
         let statusClass = 'secondary';
-        if (campaign.status === 'completed') statusClass = 'success';
-        else if (campaign.status === 'sending') statusClass = 'warning';
-        else if (campaign.status === 'cancelled') statusClass = 'danger';
+        let statusText = campaign.status;
+        
+        if (campaign.status === 'completed') {
+            statusClass = 'success';
+            statusText = 'Zakończona';
+        } else if (campaign.status === 'sending') {
+            statusClass = 'warning';
+            statusText = 'Wysyłanie';
+        } else if (campaign.status === 'scheduled') {
+            statusClass = 'info';
+            statusText = 'Zaplanowana';
+        } else if (campaign.status === 'ready') {
+            statusClass = 'primary';
+            statusText = 'Gotowa';
+        } else if (campaign.status === 'cancelled') {
+            statusClass = 'danger';
+            statusText = 'Anulowana';
+        } else if (campaign.status === 'draft') {
+            statusClass = 'secondary';
+            statusText = 'Szkic';
+        }
         
         row.innerHTML = `
             <td>
@@ -89,7 +102,7 @@ function displayCampaigns(campaigns) {
             <td><span class="badge admin-badge admin-badge-primary">${campaign.id}</span></td>
             <td>${campaign.name}</td>
             <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">${campaign.subject}</td>
-            <td><span class="admin-badge admin-badge-${statusClass}">${campaign.status}</span></td>
+            <td><span class="admin-badge admin-badge-${statusClass}">${statusText}</span></td>
             <td>${campaign.total_recipients}</td>
             <td>${campaign.sent_count}</td>
             <td>${new Date(campaign.created_at + 'Z').toLocaleDateString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'})}</td>
@@ -98,7 +111,10 @@ function displayCampaigns(campaigns) {
                     <button class="btn btn-sm admin-btn-outline" onclick="editCampaign(${campaign.id})" title="Edytuj kampanię">
                         <i class="fas fa-edit"></i>
                     </button>
-                    ${campaign.status === 'draft' ? `<button class="btn btn-sm admin-btn-info" onclick="sendCampaign(${campaign.id})" title="Wyślij kampanię">
+                    ${campaign.status === 'draft' ? `<button class="btn btn-sm admin-btn-success" onclick="activateCampaign(${campaign.id})" title="Aktywuj kampanię">
+                        <i class="fas fa-play"></i>
+                    </button>` : ''}
+                    ${campaign.status === 'ready' ? `<button class="btn btn-sm admin-btn-info" onclick="sendCampaign(${campaign.id})" title="Wyślij kampanię">
                         <i class="fas fa-paper-plane"></i>
                     </button>` : ''}
                     ${campaign.status !== 'sending' && campaign.status !== 'sent' && campaign.status !== 'completed' ? `<button class="btn btn-sm admin-btn-danger" onclick="deleteCampaign(${campaign.id})" title="Usuń kampanię">
@@ -126,8 +142,16 @@ function initializeBulkDelete() {
             window.campaignsBulkDelete = null;
         }
         
-        // Create new bulk delete instance
+        // Create new bulk delete instance with custom callback
         window.campaignsBulkDelete = new BulkDelete('campaignsTable', deleteEndpoint);
+        
+        // Register callback for bulk delete completion
+        if (window.campaignsBulkDelete && typeof window.campaignsBulkDelete.onSuccess === 'function') {
+            window.campaignsBulkDelete.onSuccess = function() {
+                // Odśwież listę kampanii po bulk delete
+                window.crudRefreshManager.executeRefresh();
+            };
+        }
     }
 }
 
@@ -162,10 +186,47 @@ function loadGroupsForCampaign() {
         });
 }
 
+// Toggle scheduling options
+function toggleScheduling() {
+    const scheduledRadio = document.getElementById('send_scheduled');
+    const schedulingOptions = document.getElementById('schedulingOptions');
+    
+    if (scheduledRadio && schedulingOptions) {
+        if (scheduledRadio.checked) {
+            schedulingOptions.style.display = 'block';
+            // Set minimum date to now
+            const now = new Date();
+            const minDateTime = now.toISOString().slice(0, 16);
+            document.getElementById('campaign_scheduled_at').min = minDateTime;
+        } else {
+            schedulingOptions.style.display = 'none';
+        }
+    }
+}
+
 // Save campaign
 function saveCampaign() {
     const form = document.getElementById('campaignForm');
     const formData = new FormData(form);
+    
+    // Walidacja planowania
+    const sendType = formData.get('send_type') || 'immediate';
+    const scheduledAt = formData.get('campaign_scheduled_at');
+    
+    if (sendType === 'scheduled' && !scheduledAt) {
+        alert('Proszę wybrać datę i czas wysyłki dla zaplanowanej kampanii.');
+        return;
+    }
+    
+    if (sendType === 'scheduled' && scheduledAt) {
+        const scheduledDate = new Date(scheduledAt);
+        const now = new Date();
+        
+        if (scheduledDate <= now) {
+            alert('Data wysyłki musi być w przyszłości.');
+            return;
+        }
+    }
     
     const selectedGroups = Array.from(document.getElementById('campaign_groups').selectedOptions)
         .map(option => parseInt(option.value));
@@ -198,12 +259,16 @@ function saveCampaign() {
         }
     }
     
+    // Get scheduling options (sendType and scheduledAt already declared above)
+    
     const data = {
         name: formData.get('campaign_name'),
         subject: formData.get('campaign_subject'),
         template_id: templateId ? parseInt(templateId) : null,
         content_variables: contentVariables,
-        recipient_groups: selectedGroups
+        recipient_groups: selectedGroups,
+        send_type: sendType,
+        scheduled_at: sendType === 'scheduled' ? scheduledAt : null
     };
     
     const campaignId = document.getElementById('campaign_id').value;
@@ -222,14 +287,9 @@ function saveCampaign() {
         if (data.success) {
             toastManager.success('Kampania zapisana pomyślnie!');
             bootstrap.Modal.getInstance(document.getElementById('campaignModal')).hide();
-            loadCampaigns();
             
-            // Wywołaj globalne odświeżenie
-            if (typeof window.refreshAfterCRUD === 'function') {
-                window.refreshAfterCRUD();
-            } else {
-                console.warn('window.refreshAfterCRUD is not available');
-            }
+            // Odśwież listę kampanii
+            window.crudRefreshManager.executeRefresh();
         } else {
             toastManager.error('Błąd zapisywania kampanii: ' + data.error);
         }
@@ -291,6 +351,29 @@ function editCampaign(campaignId) {
         });
 }
 
+// Activate campaign
+function activateCampaign(campaignId) {
+    if (confirm('Czy na pewno chcesz aktywować tę kampanię? Po aktywacji będzie można ją wysłać.')) {
+        fetch(`/api/email/campaigns/${campaignId}/activate`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                toastManager.success(data.message);
+                // Odśwież listę kampanii
+                window.crudRefreshManager.executeRefresh();
+            } else {
+                toastManager.error('Błąd aktywacji: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error activating campaign:', error);
+            toastManager.error('Błąd aktywacji');
+        });
+    }
+}
+
 // Send campaign
 function sendCampaign(campaignId) {
     if (confirm('Czy na pewno chcesz wysłać tę kampanię?')) {
@@ -301,10 +384,8 @@ function sendCampaign(campaignId) {
         .then(data => {
             if (data.success) {
                 toastManager.success('Kampania wysłana!');
-                loadCampaigns();
-                
-                // Wywołaj globalne odświeżenie
-                window.refreshAfterCRUD();
+                // Odśwież listę kampanii
+                window.crudRefreshManager.executeRefresh();
             } else {
                 toastManager.error('Błąd wysyłania: ' + data.error);
             }
@@ -318,9 +399,35 @@ function sendCampaign(campaignId) {
 
 // Delete campaign
 function deleteCampaign(campaignId) {
-    window.deleteConfirmation.showSingleDelete(
-        'kampanię',
-        () => {
+    // Sprawdź czy deleteConfirmation jest dostępne
+    if (window.deleteConfirmation && typeof window.deleteConfirmation.showSingleDelete === 'function') {
+        // Użyj modalnego potwierdzenia
+        window.deleteConfirmation.showSingleDelete(
+            'kampanię',
+            () => {
+                fetch(`/api/email/campaigns/${campaignId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        toastManager.success('Kampania usunięta!');
+                        // Odśwież listę kampanii
+                        window.crudRefreshManager.executeRefresh();
+                    } else {
+                        toastManager.error('Błąd usuwania: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting campaign:', error);
+                    toastManager.error('Błąd usuwania');
+                });
+            },
+            'kampanię'
+        );
+    } else {
+        // Fallback - użyj confirm() jeśli deleteConfirmation nie jest dostępne
+        if (confirm('Czy na pewno chcesz usunąć tę kampanię?')) {
             fetch(`/api/email/campaigns/${campaignId}`, {
                 method: 'DELETE'
             })
@@ -328,10 +435,8 @@ function deleteCampaign(campaignId) {
             .then(data => {
                 if (data.success) {
                     toastManager.success('Kampania usunięta!');
-                    loadCampaigns();
-                    
-                    // Wywołaj globalne odświeżenie
-                    window.refreshAfterCRUD();
+                    // Odśwież listę kampanii
+                    window.crudRefreshManager.executeRefresh();
                 } else {
                     toastManager.error('Błąd usuwania: ' + data.error);
                 }
@@ -340,9 +445,8 @@ function deleteCampaign(campaignId) {
                 console.error('Error deleting campaign:', error);
                 toastManager.error('Błąd usuwania');
             });
-        },
-        'kampanię'
-    );
+        }
+    }
 }
 
 // Load templates
@@ -544,10 +648,24 @@ function updateEmailPreview() {
     }
 }
 
-// Make functions globally available
+// CRUD Refresh Manager is now loaded globally from crud-refresh-manager.js
+
+// Make functions globally available immediately
 window.showCampaignModal = showCampaignModal;
 window.saveCampaign = saveCampaign;
 window.editCampaign = editCampaign;
+window.activateCampaign = activateCampaign;
+window.sendCampaign = sendCampaign;
 window.deleteCampaign = deleteCampaign;
 window.handleTemplateChange = handleTemplateChange;
 window.updateEmailPreview = updateEmailPreview;
+window.toggleScheduling = toggleScheduling;
+
+// Ensure functions are available even if called before DOM is ready
+console.log('Email campaigns functions loaded:', {
+    showCampaignModal: typeof window.showCampaignModal,
+    saveCampaign: typeof window.saveCampaign,
+    editCampaign: typeof window.editCampaign,
+    activateCampaign: typeof window.activateCampaign,
+    sendCampaign: typeof window.sendCampaign
+});

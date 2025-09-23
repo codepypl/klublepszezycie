@@ -65,25 +65,25 @@ def main():
             else:
                 print(f"[{datetime.now()}] ℹ️ Brak emaili do ponowienia")
             
-            # Przetwórz przypomnienia o wydarzeniach (WYŁĄCZONE - powoduje dodawanie emaili do kolejki)
-            print(f"[{datetime.now()}] ⏸️ Pominięto automatyczne przypomnienia - wyłączone aby nie dodawać emaili do kolejki")
-            # automation = EmailAutomation()
-            # success, message = automation.process_event_reminders()
-            # reminders_time = (datetime.now() - reminders_start).total_seconds()
+            # Przetwórz przypomnienia o wydarzeniach (WŁĄCZONE - z ochroną przed duplikatami)
+            reminders_start = datetime.now()
+            automation = EmailAutomation()
+            success, message = automation.process_event_reminders()
+            reminders_time = (datetime.now() - reminders_start).total_seconds()
             
-            # # Zapisz log do bazy danych
-            # SystemLog.log_event_reminders(
-            #     processed_events=1 if success else 0,
-            #     success=success,
-            #     message=message,
-            #     execution_time=reminders_time
-            # )
-            # db.session.commit()
+            # Zapisz log do bazy danych
+            SystemLog.log_event_reminders(
+                processed_events=1 if success else 0,
+                success=success,
+                message=message,
+                execution_time=reminders_time
+            )
+            db.session.commit()
             
-            # if success:
-            #     print(f"[{datetime.now()}] ✅ {message}")
-            # else:
-            #     print(f"[{datetime.now()}] ❌ {message}")
+            if success:
+                print(f"[{datetime.now()}] ✅ {message}")
+            else:
+                print(f"[{datetime.now()}] ❌ {message}")
             
             # Aktualizuj grupy
             groups_start = datetime.now()

@@ -1,6 +1,14 @@
 // Users Management JavaScript
 
+// Function to refresh users data (for CRUD refresh manager)
+function refreshUsersData() {
+    // Reload the page to refresh all data
+    location.reload();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize global CRUD refresh manager for this page
+    window.crudRefreshManager.init(refreshUsersData);
     // Obsługa filtrów
     const filtersCollapse = document.getElementById('filtersCollapse');
     const filtersIcon = document.getElementById('filtersIcon');
@@ -120,11 +128,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     
                     // Wywołaj globalne odświeżenie
-                    if (typeof window.refreshAfterCRUD === 'function') {
-                        window.refreshAfterCRUD();
-                    } else {
-                        console.warn('window.refreshAfterCRUD is not available');
-                    }
+                    // Refresh data using global CRUD manager
+                    window.crudRefreshManager.executeRefresh();
                 } else {
                     window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
                 }
@@ -238,11 +243,8 @@ function deleteUser(userId) {
                     }
                     
                     // Wywołaj globalne odświeżenie
-                    if (typeof window.refreshAfterCRUD === 'function') {
-                        window.refreshAfterCRUD();
-                    } else {
-                        console.warn('window.refreshAfterCRUD is not available');
-                    }
+                    // Refresh data using global CRUD manager
+                    window.crudRefreshManager.executeRefresh();
                 } else {
                     window.toastManager.error('Błąd podczas usuwania: ' + data.error);
                 }
@@ -381,11 +383,8 @@ function initializeBulkEdit() {
                 updateBulkEditButton();
                 
                 // Refresh page or update UI
-                if (typeof window.refreshAfterCRUD === 'function') {
-                    window.refreshAfterCRUD();
-                } else {
-                    location.reload();
-                }
+                // Refresh data using global CRUD manager
+                window.crudRefreshManager.executeRefresh();
             } else {
                 window.toastManager.error('Błąd podczas aktualizacji: ' + data.message);
             }

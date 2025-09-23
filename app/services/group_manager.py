@@ -616,9 +616,9 @@ class GroupManager:
                     for registration in registrations:
                         member = UserGroupMember(
                             group_id=group_id,
-                            user_id=None,  # user_id field no longer exists in event_registrations
+                            user_id=registration.id,  # registration.id is the user_id
                             email=registration.email,
-                            first_name=registration.first_name,
+                            name=registration.first_name,
                             member_type='external'  # All event registrations are external members
                         )
                         db.session.add(member)
