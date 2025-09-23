@@ -305,6 +305,14 @@ class MailgunSender:
         self.mailgun_api_key = os.getenv('MAILGUN_API_KEY')
         self.batch_size = 1000  # Zwiększony limit - Mailgun obsługuje do 1000
         self.base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
+        
+        # Debug info
+        if not self.mailgun_domain:
+            logging.warning("MAILGUN_DOMAIN not set")
+        if not self.mailgun_api_key:
+            logging.warning("MAILGUN_API_KEY not set")
+        if not self.base_url:
+            logging.warning("BASE_URL not set, using default")
         self.max_batch_size = 1000  # Maksymalny rozmiar paczki
         self.min_batch_size = 100   # Minimalny rozmiar paczki
     
@@ -335,9 +343,21 @@ class MailgunSender:
             if success:
                 # Oznacz jako wysłane
                 self._mark_as_sent(emails)
-                return True, f"Wysłano {len(emails)} emaili"
+                return True, f"Wysłano {len(emails)} emaili przez Mailgun"
             else:
-                return False, "Błąd wysyłania przez Mailgun"
+                # Fallback do SMTP
+                logging.warning("Mailgun failed, trying SMTP fallback...")
+                from app.services.email_fallback_sender import EmailFallbackSender
+                
+                fallback_sender = EmailFallbackSender()
+                fallback_success, fallback_message = await fallback_sender.send_batch(emails)
+                
+                if fallback_success:
+                    # Oznacz jako wysłane
+                    self._mark_as_sent(emails)
+                    return True, f"Wysłano {len(emails)} emaili przez SMTP fallback"
+                else:
+                    return False, f"Błąd wysyłania przez Mailgun i SMTP: {fallback_message}"
                 
         except Exception as e:
             logging.error(f"Błąd wysyłania paczki emaili: {e}")
@@ -376,12 +396,14 @@ class MailgunSender:
         return batch_data
     
     def _add_security_tokens(self, context: Dict, email: str):
-        """Dodaje tokeny bezpieczeństwa do kontekstu"""
-        unsubscribe_token = generate_unsubscribe_token(email, 'unsubscribe')
-        delete_token = generate_unsubscribe_token(email, 'delete_account')
+        """Dodaje tokeny bezpieczeństwa do kontekstu - nowy system v2"""
+        from app.services.unsubscribe_manager import unsubscribe_manager
         
-        context['unsubscribe_url'] = f"{self.base_url}/api/unsubscribe/{encrypt_email(email)}/{unsubscribe_token}"
-        context['delete_account_url'] = f"{self.base_url}/api/delete-account/{encrypt_email(email)}/{delete_token}"
+        unsubscribe_url = unsubscribe_manager.get_unsubscribe_url(email)
+        delete_account_url = unsubscribe_manager.get_delete_account_url(email)
+        
+        context['unsubscribe_url'] = unsubscribe_url
+        context['delete_account_url'] = delete_account_url
     
     def _render_template(self, template_name: str, context: Dict) -> Tuple[str, str]:
         """Renderuje szablon emaila"""
@@ -395,7 +417,14 @@ class MailgunSender:
     async def _send_to_mailgun(self, data: Dict) -> bool:
         """Wysyła dane do Mailgun API"""
         try:
+            if not self.mailgun_domain or not self.mailgun_api_key:
+                logging.error("Mailgun configuration missing: domain or API key not set")
+                return False
+                
             url = f"https://api.mailgun.net/v3/{self.mailgun_domain}/messages"
+            
+            logging.info(f"Sending to Mailgun: {url}")
+            logging.info(f"Data keys: {list(data.keys())}")
             
             async with aiohttp.ClientSession() as session:
                 async with session.post(
@@ -403,7 +432,15 @@ class MailgunSender:
                     auth=aiohttp.BasicAuth('api', self.mailgun_api_key),
                     data=data
                 ) as response:
-                    return response.status == 200
+                    response_text = await response.text()
+                    logging.info(f"Mailgun response status: {response.status}")
+                    logging.info(f"Mailgun response: {response_text}")
+                    
+                    if response.status == 200:
+                        return True
+                    else:
+                        logging.error(f"Mailgun API error: {response.status} - {response_text}")
+                        return False
                     
         except Exception as e:
             logging.error(f"Błąd API Mailgun: {e}")

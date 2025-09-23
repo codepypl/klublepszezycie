@@ -22,24 +22,20 @@ class EmailAutomation:
             # Wyślij email powitalny
             user = User.query.get(user_id)
             if user:
-                # Generate unsubscribe and delete account URLs
-                from app.blueprints.public_controller import generate_unsubscribe_token
+                # Generate unsubscribe and delete account URLs - nowy system v2
+                from app.services.unsubscribe_manager import unsubscribe_manager
                 import os
-                
-                unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
-                delete_token = generate_unsubscribe_token(user.email, 'delete_account')
                 
                 # Get base URL from environment or use default
                 base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
-                
                 
                 context = {
                     'user_name': user.first_name or 'Użytkowniku',
                     'user_email': user.email,
                     'temporary_password': 'Sprawdź poprzedni email',  # Password was sent in previous email
                     'login_url': f'{base_url}/login',
-                    'unsubscribe_url': f'{base_url}/api/unsubscribe/{encrypt_email(user.email)}/{unsubscribe_token}',
-                    'delete_account_url': f'{base_url}/api/delete-account/{encrypt_email(user.email)}/{delete_token}'
+                    'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(user.email),
+                    'delete_account_url': unsubscribe_manager.get_delete_account_url(user.email)
                 }
                 
                 self.email_service.send_template_email(

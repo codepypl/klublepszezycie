@@ -225,17 +225,16 @@ def register():
             try:
                 email_service = EmailService()
                 
-                # Generate unsubscribe and delete account URLs
-                unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
-                delete_token = generate_unsubscribe_token(user.email, 'delete_account')
+                # Generate unsubscribe and delete account URLs - nowy system v2
+                from app.services.unsubscribe_manager import unsubscribe_manager
                 
                 context = {
                     'user_name': user.first_name,
                     'user_email': user.email,
                     'temporary_password': temp_password,
                     'login_url': request.url_root + 'login',
-                    'unsubscribe_url': request.url_root + f'api/unsubscribe/{encrypt_email(user.email)}/{unsubscribe_token}',
-                    'delete_account_url': request.url_root + f'api/delete-account/{encrypt_email(user.email)}/{delete_token}'
+                    'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(user.email),
+                    'delete_account_url': unsubscribe_manager.get_delete_account_url(user.email)
                 }
                 
                 success, message = email_service.send_template_email(

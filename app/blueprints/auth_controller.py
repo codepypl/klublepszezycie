@@ -144,17 +144,16 @@ class AuthController:
                 email_service = EmailService()
                 base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
                 
-                # Generate tokens for email
-                unsubscribe_token = generate_unsubscribe_token(current_user.email, 'unsubscribe')
-                delete_token = generate_unsubscribe_token(current_user.email, 'delete_account')
+                # Generate tokens for email - nowy system v2
+                from app.services.unsubscribe_manager import unsubscribe_manager
                 
                 context = {
                     'user_name': current_user.first_name or 'Użytkowniku',
                     'user_email': current_user.email,
                     'change_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'login_url': f'{base_url}/login',
-                    'unsubscribe_url': f'{base_url}/api/unsubscribe/{encrypt_email(current_user.email)}/{unsubscribe_token}',
-                    'delete_account_url': f'{base_url}/api/delete-account/{encrypt_email(current_user.email)}/{delete_token}'
+                    'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(current_user.email),
+                    'delete_account_url': unsubscribe_manager.get_delete_account_url(current_user.email)
                 }
                 
                 # Send password change notification

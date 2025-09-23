@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Potwierdzenie {{ action }} - Klub Lepszego Życia</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .danger-icon { color: #dc3545; }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        
+        .message {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .warning {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        
+        .form-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #dc3545;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-danger:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .consequences {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .consequences ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon danger-icon">🗑️</div>
+        
+        <h1>Potwierdź {{ action }}</h1>
+        
+        <div class="message">{{ message }}</div>
+        
+        <div class="details">
+            <strong>{{ details }}</strong>
+        </div>
+        
+        <div class="warning">
+            {{ warning }}
+        </div>
+        
+        <div class="consequences">
+            <strong>Po usunięciu konta:</strong>
+            <ul>
+                <li>Wszystkie Twoje dane zostaną trwale usunięte</li>
+                <li>Nie będziesz mieć dostępu do wydarzeń</li>
+                <li>Twoja historia uczestnictwa zostanie usunięta</li>
+                <li>Nie będziesz otrzymywać żadnych powiadomień</li>
+            </ul>
+        </div>
+        
+        <form method="POST" action="{{ url_for('unsubscribe_v2.confirm_delete_account') }}">
+            <input type="hidden" name="token" value="{{ token }}">
+            
+            <div class="form-group">
+                <label for="confirmation">Aby potwierdzić usunięcie konta, wpisz: <strong>DELETE</strong></label>
+                <input type="text" id="confirmation" name="confirmation" placeholder="DELETE" required>
+            </div>
+            
+            <div class="buttons">
+                <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>Usuń konto</button>
+                <a href="javascript:history.back()" class="btn btn-secondary">Anuluj</a>
+            </div>
+        </form>
+        
+        <div class="footer">
+            <p>Ta operacja jest nieodwracalna. Nie będziemy móc odzyskać Twoich danych.</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('confirmation').addEventListener('input', function() {
+            const deleteBtn = document.getElementById('deleteBtn');
+            if (this.value === 'DELETE') {
+                deleteBtn.disabled = false;
+            } else {
+                deleteBtn.disabled = true;
+            }
+        });
+    </script>
+</body>
+</html>

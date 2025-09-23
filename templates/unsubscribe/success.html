@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ action|title }} zakończone - Klub Lepszego Życia</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .success-icon { color: #28a745; }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        
+        .message {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .contact {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon success-icon">✅</div>
+        
+        <h1>{{ action|title }} zakończone pomyślnie</h1>
+        
+        <div class="message">{{ message }}</div>
+        
+        <div class="details">
+            <strong>{{ details }}</strong>
+        </div>
+        
+        {% if action == "usunięcie konta" %}
+        <div class="info">
+            <strong>Twoje konto zostało trwale usunięte.</strong><br>
+            Wszystkie dane zostały usunięte z naszego systemu zgodnie z RODO.
+        </div>
+        
+        <div class="contact">
+            <strong>Potrzebujesz pomocy?</strong><br>
+            Jeśli masz pytania dotyczące usunięcia konta, skontaktuj się z nami:
+            <br><strong>kontakt@klublepszezycie.pl</strong>
+        </div>
+        
+        {% else %}
+        <div class="info">
+            <strong>Zostałeś wypisany z klubu.</strong><br>
+            Nie będziesz już otrzymywać powiadomień o wydarzeniach klubowych.
+        </div>
+        
+        <div class="contact">
+            <strong>Chcesz ponownie dołączyć?</strong><br>
+            Możesz zawsze ponownie dołączyć do klubu logując się na swoje konto.
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <a href="/login" class="btn">Zaloguj się</a>
+            <a href="/" class="btn btn-secondary">Strona główna</a>
+        </div>
+        {% endif %}
+        
+        <div class="footer">
+            <p>Dziękujemy za korzystanie z naszych usług.</p>
+            <p><strong>Klub Lepszego Życia</strong></p>
+        </div>
+    </div>
+</body>
+</html>
