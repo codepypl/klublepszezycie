@@ -127,5 +127,26 @@ success, message = group_manager.cleanup_orphaned_groups()
 ## Status Wydarzeń
 
 - **Aktywne** (`is_active=True, is_archived=False`): Widoczne na stronie
-- **Zarchiwizowane** (`is_active=False, is_archived=True`): Ukryte, historia zachowana
+- **Zarchiwizowane** (`is_archived=True, is_published=False`): Ukryte, historia zachowana
 - **Zakończone**: Automatycznie archiwizowane
+
+## Filtry w Panelu Administracyjnym
+
+W panelu administracyjnym na stronie wydarzeń dostępne są następujące filtry:
+
+### 1. Filtr Archiwalny
+- **Aktywne**: Pokazuje tylko niearchiwalne wydarzenia
+- **Archiwalne**: Pokazuje tylko wydarzenia archiwalne  
+- **Wszystkie**: Pokazuje wszystkie wydarzenia
+
+### 2. Filtr Publikacji
+- **Wszystkie**: Pokazuje wydarzenia niezależnie od statusu publikacji
+- **Opublikowane**: Pokazuje tylko opublikowane wydarzenia
+- **Nieopublikowane**: Pokazuje tylko nieopublikowane wydarzenia
+
+### 3. Wyszukiwanie
+- Wyszukuje w tytule, opisie i lokalizacji wydarzenia
+- Automatyczne odświeżanie po 500ms od ostatniego wpisania
+
+### 4. Czyszczenie Filtrów
+- Przycisk "X" resetuje wszystkie filtry do domyślnych wartości

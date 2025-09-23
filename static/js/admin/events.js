@@ -295,6 +295,10 @@ class EventsManager {
             .then(data => {
                 if (data.success && data.events) {
                     this.displayEvents(data.events);
+                    // Update active filters count after successful load
+                    if (typeof updateActiveFiltersCount === 'function') {
+                        updateActiveFiltersCount();
+                    }
                 } else {
                     console.error('API returned error:', data.message);
                     this.displayError(data.message || 'Wystąpił błąd podczas ładowania wydarzeń');
@@ -335,7 +339,6 @@ class EventsManager {
                             <th>Data</th>
                             <th>Lokalizacja</th>
                             <th>Status</th>
-                            <th>Archiwalny</th>
                             <th>Akcje</th>
                         </tr>
                     </thead>
@@ -390,19 +393,25 @@ class EventsManager {
         });
 
         const statusBadges = [];
-        if (event.is_active) {
-            statusBadges.push('<span class="badge admin-badge admin-badge-success">Aktywne</span>');
+        
+        // Archival status (highest priority)
+        if (event.is_archived) {
+            statusBadges.push('<span class="badge admin-badge admin-badge-warning"><i class="fas fa-archive me-1"></i>Archiwalne</span>');
         } else {
-            statusBadges.push('<span class="badge admin-badge admin-badge-danger">Nieaktywne</span>');
+            // Active/Inactive status
+            if (event.is_active) {
+                statusBadges.push('<span class="badge admin-badge admin-badge-success"><i class="fas fa-check-circle me-1"></i>Aktywne</span>');
+            } else {
+                statusBadges.push('<span class="badge admin-badge admin-badge-danger"><i class="fas fa-times-circle me-1"></i>Nieaktywne</span>');
+            }
         }
         
+        // Published status
         if (event.is_published) {
-            statusBadges.push('<span class="badge admin-badge admin-badge-primary">Opublikowane</span>');
+            statusBadges.push('<span class="badge admin-badge admin-badge-primary"><i class="fas fa-eye me-1"></i>Opublikowane</span>');
+        } else {
+            statusBadges.push('<span class="badge admin-badge admin-badge-secondary"><i class="fas fa-eye-slash me-1"></i>Nieopublikowane</span>');
         }
-
-        const archivedBadge = event.is_archived 
-            ? '<span class="badge admin-badge admin-badge-warning"><i class="fas fa-archive me-1"></i>Archiwalne</span>'
-            : '<span class="badge admin-badge admin-badge-success"><i class="fas fa-clock me-1"></i>Aktywne</span>';
 
         return `
             <tr data-event-id="${event.id}" data-item-id="${event.id}">
@@ -421,7 +430,6 @@ class EventsManager {
                 <td>${formattedDate}</td>
                 <td>${event.location || '-'}</td>
                 <td>${statusBadges.join(' ')}</td>
-                <td>${archivedBadge}</td>
                 <td>
                     <div class="btn-group" role="group">
                         <button class="btn btn-sm admin-btn-outline" onclick="eventsManager.editEvent(${event.id})">
@@ -553,8 +561,43 @@ function clearFilters() {
     document.getElementById('archivedFilter').value = 'false';
     document.getElementById('publishedFilter').value = 'all';
     
+    // Hide active filters count
+    const activeFiltersCount = document.getElementById('activeFiltersCount');
+    if (activeFiltersCount) {
+        activeFiltersCount.style.display = 'none';
+    }
+    
     if (window.eventsManager) {
         window.eventsManager.loadEvents();
+    }
+}
+
+function applyFilters() {
+    if (window.eventsManager) {
+        window.eventsManager.loadEvents();
+        updateActiveFiltersCount();
+    }
+}
+
+function updateActiveFiltersCount() {
+    const searchValue = document.getElementById('searchInput')?.value?.trim();
+    const archivedFilter = document.getElementById('archivedFilter')?.value;
+    const publishedFilter = document.getElementById('publishedFilter')?.value;
+    
+    let activeCount = 0;
+    
+    if (searchValue) activeCount++;
+    if (archivedFilter && archivedFilter !== 'false') activeCount++;
+    if (publishedFilter && publishedFilter !== 'all') activeCount++;
+    
+    const activeFiltersCount = document.getElementById('activeFiltersCount');
+    if (activeFiltersCount) {
+        if (activeCount > 0) {
+            activeFiltersCount.textContent = `${activeCount} aktywny`;
+            activeFiltersCount.style.display = 'inline';
+        } else {
+            activeFiltersCount.style.display = 'none';
+        }
     }
 }
 
@@ -563,33 +606,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
     const archivedFilter = document.getElementById('archivedFilter');
     const publishedFilter = document.getElementById('publishedFilter');
+    const applyFiltersBtn = document.getElementById('applyFilters');
+    const clearFiltersBtn = document.getElementById('clearFilters');
     
+    if (applyFiltersBtn) {
+        applyFiltersBtn.addEventListener('click', applyFilters);
+    }
+    
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', clearFilters);
+    }
+    
+    // Auto-apply filters on change (optional - you can remove this if you prefer manual apply)
     if (searchInput) {
         let searchTimeout;
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
-                if (window.eventsManager) {
-                    window.eventsManager.loadEvents();
-                }
+                applyFilters();
             }, 500); // Debounce search
         });
     }
     
     if (archivedFilter) {
-        archivedFilter.addEventListener('change', function() {
-            if (window.eventsManager) {
-                window.eventsManager.loadEvents();
-            }
-        });
+        archivedFilter.addEventListener('change', applyFilters);
     }
     
     if (publishedFilter) {
-        publishedFilter.addEventListener('change', function() {
-            if (window.eventsManager) {
-                window.eventsManager.loadEvents();
-            }
-        });
+        publishedFilter.addEventListener('change', applyFilters);
     }
 });
 
