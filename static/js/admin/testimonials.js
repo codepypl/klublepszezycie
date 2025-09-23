@@ -100,7 +100,6 @@ class TestimonialsManager {
             console.error('Error:', error);
             window.toastManager.error('Wystąpił błąd podczas usuwania opinii');
         });
-        }
     }
 
     handleAddTestimonial(e) {
