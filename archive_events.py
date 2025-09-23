@@ -26,8 +26,12 @@ def main():
         email_automation = EmailAutomation()
         group_manager = GroupManager()
         
-        # Archive ended events
+        # Archive ended events (sets is_archived=True, is_active=False, is_published=False)
         print("📦 Archiwizowanie zakończonych wydarzeń...")
+        print("   - Ustawienie is_archived=True")
+        print("   - Ustawienie is_active=False") 
+        print("   - Ustawienie is_published=False")
+        print("   - Czyszczenie grup wydarzenia")
         success, message = email_automation.archive_ended_events()
         if success:
             print(f"✅ {message}")

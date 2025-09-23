@@ -262,7 +262,30 @@ class EventsManager {
     }
 
     loadEvents() {
-        fetch('/api/event-schedule')
+        // Build query parameters from filters
+        const params = new URLSearchParams();
+        
+        const searchValue = document.getElementById('searchInput')?.value?.trim();
+        const archivedFilter = document.getElementById('archivedFilter')?.value;
+        const publishedFilter = document.getElementById('publishedFilter')?.value;
+        
+        if (searchValue) {
+            params.append('search', searchValue);
+        }
+        
+        if (archivedFilter === 'true') {
+            params.append('show_archived', 'true');
+        } else if (archivedFilter === 'all') {
+            params.append('show_archived', 'true'); // Show all means show archived too
+        }
+        
+        if (publishedFilter !== 'all') {
+            params.append('show_published', publishedFilter);
+        }
+        
+        const url = `/api/event-schedule${params.toString() ? '?' + params.toString() : ''}`;
+        
+        fetch(url)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -312,6 +335,7 @@ class EventsManager {
                             <th>Data</th>
                             <th>Lokalizacja</th>
                             <th>Status</th>
+                            <th>Archiwalny</th>
                             <th>Akcje</th>
                         </tr>
                     </thead>
@@ -366,9 +390,7 @@ class EventsManager {
         });
 
         const statusBadges = [];
-        if (event.is_archived) {
-            statusBadges.push('<span class="badge admin-badge admin-badge-secondary">Archiwalne</span>');
-        } else if (event.is_active) {
+        if (event.is_active) {
             statusBadges.push('<span class="badge admin-badge admin-badge-success">Aktywne</span>');
         } else {
             statusBadges.push('<span class="badge admin-badge admin-badge-danger">Nieaktywne</span>');
@@ -377,6 +399,10 @@ class EventsManager {
         if (event.is_published) {
             statusBadges.push('<span class="badge admin-badge admin-badge-primary">Opublikowane</span>');
         }
+
+        const archivedBadge = event.is_archived 
+            ? '<span class="badge admin-badge admin-badge-warning"><i class="fas fa-archive me-1"></i>Archiwalne</span>'
+            : '<span class="badge admin-badge admin-badge-success"><i class="fas fa-clock me-1"></i>Aktywne</span>';
 
         return `
             <tr data-event-id="${event.id}" data-item-id="${event.id}">
@@ -395,6 +421,7 @@ class EventsManager {
                 <td>${formattedDate}</td>
                 <td>${event.location || '-'}</td>
                 <td>${statusBadges.join(' ')}</td>
+                <td>${archivedBadge}</td>
                 <td>
                     <div class="btn-group" role="group">
                         <button class="btn btn-sm admin-btn-outline" onclick="eventsManager.editEvent(${event.id})">
@@ -519,6 +546,52 @@ function editEvent(eventId) {
         window.eventsManager.editEvent(eventId);
     }
 }
+
+// Filter functions
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('archivedFilter').value = 'false';
+    document.getElementById('publishedFilter').value = 'all';
+    
+    if (window.eventsManager) {
+        window.eventsManager.loadEvents();
+    }
+}
+
+// Add event listeners for filters
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const archivedFilter = document.getElementById('archivedFilter');
+    const publishedFilter = document.getElementById('publishedFilter');
+    
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if (window.eventsManager) {
+                    window.eventsManager.loadEvents();
+                }
+            }, 500); // Debounce search
+        });
+    }
+    
+    if (archivedFilter) {
+        archivedFilter.addEventListener('change', function() {
+            if (window.eventsManager) {
+                window.eventsManager.loadEvents();
+            }
+        });
+    }
+    
+    if (publishedFilter) {
+        publishedFilter.addEventListener('change', function() {
+            if (window.eventsManager) {
+                window.eventsManager.loadEvents();
+            }
+        });
+    }
+});
 
 function deleteEvent(eventId) {
     if (window.eventsManager) {

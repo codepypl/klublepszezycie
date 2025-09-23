@@ -13,10 +13,15 @@ System automatycznie archiwizuje zakończone wydarzenia i czyści powiązane z n
 - Jeśli nie ma `end_date`: gdy obecny czas przekroczy `event_date`
 
 **Co się dzieje podczas archiwizacji:**
-1. Wydarzenie jest oznaczone jako `is_archived = True` i `is_active = False`
+1. Wydarzenie jest oznaczone jako `is_archived = True`, `is_active = False` i `is_published = False`
 2. Wszyscy członkowie są usuwani z grup wydarzenia
 3. Grupy wydarzenia są usuwane z systemu
 4. Historia uczestnictwa pozostaje zachowana
+
+**Wpływ na widoczność wydarzeń:**
+- Wydarzenia archiwalne nie są wyświetlane na stronie głównej
+- Wydarzenia archiwalne nie są publikowane (nie można się na nie zapisać)
+- Wydarzenia archiwalne można przeglądać w panelu administracyjnym z odpowiednimi filtrami
 
 ### 2. Czyszczenie Grup
 

@@ -66,9 +66,10 @@ class EventSchedule(db.Model):
     def archive(self):
         """Archive the event and clean up related groups"""
         try:
-            # Archive the event
+            # Archive the event - unarchive and unpublish
             self.is_archived = True
             self.is_active = False
+            self.is_published = False  # Unpublish archived events
             
             # Clean up related groups
             from app.services.group_manager import GroupManager
@@ -88,7 +89,7 @@ class EventSchedule(db.Model):
             else:
                 print(f"❌ Błąd usuwania grup dla wydarzenia {self.title}: {message}")
             
-            return True, "Wydarzenie zostało zarchiwizowane"
+            return True, "Wydarzenie zostało zarchiwizowane i odopublikowane"
             
         except Exception as e:
             return False, f"Błąd archiwizacji wydarzenia: {str(e)}"

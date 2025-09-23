@@ -7,15 +7,42 @@
 {% endblock %}
 
 {% block page_actions %}
-                <div class="d-flex justify-content-end gap-2 mb-3">
-        <button class="btn admin-btn" onclick="showAddEventModal()">
-                        <i class="fas fa-plus me-2"></i>
-                        Dodaj Wydarzenie
-                    </button>
-                    <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
-                        <i class="fas fa-trash me-2"></i>
-                        Usuń Zaznaczone
-                    </button>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <!-- Filters -->
+                    <div class="d-flex gap-2 align-items-center">
+                        <div class="input-group" style="width: 250px;">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" class="form-control" id="searchInput" placeholder="Szukaj wydarzeń...">
+                        </div>
+                        
+                        <select class="form-select" id="archivedFilter" style="width: 150px;">
+                            <option value="false">Aktywne</option>
+                            <option value="true">Archiwalne</option>
+                            <option value="all">Wszystkie</option>
+                        </select>
+                        
+                        <select class="form-select" id="publishedFilter" style="width: 150px;">
+                            <option value="all">Wszystkie</option>
+                            <option value="true">Opublikowane</option>
+                            <option value="false">Nieopublikowane</option>
+                        </select>
+                        
+                        <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="d-flex gap-2">
+                        <button class="btn admin-btn" onclick="showAddEventModal()">
+                            <i class="fas fa-plus me-2"></i>
+                            Dodaj Wydarzenie
+                        </button>
+                        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
+                            <i class="fas fa-trash me-2"></i>
+                            Usuń Zaznaczone
+                        </button>
+                    </div>
                 </div>
 {% endblock %}
 

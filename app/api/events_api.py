@@ -39,7 +39,34 @@ def api_event_schedule():
     """Event schedule API"""
     if request.method == 'GET':
         try:
-            events = EventSchedule.query.order_by(EventSchedule.event_date.asc()).all()
+            # Get query parameters for filtering
+            show_archived = request.args.get('show_archived', 'false').lower() == 'true'
+            show_published = request.args.get('show_published', 'all')  # 'all', 'true', 'false'
+            search = request.args.get('search', '').strip()
+            
+            # Build query
+            query = EventSchedule.query
+            
+            # Filter by archived status
+            if not show_archived:
+                query = query.filter(EventSchedule.is_archived == False)
+            
+            # Filter by published status
+            if show_published == 'true':
+                query = query.filter(EventSchedule.is_published == True)
+            elif show_published == 'false':
+                query = query.filter(EventSchedule.is_published == False)
+            
+            # Search filter
+            if search:
+                query = query.filter(
+                    EventSchedule.title.ilike(f'%{search}%') |
+                    EventSchedule.description.ilike(f'%{search}%') |
+                    EventSchedule.location.ilike(f'%{search}%')
+                )
+            
+            events = query.order_by(EventSchedule.event_date.desc()).all()
+            
             return jsonify({
                 'success': True,
                 'events': [{
