@@ -33,7 +33,7 @@ class User(UserMixin, db.Model):
     
     def is_admin_role(self):
         """Check if user has admin role"""
-        return self.role == 'admin'
+        return self.role == 'admin' or self.account_type == 'admin'
     
     def is_ankieter_role(self):
         """Check if user has ankieter role"""

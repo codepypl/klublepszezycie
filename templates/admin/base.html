@@ -240,32 +240,205 @@
     <!-- Custom Admin JS -->
     <script src="{{ url_for('static', filename='js/utils/fetch-helper.js') }}"></script>
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
-    <script src="https://cdn.tiny.cloud/1/nzk6x47f5uoxs3thrhw5hjtjhrby1u3skrpld6z2z032z7tv/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <!-- Quill.js WYSIWYG Editor -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     
     <!-- Initialize Toast Manager -->
     <script>
         window.toastManager = new ToastManager();
     </script>
     
-    <!-- TinyMCE Initialization -->
+    <!-- Quill.js Initialization -->
     <script>
+    // Function to strip HTML tags and create plain text (for email templates)
+    window.stripHtmlFromHTML = function(html) {
+        // First, preserve template variables by replacing them with placeholders
+        const variablePlaceholders = {};
+        let processedHtml = html;
+        let placeholderIndex = 0;
+        
+        // Find and replace template variables with placeholders
+        processedHtml = processedHtml.replace(/\{\{([^}]+)\}\}/g, (match, variable) => {
+            const placeholder = `__TEMPLATE_VAR_${placeholderIndex++}__`;
+            variablePlaceholders[placeholder] = match;
+            return placeholder;
+        });
+        
+        // Convert HTML to plain text while preserving line breaks and paragraphs
+        processedHtml = processedHtml
+            // Convert block elements to line breaks
+            .replace(/<\/?(div|p|h[1-6]|li|br)[^>]*>/gi, '\n')
+            // Convert list items to dashes
+            .replace(/<\/?(ul|ol)[^>]*>/gi, '\n')
+            // Convert closing tags of other block elements
+            .replace(/<\/(article|section|header|footer|nav|aside|main)[^>]*>/gi, '\n')
+            // Convert table elements
+            .replace(/<\/?(table|tr)[^>]*>/gi, '\n')
+            .replace(/<\/?(td|th)[^>]*>/gi, ' | ')
+            // Remove remaining HTML tags
+            .replace(/<[^>]*>/g, '')
+            // Decode HTML entities
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'");
+        
+        // Clean up whitespace while preserving structure
+        let text = processedHtml
+            // Replace multiple spaces with single space
+            .replace(/[ \t]+/g, ' ')
+            // Replace multiple line breaks with double line break (paragraph)
+            .replace(/\n\s*\n\s*\n+/g, '\n\n')
+            // Remove leading/trailing whitespace from each line
+            .split('\n')
+            .map(line => line.trim())
+            .join('\n')
+            // Final trim
+            .trim();
+        
+        // Restore template variables
+        Object.keys(variablePlaceholders).forEach(placeholder => {
+            text = text.replace(placeholder, variablePlaceholders[placeholder]);
+        });
+        
+        return text;
+    };
+    
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize TinyMCE for admin forms
-        tinymce.init({
-            selector: 'textarea[data-tinymce]',
-            height: 300,
-            plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
-            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
-            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
-            setup: function (editor) {
-                editor.on('init', function () {
-                    console.log('TinyMCE initialized for:', editor.id);
+        // Initialize Quill for admin forms
+        const quillInstances = {};
+        
+        // Initialize all textareas with data-quill attribute
+        document.querySelectorAll('textarea[data-quill]').forEach(function(textarea) {
+            const editorId = textarea.id;
+            const container = document.createElement('div');
+            container.id = editorId + '_quill';
+            container.style.height = '300px';
+            
+            // Insert container after textarea
+            textarea.parentNode.insertBefore(container, textarea.nextSibling);
+            
+            // Hide original textarea
+            textarea.style.display = 'none';
+            
+            // Special configuration for email templates
+            const isEmailTemplate = editorId === 'template_html_content';
+            
+            // Initialize Quill with error handling
+            try {
+                const quillConfig = {
+                    theme: 'snow',
+                    modules: {
+                        toolbar: [
+                            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'color': [] }, { 'background': [] }],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            [{ 'indent': '-1'}, { 'indent': '+1' }],
+                            [{ 'align': [] }],
+                            ['link', 'image'],
+                            ['clean']
+                        ],
+                        clipboard: {
+                            matchVisual: false
+                        }
+                    },
+                    formats: [
+                        'bold', 'italic', 'underline', 'strike',
+                        'color', 'background',
+                        'header', 'list', 'bullet',
+                        'indent', 'align',
+                        'link', 'image',
+                        'font', 'size',
+                        'script', 'blockquote', 'code-block'
+                    ],
+                    placeholder: isEmailTemplate ? 'Wpisz treść HTML szablonu email...' : 'Wpisz treść...'
+                };
+                
+                // Add additional formats for email templates
+                if (isEmailTemplate) {
+                    quillConfig.formats.push('table', 'table-cell-line', 'table-cell');
+                    quillConfig.modules.toolbar.push(['table']);
+                }
+                
+                const quill = new Quill(container, quillConfig);
+            
+                // Set initial content
+                let initialContent = textarea.value || '';
+                // Clean up empty content
+                if (initialContent.trim() === '' || initialContent.trim() === '<p></p>' || initialContent.trim() === '<div></div>') {
+                    initialContent = isEmailTemplate ? '<p>Wpisz treść HTML szablonu email...</p>' : '<p>Wpisz treść...</p>';
+                }
+                
+                // Use Quill's API for better HTML handling
+                try {
+                    if (initialContent.includes('<') && initialContent.includes('>')) {
+                        // Convert HTML to Delta format
+                        const delta = quill.clipboard.convert(initialContent);
+                        quill.setContents(delta, 'silent');
+                    } else {
+                        // Plain text
+                        quill.setText(initialContent);
+                    }
+                } catch (parseError) {
+                    console.warn('Error parsing initial content, using innerHTML fallback:', parseError);
+                    quill.root.innerHTML = initialContent;
+                }
+                
+                // Store instance
+                quillInstances[editorId] = quill;
+                
+                // Sync content back to textarea on change
+                quill.on('text-change', function() {
+                    textarea.value = quill.root.innerHTML;
+                    
+                    // For email templates, also sync HTML to text content
+                    if (isEmailTemplate) {
+                        const textContentField = document.getElementById('template_text_content');
+                        console.log('🔍 Email template sync check:', {
+                            textContentField: !!textContentField,
+                            isTextContentManuallyEdited: window.isTextContentManuallyEdited,
+                            shouldSync: textContentField && !window.isTextContentManuallyEdited
+                        });
+                        
+                        if (textContentField && !window.isTextContentManuallyEdited) {
+                            // Only auto-sync if text content hasn't been manually edited
+                            try {
+                                const htmlContent = quill.root.innerHTML;
+                                console.log('🔍 HTML content for sync:', htmlContent);
+                                
+                                // Check if function exists
+                                if (typeof window.stripHtmlFromHTML === 'function') {
+                                    const textContent = window.stripHtmlFromHTML(htmlContent);
+                                    console.log('🔍 Converted text content:', textContent);
+                                    textContentField.value = textContent;
+                                } else {
+                                    console.error('window.stripHtmlFromHTML function not found!');
+                                    // Fallback to simple text extraction
+                                    const textContent = htmlContent.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+                                    textContentField.value = textContent;
+                                }
+                            } catch (error) {
+                                console.warn('Error syncing HTML to text:', error);
+                            }
+                        }
+                    }
                 });
-                editor.on('ready', function () {
-                    console.log('TinyMCE ready for:', editor.id);
-                });
+                
+                console.log('Quill initialized for:', editorId);
+            } catch (error) {
+                console.error('Error initializing Quill for:', editorId, error);
+                // Fallback: show textarea if Quill fails
+                textarea.style.display = 'block';
+                container.style.display = 'none';
             }
         });
+        
+        // Make quillInstances globally available
+        window.quillInstances = quillInstances;
     });
     </script>
     

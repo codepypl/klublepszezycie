@@ -1,13 +1,20 @@
 // Form Validators - JavaScript counterpart to app/utils/validation.py
 class FormValidators {
     /**
-     * Validate TinyMCE content
-     * @param {string} editorId - TinyMCE editor ID
+     * Validate Quill content
+     * @param {string} editorId - Quill editor ID
      * @param {string} fieldName - Human readable field name for error messages
      * @returns {boolean} - true if valid, false if invalid
      */
-    static validateTinyMCE(editorId, fieldName = 'Treść') {
-        const content = tinymce.get(editorId) ? tinymce.get(editorId).getContent() : '';
+    static validateQuill(editorId, fieldName = 'Treść') {
+        let content = '';
+        if (window.quillInstances && window.quillInstances[editorId]) {
+            content = window.quillInstances[editorId].root.innerHTML;
+        } else {
+            // Fallback to textarea
+            const textarea = document.getElementById(editorId);
+            content = textarea ? textarea.value : '';
+        }
         
         // Check if content is empty or contains only empty paragraphs
         if (!content || content.trim() === '' || content === '<p></p>' || content === '<p><br></p>') {
@@ -156,8 +163,8 @@ class FormValidators {
                 case 'slug':
                     isValid = this.validateSlug(validation.fieldId, validation.fieldName);
                     break;
-                case 'tinymce':
-                    isValid = this.validateTinyMCE(validation.fieldId, validation.fieldName);
+                case 'quill':
+                    isValid = this.validateQuill(validation.fieldId, validation.fieldName);
                     break;
                 case 'file':
                     isValid = this.validateFile(validation.fieldId, validation.allowedTypes, validation.maxSize, validation.fieldName);
@@ -190,7 +197,7 @@ class FormValidators {
             { type: 'required', fieldId: titleFieldId, fieldName: 'Tytuł artykułu' },
             { type: 'required', fieldId: slugFieldId, fieldName: 'Slug' },
             { type: 'slug', fieldId: slugFieldId, fieldName: 'Slug' },
-            { type: 'tinymce', fieldId: contentFieldId, fieldName: 'Treść artykułu' },
+            { type: 'quill', fieldId: contentFieldId, fieldName: 'Treść artykułu' },
             { type: 'file', fieldId: imageFieldId, maxSize: 100, fieldName: 'Zdjęcie główne' }
         ]);
     }

@@ -3,6 +3,7 @@ Users API endpoints
 """
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
+from werkzeug.security import check_password_hash
 from app.models import User, UserGroup, db
 from app.utils.auth_utils import admin_required_api, login_required_api
 from app.blueprints.users_controller import UsersController
@@ -779,4 +780,59 @@ def api_user_profile(user_id):
     
     except Exception as e:
         logging.error(f"Error in user profile API: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@users_api_bp.route('/users/delete-account', methods=['DELETE'])
+@login_required
+def api_delete_account():
+    """Delete current user account with password confirmation"""
+    try:
+        user = current_user
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'success': False, 'error': 'No data provided'}), 400
+        
+        password = data.get('password')
+        confirm_delete = data.get('confirm_delete')
+        
+        if not password:
+            return jsonify({'success': False, 'error': 'Hasło jest wymagane'}), 400
+        
+        if not confirm_delete:
+            return jsonify({'success': False, 'error': 'Potwierdzenie usunięcia jest wymagane'}), 400
+        
+        # Verify password
+        if not check_password_hash(user.password_hash, password):
+            return jsonify({'success': False, 'error': 'Nieprawidłowe hasło'}), 400
+        
+        # Delete user account and all related data
+        try:
+            # Delete user history
+            from app.models.user_history_model import UserHistory
+            UserHistory.query.filter_by(user_id=user.id).delete()
+            
+            # Delete user from groups (this will also delete the user from the database due to cascade)
+            from app.models.user_model import UserGroup
+            UserGroup.query.filter_by(user_id=user.id).delete()
+            
+            # Delete user account
+            db.session.delete(user)
+            db.session.commit()
+            
+            logging.info(f"User account deleted: {user.email}")
+            
+            return jsonify({
+                'success': True, 
+                'message': 'Konto zostało pomyślnie usunięte'
+            }), 200
+            
+        except Exception as delete_error:
+            db.session.rollback()
+            logging.error(f"Error deleting user account: {str(delete_error)}")
+            return jsonify({'success': False, 'error': 'Wystąpił błąd podczas usuwania konta'}), 500
+        
+    except Exception as e:
+        logging.error(f"Error in delete account API: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500

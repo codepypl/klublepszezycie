@@ -167,6 +167,10 @@
                             <div class="form-text">Slug zostanie wygenerowany automatycznie</div>
                         </div>
                         <div class="mb-3">
+                            <label for="editTagDescription" class="form-label">Opis</label>
+                            <textarea class="form-control" id="editTagDescription" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="editTagIsActive" name="is_active">
                                 <label class="form-check-label" for="editTagIsActive">
@@ -183,6 +187,11 @@
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin/blog_tags.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/blog_posts.js') }}"></script>
 {% endblock %}
 
 

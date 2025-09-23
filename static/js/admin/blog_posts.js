@@ -131,8 +131,8 @@ class BlogPostsManager {
         const formData = new FormData(e.target);
         
         
-        // Get content from TinyMCE
-        const content = this.getTinyMCEContent('postContent');
+        // Get content from Quill
+        const content = this.getQuillContent('postContent');
         formData.set('content', content);
         
         // Convert categories array
@@ -215,8 +215,8 @@ class BlogPostsManager {
         const formData = new FormData(e.target);
         const postId = formData.get('id');
         
-        // Get content from TinyMCE
-        const content = this.getTinyMCEContent('editPostContent');
+        // Get content from Quill
+        const content = this.getQuillContent('editPostContent');
         formData.set('content', content);
         
         // Convert categories array
@@ -384,8 +384,8 @@ class BlogPostsManager {
                 editPostStatus.value = post.status;
                 editPostAllowComments.checked = post.allow_comments || false;
                 
-                // Set content in TinyMCE
-                this.setTinyMCEContent('editPostContent', post.content);
+                // Set content in Quill
+                this.setQuillContent('editPostContent', post.content);
                 
                 // Set categories
                 const categoryCheckboxes = document.querySelectorAll('#editPostCategories input[type="checkbox"]');
@@ -831,18 +831,12 @@ class BlogPostsManager {
         }
     }
 
-    // TinyMCE helper functions
-    setTinyMCEContent(editorId, content) {
+    // Quill helper functions
+    setQuillContent(editorId, content) {
         try {
-            const editor = tinymce.get(editorId);
-            if (editor) {
-                if (editor.initialized) {
-                    editor.setContent(content || '');
-                } else {
-                    editor.on('init', () => {
-                        editor.setContent(content || '');
-                    });
-                }
+            if (window.quillInstances && window.quillInstances[editorId]) {
+                window.quillInstances[editorId].root.innerHTML = content || '';
+                return true;
             } else {
                 // Fallback: set content in textarea
                 const textarea = document.getElementById(editorId);
@@ -851,7 +845,7 @@ class BlogPostsManager {
                 }
             }
         } catch (error) {
-            console.error('Error setting TinyMCE content:', error);
+            console.error('Error setting Quill content:', error);
             // Fallback: set content in textarea
             const textarea = document.getElementById(editorId);
             if (textarea) {
@@ -860,18 +854,17 @@ class BlogPostsManager {
         }
     }
 
-    getTinyMCEContent(editorId) {
+    getQuillContent(editorId) {
         try {
-            const editor = tinymce.get(editorId);
-            if (editor && editor.initialized) {
-                return editor.getContent();
+            if (window.quillInstances && window.quillInstances[editorId]) {
+                return window.quillInstances[editorId].root.innerHTML;
             } else {
                 // Fallback: get content from textarea
                 const textarea = document.getElementById(editorId);
                 return textarea ? textarea.value : '';
             }
         } catch (error) {
-            console.error('Error getting TinyMCE content:', error);
+            console.error('Error getting Quill content:', error);
             // Fallback: get content from textarea
             const textarea = document.getElementById(editorId);
             return textarea ? textarea.value : '';
@@ -909,7 +902,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     const urlEditPostId = urlParams.get('edit');
     
-    // Check template variable
+    // Check template variable (if it exists)
     const templateEditPostId = window.editPostId;
     
     // Debug template variable
@@ -917,8 +910,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const postIdToEdit = urlEditPostId || templateEditPostId;
     
-    // More detailed validation
-    if (postIdToEdit && postIdToEdit !== "" && postIdToEdit !== "undefined" && postIdToEdit !== "null" && postIdToEdit !== undefined) {
+    // More detailed validation - only proceed if we have a valid ID
+    if (postIdToEdit && 
+        postIdToEdit !== "" && 
+        postIdToEdit !== "undefined" && 
+        postIdToEdit !== "null" && 
+        postIdToEdit !== undefined &&
+        postIdToEdit !== null) {
+        
         console.log('Attempting to auto-edit post with ID:', postIdToEdit);
         
         // Validate postId before parsing
@@ -935,6 +934,6 @@ document.addEventListener('DOMContentLoaded', function() {
             editPost(numericPostId);
         }, 1000); // Wait for posts to load
     } else {
-        console.log('No valid postId for automatic edit. URL:', urlEditPostId, 'Template:', templateEditPostId);
+        console.log('No valid postId found for auto-edit. URL:', urlEditPostId, 'Template:', templateEditPostId);
     }
 });

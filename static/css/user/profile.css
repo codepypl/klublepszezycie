@@ -1,20 +1,185 @@
 /* User Profile Styles - matching main site design */
 
+.profile-wrapper {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    padding-top: 80px; /* Account for fixed navbar */
+}
+
 .profile-container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 2rem 1rem;
+    padding-top: 0;
 }
 
 /* Profile Header */
 .profile-header {
-    text-align: center;
-    margin-bottom: 3rem;
-    padding: 2rem 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 15px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
     color: white;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 30px rgba(30, 58, 138, 0.2);
+}
+
+.profile-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    text-align: left;
+}
+
+/* Profile Header Actions */
+.profile-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.join-club-card, .club-member-card {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 15px;
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.join-club-card:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.join-club-content, .club-member-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.join-club-icon, .club-member-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.join-club-text, .club-member-text {
+    flex: 1;
+    color: white;
+}
+
+.join-club-text h4, .club-member-text h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+    color: white;
+}
+
+.join-club-text p, .club-member-text p {
+    font-size: 0.9rem;
+    margin: 0;
+    opacity: 0.9;
+    color: white;
+}
+
+.join-club-action {
+    flex-shrink: 0;
+}
+
+.join-club-action .btn {
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.join-club-action .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Switch styles for header */
+.join-club-action .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+    background-color: rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 1rem;
+    transition: all 0.3s ease;
+}
+
+.join-club-action .form-check-input:checked {
+    background-color: #1e3a8a;
+    border-color: #1e3a8a;
+}
+
+.join-club-action .form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.25);
+}
+
+.join-club-action .form-check-label {
+    color: white;
+    font-weight: 500;
+    margin-left: 0.75rem;
+}
+
+.join-club-action .switch-text {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Profile Sidebar */
+.profile-sidebar {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 5px 20px rgba(30, 58, 138, 0.1);
+    border: 1px solid rgba(30, 58, 138, 0.1);
+    position: sticky;
+    top: 2rem;
+}
+
+.profile-sidebar .nav-pills .nav-link {
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    padding: 0.75rem 1rem;
+    color: #6b7280;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.profile-sidebar .nav-pills .nav-link:hover {
+    background-color: rgba(30, 58, 138, 0.1);
+    color: #1e3a8a;
+    transform: translateX(5px);
+}
+
+.profile-sidebar .nav-pills .nav-link.active {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    color: white;
+    transform: translateX(5px);
+}
+
+.profile-sidebar .nav-pills .nav-link i {
+    width: 20px;
+    text-align: center;
+}
+
+.profile-sidebar .badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
 }
 
 .profile-avatar {
@@ -127,14 +292,14 @@
 }
 
 .form-control:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    border-color: #1e3a8a;
+    box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.25);
 }
 
 /* Form Switch */
 .form-check-input:checked {
-    background-color: #667eea;
-    border-color: #667eea;
+    background-color: #1e3a8a;
+    border-color: #1e3a8a;
 }
 
 /* Buttons */
@@ -146,25 +311,25 @@
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
     border: none;
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
     transform: translateY(-1px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 5px 15px rgba(30, 58, 138, 0.3);
 }
 
-.btn-outline-warning {
-    border: 2px solid #ffc107;
-    color: #856404;
+.btn-outline-primary {
+    border: 2px solid #1e3a8a;
+    color: #1e3a8a;
 }
 
-.btn-outline-warning:hover {
-    background-color: #ffc107;
-    border-color: #ffc107;
-    color: #212529;
+.btn-outline-primary:hover {
+    background-color: #1e3a8a;
+    border-color: #1e3a8a;
+    color: white;
 }
 
 /* Club Benefits */
@@ -261,7 +426,7 @@
     height: 20px;
     margin: -10px 0 0 -10px;
     border: 2px solid #f3f3f3;
-    border-top: 2px solid #667eea;
+    border-top: 2px solid #1e3a8a;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -269,4 +434,333 @@
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* Stats Cards */
+.stats-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 5px 20px rgba(30, 58, 138, 0.1);
+    border: 1px solid rgba(30, 58, 138, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(30, 58, 138, 0.15);
+}
+
+.stats-card.filtered {
+    opacity: 0.7;
+}
+
+.stats-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.stats-content h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e3a8a;
+    margin: 0;
+    line-height: 1;
+}
+
+.stats-content p {
+    color: #6b7280;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* Meeting History */
+.meeting-history {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.meeting-item {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.meeting-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(30, 58, 138, 0.1);
+    border-color: #1e3a8a;
+}
+
+.meeting-item.fade-in {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.meeting-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.meeting-title h5 {
+    color: #1e3a8a;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+}
+
+.meeting-date {
+    color: #6b7280;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.meeting-status .badge {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+.meeting-details {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.detail-item:last-child {
+    margin-bottom: 0;
+}
+
+.detail-item i {
+    width: 16px;
+    text-align: center;
+}
+
+.meeting-description {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 1rem;
+}
+
+.meeting-description p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #6b7280;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    color: #d1d5db;
+    margin-bottom: 1rem;
+}
+
+.empty-state h5 {
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+/* Meeting Filters */
+.meeting-filters .form-select {
+    border-color: #d1d5db;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.meeting-filters .form-select:focus {
+    border-color: #1e3a8a;
+    box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.25);
+}
+
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #1e3a8a;
+    padding: 1rem 1.5rem;
+    z-index: 1050;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    max-width: 350px;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification-success {
+    border-left-color: #059669;
+}
+
+.notification-error {
+    border-left-color: #ef4444;
+}
+
+.notification-warning {
+    border-left-color: #f59e0b;
+}
+
+.notification-info {
+    border-left-color: #1e3a8a;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    color: #374151;
+    font-weight: 500;
+}
+
+/* Profile Info */
+.profile-info {
+    flex: 1;
+}
+
+.profile-info h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.profile-info p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+/* Responsive Design Updates */
+@media (max-width: 992px) {
+    .profile-sidebar {
+        position: relative;
+        top: auto;
+        margin-bottom: 2rem;
+    }
+    
+    .profile-sidebar .nav-pills {
+        flex-direction: row;
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 0.5rem;
+    }
+    
+    .profile-sidebar .nav-pills .nav-link {
+        margin-bottom: 0;
+        margin-right: 0.5rem;
+        min-width: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .profile-header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+    
+    .profile-info h1 {
+        font-size: 2rem;
+    }
+    
+    .join-club-content, .club-member-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+    
+    .join-club-card, .club-member-card {
+        padding: 1rem;
+        width: 100%;
+    }
+    
+    .join-club-action .form-check {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .join-club-action .form-check-input {
+        width: 2.5rem;
+        height: 1.25rem;
+    }
+    
+    .stats-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .stats-content h3 {
+        font-size: 1.5rem;
+    }
+    
+    .meeting-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .meeting-details .row {
+        flex-direction: column;
+    }
+    
+    .notification {
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+    
+    .profile-sidebar {
+        padding: 1rem;
+    }
+    
+    .profile-sidebar .nav-pills .nav-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

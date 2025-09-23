@@ -171,26 +171,3 @@ class EmailLog(db.Model):
     def __repr__(self):
         return f'<EmailLog {self.email} - {self.status}>'
 
-class EmailReminderSent(db.Model):
-    """Tracks sent email reminders to prevent duplicates"""
-    __tablename__ = 'email_reminders_sent'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    user_email = db.Column(db.String(120), nullable=False)  # Email address
-    event_id = db.Column(db.Integer, db.ForeignKey('event_schedules.id'), nullable=False)
-    reminder_type = db.Column(db.String(20), nullable=False)  # '24h', '1h', '5min'
-    template_name = db.Column(db.String(100), nullable=False)  # 'event_reminder_24h', etc.
-    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Relationships
-    user = db.relationship('User', backref='sent_reminders')
-    event = db.relationship('EventSchedule', backref='sent_reminders')
-    
-    # Unique constraint to prevent duplicates
-    __table_args__ = (
-        db.UniqueConstraint('user_email', 'event_id', 'reminder_type', name='unique_reminder_per_user_event'),
-    )
-    
-    def __repr__(self):
-        return f'<EmailReminderSent {self.user_email} - {self.event_id} - {self.reminder_type}>'

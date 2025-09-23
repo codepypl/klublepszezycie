@@ -29,7 +29,7 @@
 .tag-header {
     background: linear-gradient(135deg, var(--success-color) 0%, #10b981 100%);
     color: white;
-    padding: 3rem 0;
+    padding: 8rem 0 3rem; /* Increased top padding to account for fixed navbar */
     margin-bottom: 2rem;
 }
 

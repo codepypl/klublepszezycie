@@ -334,7 +334,9 @@ class Stats(db.Model):
         
         total_users = User.query.count()
         active_users = User.query.filter_by(is_active=True).count()
-        admin_users = User.query.filter_by(account_type='admin').count()
+        admin_users = User.query.filter(
+            (User.role == 'admin') | (User.account_type == 'admin')
+        ).count()
         
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
         new_users_30_days = User.query.filter(User.created_at >= thirty_days_ago).count()

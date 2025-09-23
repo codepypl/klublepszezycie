@@ -8,187 +8,419 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/user/profile.css') }}">
 {% endblock %}
 
-{% block navigation %}
-<!-- Navigation -->
-<nav class="navbar navbar-expand-lg navbar-light fixed-top bg-white shadow-sm">
-    <div class="container">
-        <a class="navbar-brand fw-bold text-primary" href="{{ url_for('public.index') }}">
-            <i class="fas fa-leaf me-2"></i>Lepsze Życie
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('public.index') }}">
-                        <i class="fas fa-home me-1"></i>Strona główna
-                    </a>
-                </li>
-                {% if current_user.is_admin %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
-                        <i class="fas fa-cog me-1"></i>Admin
-                    </a>
-                </li>
-                {% endif %}
-                <li class="nav-item">
-                    <a class="nav-link active" href="{{ url_for('users.profile') }}">
-                        <i class="fas fa-user me-1"></i>Profil
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('auth.logout') }}">
-                        <i class="fas fa-sign-out-alt me-1"></i>Wyloguj
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/user/profile.js') }}"></script>
 {% endblock %}
 
+
 {% block content %}
-
-    <div class="container profile-container" style="padding-top: 100px;">
-        <!-- Profile Header -->
-        <div class="profile-header">
-            <div class="profile-avatar">
-                <i class="fas fa-user"></i>
-            </div>
-            <h1 id="userName">Mój Profil</h1>
-            <p class="mb-0">Zarządzaj swoimi danymi i preferencjami</p>
-        </div>
-
-        <!-- Profile Information -->
-        <div class="profile-card">
-            <h3 class="mb-4">
-                <i class="fas fa-info-circle me-2 text-primary"></i>
-                Informacje o profilu
-            </h3>
-            
-            <div class="info-item">
-                <span class="info-label">Nazwa użytkownika:</span>
-                <span class="info-value" id="username">Ładowanie...</span>
-            </div>
-            
-            <div class="info-item">
-                <span class="info-label">Data utworzenia konta:</span>
-                <span class="info-value" id="createdAt">Ładowanie...</span>
-            </div>
-            
-            <div class="info-item">
-                <span class="info-label">Ostatnie logowanie:</span>
-                <span class="info-value" id="lastLogin">Ładowanie...</span>
-            </div>
-            
-            <div class="info-item">
-                <span class="info-label">Status klubu:</span>
-                <span class="info-value">
-                    <span class="club-member-badge" id="clubMemberBadge">
-                        <i class="fas fa-users me-1"></i>
-                        <span id="clubMemberText">Ładowanie...</span>
-                    </span>
-                </span>
-            </div>
-        </div>
-
-        <!-- Edit Profile Form -->
-        <div class="profile-card">
-            <h3 class="mb-4">
-                <i class="fas fa-edit me-2 text-primary"></i>
-                Edytuj profil
-            </h3>
-            
-            <form id="profileForm">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="name" class="form-label">Imię *</label>
-                        <input type="text" class="form-control" id="name" name="first_name" required>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="email" class="form-label">Adres e-mail *</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
-                    </div>
+<div class="profile-wrapper">
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="container">
+            <div class="profile-header-content">
+                <div class="profile-avatar">
+                    <i class="fas fa-user"></i>
                 </div>
-                
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="phone" class="form-label">Numer telefonu</label>
-                        <input type="tel" class="form-control" id="phone" name="phone" placeholder="+48 123 456 789">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="clubMember" class="form-label">Członkostwo w klubie</label>
-                        <div class="form-check form-switch mt-2">
-                            <input class="form-check-input" type="checkbox" id="clubMember" name="club_member">
-                            <label class="form-check-label" for="clubMember">
-                                Chcę dołączyć do klubu.
-                            </label>
+                <div class="profile-info">
+                    <h1 id="userName">{{ user_data.display_name }}</h1>
+                    <p class="mb-0">Zarządzaj swoimi danymi, preferencjami i historią spotkań</p>
+                </div>
+                <div class="profile-header-actions">
+                    <div class="join-club-card">
+                        <div class="join-club-content">
+                            <div class="join-club-icon">
+                                <i class="fas {{ 'fa-crown' if user_data.club_member else 'fa-star' }}"></i>
+                            </div>
+                            <div class="join-club-text">
+                                <h4>{{ 'Jesteś członkiem klubu!' if user_data.club_member else 'Dołącz do klubu!' }}</h4>
+                                <p>{{ 'Ciesz się korzyściami klubu' if user_data.club_member else 'Odkryj ekskluzywne korzyści' }}</p>
+                            </div>
+                            <div class="join-club-action">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="clubMemberSwitch" onchange="toggleClubMembership()" {{ 'checked' if user_data.club_member }}>
+                                    <label class="form-check-label" for="clubMemberSwitch">
+                                        <span class="switch-text">Członek klubu</span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <button type="button" class="btn btn-secondary me-md-2" onclick="resetForm()">
-                        <i class="fas fa-undo me-1"></i>Resetuj
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save me-1"></i>Zapisz zmiany
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Security Settings -->
-        <div class="profile-card">
-            <h3 class="mb-4">
-                <i class="fas fa-shield-alt me-2 text-warning"></i>
-                Ustawienia bezpieczeństwa
-            </h3>
-            
-            <div class="info-item">
-                <div>
-                    <span class="info-label">Hasło</span>
-                    <p class="text-muted mb-0">Zmień hasło do swojego konta</p>
-                </div>
-                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-warning">
-                    <i class="fas fa-key me-1"></i>Zmień hasło
-                </a>
             </div>
         </div>
+    </div>
 
-        <!-- Club Benefits -->
-        <div class="profile-card" id="clubBenefitsCard">
-            <h3 class="mb-4">
-                <i class="fas fa-star me-2 text-warning"></i>
-                Korzyści z członkostwa w klubie
-            </h3>
-            
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <div class="text-center">
-                        <i class="fas fa-calendar-alt fa-3x text-primary mb-3"></i>
-                        <h5>Wydarzenia</h5>
-                        <p class="text-muted">Otrzymuj powiadomienia o nowych wydarzeniach</p>
-                    </div>
+    <div class="container profile-container">
+        <div class="row">
+            <!-- Left Sidebar - Navigation Tabs -->
+            <div class="col-lg-3">
+                <div class="profile-sidebar">
+                    <nav class="nav nav-pills flex-column" id="profileTabs" role="tablist">
+                        <a class="nav-link active" id="overview-tab" data-bs-toggle="pill" href="#overview" role="tab">
+                            <i class="fas fa-chart-pie me-2"></i>Przegląd
+                        </a>
+                        <a class="nav-link" id="profile-info-tab" data-bs-toggle="pill" href="#profile-info" role="tab">
+                            <i class="fas fa-user me-2"></i>Informacje o profilu
+                        </a>
+                        <a class="nav-link" id="edit-profile-tab" data-bs-toggle="pill" href="#edit-profile" role="tab">
+                            <i class="fas fa-edit me-2"></i>Edytuj profil
+                        </a>
+                        <a class="nav-link" id="meetings-tab" data-bs-toggle="pill" href="#meetings" role="tab">
+                            <i class="fas fa-history me-2"></i>Historia spotkań
+                            <span class="badge bg-primary ms-auto">{{ meeting_history|length }}</span>
+                        </a>
+                        <a class="nav-link" id="security-tab" data-bs-toggle="pill" href="#security" role="tab">
+                            <i class="fas fa-shield-alt me-2"></i>Bezpieczeństwo
+                        </a>
+                        {% if not is_club_member %}
+                        <a class="nav-link" id="benefits-tab" data-bs-toggle="pill" href="#benefits" role="tab">
+                            <i class="fas fa-star me-2"></i>Korzyści klubu
+                        </a>
+                        {% endif %}
+                    </nav>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <div class="text-center">
-                        <i class="fas fa-envelope fa-3x text-success mb-3"></i>
-                        <h5>Newsletter</h5>
-                        <p class="text-muted">Dostęp do ekskluzywnych treści i porad</p>
+            </div>
+
+            <!-- Right Content Area -->
+            <div class="col-lg-9">
+                <div class="tab-content" id="profileTabContent">
+                    
+                    <!-- Overview Tab -->
+                    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                        <div class="profile-card">
+                            <h3 class="mb-4">
+                                <i class="fas fa-chart-pie me-2 text-primary"></i>
+                                Przegląd konta
+                            </h3>
+                            
+                            <!-- Quick Stats Cards -->
+                            <div class="row mb-4">
+                                <div class="col-md-4 mb-3">
+                                    <div class="stats-card">
+                                        <div class="stats-icon">
+                                            <i class="fas fa-calendar-check"></i>
+                                        </div>
+                                        <div class="stats-content">
+                                            <h3>{{ meeting_history|length }}</h3>
+                                            <p>Spotkania</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="stats-card">
+                                        <div class="stats-icon">
+                                            <i class="fas fa-check-circle"></i>
+                                        </div>
+                                        <div class="stats-content">
+                                            <h3>{{ meeting_history|selectattr('status', 'equalto', 'participated')|list|length }}</h3>
+                                            <p>Uczestnictwo</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="stats-card">
+                                        <div class="stats-icon">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                        <div class="stats-content">
+                                            <h3>{{ 'Tak' if user_data.club_member else 'Nie' }}</h3>
+                                            <p>Członek klubu</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <div class="text-center">
-                        <i class="fas fa-users fa-3x text-info mb-3"></i>
-                        <h5>Społeczność</h5>
-                        <p class="text-muted">Dołącz do społeczności pasjonatów</p>
+
+                    <!-- Profile Information Tab -->
+                    <div class="tab-pane fade" id="profile-info" role="tabpanel">
+                        <div class="profile-card">
+                            <h3 class="mb-4">
+                                <i class="fas fa-info-circle me-2 text-primary"></i>
+                                Informacje o profilu
+                            </h3>
+                            
+                            <div class="info-item">
+                                <span class="info-label">Imię:</span>
+                                <span class="info-value">{{ user_data.first_name or 'Nie podano' }}</span>
+                            </div>
+                            
+                            <div class="info-item">
+                                <span class="info-label">Adres e-mail:</span>
+                                <span class="info-value">{{ user_data.email }}</span>
+                            </div>
+                            
+                            <div class="info-item">
+                                <span class="info-label">Numer telefonu:</span>
+                                <span class="info-value">{{ user_data.phone or 'Nie podano' }}</span>
+                            </div>
+                            
+                            <div class="info-item">
+                                <span class="info-label">Data utworzenia konta:</span>
+                                <span class="info-value">{{ user_data.created_at.strftime('%d.%m.%Y %H:%M') if user_data.created_at else 'Nie znana' }}</span>
+                            </div>
+                            
+                            <div class="info-item">
+                                <span class="info-label">Ostatnie logowanie:</span>
+                                <span class="info-value">{{ user_data.last_login.strftime('%d.%m.%Y %H:%M') if user_data.last_login else 'Nigdy' }}</span>
+                            </div>
+                            
+                            <div class="info-item">
+                                <span class="info-label">Status konta:</span>
+                                <span class="info-value">
+                                    <span class="badge bg-{{ 'success' if user_data.is_active else 'danger' }}">
+                                        {{ 'Aktywne' if user_data.is_active else 'Nieaktywne' }}
+                                    </span>
+                                </span>
+                            </div>
+                            
+                            <div class="info-item">
+                                <span class="info-label">Status klubu:</span>
+                                <span class="info-value">
+                                    <span class="club-member-badge {{ 'member' if user_data.club_member else 'not-member' }}">
+                                        <i class="fas fa-users me-1"></i>
+                                        <span>{{ 'Członek klubu' if user_data.club_member else 'Nie jest członkiem' }}</span>
+                                    </span>
+                                </span>
+                            </div>
+                            
+                            <div class="info-item">
+                                <span class="info-label">Rola:</span>
+                                <span class="info-value">
+                                    <span class="badge bg-info">{{ user_data.role.title() }}</span>
+                                </span>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Edit Profile Tab -->
+                    <div class="tab-pane fade" id="edit-profile" role="tabpanel">
+                        <div class="profile-card">
+                            <h3 class="mb-4">
+                                <i class="fas fa-edit me-2 text-primary"></i>
+                                Edytuj profil
+                            </h3>
+                            
+                            <form id="profileForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="name" class="form-label">Imię *</label>
+                                        <input type="text" class="form-control" id="name" name="first_name" value="{{ user_data.first_name }}" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="email" class="form-label">Adres e-mail *</label>
+                                        <input type="email" class="form-control" id="email" name="email" value="{{ user_data.email }}" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="phone" class="form-label">Numer telefonu</label>
+                                        <input type="tel" class="form-control" id="phone" name="phone" value="{{ user_data.phone or '' }}" placeholder="+48 123 456 789">
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <button type="button" class="btn btn-secondary me-md-2" onclick="resetForm()">
+                                        <i class="fas fa-undo me-1"></i>Resetuj
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i>Zapisz zmiany
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Meetings History Tab -->
+                    <div class="tab-pane fade" id="meetings" role="tabpanel">
+                        <div class="profile-card">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h3 class="mb-0">
+                                    <i class="fas fa-history me-2 text-primary"></i>
+                                    Historia spotkań
+                                </h3>
+                                <div class="meeting-filters">
+                                    <select class="form-select form-select-sm" id="statusFilter" onchange="filterMeetings()">
+                                        <option value="">Wszystkie statusy</option>
+                                        <option value="registered">Zarejestrowany</option>
+                                        <option value="participated">Uczestniczył</option>
+                                        <option value="cancelled">Anulowany</option>
+                                        <option value="no_show">Nie pojawił się</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            {% if meeting_history %}
+                            <div class="meeting-history" id="meetingHistoryList">
+                                {% for meeting in meeting_history %}
+                                <div class="meeting-item" data-status="{{ meeting.status }}">
+                                    <div class="meeting-header">
+                                        <div class="meeting-title">
+                                            <h5>{{ meeting.title }}</h5>
+                                            <span class="meeting-date">
+                                                <i class="fas fa-calendar-alt me-1"></i>
+                                                {{ meeting.event_date.strftime('%d.%m.%Y %H:%M') }}
+                                            </span>
+                                        </div>
+                                        <div class="meeting-status">
+                                            {% if meeting.status == 'participated' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check-circle me-1"></i>Uczestniczył
+                                                </span>
+                                            {% elif meeting.status == 'registered' %}
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-user-plus me-1"></i>Zarejestrowany
+                                                </span>
+                                            {% elif meeting.status == 'cancelled' %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-times-circle me-1"></i>Anulowany
+                                                </span>
+                                            {% elif meeting.status == 'no_show' %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-user-slash me-1"></i>Nie pojawił się
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="meeting-details">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="detail-item">
+                                                    <i class="fas fa-map-marker-alt text-muted me-2"></i>
+                                                    <span>{{ meeting.location or 'Online' }}</span>
+                                                </div>
+                                                <div class="detail-item">
+                                                    <i class="fas fa-clock text-muted me-2"></i>
+                                                    <span>Rejestracja: {{ meeting.registration_date.strftime('%d.%m.%Y %H:%M') }}</span>
+                                                </div>
+                                                {% if meeting.participation_date %}
+                                                <div class="detail-item">
+                                                    <i class="fas fa-check text-success me-2"></i>
+                                                    <span>Uczestnictwo: {{ meeting.participation_date.strftime('%d.%m.%Y %H:%M') }}</span>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="detail-item">
+                                                    <i class="fas fa-users text-muted me-2"></i>
+                                                    <span>Status klubu: {{ 'Członek' if meeting.was_club_member else 'Nie był członkiem' }}</span>
+                                                </div>
+                                                {% if meeting.meeting_link %}
+                                                <div class="detail-item">
+                                                    <button class="btn btn-outline-primary btn-sm" onclick="copyMeetingLink('{{ meeting.meeting_link }}')">
+                                                        <i class="fas fa-link me-1"></i>Kopiuj link
+                                                    </button>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if meeting.description %}
+                                    <div class="meeting-description">
+                                        <p class="text-muted">{{ meeting.description[:150] }}{% if meeting.description|length > 150 %}...{% endif %}</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="fas fa-calendar-times"></i>
+                                </div>
+                                <h5>Brak historii spotkań</h5>
+                                <p class="text-muted">Nie uczestniczyłeś jeszcze w żadnych spotkaniach.</p>
+                                <a href="{{ url_for('public.index') }}" class="btn btn-primary">
+                                    <i class="fas fa-calendar-plus me-1"></i>Zobacz dostępne wydarzenia
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Security Tab -->
+                    <div class="tab-pane fade" id="security" role="tabpanel">
+                        <div class="profile-card">
+                            <h3 class="mb-4">
+                                <i class="fas fa-shield-alt me-2 text-primary"></i>
+                                Ustawienia bezpieczeństwa
+                            </h3>
+                            
+                            <div class="info-item">
+                                <div>
+                                    <span class="info-label">Hasło</span>
+                                    <p class="text-muted mb-0">Zmień hasło do swojego konta</p>
+                                </div>
+                                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-key me-1"></i>Zmień hasło
+                                </a>
+                            </div>
+                            
+                            {% if user_data.is_temporary_password %}
+                            <div class="alert alert-warning mt-3">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Uwaga:</strong> Używasz tymczasowego hasła. Zalecamy zmianę hasła na własne.
+                            </div>
+                            {% endif %}
+                            
+                            <hr class="my-4">
+                            
+                            <div class="info-item">
+                                <div>
+                                    <span class="info-label">Usuń konto</span>
+                                    <p class="text-muted mb-0">Trwale usuń swoje konto i wszystkie dane</p>
+                                </div>
+                                <button type="button" class="btn btn-outline-danger" onclick="showDeleteAccountModal()">
+                                    <i class="fas fa-trash-alt me-1"></i>Usuń konto
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Club Benefits Tab (only if not a member) -->
+                    {% if not is_club_member %}
+                    <div class="tab-pane fade" id="benefits" role="tabpanel">
+                        <div class="profile-card">
+                            <h3 class="mb-4">
+                                <i class="fas fa-star me-2 text-primary"></i>
+                                Korzyści z członkostwa w klubie
+                            </h3>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="text-center">
+                                        <i class="fas fa-calendar-alt fa-3x text-primary mb-3"></i>
+                                        <h5>Wydarzenia</h5>
+                                        <p class="text-muted">Otrzymuj powiadomienia o nowych wydarzeniach</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="text-center">
+                                        <i class="fas fa-envelope fa-3x text-success mb-3"></i>
+                                        <h5>Newsletter</h5>
+                                        <p class="text-muted">Dostęp do ekskluzywnych treści i porad</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="text-center">
+                                        <i class="fas fa-users fa-3x text-info mb-3"></i>
+                                        <h5>Społeczność</h5>
+                                        <p class="text-muted">Dołącz do społeczności pasjonatów</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
+</div>
 
     <!-- Success Modal -->
     <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
@@ -225,6 +457,54 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    <!-- Delete Account Modal -->
+    <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Usuń konto
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Uwaga!</strong> Ta operacja jest nieodwracalna. Wszystkie Twoje dane zostaną trwale usunięte.
+                    </div>
+                    
+                    <p class="mb-3">Aby potwierdzić usunięcie konta, wprowadź swoje aktualne hasło:</p>
+                    
+                    <form id="deleteAccountForm">
+                        <div class="mb-3">
+                            <label for="deletePassword" class="form-label">Aktualne hasło *</label>
+                            <input type="password" class="form-control" id="deletePassword" name="password" required 
+                                   placeholder="Wprowadź swoje hasło">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                                <label class="form-check-label" for="confirmDelete">
+                                    Potwierdzam, że chcę trwale usunąć swoje konto i wszystkie dane
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Anuluj
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="deleteAccount()">
+                        <i class="fas fa-trash-alt me-1"></i>Usuń konto
+                    </button>
                 </div>
             </div>
         </div>

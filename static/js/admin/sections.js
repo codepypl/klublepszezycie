@@ -83,9 +83,9 @@ class SectionsManager {
                     document.getElementById('editSectionOrder').value = section.order || 1;
                     document.getElementById('editSectionActive').checked = section.is_active;
                     
-                    // Set content in TinyMCE
-                    if (tinymce.get('editSectionContent')) {
-                        tinymce.get('editSectionContent').setContent(section.content || '');
+                    // Set content in Quill
+                    if (window.quillInstances && window.quillInstances['editSectionContent']) {
+                        window.quillInstances['editSectionContent'].root.innerHTML = section.content || '';
                     }
                     
                     // Pillars configuration
@@ -266,9 +266,9 @@ class SectionsManager {
         formData.set('enable_pillars', document.getElementById('editSectionEnablePillars').checked ? 'true' : 'false');
         formData.set('enable_floating_cards', document.getElementById('editSectionEnableFloatingCards').checked ? 'true' : 'false');
         
-        // Get content from TinyMCE
-        if (tinymce.get('editSectionContent')) {
-            formData.set('content', tinymce.get('editSectionContent').getContent());
+        // Get content from Quill
+        if (window.quillInstances && window.quillInstances['editSectionContent']) {
+            formData.set('content', window.quillInstances['editSectionContent'].root.innerHTML);
         }
         
         // Remove hidden fields to avoid conflicts
@@ -677,7 +677,7 @@ function deleteSection(sectionId) {
     sectionsManager.deleteSection(sectionId);
 }
 
-// TinyMCE is now initialized globally in admin/base.html
+// Quill is now initialized globally in admin/base.html
 
 // Form handlers for pillars and floating cards
 function handlePillarsForm(e) {
@@ -802,8 +802,8 @@ function handleFloatingCardsForm(e) {
 document.addEventListener('DOMContentLoaded', function() {
     window.sectionsManager = new SectionsManager();
     
-    // Initialize TinyMCE
-    // TinyMCE is now initialized globally
+    // Initialize Quill
+    // Quill is now initialized globally
     
     // Add form event listeners
     const pillarsForm = document.getElementById('editPillarsForm');

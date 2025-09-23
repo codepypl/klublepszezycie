@@ -178,11 +178,17 @@ class BlogTagsManager {
                 const tag = result.tag;
                 
                 // Fill edit form
-                document.getElementById('editTagId').value = tag.id;
-                document.getElementById('editTagName').value = tag.name;
-                document.getElementById('editTagSlug').value = tag.slug;
-                document.getElementById('editTagDescription').value = tag.description || '';
-                document.getElementById('editTagIsActive').checked = tag.is_active;
+                const editTagId = document.getElementById('editTagId');
+                const editTagName = document.getElementById('editTagName');
+                const editTagSlug = document.getElementById('editTagSlug');
+                const editTagDescription = document.getElementById('editTagDescription');
+                const editTagIsActive = document.getElementById('editTagIsActive');
+                
+                if (editTagId) editTagId.value = tag.id;
+                if (editTagName) editTagName.value = tag.name;
+                if (editTagSlug) editTagSlug.value = tag.slug;
+                if (editTagDescription) editTagDescription.value = tag.description || '';
+                if (editTagIsActive) editTagIsActive.checked = tag.is_active;
                 
                 // Show modal
                 const modal = new bootstrap.Modal(document.getElementById('editTagModal'));
@@ -269,7 +275,7 @@ function editTag(tagId) {
             if (window.blogTagsManager) {
                 window.blogTagsManager.editTag(tagId);
             } else {
-                showError('Błąd: Menedżer tagów nie jest jeszcze załadowany. Spróbuj ponownie.');
+                window.toastManager.error('Błąd: Menedżer tagów nie jest jeszcze załadowany. Spróbuj ponownie.');
             }
         }, 100);
     }
@@ -285,7 +291,7 @@ function deleteTag(tagId) {
             if (window.blogTagsManager) {
                 window.blogTagsManager.deleteTag(tagId);
             } else {
-                showError('Błąd: Menedżer tagów nie jest jeszcze załadowany. Spróbuj ponownie.');
+                window.toastManager.error('Błąd: Menedżer tagów nie jest jeszcze załadowany. Spróbuj ponownie.');
             }
         }, 100);
     }

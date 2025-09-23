@@ -220,7 +220,7 @@ async function loadSchedules() {
 // Ładowanie szablonów emaili
 async function loadTemplates() {
     try {
-        const response = await fetch('/admin/api/email-templates');
+        const response = await fetch('/api/email/templates');
         const templates = await response.json();
         
         const select = document.getElementById('scheduleTemplate');

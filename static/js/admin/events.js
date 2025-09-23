@@ -30,6 +30,12 @@ class EventsManager {
 
     showAddEventModal() {
         document.getElementById('addEventForm').reset();
+        
+        // Clear Quill editor
+        if (window.quillInstances && window.quillInstances['eventDescription']) {
+            window.quillInstances['eventDescription'].root.innerHTML = '';
+        }
+        
         // Set today's date as default
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('eventDate').value = today;
@@ -93,7 +99,13 @@ class EventsManager {
         document.getElementById('editMeetingLink').value = event.meeting_link || '';
         document.getElementById('editMaxParticipants').value = event.max_participants || '';
         document.getElementById('editHeroBackgroundType').value = event.hero_background_type || 'image';
-        document.getElementById('editEventDescription').value = event.description || '';
+        // Set description in Quill editor
+        if (window.quillInstances && window.quillInstances['editEventDescription']) {
+            window.quillInstances['editEventDescription'].root.innerHTML = event.description || '';
+        } else {
+            // Fallback to textarea
+            document.getElementById('editEventDescription').value = event.description || '';
+        }
         document.getElementById('editEventActive').checked = event.is_active === true;
         document.getElementById('editEventPublished').checked = event.is_published === true;
         

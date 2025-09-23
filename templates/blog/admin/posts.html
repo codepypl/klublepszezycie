@@ -179,7 +179,7 @@
                         </div>
                         <div class="mb-3">
                             <label for="postContent" class="form-label">Treść artykułu *</label>
-                            <textarea class="form-control" id="postContent" name="content" rows="10" data-tinymce></textarea>
+                            <textarea class="form-control" id="postContent" name="content" rows="10" data-quill></textarea>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Kategorie</label>
@@ -277,7 +277,7 @@
                         </div>
                         <div class="mb-3">
                             <label for="editPostContent" class="form-label">Treść artykułu *</label>
-                            <textarea class="form-control" id="editPostContent" name="content" rows="10" data-tinymce></textarea>
+                            <textarea class="form-control" id="editPostContent" name="content" rows="10" data-quill></textarea>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Kategorie</label>
@@ -367,6 +367,12 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin/tag_selector.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/blog_posts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/blog_categories.js') }}"></script>
 {% endblock %}
 
 

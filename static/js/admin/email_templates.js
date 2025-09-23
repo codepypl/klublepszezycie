@@ -4,8 +4,10 @@
 let currentPage = 1;
 let currentPerPage = 10;
 let currentTemplateId = null;
-let tinymceInstance = null;
 let isTextContentManuallyEdited = false;
+
+// Make isTextContentManuallyEdited globally available
+window.isTextContentManuallyEdited = isTextContentManuallyEdited;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
@@ -19,35 +21,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // Automatically open edit modal for the specified template
         setTimeout(() => {
             editTemplate(parseInt(editTemplateId));
-        }, 1000); // Wait for templates to load
+        }, 500);
     }
-    
-    // Set up pagination handlers for auto-initialization
-    window.paginationHandlers = {
-        onPageChange: (page) => {
-            currentPage = page;
-            loadTemplates();
-        },
-        onPerPageChange: (newPage, perPage) => {
-            currentPerPage = perPage;
-            currentPage = newPage; // Use the page passed by pagination
-            loadTemplates();
-        }
-    };
 });
-
 
 // Initialize modal listeners
 function initializeModalListeners() {
-    // Clean up TinyMCE when modal is hidden
+    // Clean up when modal is hidden
     const templateModal = document.getElementById('templateModal');
     if (templateModal) {
         templateModal.addEventListener('hidden.bs.modal', function () {
-            if (tinymceInstance) {
-                tinymceInstance.destroy();
-                tinymceInstance = null;
-            }
             isTextContentManuallyEdited = false;
+            window.isTextContentManuallyEdited = false; // Update global variable
         });
     }
     
@@ -64,6 +49,7 @@ function initializeModalListeners() {
             typingTimeout = setTimeout(() => {
                 if (userTyping) {
                     isTextContentManuallyEdited = true;
+                    window.isTextContentManuallyEdited = true; // Update global variable
                 }
             }, 1000); // Set manual edit flag only after 1 second of no typing
         });
@@ -76,12 +62,8 @@ function initializeModalListeners() {
         // Show hint when user starts editing (only once)
         let hintShown = false;
         textContentField.addEventListener('input', function() {
-            if (isTextContentManuallyEdited && tinymceInstance && !hintShown) {
-                tinymceInstance.notificationManager.open({
-                    text: 'Synchronizacja z HTML została wyłączona. Kliknij "Przywróć synchronizację" aby włączyć automatyczne uzupełnianie.',
-                    type: 'info',
-                    timeout: 5000
-                });
+            if (isTextContentManuallyEdited && window.quillInstances && window.quillInstances['template_html_content'] && !hintShown) {
+                window.toastManager.info('Synchronizacja z HTML została wyłączona. Kliknij "Przywróć synchronizację" aby włączyć automatyczne uzupełnianie.');
                 hintShown = true;
             }
         });
@@ -94,20 +76,28 @@ function initializeModalListeners() {
         resetSyncButton.style.display = 'none';
         resetSyncButton.onclick = function() {
             isTextContentManuallyEdited = false;
+            window.isTextContentManuallyEdited = false; // Update global variable
             hintShown = false;
             this.style.display = 'none';
             
             // Sync current HTML content to text
-            if (tinymceInstance) {
-                const htmlContent = tinymceInstance.getContent();
+            if (window.quillInstances && window.quillInstances['template_html_content']) {
+                try {
+                    // Check if quill instance is fully initialized
+                    if (window.quillInstances['template_html_content'].root && typeof window.quillInstances['template_html_content'].root.innerHTML !== 'undefined') {
+                const htmlContent = window.quillInstances['template_html_content'].root.innerHTML;
                 const textContent = stripHtml(htmlContent);
                 textContentField.value = textContent;
                 
-                tinymceInstance.notificationManager.open({
-                    text: 'Synchronizacja została przywrócona.',
-                    type: 'success',
-                    timeout: 2000
-                });
+                window.toastManager.success('Synchronizacja została przywrócona.');
+                    } else {
+                        console.warn('Quill instance not fully initialized for sync');
+                        window.toastManager.warning('Edytor nie jest jeszcze gotowy. Spróbuj ponownie za chwilę.');
+                    }
+                } catch (error) {
+                    console.error('Error syncing content:', error);
+                    window.toastManager.error('Błąd synchronizacji treści.');
+                }
             }
         };
         
@@ -123,126 +113,112 @@ function initializeModalListeners() {
     }
 }
 
-// Initialize TinyMCE
-function initializeTinyMCE() {
-    if (tinymceInstance) {
-        tinymceInstance.destroy();
-    }
-    
-    tinymce.init({
-        selector: '#template_html_content',
-        height: 400,
-        menubar: false,
-        plugins: [
-            'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
-            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-            'insertdatetime', 'table', 'help', 'wordcount', 'emoticons'
-        ],
-        toolbar: 'undo redo | blocks | ' +
-            'bold italic underline strikethrough | forecolor backcolor | ' +
-            'alignleft aligncenter alignright alignjustify | ' +
-            'bullist numlist outdent indent | ' +
-            'link table | variables | syncTextContent | removeformat | code | help',
-        content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; }',
-        branding: false,
-        promotion: false,
-        setup: function (editor) {
-            tinymceInstance = editor;
+// Wait for Quill.js to be initialized and set content
+function waitForQuillAndSetContent(editorId, content, maxRetries = 50) {
+    if (window.quillInstances && window.quillInstances[editorId]) {
+        // Quill is ready, set content
+        console.log('🔍 Setting content for:', editorId, 'Content:', content);
+        
+        // Clean up content - remove empty paragraphs and normalize whitespace
+        let cleanContent = content || '';
+        if (cleanContent) {
+            // Remove empty paragraphs and divs
+            cleanContent = cleanContent.replace(/<p><\/p>/g, '');
+            cleanContent = cleanContent.replace(/<div><\/div>/g, '');
+            cleanContent = cleanContent.replace(/<p>\s*<\/p>/g, '');
+            cleanContent = cleanContent.replace(/<div>\s*<\/div>/g, '');
             
-            // Add variables button
-            editor.ui.registry.addButton('variables', {
-                text: 'Zmienne',
-                tooltip: 'Wstaw zmienną szablonu',
-                onAction: function () {
-                    showVariablesDialog(editor);
-                }
-            });
-            
-            // Synchronize with text content on change
-            editor.on('input change keyup', function () {
-                if (!isTextContentManuallyEdited) {
-                    const htmlContent = editor.getContent();
-                    const textContent = stripHtml(htmlContent);
-                    document.getElementById('template_text_content').value = textContent;
-                }
-            });
-            
-            // Add manual sync button to TinyMCE toolbar
-            editor.ui.registry.addButton('syncTextContent', {
-                text: 'Sync Text',
-                tooltip: 'Synchronizuj z wersją tekstową',
-                onAction: function () {
-                    const htmlContent = editor.getContent();
-                    const textContent = stripHtml(htmlContent);
-                    const textField = document.getElementById('template_text_content');
-                    if (textField) {
-                        textField.value = textContent;
-                        editor.notificationManager.open({
-                            text: 'Wersja tekstowa została zsynchronizowana z HTML.',
-                            type: 'success',
-                            timeout: 2000
-                        });
-                    }
-                }
-            });
-            
-            // Also sync on paste and undo/redo
-            editor.on('paste undo redo', function () {
-                if (!isTextContentManuallyEdited) {
-                    setTimeout(() => {
-                        const htmlContent = editor.getContent();
-                        const textContent = stripHtml(htmlContent);
-                        document.getElementById('template_text_content').value = textContent;
-                    }, 100);
-                }
-            });
+            // If content is empty after cleanup, set a default
+            if (cleanContent.trim() === '' || cleanContent.trim() === '<p></p>' || cleanContent.trim() === '<div></div>') {
+                cleanContent = '<p>Wpisz treść szablonu...</p>';
+            }
+        } else {
+            cleanContent = '<p>Wpisz treść szablonu...</p>';
         }
-    });
-}
-
-// Show variables dialog in TinyMCE
-function showVariablesDialog(editor) {
-    const currentVariables = getCurrentVariables();
-    
-    if (currentVariables.length === 0) {
-        editor.notificationManager.open({
-            text: 'Brak zmiennych w szablonie. Dodaj zmienne w sekcji poniżej.',
-            type: 'warning'
-        });
+        
+        console.log('🔍 Cleaned content:', cleanContent);
+        
+        try {
+            // Check if quill instance is fully initialized
+            if (window.quillInstances[editorId] && typeof window.quillInstances[editorId].setContents === 'function') {
+                // Use Quill's API instead of innerHTML for better HTML handling
+                const quill = window.quillInstances[editorId];
+                
+                // Try to parse content as Delta first, fallback to HTML
+                try {
+                    // If content looks like HTML, convert it properly
+                    if (cleanContent.includes('<') && cleanContent.includes('>')) {
+                        // Use clipboard module to handle HTML properly
+                        const delta = quill.clipboard.convert(cleanContent);
+                        quill.setContents(delta, 'silent');
+                    } else {
+                        // Plain text
+                        quill.setText(cleanContent);
+                    }
+                } catch (parseError) {
+                    console.warn('Error parsing content, using innerHTML fallback:', parseError);
+                    quill.root.innerHTML = cleanContent;
+                }
+                
+                console.log('✅ Quill content set for:', editorId);
+            } else {
+                console.warn('Quill instance not fully initialized, falling back to textarea');
+                // Fallback to textarea
+                const textarea = document.getElementById(editorId);
+                if (textarea) {
+                    textarea.value = content || '';
+                }
+            }
+    } catch (error) {
+            console.error('Error setting Quill content:', error);
+            // Fallback to textarea
+            const textarea = document.getElementById(editorId);
+            if (textarea) {
+                textarea.value = content || '';
+            }
+        }
         return;
     }
     
-    const variablesList = currentVariables.map(variable => 
-        `<div class="variable-item" style="padding: 8px; border-bottom: 1px solid #eee; cursor: pointer;" onclick="insertVariableIntoEditor('${variable}')">
-            <code>{{${variable}}}</code>
-        </div>`
-    ).join('');
-    
-    editor.windowManager.open({
-        title: 'Wstaw zmienną',
-        body: {
-            type: 'panel',
-            items: [
-                {
-                    type: 'htmlpanel',
-                    html: `<div style="max-height: 300px; overflow-y: auto;">${variablesList}</div>`
-                }
-            ]
-        },
-        buttons: [
-            {
-                type: 'cancel',
-                text: 'Anuluj'
-            }
-        ]
-    });
+    if (maxRetries > 0) {
+        // Quill not ready yet, retry after 100ms
+        setTimeout(() => {
+            waitForQuillAndSetContent(editorId, content, maxRetries - 1);
+        }, 100);
+    } else {
+        console.warn('❌ Quill editor not available for:', editorId);
+        // Fallback to textarea
+        const textarea = document.getElementById(editorId);
+        if (textarea) {
+            textarea.value = content || '';
+        }
+    }
 }
 
-// Insert variable into TinyMCE editor
-function insertVariableIntoEditor(variable) {
-    if (tinymceInstance) {
-        tinymceInstance.insertContent(`{{${variable}}}`);
-        tinymceInstance.windowManager.close();
+
+// Get content from Quill editor
+function getQuillContent(editorId) {
+    if (window.quillInstances && window.quillInstances[editorId]) {
+        try {
+            // Check if quill instance is fully initialized
+            if (window.quillInstances[editorId].root && typeof window.quillInstances[editorId].root.innerHTML !== 'undefined') {
+        return window.quillInstances[editorId].root.innerHTML;
+            } else {
+                console.warn('Quill instance not fully initialized, falling back to textarea');
+                // Fallback to textarea
+                const textarea = document.getElementById(editorId);
+                return textarea ? textarea.value : '';
+            }
+        } catch (error) {
+            console.error('Error getting Quill content:', error);
+            // Fallback to textarea
+            const textarea = document.getElementById(editorId);
+            return textarea ? textarea.value : '';
+        }
+    } else {
+        // Fallback to textarea
+        const textarea = document.getElementById(editorId);
+        return textarea ? textarea.value : '';
     }
 }
 
@@ -260,16 +236,39 @@ function stripHtml(html) {
         return placeholder;
     });
     
-    // Now strip HTML tags
-    const tmp = document.createElement('div');
-    tmp.innerHTML = processedHtml;
-    let text = tmp.textContent || tmp.innerText || '';
+    // Convert HTML to plain text while preserving line breaks and paragraphs
+    processedHtml = processedHtml
+        // Convert block elements to line breaks
+        .replace(/<\/?(div|p|h[1-6]|li|br)[^>]*>/gi, '\n')
+        // Convert list items to dashes
+        .replace(/<\/?(ul|ol)[^>]*>/gi, '\n')
+        // Convert closing tags of other block elements
+        .replace(/<\/(article|section|header|footer|nav|aside|main)[^>]*>/gi, '\n')
+        // Convert table elements
+        .replace(/<\/?(table|tr)[^>]*>/gi, '\n')
+        .replace(/<\/?(td|th)[^>]*>/gi, ' | ')
+        // Remove remaining HTML tags
+        .replace(/<[^>]*>/g, '')
+        // Decode HTML entities
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
     
-    // Clean up extra whitespace but preserve line breaks
-    text = text.replace(/[ \t]+/g, ' '); // Replace multiple spaces/tabs with single space
-    text = text.replace(/\n\s+/g, '\n'); // Remove leading spaces from lines
-    text = text.replace(/\s+\n/g, '\n'); // Remove trailing spaces from lines
-    text = text.trim();
+    // Clean up whitespace while preserving structure
+    let text = processedHtml
+        // Replace multiple spaces with single space
+        .replace(/[ \t]+/g, ' ')
+        // Replace multiple line breaks with double line break (paragraph)
+        .replace(/\n\s*\n\s*\n+/g, '\n\n')
+        // Remove leading/trailing whitespace from each line
+        .split('\n')
+        .map(line => line.trim())
+        .join('\n')
+        // Final trim
+        .trim();
     
     // Restore template variables
     Object.keys(variablePlaceholders).forEach(placeholder => {
@@ -299,12 +298,12 @@ function loadTemplates() {
                     }
                 }
             } else {
-                toastManager.error('Błąd ładowania szablonów: ' + data.error);
+                window.toastManager.error('Błąd ładowania szablonów: ' + data.error);
             }
         })
         .catch(error => {
             console.error('Error loading templates:', error);
-            toastManager.error('Błąd ładowania szablonów');
+            window.toastManager.error('Błąd ładowania szablonów');
         });
 }
 
@@ -386,6 +385,7 @@ function showTemplateModal() {
     document.getElementById('template_id').value = '';
     loadVariablesDisplay('[]'); // Load empty variables
     isTextContentManuallyEdited = false;
+    window.isTextContentManuallyEdited = false; // Update global variable
     
     // Hide reset sync button
     const resetSyncButton = document.querySelector('button[onclick*="isTextContentManuallyEdited = false"]');
@@ -396,10 +396,10 @@ function showTemplateModal() {
     const modal = new bootstrap.Modal(document.getElementById('templateModal'));
     modal.show();
     
-    // Initialize TinyMCE after modal is shown
+    // Clear Quill editor after modal is shown
     setTimeout(() => {
-        initializeTinyMCE();
-    }, 300);
+        waitForQuillAndSetContent('template_html_content', '');
+    }, 500);
 }
 
 // Load variables display
@@ -524,14 +524,8 @@ function addVariable(variable, description) {
         document.getElementById('template_variables').value = JSON.stringify(variables);
         loadVariablesDisplay(JSON.stringify(variables));
         
-        // Show notification in TinyMCE if available
-        if (tinymceInstance) {
-            tinymceInstance.notificationManager.open({
-                text: `Zmienna {{${variable}}} została dodana do szablonu`,
-                type: 'success',
-                timeout: 2000
-            });
-        }
+        // Show notification
+        window.toastManager.success(`Zmienna {{${variable}}} została dodana do szablonu`);
     } catch (e) {
         console.error('Error adding variable:', e);
     }
@@ -546,14 +540,8 @@ function removeVariable(variable) {
         document.getElementById('template_variables').value = JSON.stringify(variables);
         loadVariablesDisplay(JSON.stringify(variables));
         
-        // Show notification in TinyMCE if available
-        if (tinymceInstance) {
-            tinymceInstance.notificationManager.open({
-                text: `Zmienna {{${variable}}} została usunięta z szablonu`,
-                type: 'info',
-                timeout: 2000
-            });
-        }
+        // Show notification
+        window.toastManager.info(`Zmienna {{${variable}}} została usunięta z szablonu`);
     } catch (e) {
         console.error('Error removing variable:', e);
     }
@@ -561,9 +549,48 @@ function removeVariable(variable) {
 
 // Insert variable into HTML content
 function insertVariable(variable) {
-    if (tinymceInstance) {
-        // Insert into TinyMCE editor
-        tinymceInstance.insertContent(variable);
+    if (window.quillInstances && window.quillInstances['template_html_content']) {
+        // Insert into Quill editor
+        const quill = window.quillInstances['template_html_content'];
+        
+        try {
+            // Check if quill instance is fully initialized
+            if (typeof quill.getSelection === 'function' && typeof quill.insertText === 'function') {
+        const range = quill.getSelection();
+        if (range) {
+            quill.insertText(range.index, variable);
+            quill.setSelection(range.index + variable.length);
+        } else {
+            quill.insertText(quill.getLength(), variable);
+                }
+            } else {
+                console.warn('Quill instance not fully initialized, falling back to textarea');
+                // Fallback to textarea
+                const textarea = document.getElementById('template_html_content');
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const text = textarea.value;
+                const before = text.substring(0, start);
+                const after = text.substring(end, text.length);
+                
+                textarea.value = before + variable + after;
+                textarea.focus();
+                textarea.setSelectionRange(start + variable.length, start + variable.length);
+            }
+        } catch (error) {
+            console.error('Error inserting variable into Quill:', error);
+            // Fallback to textarea
+            const textarea = document.getElementById('template_html_content');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            const before = text.substring(0, start);
+            const after = text.substring(end, text.length);
+            
+            textarea.value = before + variable + after;
+            textarea.focus();
+            textarea.setSelectionRange(start + variable.length, start + variable.length);
+        }
     } else {
         // Fallback to textarea
         const textarea = document.getElementById('template_html_content');
@@ -584,11 +611,8 @@ function saveTemplate() {
     const form = document.getElementById('templateForm');
     const formData = new FormData(form);
     
-    // Get HTML content from TinyMCE if available
-    let htmlContent = formData.get('template_html_content');
-    if (tinymceInstance) {
-        htmlContent = tinymceInstance.getContent();
-    }
+    // Get HTML content from Quill if available
+    let htmlContent = getQuillContent('template_html_content');
     
     const data = {
         name: formData.get('template_name'),
@@ -615,16 +639,16 @@ function saveTemplate() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            toastManager.success('Szablon zapisany pomyślnie!');
+            window.toastManager.success('Szablon zapisany pomyślnie!');
             bootstrap.Modal.getInstance(document.getElementById('templateModal')).hide();
             loadTemplates();
         } else {
-            toastManager.error('Błąd zapisywania szablonu: ' + data.error);
+            window.toastManager.error('Błąd zapisywania szablonu: ' + data.error);
         }
     })
     .catch(error => {
         console.error('Error saving template:', error);
-        toastManager.error('Błąd zapisywania szablonu');
+        window.toastManager.error('Błąd zapisywania szablonu');
     });
 }
 
@@ -639,7 +663,10 @@ function editTemplate(templateId) {
                 document.getElementById('template_name').value = template.name;
                 document.getElementById('template_subject').value = template.subject;
                 document.getElementById('template_type').value = template.template_type;
-                document.getElementById('template_html_content').value = template.html_content;
+                // Set content in textarea first
+                const htmlTextarea = document.getElementById('template_html_content');
+                htmlTextarea.value = template.html_content || '';
+                
                 document.getElementById('template_text_content').value = template.text_content || '';
                 document.getElementById('template_variables').value = template.variables || '';
                 document.getElementById('template_is_active').checked = template.is_active;
@@ -648,6 +675,7 @@ function editTemplate(templateId) {
                 // Load variables display
                 loadVariablesDisplay(template.variables);
                 isTextContentManuallyEdited = false;
+                window.isTextContentManuallyEdited = false; // Update global variable
                 
                 // Hide reset sync button
                 const resetSyncButton = document.querySelector('button[onclick*="isTextContentManuallyEdited = false"]');
@@ -658,23 +686,17 @@ function editTemplate(templateId) {
                 const modal = new bootstrap.Modal(document.getElementById('templateModal'));
                 modal.show();
                 
-                // Initialize TinyMCE after modal is shown and set content
+                // Wait for Quill to be initialized and set content
                 setTimeout(() => {
-                    initializeTinyMCE();
-                    // Set content in TinyMCE after initialization
-                    setTimeout(() => {
-                        if (tinymceInstance) {
-                            tinymceInstance.setContent(template.html_content || '');
-                        }
-                    }, 100);
-                }, 300);
+                    waitForQuillAndSetContent('template_html_content', template.html_content || '');
+                }, 500);
             } else {
-                toastManager.error('Błąd ładowania szablonu: ' + data.error);
+                window.toastManager.error('Błąd ładowania szablonu: ' + data.error);
             }
         })
         .catch(error => {
             console.error('Error loading template:', error);
-            toastManager.error('Błąd ładowania szablonu');
+            window.toastManager.error('Błąd ładowania szablonu');
         });
 }
 
@@ -721,15 +743,15 @@ function performDeleteTemplate(templateId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            toastManager.success('Szablon usunięty!');
+            window.toastManager.success('Szablon usunięty!');
             loadTemplates();
         } else {
-            toastManager.error('Błąd usuwania: ' + data.error);
+            window.toastManager.error('Błąd usuwania: ' + data.error);
         }
     })
     .catch(error => {
         console.error('Error deleting template:', error);
-        toastManager.error('Błąd usuwania');
+        window.toastManager.error('Błąd usuwania');
     });
 }
 
@@ -777,20 +799,24 @@ function performResetTemplates() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            toastManager.success('Szablony zostały zresetowane do stanu domyślnego!');
+            window.toastManager.success('Szablony zostały zresetowane do stanu domyślnego!');
             loadTemplates();
         } else {
-            toastManager.error('Błąd resetowania: ' + data.error);
+            window.toastManager.error('Błąd resetowania: ' + data.error);
         }
     })
     .catch(error => {
         console.error('Error resetting templates:', error);
-        toastManager.error('Błąd resetowania szablonów');
+        window.toastManager.error('Błąd resetowania szablonów');
     });
 }
 
 // Make functions globally available
 window.resetTemplates = resetTemplates;
 window.deleteTemplate = deleteTemplate;
-
-// Cache buster: 1757820821
+window.saveTemplate = saveTemplate;
+window.showTemplateModal = showTemplateModal;
+window.editTemplate = editTemplate;
+window.insertVariable = insertVariable;
+window.addVariable = addVariable;
+window.removeVariable = removeVariable;

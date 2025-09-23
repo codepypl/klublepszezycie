@@ -682,22 +682,24 @@
     }
 }
 
-/* TinyMCE Customization */
-.tox-tinymce {
+/* Quill Customization */
+.ql-editor {
     border-radius: 0.5rem !important;
     border: 2px solid var(--admin-border) !important;
 }
 
-.tox .tox-toolbar {
+/* Quill Toolbar */
+.ql-toolbar {
     background: var(--admin-light) !important;
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+    border: 2px solid var(--admin-border) !important;
+    border-bottom: 1px solid var(--admin-border) !important;
 }
 
-.tox .tox-edit-area {
+.ql-container {
     border-radius: 0 0 0.5rem 0.5rem !important;
-}
-
-.tox .tox-statusbar {
-    border-radius: 0 0 0.5rem 0.5rem !important;
+    border: 2px solid var(--admin-border) !important;
+    border-top: 1px solid var(--admin-border) !important;
 }
 
 /* File Upload */

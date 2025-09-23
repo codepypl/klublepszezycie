@@ -55,10 +55,20 @@ class PublicController:
                     url = item.blog_url
                 else:
                     url = item.url
+                # Check if this menu item should be marked as active
+                is_current_page = False
+                if has_request_context and request.endpoint:
+                    # Check if current endpoint matches this menu item
+                    if url and ('/' + request.endpoint.replace('.', '/') in url or 
+                               request.endpoint == 'public.index' and url == '/' or
+                               request.endpoint == 'blog.index' and 'blog' in url):
+                        is_current_page = True
+                
                 menu_items.append({
                     'title': item.title, 
                     'url': url, 
-                    'is_active': item.is_active
+                    'is_active': item.is_active,
+                    'is_current_page': is_current_page
                 })
             
             

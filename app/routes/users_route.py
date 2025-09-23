@@ -198,4 +198,55 @@ def remove_from_group(user_id, group_id):
 @login_required
 def profile():
     """User profile page"""
-    return render_template('user/profile.html', user=current_user)
+    from app.models.user_history_model import UserHistory
+    from app.models.events_model import EventSchedule
+    
+    # Get user's event history
+    user_history = UserHistory.get_user_event_history(current_user.id)
+    
+    # Get event details for each history entry
+    meeting_history = []
+    for history in user_history:
+        event = EventSchedule.query.get(history.event_id)
+        if event:
+            meeting_history.append({
+                'history': history,
+                'event': event,
+                'status': history.status,
+                'registration_date': history.registration_date,
+                'participation_date': history.participation_date,
+                'was_club_member': history.was_club_member,
+                'meeting_link': event.meeting_link,
+                'event_date': event.event_date,
+                'location': event.location,
+                'title': event.title,
+                'description': event.description
+            })
+    
+    # Prepare user data for the template
+    user_data = {
+        'id': current_user.id,
+        'first_name': current_user.first_name,
+        'email': current_user.email,
+        'phone': current_user.phone,
+        'club_member': current_user.club_member,
+        'is_active': current_user.is_active,
+        'role': current_user.role,
+        'account_type': current_user.account_type,
+        'created_at': current_user.created_at,
+        'last_login': current_user.last_login,
+        'is_temporary_password': current_user.is_temporary_password,
+        'is_admin': current_user.is_admin_role(),
+        'display_name': current_user.first_name or current_user.email.split('@')[0]
+    }
+    
+    # Get all database data dynamically (includes menu_items)
+    from app.blueprints.public_controller import PublicController
+    db_data = PublicController.get_database_data()
+    
+    return render_template('user/profile.html', 
+                         user=current_user,
+                         user_data=user_data,
+                         meeting_history=meeting_history,
+                         is_club_member=current_user.club_member,
+                         **db_data)

@@ -556,7 +556,7 @@ def email_update_template(template_id):
         
         template.name = data['name']
         template.subject = data['subject']
-        template.template_type = data['template_type']
+        template.template_type = data.get('template_type') or template.template_type or 'custom'
         template.html_content = data['html_content']
         template.text_content = data.get('text_content', '')
         template.variables = data.get('variables', '')

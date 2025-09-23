@@ -335,3 +335,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1000); // Wait for categories to load
     }
 });
+
+// Export functions to global scope
+window.editCategory = editCategory;

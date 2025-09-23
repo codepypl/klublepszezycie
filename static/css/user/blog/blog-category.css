@@ -1,5 +1,29 @@
 /* Blog Category Styles */
 
+/* Category Header */
+.category-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: 8rem 0 4rem; /* Increased top padding to account for fixed navbar */
+    margin-bottom: 4rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.category-title {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.category-description {
+    font-size: 1.25rem;
+    opacity: 0.9;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
 /* Featured Posts - Same as blog index */
 .featured-posts {
     margin-bottom: 4rem;

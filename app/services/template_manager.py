@@ -127,7 +127,7 @@ class TemplateManager:
                 default_template = DefaultEmailTemplate(name=template.name)
                 db.session.add(default_template)
             
-            default_template.template_type = template.template_type
+            default_template.template_type = template.template_type or 'custom'
             default_template.subject = template.subject
             default_template.html_content = template.html_content
             default_template.text_content = template.text_content

@@ -11,59 +11,9 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/user/blog/blog-index.css') }}">
-    <script src="{{ url_for('static', filename='js/word-cloud.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/utils/word-cloud.js') }}"></script>
 {% endblock %}
 
-{% block navigation %}
-    <nav class="navbar navbar-expand-lg navbar-light fixed-top bg-white shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold text-primary" href="{{ url_for('public.index') }}">
-                <i class="fas fa-leaf me-2"></i>Lepsze Życie
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    {% if menu_items %}
-                        {% for item in menu_items %}
-                            {% if item.is_active %}
-                            <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'blog.index' %}active{% endif %}" href="{{ item.url }}">{{ item.title }}</a>
-                            </li>
-                            {% endif %}
-                        {% endfor %}
-                    {% endif %}
-                    {% if current_user.is_authenticated %}
-                        {% if current_user.is_admin %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
-                                <i class="fas fa-cog me-1"></i>Admin
-                            </a>
-                        </li>
-                        {% endif %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('users.profile') }}">
-                                <i class="fas fa-user me-1"></i>Profil
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.logout') }}">
-                                <i class="fas fa-sign-out-alt me-1"></i>Wyloguj
-                            </a>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.login') }}">
-                                <i class="fas fa-sign-in-alt me-1"></i>Zaloguj
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
-    </nav>
-{% endblock %}
 
 {% block content %}
     <!-- Hero Section -->
@@ -163,7 +113,6 @@
                                 <li>
                                     <a href="{{ get_category_url_with_hierarchy(category) }}">
                                         {{ category.title }}
-                                        <span class="badge">{{ category.posts_count }}</span>
                                     </a>
                                     {% if category.children %}
                                     <ul class="categories-list ms-3 mt-2">
@@ -172,7 +121,6 @@
                                         <li>
                                             <a href="{{ get_category_url_with_hierarchy(child) }}" class="small">
                                                 {{ child.title }}
-                                                <span class="badge">{{ child.posts_count }}</span>
                                             </a>
                                         </li>
                                         {% endif %}

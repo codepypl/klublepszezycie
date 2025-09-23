@@ -291,7 +291,10 @@ class EmailAutomation:
                 return False, "Użytkownik lub wydarzenie nie zostało znalezione"
             
             # Znajdź administratorów
-            admins = User.query.filter_by(is_admin=True, is_active=True).all()
+            admins = User.query.filter(
+                (User.role == 'admin') | (User.account_type == 'admin'),
+                User.is_active == True
+            ).all()
             
             if not admins:
                 return False, "Brak aktywnych administratorów"

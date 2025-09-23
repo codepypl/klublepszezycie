@@ -4,7 +4,7 @@
 .blog-hero {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
     color: white;
-    padding: 6rem 0 4rem;
+    padding: 8rem 0 4rem; /* Increased top padding to account for fixed navbar */
     margin-bottom: 4rem;
     position: relative;
     overflow: hidden;
