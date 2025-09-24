@@ -101,39 +101,53 @@ class AuthController:
             }
     
     @staticmethod
-    def change_password(old_password, new_password, confirm_password):
+    def change_password(user, old_password, new_password, confirm_password):
         """Change user password"""
         try:
+            print(f"🔐 Zmiana hasła dla użytkownika: {user.email}")
+            print(f"🔐 Stare hasło (pierwsze 3 znaki): {old_password[:3]}***")
+            print(f"🔐 Nowe hasło (pierwsze 3 znaki): {new_password[:3]}***")
+            
             if not all([old_password, new_password, confirm_password]):
+                print("❌ Błąd: Nie wszystkie pola są wypełnione")
                 return {
                     'success': False,
                     'error': 'Wszystkie pola są wymagane'
                 }
             
             if new_password != confirm_password:
+                print("❌ Błąd: Hasła nie są identyczne")
                 return {
                     'success': False,
                     'error': 'Hasła nie są identyczne'
                 }
             
             if len(new_password) < 6:
+                print("❌ Błąd: Hasło za krótkie")
                 return {
                     'success': False,
                     'error': 'Hasło musi mieć co najmniej 6 znaków'
                 }
             
             # Verify old password
-            if not check_password_hash(current_user.password_hash, old_password):
+            print(f"🔐 Sprawdzanie starego hasła...")
+            if not check_password_hash(user.password_hash, old_password):
+                print("❌ Błąd: Nieprawidłowe obecne hasło")
                 return {
                     'success': False,
                     'error': 'Nieprawidłowe obecne hasło'
                 }
             
+            print("✅ Stare hasło jest poprawne")
+            
             # Update password
-            current_user.password_hash = generate_password_hash(new_password)
+            print("🔐 Zapisywanie nowego hasła...")
+            user.password_hash = generate_password_hash(new_password)
             db.session.commit()
+            print("✅ Hasło zostało zapisane w bazie danych")
             
             # Send password change notification email
+            print("📧 Próba wysłania emaila z powiadomieniem...")
             try:
                 from app.services.email_service import EmailService
                 from app.blueprints.public_controller import generate_unsubscribe_token
@@ -148,33 +162,39 @@ class AuthController:
                 from app.services.unsubscribe_manager import unsubscribe_manager
                 
                 context = {
-                    'user_name': current_user.first_name or 'Użytkowniku',
-                    'user_email': current_user.email,
+                    'user_name': user.first_name or 'Użytkowniku',
+                    'user_email': user.email,
                     'change_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'login_url': f'{base_url}/login',
-                    'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(current_user.email),
-                    'delete_account_url': unsubscribe_manager.get_delete_account_url(current_user.email)
+                    'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(user.email),
+                    'delete_account_url': unsubscribe_manager.get_delete_account_url(user.email)
                 }
                 
+                print("📧 Wysyłanie emaila...")
                 # Send password change notification
                 email_service.send_template_email(
-                    to_email=current_user.email,
+                    to_email=user.email,
                     template_name='password_changed',
                     context=context,
-                    to_name=current_user.first_name,
+                    to_name=user.first_name,
                     use_queue=True
                 )
+                print("✅ Email został wysłany pomyślnie")
                 
             except Exception as email_error:
                 # Don't fail password change if email fails
-                print(f"Failed to send password change notification: {email_error}")
+                print(f"❌ Błąd wysyłania emaila: {email_error}")
+                print("⚠️ Kontynuowanie mimo błędu emaila...")
             
+            print("✅ Zmiana hasła zakończona pomyślnie")
             return {
                 'success': True,
                 'message': 'Hasło zostało zmienione pomyślnie'
             }
         except Exception as e:
+            print(f"❌ Błąd podczas zmiany hasła: {str(e)}")
             db.session.rollback()
+            print("🔄 Wykonano rollback transakcji")
             return {
                 'success': False,
                 'error': str(e)

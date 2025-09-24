@@ -204,7 +204,7 @@ class BlogController:
                             to_email=admin.email,
                             template_name='comment_moderation',
                             context=context,
-                            to_name=admin.name or 'Administratorze'
+                            to_name=admin.first_name or 'Administratorze'
                         )
                         
             except Exception as email_error:

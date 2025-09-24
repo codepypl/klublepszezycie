@@ -1305,7 +1305,7 @@ def email_get_group_members(group_id):
             members.append({
                 'id': member.id,
                 'user_id': member.user_id,
-                'user_name': member.name,
+                'user_name': member.first_name,
                 'email': member.email,
                 'member_type': member.member_type,
                 'joined_at': member.joined_at.isoformat() if member.joined_at else None

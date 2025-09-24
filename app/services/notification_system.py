@@ -132,7 +132,7 @@ class NotificationScheduler:
                             participants.append(NotificationRecipient(
                                 user_id=None,
                                 email=member.email,
-                                name=member.name or 'Użytkowniku',
+                                name=member.first_name or 'Użytkowniku',
                                 is_external=True
                             ))
             except Exception as e:
@@ -166,7 +166,7 @@ class NotificationScheduler:
                             participants.append(NotificationRecipient(
                                 user_id=None,
                                 email=member.email,
-                                name=member.name or 'Użytkowniku',
+                                name=member.first_name or 'Użytkowniku',
                                 is_external=True
                             ))
             except Exception as e:
@@ -461,7 +461,7 @@ class MailgunSender:
                 email.sent_at = datetime.utcnow()
                 
                 # Dodaj rekord EmailReminder dla przypomnień o wydarzeniach
-                if 'event_reminder' in email.template_name:
+                if email.template_name and 'event_reminder' in email.template_name:
                     context = json.loads(email.context)
                     # TODO: Znajdź event_id z kontekstu
                     # reminder = EmailReminder(...)
@@ -585,7 +585,7 @@ class NotificationProcessor:
                                 # External member
                                 recipients.append({
                                     'email': member.email,
-                                    'name': member.name or 'Użytkowniku',
+                                    'name': member.first_name or 'Użytkowniku',
                                     'user_id': None
                                 })
                     

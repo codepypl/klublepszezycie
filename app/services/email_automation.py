@@ -176,7 +176,7 @@ class EmailAutomation:
                     user_name = user.first_name or 'Użytkowniku'
                     user_email = user.email
                 else:
-                    user_name = member.name or 'Użytkowniku'
+                    user_name = member.first_name or 'Użytkowniku'
                     user_email = member.email
                 
                 context = {
@@ -374,7 +374,7 @@ class EmailAutomation:
             sent = 0
             for admin in admins:
                 context = {
-                    'admin_name': admin.name or 'Administratorze',
+                    'admin_name': admin.first_name or 'Administratorze',
                     'user_name': registration.first_name,
                     'user_email': registration.email,
                     'event_title': event.title,
@@ -385,7 +385,7 @@ class EmailAutomation:
                     to_email=admin.email,
                     template_name='admin_notification',
                     context=context,
-                    to_name=admin.name
+                    to_name=admin.first_name
                 )
                 
                 if success:

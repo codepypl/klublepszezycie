@@ -336,7 +336,7 @@ class EmailService:
             added_count = 0
             for member in members:
                 context = {
-                    'recipient_name': member.name,
+                    'recipient_name': member.first_name,
                     'recipient_email': member.email
                 }
                 

@@ -543,14 +543,16 @@ class PublicController:
             
             # Send email
             email_service = EmailService()
-            email_service.send_email(
+            email_service.send_template_email(
                 to_email='kontakt@klublepszezycie.pl',
-                to_name='Klub Lepsze Życie',
-                subject=f'Wiadomość kontaktowa: {subject}',
-                template='contact_message',
-                sender_name=name,
-                sender_email=email,
-                message=message
+                template_name='contact_message',
+                context={
+                    'sender_name': name,
+                    'sender_email': email,
+                    'subject': subject,
+                    'message': message
+                },
+                to_name='Klub Lepsze Życie'
             )
             
             return {

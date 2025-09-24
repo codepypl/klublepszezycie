@@ -457,7 +457,7 @@ class GroupManager:
                     if should_remove:
                         member.is_active = False
                         members_to_remove.append(member)
-                        print(f"✅ Usunięto {member.email or member.name} z grupy {group_name} ({reason})")
+                        print(f"✅ Usunięto {member.email or member.first_name} z grupy {group_name} ({reason})")
                 
                 # Aktualizuj liczbę członków
                 group.member_count = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).count()
@@ -570,7 +570,7 @@ class GroupManager:
                 if member.email and member.email not in unique_emails:
                     member.is_active = False
                     members_to_remove.append(member)
-                    print(f"✅ Usunięto {member.email or member.name} z grupy {group_name}")
+                    print(f"✅ Usunięto {member.email or member.first_name} z grupy {group_name}")
             
             # Aktualizuj liczbę członków
             group.member_count = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).count()

@@ -65,11 +65,13 @@ def change_password():
         new_password = request.form.get('new_password', '')
         confirm_password = request.form.get('confirm_password', '')
         
-        result = AuthController.change_password(old_password, new_password, confirm_password)
+        result = AuthController.change_password(current_user, old_password, new_password, confirm_password)
         
         if result['success']:
             flash(result['message'], 'success')
-            return redirect(url_for('users.profile'))
+            # Logout user after password change
+            logout_user()
+            return redirect(url_for('public.index'))
         else:
             flash(result['error'], 'error')
     
@@ -90,12 +92,11 @@ def forgot_password():
             
             reset_url = url_for('auth.reset_password', token=result['token'], _external=True)
             
-            email_service.send_email(
+            email_service.send_template_email(
                 to_email=result['user'].email,
-                to_name=result['user'].name,
-                subject='Resetowanie hasła',
-                template='password_reset',
-                reset_url=reset_url
+                template_name='password_reset',
+                context={'reset_url': reset_url},
+                to_name=result['user'].first_name
             )
             
             flash(result['message'], 'success')
