@@ -32,6 +32,14 @@ document.addEventListener('DOMContentLoaded', function() {
     window.showProgressBar = showProgressBar;
     window.hideProgressBar = hideProgressBar;
     window.startProgressMonitoring = startProgressMonitoring;
+    
+    // Initialize CRUD Refresh Manager for email queue
+    if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
+        window.crudRefreshManager.init(() => {
+            loadQueue(currentFilter || 'pending');
+        });
+        console.log('CRUD Refresh Manager initialized for email queue');
+    }
     window.updateProgress = updateProgress;
     window.showTestRow = () => {
         const testRow = document.getElementById('testRow');

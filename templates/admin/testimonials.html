@@ -269,6 +269,15 @@ document.addEventListener('DOMContentLoaded', function() {
             paginationInstance.setData(paginationData);
         }
     }
+    
+    // Initialize CRUD Refresh Manager for testimonials
+    if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
+        window.crudRefreshManager.init(() => {
+            // Refresh function for testimonials - reload the page
+            window.location.reload();
+        });
+        console.log('CRUD Refresh Manager initialized for testimonials');
+    }
 });
 </script>
 {% endblock %}

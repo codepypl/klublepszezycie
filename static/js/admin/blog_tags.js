@@ -376,5 +376,13 @@ function deleteTag(tagId) {
 document.addEventListener('DOMContentLoaded', function() {
     window.blogTagsManager = new BlogTagsManager();
     console.log('BlogTagsManager initialized:', window.blogTagsManager);
+    
+    // Initialize CRUD Refresh Manager for blog tags
+    if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
+        window.crudRefreshManager.init(() => {
+            window.blogTagsManager.loadTags();
+        });
+        console.log('CRUD Refresh Manager initialized for blog tags');
+    }
 });
 

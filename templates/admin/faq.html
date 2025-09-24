@@ -223,6 +223,15 @@ document.addEventListener('DOMContentLoaded', function() {
             paginationInstance.setData(paginationData);
         }
     }
+    
+    // Initialize CRUD Refresh Manager for FAQ
+    if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
+        window.crudRefreshManager.init(() => {
+            // Refresh function for FAQ - reload the page
+            window.location.reload();
+        });
+        console.log('CRUD Refresh Manager initialized for FAQ');
+    }
 });
 </script>
 {% endblock %}

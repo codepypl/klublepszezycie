@@ -24,6 +24,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
+    // Initialize CRUD Refresh Manager for email logs
+    if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
+        window.crudRefreshManager.init(loadLogs);
+        console.log('CRUD Refresh Manager initialized for email logs');
+    }
+    
     // Set up event listeners
     document.getElementById('searchInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {

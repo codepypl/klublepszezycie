@@ -354,6 +354,14 @@
 
             // Initialize events manager
             window.eventsManager = new EventsManager();
+            
+            // Initialize CRUD Refresh Manager for events
+            if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
+                window.crudRefreshManager.init(() => {
+                    window.eventsManager.loadEvents();
+                });
+                console.log('CRUD Refresh Manager initialized for events');
+            }
         });
     </script>
 {% endblock %}

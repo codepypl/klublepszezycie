@@ -365,6 +365,14 @@ function deleteCategory(categoryId) {
 document.addEventListener('DOMContentLoaded', function() {
     window.blogCategoriesManager = new BlogCategoriesManager();
     
+    // Initialize CRUD Refresh Manager for blog categories
+    if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
+        window.crudRefreshManager.init(() => {
+            window.blogCategoriesManager.loadCategories();
+        });
+        console.log('CRUD Refresh Manager initialized for blog categories');
+    }
+    
     // Check for edit parameter in URL
     const urlParams = new URLSearchParams(window.location.search);
     const editCategoryId = urlParams.get('edit');

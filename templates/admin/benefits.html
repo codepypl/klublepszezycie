@@ -257,6 +257,15 @@
                 paginationInstance.setData(paginationData);
             }
         }
+        
+        // Initialize CRUD Refresh Manager for benefits
+        if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
+            window.crudRefreshManager.init(() => {
+                // Refresh function for benefits - reload the page
+                window.location.reload();
+            });
+            console.log('CRUD Refresh Manager initialized for benefits');
+        }
     });
 </script>
 {% endblock %}

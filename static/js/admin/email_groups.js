@@ -47,6 +47,12 @@ document.addEventListener('DOMContentLoaded', function() {
             loadGroups(); // Odśwież listę grup po zamknięciu modala grupy
         });
     }
+    
+    // Initialize CRUD Refresh Manager for email groups
+    if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
+        window.crudRefreshManager.init(loadGroups);
+        console.log('CRUD Refresh Manager initialized for email groups');
+    }
 });
 
 

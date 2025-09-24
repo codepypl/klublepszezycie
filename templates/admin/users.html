@@ -420,6 +420,15 @@
             }
         }
         {% endif %}
+        
+        // Initialize CRUD Refresh Manager for users
+        if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
+            window.crudRefreshManager.init(() => {
+                // Refresh function for users - reload the page
+                window.location.reload();
+            });
+            console.log('CRUD Refresh Manager initialized for users');
+        }
     });
     
     // View user profile function

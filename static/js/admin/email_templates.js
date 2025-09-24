@@ -25,6 +25,12 @@ document.addEventListener('DOMContentLoaded', function() {
             editTemplate(parseInt(editTemplateId));
         }, 500);
     }
+    
+    // Initialize CRUD Refresh Manager for email templates
+    if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
+        window.crudRefreshManager.init(loadTemplates);
+        console.log('CRUD Refresh Manager initialized for email templates');
+    }
 });
 
 // Initialize modal listeners
