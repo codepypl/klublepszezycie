@@ -381,28 +381,44 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/utils/simple-paginate.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
 <script src="{{ url_for('static', filename='js/utils/tooltip.js') }}"></script>
 <script>
     // Initialize page
     document.addEventListener('DOMContentLoaded', function() {
         // Set up pagination handlers for auto-initialization
         {% if pagination %}
-        window.flaskPaginationData = {
-            page: {{ pagination.page }},
-            pages: {{ pagination.pages }},
-            total: {{ pagination.total }},
-            per_page: {{ pagination.per_page }}
-        };
-        
-        window.paginationHandlers = {
-            onPageChange: (page) => {
-                const perPage = {{ pagination.per_page if pagination else 10 }};
-                window.location.href = `{{ url_for('users.index') }}?page=${page}&per_page=${perPage}`;
-            },
-            onPerPageChange: (newPage, perPage) => {
-                window.location.href = `{{ url_for('users.index') }}?page=${newPage}&per_page=${perPage}`;
+        // Initialize SimplePagination for users
+        if (typeof SimplePagination !== 'undefined') {
+            const paginationContainer = document.getElementById('pagination');
+            if (paginationContainer) {
+                const paginationData = {
+                    page: {{ pagination.page }},
+                    pages: {{ pagination.pages }},
+                    total: {{ pagination.total }},
+                    per_page: {{ pagination.per_page }}
+                };
+                
+                const paginationInstance = new SimplePagination('pagination', {
+                    showInfo: true,
+                    showPerPage: true,
+                    perPageOptions: [5, 10, 25, 50, 100],
+                    defaultPerPage: {{ pagination.per_page if pagination else 10 }},
+                    maxVisiblePages: 5
+                });
+                
+                paginationInstance.setPageChangeCallback((page) => {
+                    const perPage = paginationInstance.getPerPage();
+                    window.location.href = `{{ url_for('users.index') }}?page=${page}&per_page=${perPage}`;
+                });
+                
+                paginationInstance.setPerPageChangeCallback((newPage, perPage) => {
+                    window.location.href = `{{ url_for('users.index') }}?page=${newPage}&per_page=${perPage}`;
+                });
+                
+                paginationInstance.setData(paginationData);
             }
-        };
+        }
         {% endif %}
     });
     
