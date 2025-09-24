@@ -33,6 +33,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('CRUD Refresh Manager initialized for email logs');
     }
     
+    // Setup auto-refresh for email logs
+    setupEmailLogsAutoRefresh();
+    
     // Set up event listeners
     document.getElementById('searchInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -185,6 +188,18 @@ function clearFilters() {
 function refreshLogs() {
     loadLogsStats();
     loadLogs();
+}
+
+// Setup auto-refresh for email logs
+let emailLogsRefreshInterval;
+
+function setupEmailLogsAutoRefresh() {
+    // Refresh every 30 seconds (less frequent than queue since logs don't change as often)
+    emailLogsRefreshInterval = setInterval(() => {
+        refreshLogs();
+    }, 30000); // 30 seconds
+    
+    console.log('Email logs auto-refresh setup: every 30 seconds');
 }
 
 // View log details
