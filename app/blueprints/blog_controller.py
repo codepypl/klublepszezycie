@@ -170,11 +170,11 @@ class BlogController:
             
             # Send notification email to admin about new comment
             try:
-                from app.services.email_service import EmailService
+                from app.services.mailgun_service import EnhancedNotificationProcessor
                 from app.utils.timezone_utils import get_local_now
                 import os
                 
-                email_service = EmailService()
+                email_processor = EnhancedNotificationProcessor()
                 
                 # Get admin emails (users with admin role)
                 from app.models import User
@@ -200,12 +200,15 @@ class BlogController:
                     
                     # Send to all admin users
                     for admin in admin_users:
-                        email_service.send_template_email(
+                        success, message = email_processor.send_template_email(
                             to_email=admin.email,
                             template_name='comment_moderation',
                             context=context,
                             to_name=admin.first_name or 'Administratorze'
                         )
+                        
+                        if not success:
+                            print(f"Błąd wysyłania emaila do {admin.email}: {message}")
                         
             except Exception as email_error:
                 # Don't fail comment creation if email fails

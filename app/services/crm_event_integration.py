@@ -7,7 +7,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from app.models import db, UserGroup, UserGroupMember, EventSchedule, User
 from app.models.crm_model import Contact, Call
-from app.services.email_automation import EmailService
+from app.services.email_automation import EmailAutomation
 
 class EventIntegrationService:
     """Service for integrating CRM leads with event system"""
@@ -103,7 +103,7 @@ class EventIntegrationService:
     def _send_lead_confirmation_email(contact, event):
         """Send confirmation email to lead"""
         try:
-            email_service = EmailService()
+            email_automation = EmailAutomation()
             
             # Prepare email data
             email_data = {

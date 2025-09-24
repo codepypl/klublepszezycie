@@ -87,17 +87,21 @@ def forgot_password():
         
         if result['success']:
             # Send email with reset link
-            from app.services.email_service import EmailService
-            email_service = EmailService()
+            from app.services.mailgun_service import EnhancedNotificationProcessor
+            email_processor = EnhancedNotificationProcessor()
             
             reset_url = url_for('auth.reset_password', token=result['token'], _external=True)
             
-            email_service.send_template_email(
+            success, message = email_processor.send_template_email(
                 to_email=result['user'].email,
                 template_name='password_reset',
                 context={'reset_url': reset_url},
                 to_name=result['user'].first_name
             )
+            
+            if not success:
+                flash(f"Błąd wysyłania emaila: {message}", 'error')
+                return render_template('user/forgot_password.html')
             
             flash(result['message'], 'success')
         else:

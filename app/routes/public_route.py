@@ -4,7 +4,7 @@ Public routes
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, send_from_directory
 from app.blueprints.public_controller import PublicController, generate_unsubscribe_token
 from app.api.email_api import add_user_to_event_group
-from app.services.email_service import EmailService
+from app.services.mailgun_service import EnhancedNotificationProcessor
 from app.utils.timezone_utils import get_local_now, convert_to_local
 from app.utils.blog_utils import generate_blog_link
 from app.utils.validation_utils import validate_email, validate_phone
@@ -223,7 +223,7 @@ def register():
         # Send welcome email with temporary password (only for new users)
         if not existing_user:
             try:
-                email_service = EmailService()
+                email_processor = EnhancedNotificationProcessor()
                 
                 # Generate unsubscribe and delete account URLs - nowy system v2
                 from app.services.unsubscribe_manager import unsubscribe_manager
@@ -237,7 +237,7 @@ def register():
                     'delete_account_url': unsubscribe_manager.get_delete_account_url(user.email)
                 }
                 
-                success, message = email_service.send_template_email(
+                success, message = email_processor.send_template_email(
                     to_email=user.email,
                     template_name='welcome',  # Use existing welcome template
                     context=context
@@ -263,8 +263,8 @@ def register():
                 'registration_source': 'Formularz CTA (sekcja Dołącz do klubu)'
             }
             
-            email_service = EmailService()
-            success, message = email_service.send_template_email(
+            email_processor = EnhancedNotificationProcessor()
+            success, message = email_processor.send_template_email(
                 to_email=admin_email,
                 template_name='admin_notification',
                 context=admin_context,
@@ -538,7 +538,7 @@ def register_event(event_id):
                 print(f"❌ Event group synchronization error: {message}")
             
             # Send confirmation email
-            email_service = EmailService()
+            email_processor = EnhancedNotificationProcessor()
             
             # Generate unsubscribe and delete account URLs
             unsubscribe_token = generate_unsubscribe_token(created_user.email, 'unsubscribe')
@@ -555,7 +555,7 @@ def register_event(event_id):
                 'delete_account_url': request.url_root + f'api/delete-account/{encrypt_email(created_user.email)}/{delete_token}'
             }
             
-            success, message = email_service.send_template_email(
+            success, message = email_processor.send_template_email(
                 to_email=created_user.email,
                 template_name='event_registration_confirmation',
                 context=context
@@ -842,7 +842,7 @@ def register_for_event(user, event_id):
         
         # Send confirmation email to user
         try:
-            email_service = EmailService()
+            email_processor = EnhancedNotificationProcessor()
             
             # Generate unsubscribe token
             unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
@@ -864,7 +864,7 @@ def register_for_event(user, event_id):
                 'unsubscribe_url': base_url + f'api/unsubscribe/{encrypt_email(user.email)}/{unsubscribe_token}'
             }
             
-            success, message = email_service.send_template_email(
+            success, message = email_processor.send_template_email(
                 to_email=user.email,
                 template_name='event_registration',
                 context=context
@@ -891,8 +891,8 @@ def register_for_event(user, event_id):
                 'registration_source': f'Rejestracja na wydarzenie - {event.title}'
             }
             
-            email_service = EmailService()
-            email_service.send_template_email(
+            email_processor = EnhancedNotificationProcessor()
+            success, message = email_processor.send_template_email(
                 to_email=admin_email,
                 template_name='admin_notification',
                 context=admin_context,

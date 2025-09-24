@@ -4,7 +4,7 @@ Email Automation - automatyzacje emailowe
 from datetime import datetime, timedelta
 from app.models import db, User, EventSchedule, UserGroup, UserGroupMember
 from app.models.email_model import EmailReminder
-from app.services.email_service import EmailService
+from app.services.mailgun_service import EnhancedNotificationProcessor
 from app.services.group_manager import GroupManager
 from app.utils.timezone_utils import get_local_now
 from app.utils.crypto_utils import encrypt_email
@@ -13,7 +13,7 @@ class EmailAutomation:
     """Automatyzacje emailowe"""
     
     def __init__(self):
-        self.email_service = EmailService()
+        self.email_processor = EnhancedNotificationProcessor()
         self.group_manager = GroupManager()
     
     def on_user_registration(self, user_id):
@@ -38,7 +38,7 @@ class EmailAutomation:
                     'delete_account_url': unsubscribe_manager.get_delete_account_url(user.email)
                 }
                 
-                self.email_service.send_template_email(
+                success, message = self.email_processor.send_template_email(
                     to_email=user.email,
                     template_name='welcome',
                     context=context,
@@ -101,7 +101,7 @@ class EmailAutomation:
                     'delete_account_url': f'{base_url}/api/delete-account/{encrypt_email(user.email)}/{delete_token}'
                 }
                 
-                self.email_service.send_template_email(
+                success, message = self.email_processor.send_template_email(
                     to_email=user.email,
                     template_name='welcome',  # Use welcome template instead
                     context=context,
@@ -207,7 +207,7 @@ class EmailAutomation:
                         context['delete_account_url'] = f'{base_url}/api/delete-account/{encrypt_email(user_email)}/{delete_token}'
                         
                         # Użyj szablonu zamiast generować HTML
-                        success, message = self.email_service.send_template_email(
+                        success, message = self.email_processor.send_template_email(
                             to_email=user_email,
                             template_name='event_reminder_24h',
                             context=context,
@@ -243,7 +243,7 @@ class EmailAutomation:
                         context['delete_account_url'] = f'{base_url}/api/delete-account/{encrypt_email(user.email)}/{delete_token}'
                         
                         # Użyj szablonu zamiast generować HTML
-                        success, message = self.email_service.send_template_email(
+                        success, message = self.email_processor.send_template_email(
                             to_email=user.email,
                             template_name='event_reminder_1h',
                             context=context,
@@ -283,7 +283,7 @@ class EmailAutomation:
                         context_with_link['delete_account_url'] = f'{base_url}/api/delete-account/{encrypt_email(user.email)}/{delete_token}'
                         
                         # Użyj szablonu zamiast generować HTML
-                        success, message = self.email_service.send_template_email(
+                        success, message = self.email_processor.send_template_email(
                             to_email=user.email,
                             template_name='event_reminder_5min',
                             context=context_with_link,
@@ -381,7 +381,7 @@ class EmailAutomation:
                     'event_date': event.event_date.strftime('%d.%m.%Y %H:%M')
                 }
                 
-                success, message = self.email_service.send_template_email(
+                success, message = self.email_processor.send_template_email(
                     to_email=admin.email,
                     template_name='admin_notification',
                     context=context,

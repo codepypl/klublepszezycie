@@ -149,13 +149,13 @@ class AuthController:
             # Send password change notification email
             print("📧 Próba wysłania emaila z powiadomieniem...")
             try:
-                from app.services.email_service import EmailService
+                from app.services.mailgun_service import EnhancedNotificationProcessor
                 from app.blueprints.public_controller import generate_unsubscribe_token
                 from app.utils.crypto_utils import encrypt_email
                 import os
                 from datetime import datetime
                 
-                email_service = EmailService()
+                email_processor = EnhancedNotificationProcessor()
                 base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
                 
                 # Generate tokens for email - nowy system v2
@@ -170,16 +170,19 @@ class AuthController:
                     'delete_account_url': unsubscribe_manager.get_delete_account_url(user.email)
                 }
                 
-                print("📧 Wysyłanie emaila...")
-                # Send password change notification
-                email_service.send_template_email(
+                print("📧 Wysyłanie emaila przez ulepszoną usługę...")
+                # Send password change notification using enhanced service
+                success, message = email_processor.send_template_email(
                     to_email=user.email,
                     template_name='password_changed',
                     context=context,
-                    to_name=user.first_name,
-                    use_queue=True
+                    to_name=user.first_name
                 )
-                print("✅ Email został wysłany pomyślnie")
+                
+                if success:
+                    print(f"✅ Email został wysłany pomyślnie: {message}")
+                else:
+                    print(f"❌ Błąd wysyłania emaila: {message}")
                 
             except Exception as email_error:
                 # Don't fail password change if email fails
@@ -281,7 +284,12 @@ class AuthController:
                 }
             
             # Update password
-            user = reset_token.user
+            user = User.query.get(reset_token.user_id)
+            if not user:
+                return {
+                    'success': False,
+                    'error': 'Użytkownik nie istnieje'
+                }
             user.password_hash = generate_password_hash(new_password)
             
             # Delete used token

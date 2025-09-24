@@ -16,9 +16,9 @@ email_bp = Blueprint('email_api', __name__)
 def email_retry_failed():
     """Ponawia nieudane emaile"""
     try:
-        from app.services.email_service import EmailService
-        email_service = EmailService()
-        stats = email_service.retry_failed_emails()
+        from app.services.mailgun_service import EnhancedNotificationProcessor
+        email_processor = EnhancedNotificationProcessor()
+        stats = email_processor.retry_failed_emails()
         
         return jsonify({
             'success': True, 
@@ -35,14 +35,14 @@ def email_retry_failed():
 def email_retry_single(email_id):
     """Ponawia pojedynczy email"""
     try:
-        from app.services.email_service import EmailService
+        from app.services.mailgun_service import EnhancedNotificationProcessor
         
         email = EmailQueue.query.get(email_id)
         if not email:
             return jsonify({'success': False, 'error': 'Email nie istnieje'}), 404
-        email_service = EmailService()
+        email_processor = EnhancedNotificationProcessor()
         
-        success, message = email_service.send_email(
+        success, message = email_processor.send_immediate_email(
             email.to_email,
             email.subject,
             email.html_content,
@@ -154,14 +154,24 @@ def email_queue_list():
 def email_process_queue():
     """Process email queue - start sending pending emails"""
     try:
-        # This endpoint just returns success - actual processing would be done by a background task
-        # In a real implementation, this would start a background worker or queue processor
-        return jsonify({
-            'success': True,
-            'message': 'Queue processing started'
-        })
+        from app.services.mailgun_service import EnhancedNotificationProcessor
+        import asyncio
+        
+        processor = EnhancedNotificationProcessor()
+        
+        # Process email queue asynchronously
+        success, message = asyncio.run(processor.process_email_queue())
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': message
+            })
+        else:
+            return jsonify({'success': False, 'message': message}), 500
+            
     except Exception as e:
-        logging.error(f"Error starting queue processing: {str(e)}")
+        logging.error(f"Error processing email queue: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @email_bp.route('/email/queue-progress', methods=['GET'])
@@ -938,7 +948,7 @@ def email_delete_campaign(campaign_id):
 def email_send_campaign(campaign_id):
     """Wysyła kampanię emailową"""
     try:
-        from app.services.email_service import EmailService
+        from app.services.mailgun_service import EnhancedNotificationProcessor
         import json
         
         # Pobierz kampanię
@@ -992,7 +1002,7 @@ def email_send_campaign(campaign_id):
         if not group_ids:
             return jsonify({'success': False, 'error': 'Kampania nie ma przypisanych grup odbiorców'}), 400
         
-        email_service = EmailService()
+        email_processor = EnhancedNotificationProcessor()
         
         # Wyślij do każdej grupy
         total_sent = 0
@@ -1001,7 +1011,7 @@ def email_send_campaign(campaign_id):
         messages = []
         
         for group_id in group_ids:
-            success, message, email_count = email_service.send_campaign_to_group(campaign_id, group_id)
+            success, message, email_count = email_processor.send_campaign_to_group(campaign_id, group_id)
             if success:
                 total_sent += 1
                 total_emails += email_count
@@ -1397,10 +1407,10 @@ def email_remove_group_member(member_id):
 def update_campaign_stats(campaign_id):
     """Aktualizuje statystyki kampanii"""
     try:
-        from app.services.email_service import EmailService
-        email_service = EmailService()
+        from app.services.mailgun_service import EnhancedNotificationProcessor
+        email_processor = EnhancedNotificationProcessor()
         
-        success = email_service.update_campaign_stats(campaign_id)
+        success = email_processor.update_campaign_stats(campaign_id)
         
         if success:
             return jsonify({'success': True, 'message': 'Statystyki kampanii zaktualizowane'})
@@ -1630,9 +1640,9 @@ def delete_event_groups(event_id):
 def get_queue_stats():
     """Zwraca statystyki kolejki emaili"""
     try:
-        from app.services.notification_system import NotificationProcessor
+        from app.services.mailgun_service import EnhancedNotificationProcessor
         
-        processor = NotificationProcessor()
+        processor = EnhancedNotificationProcessor()
         stats = processor.get_queue_stats()
         
         if stats:

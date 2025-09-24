@@ -228,11 +228,11 @@ def api_user(user_id):
             # Wyślij email z nowym hasłem jeśli zostało ustawione
             if new_password:
                 try:
-                    from app.services.email_service import EmailService
+                    from app.services.mailgun_service import EnhancedNotificationProcessor
                     from app.utils.timezone_utils import get_local_now
                     import os
                     
-                    email_service = EmailService()
+                    email_processor = EnhancedNotificationProcessor()
                     
                     # Przygotuj kontekst emaila
                     base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
@@ -249,12 +249,15 @@ def api_user(user_id):
                     }
                     
                     # Wyślij email
-                    email_service.send_template_email(
+                    success, message = email_processor.send_template_email(
                         to_email=user.email,
                         template_name='admin_password_set',
                         context=context,
                         to_name=user.first_name or 'Użytkowniku'
                     )
+                    
+                    if not success:
+                        print(f"Błąd wysyłania emaila: {message}")
                     
                 except Exception as email_error:
                     # Nie przerywaj operacji jeśli email się nie wyśle

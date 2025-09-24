@@ -11,6 +11,7 @@ from unidecode import unidecode
 
 from app import db
 from app.models import EmailTemplate, EmailQueue, EmailLog, UserGroup, UserGroupMember, User, EmailCampaign
+from app.utils.email_utils import create_proper_from_header, create_proper_subject
 
 
 class EmailService:
@@ -45,9 +46,11 @@ class EmailService:
             
             # Tworzenie wiadomości
             msg = MIMEMultipart('alternative')
-            msg['From'] = formataddr((self.from_name, self.from_email))
+            
+            # Properly encode headers with UTF-8
+            msg['From'] = create_proper_from_header(self.from_name, self.from_email)
             msg['To'] = to_email
-            msg['Subject'] = subject
+            msg['Subject'] = create_proper_subject(subject)
             
             # Dodanie treści tekstowej
             if text_content:
