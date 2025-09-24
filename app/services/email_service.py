@@ -119,7 +119,7 @@ class EmailService:
             
             if use_queue:
                 # Dodaj do kolejki
-                success = self.add_to_queue(
+                success, message = self.add_to_queue(
                     to_email=to_email,
                     subject=subject,
                     html_content=html_content,
@@ -128,10 +128,7 @@ class EmailService:
                     context=context,
                     to_name=to_name
                 )
-                if success:
-                    return True, "Email dodany do kolejki"
-                else:
-                    return False, "Błąd dodawania do kolejki"
+                return success, message
             else:
                 # Wysyłanie bezpośrednie
                 return self.send_email(to_email, subject, html_content, text_content, template_id=template.id)
@@ -142,9 +139,10 @@ class EmailService:
     def add_to_queue(self, to_email: str, subject: str, html_content: str, 
                     text_content: str = None, template_id: int = None, 
                     campaign_id: int = None, context: Dict = None, 
-                    scheduled_at: datetime = None, to_name: str = None) -> bool:
+                    scheduled_at: datetime = None, to_name: str = None, 
+                    duplicate_check_key: str = None, skip_duplicate_check: bool = False) -> Tuple[bool, str]:
         """
-        Dodaje email do kolejki
+        Dodaje email do kolejki z zabezpieczeniami przed duplikatami
         
         Args:
             to_email: Adres email odbiorcy
@@ -156,14 +154,31 @@ class EmailService:
             context: Kontekst dla zmiennych (opcjonalne)
             scheduled_at: Data wysłania (opcjonalne)
             to_name: Nazwa odbiorcy (opcjonalna)
+            duplicate_check_key: Klucz do sprawdzania duplikatów (opcjonalny)
+            skip_duplicate_check: Pomiń sprawdzanie duplikatów (domyślnie False)
             
         Returns:
-            bool: True jeśli dodano pomyślnie
+            Tuple[bool, str]: (sukces, komunikat)
         """
         try:
+            # Sprawdź duplikaty jeśli nie pomijamy sprawdzania
+            if not skip_duplicate_check:
+                existing_email = EmailQueue.check_duplicate(
+                    recipient_email=to_email,
+                    subject=subject,
+                    campaign_id=campaign_id,
+                    html_content=html_content,
+                    text_content=text_content,
+                    duplicate_check_key=duplicate_check_key
+                )
+                
+                if existing_email:
+                    return False, f"Duplikat emaila już istnieje w kolejce (ID: {existing_email.id}, status: {existing_email.status})"
+            
+            # Utwórz nowy element kolejki
             queue_item = EmailQueue(
-                to_email=to_email,
-                to_name=to_name,
+                recipient_email=to_email,
+                recipient_name=to_name,
                 subject=subject,
                 html_content=html_content,
                 text_content=text_content,
@@ -171,17 +186,18 @@ class EmailService:
                 campaign_id=campaign_id,
                 context=json.dumps(context) if context else None,
                 scheduled_at=scheduled_at or datetime.utcnow(),
-                status='pending'
+                status='pending',
+                duplicate_check_key=duplicate_check_key
             )
             
             db.session.add(queue_item)
             db.session.commit()
-            return True
+            return True, f"Email dodany do kolejki (ID: {queue_item.id})"
             
         except Exception as e:
             print(f"Błąd dodawania do kolejki: {e}")
             db.session.rollback()
-            return False
+            return False, f"Błąd dodawania do kolejki: {str(e)}"
 
     def process_queue(self, limit: int = 50) -> Dict[str, int]:
         """
@@ -352,15 +368,18 @@ class EmailService:
                     except json.JSONDecodeError:
                         pass
                 
-                if self.add_to_queue(
+                success, message = self.add_to_queue(
                     to_email=member.email,
                     subject=campaign.subject,
                     html_content=template.html_content,
                     text_content=template.text_content,
                     campaign_id=campaign_id,
                     context=context
-                ):
+                )
+                if success:
                     added_count += 1
+                else:
+                    print(f"Duplikat dla {member.email}: {message}")
             
             return True, f"Kampania dodana do kolejki dla {added_count} członków grupy", added_count
             
@@ -420,15 +439,20 @@ class EmailService:
                     'recipient_name': registration.first_name
                 }
                 
-                self.add_to_queue(
+                # Użyj klucza duplikatu dla przypomnień o wydarzeniach
+                duplicate_key = f"event_reminder_{event_id}_{registration.id}_{reminder_type}"
+                success, message = self.add_to_queue(
                     to_email=registration.email,
                     subject=template.subject,
                     html_content=template.html_content,
                     text_content=template.text_content,
                     template_id=template.id,
                     context=context,
-                    scheduled_at=send_time
+                    scheduled_at=send_time,
+                    duplicate_check_key=duplicate_key
                 )
+                if not success:
+                    print(f"Duplikat przypomnienia dla {registration.email}: {message}")
             
             return True
             

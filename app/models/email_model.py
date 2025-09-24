@@ -1,6 +1,7 @@
 """
 Email-related models
 """
+import hashlib
 from datetime import datetime
 from . import db
 
@@ -144,6 +145,95 @@ class EmailQueue(db.Model):
     error_message = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Duplicate prevention fields
+    content_hash = db.Column(db.String(64), nullable=False, index=True)  # Hash of email content for duplicate detection
+    duplicate_check_key = db.Column(db.String(255), nullable=True, index=True)  # Custom key for duplicate checking
+    
+    # Indexes for duplicate detection
+    __table_args__ = (
+        db.Index('ix_email_queue_duplicate_pending', 'recipient_email', 'subject', 'status'),
+        db.Index('ix_email_queue_campaign_duplicate', 'recipient_email', 'campaign_id', 'content_hash'),
+        db.Index('ix_email_queue_custom_key', 'duplicate_check_key'),
+    )
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Generate content hash if not provided
+        if not self.content_hash:
+            self.content_hash = self._generate_content_hash()
+    
+    def _generate_content_hash(self):
+        """Generate hash for duplicate detection"""
+        content = f"{self.recipient_email}|{self.subject}|{self.html_content or ''}|{self.text_content or ''}"
+        return hashlib.md5(content.encode('utf-8')).hexdigest()
+    
+    @staticmethod
+    def _generate_content_hash_static(recipient_email, subject, html_content, text_content):
+        """Generate hash for duplicate detection (static method)"""
+        content = f"{recipient_email}|{subject}|{html_content or ''}|{text_content or ''}"
+        return hashlib.md5(content.encode('utf-8')).hexdigest()
+    
+    @classmethod
+    def check_duplicate(cls, recipient_email, subject, campaign_id=None, html_content=None, text_content=None, duplicate_check_key=None):
+        """
+        Check if a similar email already exists in the queue
+        
+        Args:
+            recipient_email: Email address
+            subject: Email subject
+            campaign_id: Campaign ID (optional)
+            html_content: HTML content (optional)
+            text_content: Text content (optional)
+            duplicate_check_key: Custom duplicate check key (optional)
+            
+        Returns:
+            EmailQueue object if duplicate found, None otherwise
+        """
+        # Check by custom key first (most specific)
+        if duplicate_check_key:
+            existing = cls.query.filter_by(
+                duplicate_check_key=duplicate_check_key,
+                status='pending'
+            ).first()
+            if existing:
+                return existing
+        
+        # Check by campaign and recipient
+        if campaign_id:
+            # Generate content hash for comparison
+            content = f"{recipient_email}|{subject}|{html_content or ''}|{text_content or ''}"
+            content_hash = hashlib.md5(content.encode('utf-8')).hexdigest()
+            
+            existing = cls.query.filter_by(
+                recipient_email=recipient_email,
+                campaign_id=campaign_id,
+                content_hash=content_hash,
+                status='pending'
+            ).first()
+            if existing:
+                return existing
+        
+        # Check by recipient and subject (for non-campaign emails)
+        # Only if no campaign_id and no custom key
+        if not campaign_id and not duplicate_check_key:
+            existing = cls.query.filter_by(
+                recipient_email=recipient_email,
+                subject=subject,
+                status='pending'
+            ).first()
+            
+            if existing:
+                # Check if content is the same
+                existing_content_hash = existing.content_hash
+                new_content_hash = cls._generate_content_hash_static(
+                    recipient_email, subject, html_content, text_content
+                )
+                
+                if existing_content_hash == new_content_hash:
+                    return existing
+        
+        return None
     
     # Backward compatibility properties
     @property
