@@ -172,6 +172,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/utils/simple-paginate.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
 <script src="{{ url_for('static', filename='js/admin/email_logs.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
 {% endblock %}
 

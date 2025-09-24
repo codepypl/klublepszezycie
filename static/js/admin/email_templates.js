@@ -11,6 +11,8 @@ window.isTextContentManuallyEdited = isTextContentManuallyEdited;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔍 DOMContentLoaded - checking SimplePagination availability:', typeof SimplePagination);
+    
     loadTemplates();
     initializeModalListeners();
     
@@ -292,10 +294,14 @@ function loadTemplates() {
     fetch(`/api/email/templates?${params}`)
         .then(response => response.json())
         .then(data => {
+            console.log('🔍 API response:', data);
             if (data.success) {
                 displayTemplates(data.templates);
                 if (data.pagination) {
+                    console.log('🔍 Calling updatePagination with:', data.pagination);
                     updatePagination(data.pagination);
+                } else {
+                    console.log('🔍 No pagination data in response');
                 }
             } else {
                 window.toastManager.error('Błąd ładowania szablonów: ' + data.error);
@@ -316,41 +322,37 @@ function updatePagination(paginationData) {
         if (paginationContainer.paginationInstance) {
             // Update existing pagination
             paginationContainer.paginationInstance.setData(paginationData);
-            // Sync global variables with pagination data
-            console.log('🔍 Syncing variables from pagination data:', { 
-                old: { currentPage, currentPerPage }, 
-                new: { page: paginationData.page, per_page: paginationData.per_page } 
-            });
-            currentPage = paginationData.page || 1;
-            currentPerPage = paginationData.per_page || 10;
-            console.log('🔍 Variables after sync:', { currentPage, currentPerPage });
         } else {
-            // Check if Pagination class is available
-            if (typeof Pagination === 'undefined') {
-                console.error('Pagination class not available. Make sure paginate.js is loaded.');
+            // Check if SimplePagination class is available
+            if (typeof SimplePagination === 'undefined') {
+                console.error('SimplePagination class not available. Make sure simple-paginate.js is loaded.');
                 return;
             }
             
             // Initialize pagination for the first time
-            paginationContainer.paginationInstance = new Pagination({
-                containerId: 'pagination',
+            paginationContainer.paginationInstance = new SimplePagination('pagination', {
                 showInfo: true,
                 showPerPage: true,
                 perPageOptions: [5, 10, 25, 50, 100],
                 defaultPerPage: 10,
-                maxVisiblePages: 5,
-                onPageChange: (page) => {
-                    currentPage = page;
-                    loadTemplates();
-                },
-                onPerPageChange: (newPage, perPage) => {
-                    console.log('🔍 onPerPageChange called with:', { newPage, perPage });
-                    currentPage = newPage;
-                    currentPerPage = perPage;
-                    console.log('🔍 Updated variables:', { currentPage, currentPerPage });
-                    loadTemplates();
-                }
+                maxVisiblePages: 5
             });
+            
+            // Set callbacks
+            paginationContainer.paginationInstance.setPageChangeCallback((page) => {
+                console.log('🔍 onPageChange called with:', page);
+                currentPage = page;
+                loadTemplates();
+            });
+            
+            paginationContainer.paginationInstance.setPerPageChangeCallback((newPage, perPage) => {
+                console.log('🔍 onPerPageChange called with:', { newPage, perPage });
+                currentPage = newPage;
+                currentPerPage = perPage;
+                console.log('🔍 Updated variables:', { currentPage, currentPerPage });
+                loadTemplates();
+            });
+            
             paginationContainer.paginationInstance.setData(paginationData);
         }
     }

@@ -84,27 +84,30 @@ class BlogCategoriesManager {
                 // Update existing pagination
                 paginationContainer.paginationInstance.setData(paginationData);
             } else {
-                // Check if Pagination class is available
-                if (typeof Pagination === 'undefined') {
-                    console.error('Pagination class not available. Make sure paginate.js is loaded.');
+                // Check if SimplePagination class is available
+                if (typeof SimplePagination === 'undefined') {
+                    console.error('SimplePagination class not available. Make sure simple-paginate.js is loaded.');
                     return;
                 }
                 
                 // Initialize pagination for the first time
-                paginationContainer.paginationInstance = new Pagination({
-                    containerId: 'pagination',
+                paginationContainer.paginationInstance = new SimplePagination('pagination', {
                     showInfo: true,
                     showPerPage: true,
                     perPageOptions: [5, 10, 25, 50, 100],
                     defaultPerPage: 10,
-                    maxVisiblePages: 5,
-                    onPageChange: (page) => {
-                        this.loadCategories(page);
-                    },
-                    onPerPageChange: (newPage, perPage) => {
-                        this.loadCategories(newPage, perPage);
-                    }
+                    maxVisiblePages: 5
                 });
+                
+                // Set callbacks
+                paginationContainer.paginationInstance.setPageChangeCallback((page) => {
+                    this.loadCategories(page);
+                });
+                
+                paginationContainer.paginationInstance.setPerPageChangeCallback((newPage, perPage) => {
+                    this.loadCategories(newPage, perPage);
+                });
+                
                 paginationContainer.paginationInstance.setData(paginationData);
             }
         }

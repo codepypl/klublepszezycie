@@ -242,16 +242,22 @@ function updatePagination(pagination) {
         if (paginationElement.paginationInstance) {
             paginationElement.paginationInstance.setData(pagination);
         } else {
+            // Check if SimplePagination class is available
+            if (typeof SimplePagination === 'undefined') {
+                console.error('SimplePagination class not available. Make sure simple-paginate.js is loaded.');
+                return;
+            }
+            
             // If pagination instance doesn't exist, create it
             const options = {
-                containerId: 'pagination',
                 showInfo: true,
                 showPerPage: true,
                 defaultPerPage: parseInt(paginationElement.dataset.defaultPerPage) || 20,
-                maxVisiblePages: parseInt(paginationElement.dataset.maxVisiblePages) || 5
+                maxVisiblePages: parseInt(paginationElement.dataset.maxVisiblePages) || 5,
+                perPageOptions: [5, 10, 25, 50, 100]
             };
             
-            const paginationInstance = new Pagination(options);
+            const paginationInstance = new SimplePagination('pagination', options);
             paginationElement.paginationInstance = paginationInstance;
             paginationInstance.setData(pagination);
         }

@@ -135,20 +135,36 @@ function loadQueue(filter) {
                             paginationElement.paginationInstance.setData(data.pagination);
                         } else {
                             console.log('🆕 Initializing new pagination');
+                            // Check if SimplePagination class is available
+                            if (typeof SimplePagination === 'undefined') {
+                                console.error('SimplePagination class not available. Make sure simple-paginate.js is loaded.');
+                                return;
+                            }
+                            
                             // Initialize pagination for the first time
-                            paginationElement.paginationInstance = new Pagination(paginationElement, data.pagination, {
-                                onPageChange: (page) => {
-                                    console.log('📄 Page changed to:', page);
-                                    currentPage = page;
-                                    loadQueue(currentFilter);
-                                },
-                                onPerPageChange: (newPage, perPage) => {
-                                    console.log('📄 Per page changed to:', perPage, 'page:', newPage);
-                                    currentPerPage = perPage;
-                                    currentPage = newPage;
-                                    loadQueue(currentFilter);
-                                }
+                            paginationElement.paginationInstance = new SimplePagination('pagination', {
+                                showInfo: true,
+                                showPerPage: true,
+                                perPageOptions: [5, 10, 25, 50, 100],
+                                defaultPerPage: 10,
+                                maxVisiblePages: 5
                             });
+                            
+                            // Set callbacks
+                            paginationElement.paginationInstance.setPageChangeCallback((page) => {
+                                console.log('📄 Page changed to:', page);
+                                currentPage = page;
+                                loadQueue(currentFilter);
+                            });
+                            
+                            paginationElement.paginationInstance.setPerPageChangeCallback((newPage, perPage) => {
+                                console.log('📄 Per page changed to:', perPage, 'page:', newPage);
+                                currentPerPage = perPage;
+                                currentPage = newPage;
+                                loadQueue(currentFilter);
+                            });
+                            
+                            paginationElement.paginationInstance.setData(data.pagination);
                         }
                     } else {
                         console.log('❌ Pagination element not found');

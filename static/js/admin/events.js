@@ -388,24 +388,33 @@ class EventsManager {
                 // Update existing pagination
                 paginationContainer.paginationInstance.setData(paginationData);
             } else {
+                // Check if SimplePagination class is available
+                if (typeof SimplePagination === 'undefined') {
+                    console.error('SimplePagination class not available. Make sure simple-paginate.js is loaded.');
+                    return;
+                }
+                
                 // Initialize pagination for the first time
-                paginationContainer.paginationInstance = new Pagination({
-                    containerId: 'pagination',
+                paginationContainer.paginationInstance = new SimplePagination('pagination', {
                     showInfo: true,
                     showPerPage: true,
                     perPageOptions: [5, 10, 25, 50, 100],
                     defaultPerPage: 10,
-                    maxVisiblePages: 5,
-                    onPageChange: (page) => {
-                        this.currentPage = page;
-                        this.loadEvents();
-                    },
-                    onPerPageChange: (newPage, perPage) => {
-                        this.currentPage = newPage;
-                        this.currentPerPage = perPage;
-                        this.loadEvents();
-                    }
+                    maxVisiblePages: 5
                 });
+                
+                // Set callbacks
+                paginationContainer.paginationInstance.setPageChangeCallback((page) => {
+                    this.currentPage = page;
+                    this.loadEvents();
+                });
+                
+                paginationContainer.paginationInstance.setPerPageChangeCallback((newPage, perPage) => {
+                    this.currentPage = newPage;
+                    this.currentPerPage = perPage;
+                    this.loadEvents();
+                });
+                
                 paginationContainer.paginationInstance.setData(paginationData);
             }
         }

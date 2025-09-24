@@ -89,34 +89,34 @@ function updatePagination(paginationData) {
         if (paginationContainer.paginationInstance) {
             // Update existing pagination
             paginationContainer.paginationInstance.setData(paginationData);
-            // Sync global variables with pagination data
-            currentPage = paginationData.page || 1;
-            currentPerPage = paginationData.per_page || 10;
         } else {
-            // Check if Pagination class is available
-            if (typeof Pagination === 'undefined') {
-                console.error('Pagination class not available. Make sure paginate.js is loaded.');
+            // Check if SimplePagination class is available
+            if (typeof SimplePagination === 'undefined') {
+                console.error('SimplePagination class not available. Make sure simple-paginate.js is loaded.');
                 return;
             }
             
             // Initialize pagination for the first time
-            paginationContainer.paginationInstance = new Pagination({
-                containerId: 'pagination',
+            paginationContainer.paginationInstance = new SimplePagination('pagination', {
                 showInfo: true,
                 showPerPage: true,
                 perPageOptions: [5, 10, 25, 50, 100],
                 defaultPerPage: 10,
-                maxVisiblePages: 5,
-                onPageChange: (page) => {
-                    currentPage = page;
-                    loadGroups();
-                },
-                onPerPageChange: (newPage, perPage) => {
-                    currentPage = newPage;
-                    currentPerPage = perPage;
-                    loadGroups();
-                }
+                maxVisiblePages: 5
             });
+            
+            // Set callbacks
+            paginationContainer.paginationInstance.setPageChangeCallback((page) => {
+                currentPage = page;
+                loadGroups();
+            });
+            
+            paginationContainer.paginationInstance.setPerPageChangeCallback((newPage, perPage) => {
+                currentPage = newPage;
+                currentPerPage = perPage;
+                loadGroups();
+            });
+            
             paginationContainer.paginationInstance.setData(paginationData);
         }
     }
