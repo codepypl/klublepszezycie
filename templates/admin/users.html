@@ -25,28 +25,28 @@
         <div class="col-md-3">
             <div class="admin-stats-card">
                 <i class="fas fa-users"></i>
-                <h3>{{ stats.total_users }}</h3>
+                <h3 id="totalUsers">{{ stats.total_users }}</h3>
                 <p>Wszyscy Użytkownicy</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="admin-stats-card">
                 <i class="fas fa-user-check"></i>
-                <h3>{{ stats.active_users }}</h3>
+                <h3 id="activeUsers">{{ stats.active_users }}</h3>
                 <p>Aktywne Konta</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="admin-stats-card">
                 <i class="fas fa-user-shield"></i>
-                <h3>{{ stats.admin_users }}</h3>
+                <h3 id="adminUsers">{{ stats.admin_users }}</h3>
                 <p>Administratorzy</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="admin-stats-card">
                 <i class="fas fa-calendar-check"></i>
-                <h3>{{ stats.event_registrations }}</h3>
+                <h3 id="eventRegistrations">{{ stats.event_registrations }}</h3>
                 <p>Z Rejestracji na Wydarzenia</p>
             </div>
         </div>
@@ -424,12 +424,36 @@
         // Initialize CRUD Refresh Manager for users
         if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
             window.crudRefreshManager.init(() => {
-                // Refresh function for users - reload the page
+                // Refresh function for users - reload stats and page
+                loadUserStats();
                 window.location.reload();
             });
             console.log('CRUD Refresh Manager initialized for users');
         }
+        
+        // Load user stats on page load
+        loadUserStats();
     });
+    
+    // Load user statistics
+    function loadUserStats() {
+        fetch('/api/stats/users')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('totalUsers').textContent = data.stats.total || 0;
+                    document.getElementById('activeUsers').textContent = data.stats.active || 0;
+                    document.getElementById('adminUsers').textContent = data.stats.admin || 0;
+                    document.getElementById('eventRegistrations').textContent = data.stats.new_30_days || 0;
+                    console.log('User stats updated:', data.stats);
+                } else {
+                    console.error('Error loading user stats:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading user stats:', error);
+            });
+    }
     
     // View user profile function
     function viewUserProfile(userId) {

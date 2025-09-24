@@ -26,7 +26,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize CRUD Refresh Manager for email logs
     if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
-        window.crudRefreshManager.init(loadLogs);
+        window.crudRefreshManager.init(() => {
+            loadLogsStats();
+            loadLogs();
+        });
         console.log('CRUD Refresh Manager initialized for email logs');
     }
     
