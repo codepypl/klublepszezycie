@@ -78,13 +78,85 @@ class BlogTagsManager {
             const data = await response.json();
             
             if (data.success) {
-                // Reload page with new data
-                window.location.href = `/blog/admin/tags?page=${page}&per_page=${perPage}`;
+                // Update the tags table
+                this.updateTagsTable(data.tags);
+                // Update pagination if provided
+                if (data.pagination) {
+                    this.updatePagination(data.pagination);
+                }
+            } else {
+                window.toastManager.show('Błąd podczas ładowania tagów', 'error');
             }
         } catch (error) {
             console.error('Error loading tags:', error);
             window.toastManager.show('Błąd podczas ładowania tagów', 'error');
         }
+    }
+
+    updatePagination(paginationData) {
+        const paginationContainer = document.getElementById('pagination');
+        if (paginationContainer) {
+            if (paginationContainer.paginationInstance) {
+                // Update existing pagination
+                paginationContainer.paginationInstance.setData(paginationData);
+            } else {
+                // Check if Pagination class is available
+                if (typeof Pagination === 'undefined') {
+                    console.error('Pagination class not available. Make sure paginate.js is loaded.');
+                    return;
+                }
+                
+                // Initialize pagination for the first time
+                paginationContainer.paginationInstance = new Pagination({
+                    containerId: 'pagination',
+                    showInfo: true,
+                    showPerPage: true,
+                    perPageOptions: [5, 10, 25, 50, 100],
+                    defaultPerPage: 10,
+                    maxVisiblePages: 5,
+                    onPageChange: (page) => {
+                        this.loadTags(page);
+                    },
+                    onPerPageChange: (newPage, perPage) => {
+                        this.loadTags(newPage, perPage);
+                    }
+                });
+                paginationContainer.paginationInstance.setData(paginationData);
+            }
+        }
+    }
+
+    updateTagsTable(tags) {
+        const tbody = document.querySelector('#tagsTable tbody');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+        
+        tags.forEach(tag => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${tag.id}</td>
+                <td>${tag.name}</td>
+                <td>${tag.slug}</td>
+                <td>${tag.posts_count || 0}</td>
+                <td>
+                    <span class="badge ${tag.is_active ? 'bg-success' : 'bg-secondary'}">
+                        ${tag.is_active ? 'Aktywny' : 'Nieaktywny'}
+                    </span>
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="blogTagsManager.editTag(${tag.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="blogTagsManager.deleteTag(${tag.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
     }
 
     async handleAddTag(e) {

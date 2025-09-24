@@ -64,12 +64,49 @@ class BlogCategoriesManager {
             if (data.success) {
                 // Update the categories table
                 this.updateCategoriesTable(data.categories);
+                // Update pagination if provided
+                if (data.pagination) {
+                    this.updatePagination(data.pagination);
+                }
             } else {
                 window.toastManager.show('Błąd podczas ładowania kategorii', 'error');
             }
         } catch (error) {
             console.error('Error loading categories:', error);
             window.toastManager.show('Błąd podczas ładowania kategorii', 'error');
+        }
+    }
+
+    updatePagination(paginationData) {
+        const paginationContainer = document.getElementById('pagination');
+        if (paginationContainer) {
+            if (paginationContainer.paginationInstance) {
+                // Update existing pagination
+                paginationContainer.paginationInstance.setData(paginationData);
+            } else {
+                // Check if Pagination class is available
+                if (typeof Pagination === 'undefined') {
+                    console.error('Pagination class not available. Make sure paginate.js is loaded.');
+                    return;
+                }
+                
+                // Initialize pagination for the first time
+                paginationContainer.paginationInstance = new Pagination({
+                    containerId: 'pagination',
+                    showInfo: true,
+                    showPerPage: true,
+                    perPageOptions: [5, 10, 25, 50, 100],
+                    defaultPerPage: 10,
+                    maxVisiblePages: 5,
+                    onPageChange: (page) => {
+                        this.loadCategories(page);
+                    },
+                    onPerPageChange: (newPage, perPage) => {
+                        this.loadCategories(newPage, perPage);
+                    }
+                });
+                paginationContainer.paginationInstance.setData(paginationData);
+            }
         }
     }
 

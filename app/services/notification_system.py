@@ -398,12 +398,19 @@ class MailgunSender:
     def _add_security_tokens(self, context: Dict, email: str):
         """Dodaje tokeny bezpieczeństwa do kontekstu - nowy system v2"""
         from app.services.unsubscribe_manager import unsubscribe_manager
+        from app.models.user_model import User
         
-        unsubscribe_url = unsubscribe_manager.get_unsubscribe_url(email)
-        delete_account_url = unsubscribe_manager.get_delete_account_url(email)
+        # Sprawdź czy użytkownik jest członkiem klubu
+        user = User.query.filter_by(email=email).first()
+        is_club_member = user.club_member if user else False
         
-        context['unsubscribe_url'] = unsubscribe_url
-        context['delete_account_url'] = delete_account_url
+        # Generuj linki
+        if is_club_member:
+            context['unsubscribe_url'] = unsubscribe_manager.get_unsubscribe_url(email)
+        else:
+            context['unsubscribe_url'] = None
+            
+        context['delete_account_url'] = unsubscribe_manager.get_delete_account_url(email)
     
     def _render_template(self, template_name: str, context: Dict) -> Tuple[str, str]:
         """Renderuje szablon emaila"""

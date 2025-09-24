@@ -280,10 +280,14 @@ function stripHtml(html) {
 
 // Load templates
 function loadTemplates() {
+    console.log('🔍 loadTemplates called with:', { currentPage, currentPerPage });
+    
     const params = new URLSearchParams({
         page: currentPage,
         per_page: currentPerPage
     });
+    
+    console.log('🔍 API params:', params.toString());
     
     fetch(`/api/email/templates?${params}`)
         .then(response => response.json())
@@ -291,11 +295,7 @@ function loadTemplates() {
             if (data.success) {
                 displayTemplates(data.templates);
                 if (data.pagination) {
-                    // Update pagination if it exists
-                    const paginationElement = document.getElementById('pagination');
-                    if (paginationElement && paginationElement.paginationInstance) {
-                        paginationElement.paginationInstance.setData(data.pagination);
-                    }
+                    updatePagination(data.pagination);
                 }
             } else {
                 window.toastManager.error('Błąd ładowania szablonów: ' + data.error);
@@ -305,6 +305,55 @@ function loadTemplates() {
             console.error('Error loading templates:', error);
             window.toastManager.error('Błąd ładowania szablonów');
         });
+}
+
+// Update pagination
+function updatePagination(paginationData) {
+    console.log('🔍 updatePagination called with:', paginationData);
+    
+    const paginationContainer = document.getElementById('pagination');
+    if (paginationContainer) {
+        if (paginationContainer.paginationInstance) {
+            // Update existing pagination
+            paginationContainer.paginationInstance.setData(paginationData);
+            // Sync global variables with pagination data
+            console.log('🔍 Syncing variables from pagination data:', { 
+                old: { currentPage, currentPerPage }, 
+                new: { page: paginationData.page, per_page: paginationData.per_page } 
+            });
+            currentPage = paginationData.page || 1;
+            currentPerPage = paginationData.per_page || 10;
+            console.log('🔍 Variables after sync:', { currentPage, currentPerPage });
+        } else {
+            // Check if Pagination class is available
+            if (typeof Pagination === 'undefined') {
+                console.error('Pagination class not available. Make sure paginate.js is loaded.');
+                return;
+            }
+            
+            // Initialize pagination for the first time
+            paginationContainer.paginationInstance = new Pagination({
+                containerId: 'pagination',
+                showInfo: true,
+                showPerPage: true,
+                perPageOptions: [5, 10, 25, 50, 100],
+                defaultPerPage: 10,
+                maxVisiblePages: 5,
+                onPageChange: (page) => {
+                    currentPage = page;
+                    loadTemplates();
+                },
+                onPerPageChange: (newPage, perPage) => {
+                    console.log('🔍 onPerPageChange called with:', { newPage, perPage });
+                    currentPage = newPage;
+                    currentPerPage = perPage;
+                    console.log('🔍 Updated variables:', { currentPage, currentPerPage });
+                    loadTemplates();
+                }
+            });
+            paginationContainer.paginationInstance.setData(paginationData);
+        }
+    }
 }
 
 // Display templates

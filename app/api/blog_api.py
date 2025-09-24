@@ -512,23 +512,37 @@ def api_blog_admin_categories():
     """Admin blog categories API"""
     if request.method == 'GET':
         try:
-            categories = BlogCategory.query.order_by(BlogCategory.title).all()
+            page = request.args.get('page', 1, type=int)
+            per_page = request.args.get('per_page', 10, type=int)
+            
+            pagination = BlogCategory.query.order_by(BlogCategory.title).paginate(
+                page=page, per_page=per_page, error_out=False
+            )
+            
+            categories = [{
+                'id': category.id,
+                'title': category.title,
+                'slug': category.slug,
+                'description': category.description,
+                'parent_id': category.parent_id,
+                'parent': {
+                    'id': category.parent.id,
+                    'title': category.parent.title
+                } if category.parent else None,
+                'is_active': category.is_active,
+                'posts_count': category.posts_count,
+                'created_at': category.created_at.isoformat() if category.created_at else None
+            } for category in pagination.items]
+            
             return jsonify({
                 'success': True,
-                'categories': [{
-                    'id': category.id,
-                    'title': category.title,
-                    'slug': category.slug,
-                    'description': category.description,
-                    'parent_id': category.parent_id,
-                    'parent': {
-                        'id': category.parent.id,
-                        'title': category.parent.title
-                    } if category.parent else None,
-                    'is_active': category.is_active,
-                    'posts_count': category.posts_count,
-                    'created_at': category.created_at.isoformat() if category.created_at else None
-                } for category in categories]
+                'categories': categories,
+                'pagination': {
+                    'page': pagination.page,
+                    'pages': pagination.pages,
+                    'total': pagination.total,
+                    'per_page': pagination.per_page
+                }
             })
         except Exception as e:
             logging.error(f"Error getting blog categories: {str(e)}")

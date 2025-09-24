@@ -7,6 +7,7 @@ import hashlib
 import secrets
 import base64
 import json
+import os
 from datetime import datetime, timedelta
 from typing import Optional, Tuple, Dict, Any
 from app import db
@@ -18,7 +19,11 @@ class UnsubscribeManager:
     def __init__(self):
         self.secret_key = "klublepszezycie_unsubscribe_v2_2024"  # In production, use env variable
         self.token_expiry_days = 30
-        self.base_url = "https://klublepszezycie.pl"  # In production, use env variable
+        self.base_url = os.getenv('BASE_URL', 'http://localhost:5000')  # In production, use env variable
+        
+        # Ensure URL has protocol
+        if self.base_url and not self.base_url.startswith(('http://', 'https://')):
+            self.base_url = f'http://{self.base_url}'
     
     def generate_token(self, email: str, action: str) -> str:
         """

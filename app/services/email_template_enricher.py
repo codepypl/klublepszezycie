@@ -11,8 +11,8 @@ class EmailTemplateEnricher:
     # Szablony które NIE powinny mieć linków unsubscribe (notyfikacje admin)
     EXCLUDED_TEMPLATES = {
         'admin_notification',
-        'admin_message', 
         'security_alert'
+        # admin_message - może mieć linki unsubscribe
         # password_reset - może mieć linki unsubscribe
     }
     
@@ -29,8 +29,11 @@ class EmailTemplateEnricher:
         Dodaje linki unsubscribe i delete account do treści szablonu
         """
         if user_email:
+            # Sprawdź czy użytkownik jest członkiem klubu
+            is_club_member = self._is_user_club_member(user_email)
+            
             # Generuj rzeczywiste URL
-            unsubscribe_url = self._get_unsubscribe_manager().get_unsubscribe_url(user_email)
+            unsubscribe_url = self._get_unsubscribe_manager().get_unsubscribe_url(user_email) if is_club_member else None
             delete_account_url = self._get_unsubscribe_manager().get_delete_account_url(user_email)
         else:
             # Użyj placeholderów
@@ -55,12 +58,26 @@ class EmailTemplateEnricher:
         if 'Zrezygnuj z członkostwa w klubie' in html_content or 'unsubscribe_url' in html_content:
             return html_content
         
+        # Buduj linki dynamicznie
+        links_html = []
+        
+        # Dodaj link unsubscribe tylko jeśli użytkownik jest członkiem klubu
+        if unsubscribe_url:
+            links_html.append(f'<a href="{unsubscribe_url}" target="_blank" style="color: #6c757d; text-decoration: underline;">Zrezygnuj z członkostwa w klubie</a>')
+        
+        # Zawsze dodaj link do usunięcia konta
+        if delete_account_url:
+            links_html.append(f'<a href="{delete_account_url}" target="_blank" style="color: #dc3545; text-decoration: underline;">Usuń konto</a>')
+        
+        # Jeśli nie ma żadnych linków, nie dodawaj footera
+        if not links_html:
+            return html_content
+        
         # HTML z linkami
         footer_html = f'''
 <div style="margin-top: 40px; padding: 20px; background-color: #f8f9fa; border-top: 1px solid #dee2e6; text-align: center; font-size: 12px; color: #6c757d;">
     <p style="margin: 0 0 10px 0;">
-        <a href="{unsubscribe_url}" target="_blank" style="color: #6c757d; text-decoration: underline;">Zrezygnuj z członkostwa w klubie</a> | 
-        <a href="{delete_account_url}" target="_blank" style="color: #dc3545; text-decoration: underline;">Usuń konto</a>
+        {' | '.join(links_html)}
     </p>
     <p style="margin: 0; font-size: 11px;">
         Te linki są ważne przez 30 dni. Jeśli nie chcesz otrzymywać naszych emaili, możesz wypisać się z klubu lub całkowicie usunąć swoje konto.
@@ -82,12 +99,26 @@ class EmailTemplateEnricher:
         if 'Zrezygnuj z członkostwa w klubie' in text_content or 'unsubscribe_url' in text_content:
             return text_content
         
+        # Buduj linki dynamicznie
+        links_text = []
+        
+        # Dodaj link unsubscribe tylko jeśli użytkownik jest członkiem klubu
+        if unsubscribe_url:
+            links_text.append(f'Zrezygnuj z członkostwa w klubie: {unsubscribe_url}')
+        
+        # Zawsze dodaj link do usunięcia konta
+        if delete_account_url:
+            links_text.append(f'Usuń konto: {delete_account_url}')
+        
+        # Jeśli nie ma żadnych linków, nie dodawaj footera
+        if not links_text:
+            return text_content
+        
         # Tekst z linkami
         footer_text = f'''
 
 ---
-Zrezygnuj z członkostwa w klubie: {unsubscribe_url}
-Usuń konto: {delete_account_url}
+{chr(10).join(links_text)}
 
 Te linki są ważne przez 30 dni. Jeśli nie chcesz otrzymywać naszych emaili, możesz wypisać się z klubu lub całkowicie usunąć swoje konto.'''
         
@@ -181,6 +212,18 @@ Te linki są ważne przez 30 dni. Jeśli nie chcesz otrzymywać naszych emaili, 
         # Dodaj zmienne unsubscribe
         variables.update(self.get_template_variables())
         template.variables = json.dumps(variables)
+    
+    def _is_user_club_member(self, user_email: str) -> bool:
+        """Sprawdza czy użytkownik jest członkiem klubu"""
+        try:
+            from app.models.user_model import User
+            user = User.query.filter_by(email=user_email).first()
+            if user:
+                return user.club_member
+            return False
+        except Exception as e:
+            print(f"❌ Błąd sprawdzania członkostwa dla {user_email}: {e}")
+            return False
     
     def _get_unsubscribe_manager(self):
         """Lazy loading unsubscribe manager"""

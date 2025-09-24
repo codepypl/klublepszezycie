@@ -70,11 +70,7 @@ function loadGroups() {
             if (data.success) {
                 displayGroups(data.groups);
                 if (data.pagination) {
-                    // Update pagination if it exists
-                    const paginationElement = document.getElementById('pagination');
-                    if (paginationElement && paginationElement.paginationInstance) {
-                        paginationElement.paginationInstance.setData(data.pagination);
-                    }
+                    updatePagination(data.pagination);
                 }
             } else {
                 toastManager.error('Błąd ładowania grup: ' + data.error);
@@ -84,6 +80,46 @@ function loadGroups() {
             console.error('Error loading groups:', error);
             toastManager.error('Błąd ładowania grup');
         });
+}
+
+// Update pagination
+function updatePagination(paginationData) {
+    const paginationContainer = document.getElementById('pagination');
+    if (paginationContainer) {
+        if (paginationContainer.paginationInstance) {
+            // Update existing pagination
+            paginationContainer.paginationInstance.setData(paginationData);
+            // Sync global variables with pagination data
+            currentPage = paginationData.page || 1;
+            currentPerPage = paginationData.per_page || 10;
+        } else {
+            // Check if Pagination class is available
+            if (typeof Pagination === 'undefined') {
+                console.error('Pagination class not available. Make sure paginate.js is loaded.');
+                return;
+            }
+            
+            // Initialize pagination for the first time
+            paginationContainer.paginationInstance = new Pagination({
+                containerId: 'pagination',
+                showInfo: true,
+                showPerPage: true,
+                perPageOptions: [5, 10, 25, 50, 100],
+                defaultPerPage: 10,
+                maxVisiblePages: 5,
+                onPageChange: (page) => {
+                    currentPage = page;
+                    loadGroups();
+                },
+                onPerPageChange: (newPage, perPage) => {
+                    currentPage = newPage;
+                    currentPerPage = perPage;
+                    loadGroups();
+                }
+            });
+            paginationContainer.paginationInstance.setData(paginationData);
+        }
+    }
 }
 
 // Display groups
