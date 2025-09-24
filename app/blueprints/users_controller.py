@@ -49,7 +49,8 @@ class UsersController:
                 page=page, per_page=per_page, error_out=False
             )
             
-            # Get stats from central stats table
+            # Update and get stats from central stats table
+            Stats.update_user_stats()
             total_users = Stats.get_total_users()
             active_users = Stats.get_active_users()
             admin_users = Stats.get_admin_users()

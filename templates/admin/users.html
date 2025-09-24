@@ -446,6 +446,9 @@
         
         // Setup auto-refresh for user stats
         setupUserStatsAutoRefresh();
+        
+        // Setup filters state management
+        setupFiltersState();
     });
     
     // Load user statistics
@@ -492,6 +495,47 @@
         }, 60000); // 60 seconds
         
         console.log('User stats auto-refresh setup: every 60 seconds');
+    }
+    
+    // Setup filters state management
+    function setupFiltersState() {
+        const filtersCollapse = document.getElementById('filtersCollapse');
+        const filtersButton = document.querySelector('[data-bs-target="#filtersCollapse"]');
+        const filtersIcon = document.getElementById('filtersIcon');
+        
+        if (!filtersCollapse || !filtersButton || !filtersIcon) return;
+        
+        // Check if filters should be expanded based on URL parameters or localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasFilters = urlParams.has('filterName') || urlParams.has('filterEmail') || 
+                          urlParams.has('filterGroup') || urlParams.has('filterStatus') ||
+                          urlParams.has('filterRole');
+        
+        // Restore state from localStorage if no URL filters
+        const savedState = localStorage.getItem('usersFiltersExpanded');
+        const shouldExpand = hasFilters || savedState === 'true';
+        
+        if (shouldExpand) {
+            filtersCollapse.classList.add('show');
+            filtersButton.setAttribute('aria-expanded', 'true');
+            filtersIcon.classList.remove('fa-chevron-down');
+            filtersIcon.classList.add('fa-chevron-up');
+        }
+        
+        // Save state when filters are toggled
+        filtersCollapse.addEventListener('shown.bs.collapse', function() {
+            filtersButton.setAttribute('aria-expanded', 'true');
+            filtersIcon.classList.remove('fa-chevron-down');
+            filtersIcon.classList.add('fa-chevron-up');
+            localStorage.setItem('usersFiltersExpanded', 'true');
+        });
+        
+        filtersCollapse.addEventListener('hidden.bs.collapse', function() {
+            filtersButton.setAttribute('aria-expanded', 'false');
+            filtersIcon.classList.remove('fa-chevron-up');
+            filtersIcon.classList.add('fa-chevron-down');
+            localStorage.setItem('usersFiltersExpanded', 'false');
+        });
     }
     
     // View user profile function

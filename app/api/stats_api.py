@@ -83,6 +83,9 @@ def get_dashboard_stats():
 def get_user_stats():
     """Get user statistics"""
     try:
+        # Update stats before getting them
+        Stats.update_user_stats()
+        
         stats = {
             'total': Stats.get_total_users(),
             'active': Stats.get_active_users(),
