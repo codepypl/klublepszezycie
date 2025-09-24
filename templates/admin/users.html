@@ -22,6 +22,16 @@
 {% block content %}
     <!-- Stats Cards -->
     <div class="row mb-4">
+        <div class="col-12 mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Statystyki Użytkowników</h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadUserStats()" title="Odśwież statystyki">
+                    <i class="fas fa-sync-alt me-1"></i>Odśwież
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-4">
         <div class="col-md-3">
             <div class="admin-stats-card">
                 <i class="fas fa-users"></i>
@@ -440,6 +450,12 @@
     
     // Load user statistics
     function loadUserStats() {
+        // Show loading indicator
+        const statsCards = document.querySelectorAll('.admin-stats-card h3');
+        statsCards.forEach(card => {
+            card.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        });
+        
         fetch('/api/stats/users')
             .then(response => response.json())
             .then(data => {
@@ -447,14 +463,22 @@
                     document.getElementById('totalUsers').textContent = data.stats.total || 0;
                     document.getElementById('activeUsers').textContent = data.stats.active || 0;
                     document.getElementById('adminUsers').textContent = data.stats.admin || 0;
-                    document.getElementById('eventRegistrations').textContent = data.stats.new_30_days || 0;
+                    document.getElementById('eventRegistrations').textContent = data.stats.total_registrations || 0;
                     console.log('User stats updated:', data.stats);
                 } else {
                     console.error('Error loading user stats:', data.message);
+                    // Restore original values on error
+                    statsCards.forEach(card => {
+                        card.textContent = '0';
+                    });
                 }
             })
             .catch(error => {
                 console.error('Error loading user stats:', error);
+                // Restore original values on error
+                statsCards.forEach(card => {
+                    card.textContent = '0';
+                });
             });
     }
     

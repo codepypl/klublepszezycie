@@ -87,7 +87,7 @@ def get_user_stats():
             'total': Stats.get_total_users(),
             'active': Stats.get_active_users(),
             'admin': Stats.get_admin_users(),
-            'new_30_days': Stats.get_new_users_30_days()
+            'total_registrations': Stats.get_total_registrations()
         }
         
         return jsonify({
