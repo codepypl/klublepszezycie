@@ -186,14 +186,17 @@ class EmailAutomation:
                 
                 print(f"📅 Zaplanowano przypomnienie {schedule['type']}: {optimal_send_time} (docelowo: {target_time})")
                 
-                # Zaplanuj wysyłkę przez Celery
-                from app.tasks.email_tasks import schedule_event_reminders_task
-                schedule_event_reminders_task.apply_async(
-                    args=[event_id, group_type],
-                    eta=optimal_send_time
-                )
+                # Zaplanuj wysyłkę przez Celery (tymczasowo wyłączone)
+                try:
+                    from app.tasks.email_tasks import schedule_event_reminders_task
+                    schedule_event_reminders_task.apply_async(
+                        args=[event_id, group_type],
+                        eta=optimal_send_time
+                    )
+                except ImportError:
+                    print(f"⚠️ Celery niedostępny - przypomnienie {schedule['type']} nie zostało zaplanowane")
                 
-                            reminders_scheduled += 1
+                reminders_scheduled += 1
             
             return True, f"Zaplanowano {reminders_scheduled} przypomnień dla {participants_count} uczestników"
             
@@ -204,16 +207,19 @@ class EmailAutomation:
         """Aktualizuje powiadomienia po zmianie godziny wydarzenia"""
         try:
             from app.models import EmailReminder, EmailQueue
-            from app.tasks.email_tasks import update_event_notifications_task
             
-            # Uruchom zadanie Celery do aktualizacji powiadomień
-            task = update_event_notifications_task.delay(
-                event_id, 
-                old_event_date.isoformat(), 
-                new_event_date.isoformat()
-            )
-            
-            return True, f"Zadanie aktualizacji powiadomień uruchomione (ID: {task.id})"
+            # Uruchom zadanie Celery do aktualizacji powiadomień (tymczasowo wyłączone)
+            try:
+                from app.tasks.email_tasks import update_event_notifications_task
+                task = update_event_notifications_task.delay(
+                    event_id, 
+                    old_event_date.isoformat(), 
+                    new_event_date.isoformat()
+                )
+                return True, f"Zadanie aktualizacji powiadomień uruchomione (ID: {task.id})"
+            except ImportError:
+                print("⚠️ Celery niedostępny - aktualizacja powiadomień nie została zaplanowana")
+                return True, "Celery niedostępny - aktualizacja powiadomień pominięta"
             
         except Exception as e:
             return False, f"Błąd aktualizacji powiadomień: {str(e)}"
