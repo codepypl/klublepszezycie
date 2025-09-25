@@ -41,13 +41,18 @@ def make_celery(app=None):
         task_compression='gzip',
         result_compression='gzip',
         result_expires=3600,  # 1 godzina
-        # Optymalizacje dla bardzo małej ilości RAM (100MB wolnego)
-        worker_max_memory_per_child=100000,  # 100MB per worker
-        worker_max_tasks_per_child=10,  # Restart worker po 10 zadaniach
+        # Optymalizacje dla bardzo małej ilości RAM (50MB wolnego)
+        worker_max_memory_per_child=50000,  # 50MB per worker - bardziej agresywne
+        worker_max_tasks_per_child=5,  # Restart worker po 5 zadaniach - częściej
         worker_direct=True,  # Bezpośrednie połączenie z brokerem
         worker_disable_rate_limits=True,  # Wyłącz limity
         worker_send_task_events=False,  # Wyłącz eventy
         task_send_sent_event=False,  # Wyłącz sent eventy
+        # Dodatkowe optymalizacje pamięci
+        worker_pool_restarts=True,  # Pozwól na restart pool
+        worker_hijack_root_logger=False,  # Nie przejmuj root loggera
+        worker_log_color=False,  # Wyłącz kolory w logach
+        worker_log_format='[%(asctime)s: %(levelname)s/%(processName)s] %(message)s',  # Prosty format
         task_routes={
             'app.tasks.email_tasks.*': {'queue': 'email_queue'},
             'app.tasks.event_tasks.*': {'queue': 'event_queue'},

@@ -450,13 +450,14 @@ class EmailService:
                     item.status = 'processing'
                     db.session.commit()
                     
-                    # Wyślij email
+                    # Wyślij email bezpośrednio (nie dodawaj do kolejki)
                     success, message = self.send_email(
                         item.to_email,
                         item.subject,
                         item.html_content,
                         item.text_content,
-                        template_id=item.template_id
+                        template_id=item.template_id,
+                        use_queue=False  # WAŻNE: nie dodawaj do kolejki!
                     )
                     
                     if success:
@@ -728,13 +729,14 @@ class EmailService:
                     item.error_message = None
                     db.session.commit()
                     
-                    # Wyślij email
+                    # Wyślij email bezpośrednio (nie dodawaj do kolejki)
                     success, message = self.send_email(
                         item.to_email,
                         item.subject,
                         item.html_content,
                         item.text_content,
-                        template_id=item.template_id
+                        template_id=item.template_id,
+                        use_queue=False  # WAŻNE: nie dodawaj do kolejki!
                     )
                     
                     if success:
