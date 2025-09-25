@@ -271,6 +271,48 @@
     // Global variable to track HTML source mode for each editor
     window.quillHtmlMode = {};
     
+    // Function to reset HTML source mode state for an editor
+    function resetQuillHtmlMode(editorId) {
+        // Reset the global state
+        if (window.quillHtmlMode) {
+            window.quillHtmlMode[editorId] = false;
+        }
+        
+        // Reset button appearance if Quill instance exists
+        if (window.quillInstances && window.quillInstances[editorId]) {
+            const quill = window.quillInstances[editorId];
+            const codeButton = quill.container.querySelector('.ql-code-block');
+            if (codeButton) {
+                codeButton.innerHTML = '<svg viewBox="0 0 18 18"><polyline class="ql-even ql-stroke" points="5,7 3,9 5,11"></polyline><polyline class="ql-even ql-stroke" points="13,7 15,9 13,11"></polyline></svg><span style="margin-left: 4px; font-size: 11px;">HTML</span>';
+                codeButton.title = 'Przełącz na kod HTML';
+            }
+            
+            // Ensure Quill editor is visible
+            quill.container.style.display = 'block';
+            
+            // Remove any existing HTML textarea
+            const existingHtmlTextarea = document.getElementById(editorId + '_html_source');
+            if (existingHtmlTextarea) {
+                existingHtmlTextarea.remove();
+            }
+        }
+    }
+    
+    // Function to clear Quill editor content
+    function clearQuillContent(editorId) {
+        if (window.quillInstances && window.quillInstances[editorId]) {
+            const quill = window.quillInstances[editorId];
+            // Clear the content completely
+            quill.setContents([], 'silent');
+            
+            // Also clear the hidden textarea
+            const textarea = document.getElementById(editorId);
+            if (textarea) {
+                textarea.value = '';
+            }
+        }
+    }
+    
     // Function to toggle between WYSIWYG and HTML source mode
     function toggleHtmlSource(quill, editorId) {
         const isHtmlMode = window.quillHtmlMode[editorId] || false;

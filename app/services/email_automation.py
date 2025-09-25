@@ -1,112 +1,62 @@
 """
-Email Automation - automatyzacje emailowe
+Email automation service for Lepsze Życie Club
 """
 from datetime import datetime, timedelta
-from app.models import db, User, EventSchedule, UserGroup, UserGroupMember
-from app.models.email_model import EmailReminder
+from app import db
+from app.models import User, UserGroup, UserGroupMember, EventSchedule, EmailReminder
 from app.services.mailgun_service import EnhancedNotificationProcessor
-from app.services.group_manager import GroupManager
 from app.utils.timezone_utils import get_local_now
-from app.utils.crypto_utils import encrypt_email
+from app.utils.token_utils import generate_unsubscribe_token, encrypt_email
 
 class EmailAutomation:
     """Automatyzacje emailowe"""
     
     def __init__(self):
         self.email_processor = EnhancedNotificationProcessor()
-        self.group_manager = GroupManager()
-    
-    def on_user_registration(self, user_id):
-        """Wywoływane przy rejestracji użytkownika"""
-        try:
-            # Wyślij email powitalny
-            user = User.query.get(user_id)
-            if user:
-                # Generate unsubscribe and delete account URLs - nowy system v2
-                from app.services.unsubscribe_manager import unsubscribe_manager
-                import os
-                
-                # Get base URL from environment or use default
-                base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
-                
-                context = {
-                    'user_name': user.first_name or 'Użytkowniku',
-                    'user_email': user.email,
-                    'temporary_password': 'Sprawdź poprzedni email',  # Password was sent in previous email
-                    'login_url': f'{base_url}/login',
-                    'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(user.email),
-                    'delete_account_url': unsubscribe_manager.get_delete_account_url(user.email)
-                }
-                
-                success, message = self.email_processor.send_template_email(
-                    to_email=user.email,
-                    template_name='welcome',
-                    context=context,
-                    to_name=user.first_name
-                )
-            
-            return True, "Email powitalny wysłany"
-            
-        except Exception as e:
-            return False, f"Błąd wysyłania emaila powitalnego: {str(e)}"
-    
-    def on_event_registration(self, user_id):
-        """Wywoływane przy rejestracji na wydarzenie"""
-        try:
-            user = User.query.get(user_id)
-            if not user or user.account_type != 'event_registration':
-                return False, "Użytkownik nie został znaleziony lub nie jest zarejestrowany na wydarzenie"
-            
-            # Dodaj do grupy wydarzenia (jeśli użytkownik ma konto)
-            # Note: user_id field no longer exists in event_registrations table
-            # This functionality would need to be reimplemented if needed
-            
-            # Email potwierdzenia jest już wysyłany w register_event()
-            # Ta funkcja może być używana do dodatkowych akcji w przyszłości
-            
-            return True, "Automatyzacja rejestracji na wydarzenie wykonana"
-            
-        except Exception as e:
-            return False, f"Błąd automatyzacji rejestracji: {str(e)}"
     
     def on_user_joined_club(self, user_id):
         """Wywoływane przy dołączeniu do klubu"""
         try:
-            # Dodaj do grupy wszystkich użytkowników (jeśli jeszcze nie jest)
-            self.group_manager.add_user_to_all_users(user_id)
-            
-            # Dodaj do grupy członków
-            self.group_manager.add_user_to_club_members(user_id)
-            
-            # Wyślij email powitalny dla członka
             user = User.query.get(user_id)
-            if user:
-                # Generate unsubscribe and delete account URLs
-                from app.blueprints.public_controller import generate_unsubscribe_token
-                import os
-                
-                unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
-                delete_token = generate_unsubscribe_token(user.email, 'delete_account')
-                
-                # Get base URL from environment or use default
-                base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
-                
-                
-                context = {
-                    'user_name': user.first_name or 'Użytkowniku',
-                    'user_email': user.email,
-                    'temporary_password': 'Brak hasła tymczasowego',  # No temp password for existing users
-                    'login_url': f'{base_url}/login',
-                    'unsubscribe_url': f'{base_url}/api/unsubscribe/{encrypt_email(user.email)}/{unsubscribe_token}',
-                    'delete_account_url': f'{base_url}/api/delete-account/{encrypt_email(user.email)}/{delete_token}'
-                }
-                
-                success, message = self.email_processor.send_template_email(
-                    to_email=user.email,
-                    template_name='welcome',  # Use welcome template instead
-                    context=context,
-                    to_name=user.first_name
+            if not user:
+                return False, "Użytkownik nie został znaleziony"
+            
+            # Sprawdź czy użytkownik już jest w grupie klubu
+            club_group = UserGroup.query.filter_by(
+                name="Członkowie klubu",
+                group_type='club_members'
+            ).first()
+            
+            if not club_group:
+                # Utwórz grupę klubu jeśli nie istnieje
+                club_group = UserGroup(
+                    name="Członkowie klubu",
+                    group_type='club_members',
+                    description="Wszyscy członkowie klubu"
                 )
+                db.session.add(club_group)
+                db.session.commit()
+            
+            # Sprawdź czy użytkownik już jest członkiem
+            existing_member = UserGroupMember.query.filter_by(
+                user_id=user_id,
+                group_id=club_group.id
+            ).first()
+            
+            if existing_member:
+                if not existing_member.is_active:
+                    existing_member.is_active = True
+                    db.session.commit()
+                return True, "Użytkownik już jest członkiem klubu"
+            
+            # Dodaj użytkownika do grupy klubu
+            member = UserGroupMember(
+                user_id=user_id,
+                group_id=club_group.id,
+                is_active=True
+            )
+            db.session.add(member)
+            db.session.commit()
             
             return True, "Użytkownik dodany do klubu"
             
@@ -145,7 +95,49 @@ class EmailAutomation:
             if not members:
                 return False, "Grupa nie ma członków"
             
-            # Zaplanuj przypomnienia
+            # Użyj inteligentnego planowania
+            return self.schedule_event_reminders_smart(event_id, group_type, len(members))
+            
+        except Exception as e:
+            return False, f"Błąd planowania przypomnień: {str(e)}"
+    
+    def schedule_event_reminders_smart(self, event_id, group_type='event_based', participants_count=None):
+        """Planuje przypomnienia o wydarzeniu z inteligentnym planowaniem czasu"""
+        try:
+            event = EventSchedule.query.get(event_id)
+            if not event:
+                return False, "Wydarzenie nie zostało znalezione"
+            
+            # Znajdź odpowiednią grupę
+            if group_type == 'event_based':
+                group = UserGroup.query.filter_by(
+                    name=f"Wydarzenie: {event.title}",
+                    group_type='event_based'
+                ).first()
+                group_name = "wydarzenia"
+            elif group_type == 'club_members':
+                group = UserGroup.query.filter_by(
+                    name="Członkowie klubu",
+                    group_type='club_members'
+                ).first()
+                group_name = "klubu"
+            else:
+                return False, "Nieprawidłowy typ grupy"
+            
+            if not group:
+                return False, f"Grupa {group_name} nie została znaleziona"
+            
+            # Pobierz członków grupy
+            members = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).all()
+            
+            if not members:
+                return False, "Grupa nie ma członków"
+            
+            # Użyj podanej liczby uczestników lub policz
+            if participants_count is None:
+                participants_count = len(members)
+            
+            # Zaplanuj przypomnienia z inteligentnym planowaniem
             reminders_scheduled = 0
             
             # Convert event date to timezone-aware for comparison
@@ -157,152 +149,74 @@ class EmailAutomation:
             
             now = get_local_now()
             
-            for member in members:
-                # Pobierz dane użytkownika (może być external member)
-                user = None
-                if member.user_id:
-                    user = User.query.get(member.user_id)
+            # Inteligentne planowanie - oblicz optymalny czas wysyłki
+            from app.services.email_service import EmailService
+            email_service = EmailService()
+            
+            # Dla 600 uczestników: 600/50 = 12 paczek, 12*50*1s = 600s = 10min + 20% bufora = 12min
+            # Więc zamiast wysyłać dokładnie 2h przed, wysyłamy 2h12min przed
+            batch_size = 50
+            delay_per_email = 1  # sekunda między emailami
+            
+            # Zaplanuj przypomnienia z inteligentnym czasem
+            reminder_schedules = [
+                {'hours': 24, 'type': '24h'},
+                {'hours': 1, 'type': '1h'},
+                {'minutes': 5, 'type': '5min'}
+            ]
+            
+            for schedule in reminder_schedules:
+                if 'hours' in schedule:
+                    target_time = event_date_aware - timedelta(hours=schedule['hours'])
+                else:
+                    target_time = event_date_aware - timedelta(minutes=schedule['minutes'])
                 
-                # Dla external members używamy danych z member
-                if not user and not member.email:
+                # Oblicz optymalny czas rozpoczęcia wysyłki
+                optimal_send_time = email_service.calculate_send_time(
+                    target_time, 
+                    participants_count, 
+                    batch_size, 
+                    delay_per_email
+                )
+                
+                # Sprawdź czy nie jest za późno
+                if optimal_send_time < now:
+                    print(f"⚠️ Za późno na przypomnienie {schedule['type']} przed wydarzeniem")
                     continue
                 
-                # Get base URL from environment or use default
-                import os
-                base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
+                print(f"📅 Zaplanowano przypomnienie {schedule['type']}: {optimal_send_time} (docelowo: {target_time})")
                 
-                # Base context - tokens will be generated when actually sending emails
-                if user:
-                    user_name = user.first_name or 'Użytkowniku'
-                    user_email = user.email
-                else:
-                    user_name = member.first_name or 'Użytkowniku'
-                    user_email = member.email
+                # Zaplanuj wysyłkę przez Celery
+                from app.tasks.email_tasks import schedule_event_reminders_task
+                schedule_event_reminders_task.apply_async(
+                    args=[event_id, group_type],
+                    eta=optimal_send_time
+                )
                 
-                context = {
-                    'user_name': user_name,
-                    'event_title': event.title,
-                    'event_date': event.event_date.strftime('%d.%m.%Y'),
-                    'event_time': event.event_date.strftime('%H:%M'),
-                    'event_location': event.location or 'Online'
-                }
-                
-                # 24h przed
-                reminder_24h = event_date_aware - timedelta(hours=24)
-                if reminder_24h > now:
-                    # Sprawdź czy email już został wysłany
-                    existing_reminder = EmailReminder.query.filter_by(
-                        user_id=user.id,
-                        event_id=event.id,
-                        reminder_type='24h'
-                    ).first()
-                    
-                    if not existing_reminder:
-                        # Generate tokens only when actually sending email
-                        unsubscribe_token = generate_unsubscribe_token(user_email, 'unsubscribe')
-                        delete_token = generate_unsubscribe_token(user_email, 'delete_account')
-                        
-                        # Update context with fresh tokens
-                        context['unsubscribe_url'] = f'{base_url}/api/unsubscribe/{encrypt_email(user_email)}/{unsubscribe_token}'
-                        context['delete_account_url'] = f'{base_url}/api/delete-account/{encrypt_email(user_email)}/{delete_token}'
-                        
-                        # Użyj szablonu zamiast generować HTML
-                        success, message = self.email_processor.send_template_email(
-                            to_email=user_email,
-                            template_name='event_reminder_24h',
-                            context=context,
-                            to_name=user_name
-                        )
-                        if success:
-                            # Zapisz informację o wysłanym emailu
-                            reminder = EmailReminder(
-                                user_id=user.id,
-                                event_id=event.id,
-                                reminder_type='24h'
-                            )
-                            db.session.add(reminder)
-                            reminders_scheduled += 1
-                
-                # 1h przed
-                reminder_1h = event_date_aware - timedelta(hours=1)
-                if reminder_1h > now:
-                    # Sprawdź czy email już został wysłany
-                    existing_reminder = EmailReminder.query.filter_by(
-                        user_id=user.id,
-                        event_id=event.id,
-                        reminder_type='1h'
-                    ).first()
-                    
-                    if not existing_reminder:
-                        # Generate tokens only when actually sending email
-                        unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
-                        delete_token = generate_unsubscribe_token(user.email, 'delete_account')
-                        
-                        # Update context with fresh tokens
-                        context['unsubscribe_url'] = f'{base_url}/api/unsubscribe/{encrypt_email(user.email)}/{unsubscribe_token}'
-                        context['delete_account_url'] = f'{base_url}/api/delete-account/{encrypt_email(user.email)}/{delete_token}'
-                        
-                        # Użyj szablonu zamiast generować HTML
-                        success, message = self.email_processor.send_template_email(
-                            to_email=user.email,
-                            template_name='event_reminder_1h',
-                            context=context,
-                            to_name=user.first_name
-                        )
-                        if success:
-                            # Zapisz informację o wysłanym emailu
-                            reminder = EmailReminder(
-                                user_id=user.id,
-                                event_id=event.id,
-                                reminder_type='1h'
-                            )
-                            db.session.add(reminder)
-                            reminders_scheduled += 1
-                
-                # 5min przed
-                reminder_5min = event_date_aware - timedelta(minutes=5)
-                if reminder_5min > now:
-                    # Sprawdź czy email już został wysłany
-                    existing_reminder = EmailReminder.query.filter_by(
-                        user_id=user.id,
-                        event_id=event.id,
-                        reminder_type='5min'
-                    ).first()
-                    
-                    if not existing_reminder:
-                        # Generate tokens only when actually sending email
-                        unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
-                        delete_token = generate_unsubscribe_token(user.email, 'delete_account')
-                        
-                        # Dodaj meeting_link do kontekstu
-                        context_with_link = context.copy()
-                        context_with_link['meeting_link'] = event.meeting_link or ''
-                        
-                        # Update context with fresh tokens
-                        context_with_link['unsubscribe_url'] = f'{base_url}/api/unsubscribe/{encrypt_email(user.email)}/{unsubscribe_token}'
-                        context_with_link['delete_account_url'] = f'{base_url}/api/delete-account/{encrypt_email(user.email)}/{delete_token}'
-                        
-                        # Użyj szablonu zamiast generować HTML
-                        success, message = self.email_processor.send_template_email(
-                            to_email=user.email,
-                            template_name='event_reminder_5min',
-                            context=context_with_link,
-                            to_name=user.first_name
-                        )
-                        if success:
-                            # Zapisz informację o wysłanym emailu
-                            reminder = EmailReminder(
-                                user_id=user.id,
-                                event_id=event.id,
-                                reminder_type='5min'
-                            )
-                            db.session.add(reminder)
-                            reminders_scheduled += 1
+                reminders_scheduled += 1
             
-            return True, f"Zaplanowano {reminders_scheduled} przypomnień"
+            return True, f"Zaplanowano {reminders_scheduled} przypomnień dla {participants_count} uczestników"
             
         except Exception as e:
             return False, f"Błąd planowania przypomnień: {str(e)}"
+    
+    def update_event_notifications(self, event_id, old_event_date, new_event_date):
+        """Aktualizuje powiadomienia po zmianie godziny wydarzenia"""
+        try:
+            from app.models import EmailReminder, EmailQueue
+            from app.tasks.email_tasks import update_event_notifications_task
+            
+            # Uruchom zadanie Celery do aktualizacji powiadomień
+            task = update_event_notifications_task.delay(
+                event_id, 
+                old_event_date.isoformat(), 
+                new_event_date.isoformat()
+            )
+            
+            return True, f"Zadanie aktualizacji powiadomień uruchomione (ID: {task.id})"
+            
+        except Exception as e:
+            return False, f"Błąd aktualizacji powiadomień: {str(e)}"
     
     def process_event_reminders(self):
         """Przetwarza przypomnienia o wydarzeniach (wywoływane przez cron)"""
@@ -319,126 +233,42 @@ class EmailAutomation:
             processed = 0
             
             for event in future_events:
-                # Sprawdź czy wydarzenie ma zarejestrowanych uczestników
-                event_group = UserGroup.query.filter_by(
-                    name=f"Wydarzenie: {event.title}",
-                    group_type='event_based'
-                ).first()
-                
-                # Sprawdź czy są członkowie klubu
-                club_group = UserGroup.query.filter_by(
-                    name="Członkowie klubu",
-                    group_type='club_members'
-                ).first()
-                
-                has_participants = event_group and event_group.member_count > 0
-                has_club_members = club_group and club_group.member_count > 0
-                
-                if has_participants or has_club_members:
-                    # Zaplanuj przypomnienia dla zarejestrowanych uczestników
-                    if has_participants:
-                        success, message = self.schedule_event_reminders(event.id, group_type='event_based')
-                        if success:
-                            processed += 1
-                    
-                    # Zaplanuj przypomnienia dla członków klubu
-                    if has_club_members:
-                        success, message = self.schedule_event_reminders(event.id, group_type='club_members')
-                        if success:
-                            processed += 1
+                try:
+                    # Zaplanuj przypomnienia dla tego wydarzenia
+                    success, message = self.schedule_event_reminders(event.id)
+                    if success:
+                        processed += 1
+                        print(f"✅ Zaplanowano przypomnienia dla wydarzenia: {event.title}")
+                    else:
+                        print(f"❌ Błąd planowania przypomnień dla {event.title}: {message}")
+                        
+                except Exception as e:
+                    print(f"❌ Błąd przetwarzania wydarzenia {event.id}: {str(e)}")
             
             return True, f"Przetworzono {processed} wydarzeń"
             
         except Exception as e:
             return False, f"Błąd przetwarzania przypomnień: {str(e)}"
     
-    def send_admin_notification(self, event_id, user_id):
-        """Wysyła powiadomienie do administratorów o nowej rejestracji"""
+    def archive_old_events(self, days_old=30):
+        """Archiwizuje stare wydarzenia"""
         try:
-            user = User.query.get(user_id)
-            event = EventSchedule.query.get(event_id)
+            cutoff_date = datetime.utcnow() - timedelta(days=days_old)
             
-            if not user or not event:
-                return False, "Użytkownik lub wydarzenie nie zostało znalezione"
-            
-            # Znajdź administratorów
-            admins = User.query.filter(
-                (User.role == 'admin') | (User.account_type == 'admin'),
-                User.is_active == True
-            ).all()
-            
-            if not admins:
-                return False, "Brak aktywnych administratorów"
-            
-            # Wyślij powiadomienie do każdego administratora
-            sent = 0
-            for admin in admins:
-                context = {
-                    'admin_name': admin.first_name or 'Administratorze',
-                    'user_name': registration.first_name,
-                    'user_email': registration.email,
-                    'event_title': event.title,
-                    'event_date': event.event_date.strftime('%d.%m.%Y %H:%M')
-                }
-                
-                success, message = self.email_processor.send_template_email(
-                    to_email=admin.email,
-                    template_name='admin_notification',
-                    context=context,
-                    to_name=admin.first_name
-                )
-                
-                if success:
-                    sent += 1
-            
-            return True, f"Powiadomienia wysłane do {sent} administratorów"
-            
-        except Exception as e:
-            return False, f"Błąd wysyłania powiadomień: {str(e)}"
-    
-    def update_all_groups(self):
-        """Aktualizuje wszystkie grupy na podstawie aktualnych danych"""
-        try:
-            groups = UserGroup.query.filter_by(is_active=True).all()
-            updated = 0
-            
-            for group in groups:
-                success, message = self.group_manager.update_group_members(group.id)
-                if success:
-                    updated += 1
-            
-            return True, f"Zaktualizowano {updated} grup"
-            
-        except Exception as e:
-            return False, f"Błąd aktualizacji grup: {str(e)}"
-    
-    def archive_ended_events(self):
-        """Archiwizuje wydarzenia, które się zakończyły"""
-        try:
-            # Znajdź wydarzenia, które się zakończyły ale nie są jeszcze zarchiwizowane
-            events = EventSchedule.query.filter(
-                EventSchedule.is_archived == False
+            old_events = EventSchedule.query.filter(
+                EventSchedule.event_date < cutoff_date,
+                EventSchedule.is_active == True
             ).all()
             
             archived_count = 0
+            for event in old_events:
+                event.is_active = False
+                archived_count += 1
             
-            for event in events:
-                if event.is_ended():
-                    success, message = event.archive()
-                    if success:
-                        archived_count += 1
-                        print(f"✅ Zarchiwizowano wydarzenie: {event.title} ({event.event_date})")
-                    else:
-                        print(f"❌ Błąd archiwizacji wydarzenia {event.title}: {message}")
+            db.session.commit()
             
-            if archived_count > 0:
-                db.session.commit()
-                return True, f"Zarchiwizowano {archived_count} wydarzeń"
-            else:
-                return True, "Brak wydarzeń do zarchiwizowania"
-                
+            return True, f"Zarchiwizowano {archived_count} wydarzeń"
+            
         except Exception as e:
             db.session.rollback()
             return False, f"Błąd archiwizowania wydarzeń: {str(e)}"
-
-

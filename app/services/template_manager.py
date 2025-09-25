@@ -237,3 +237,42 @@ class TemplateManager:
             db.session.rollback()
             logging.error(f"Błąd usuwania domyślnego szablonu: {str(e)}")
             return False, f"Błąd: {str(e)}"
+    
+    def save_current_templates_as_defaults(self):
+        """Zapisuje obecne szablony jako domyślne wzory"""
+        try:
+            # Pobierz wszystkie aktywne szablony
+            current_templates = EmailTemplate.query.filter_by(is_active=True).all()
+            
+            if not current_templates:
+                return False, "Brak aktywnych szablonów do zapisania"
+            
+            # Usuń wszystkie istniejące domyślne szablony
+            DefaultEmailTemplate.query.delete()
+            db.session.commit()
+            
+            saved_count = 0
+            
+            for template in current_templates:
+                # Utwórz nowy domyślny szablon
+                default_template = DefaultEmailTemplate(
+                    name=template.name,
+                    template_type=template.template_type,
+                    subject=template.subject,
+                    html_content=template.html_content,
+                    text_content=template.text_content,
+                    variables=template.variables,
+                    description=template.description or f"Domyślny szablon {template.name}",
+                    is_active=True
+                )
+                db.session.add(default_template)
+                saved_count += 1
+            
+            db.session.commit()
+            
+            return True, f"Zapisano {saved_count} szablonów jako domyślne wzory"
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Błąd zapisywania szablonów jako domyślne: {str(e)}")
+            return False, f"Błąd: {str(e)}"

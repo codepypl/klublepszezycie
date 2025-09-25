@@ -681,6 +681,25 @@ def email_reset_templates():
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@email_bp.route('/email/templates/save-as-defaults', methods=['POST'])
+@login_required
+def email_save_templates_as_defaults():
+    """Zapisuje obecne szablony jako domyślne wzory"""
+    try:
+        from app.services.template_manager import TemplateManager
+        
+        manager = TemplateManager()
+        success, message = manager.save_current_templates_as_defaults()
+        
+        if success:
+            return jsonify({'success': True, 'message': message})
+        else:
+            return jsonify({'success': False, 'error': message}), 500
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @email_bp.route('/email/templates/sync-defaults', methods=['POST'])
 @login_required
 def email_sync_default_templates():
@@ -1718,3 +1737,31 @@ def email_activate_campaign(campaign_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@email_bp.route('/email/test-sending', methods=['POST'])
+@login_required
+def email_test_sending():
+    """Test wysyłania emaili - wysyła 100 emaili na testowy adres"""
+    try:
+        from app.tasks.email_tasks import test_email_sending_task
+        
+        data = request.get_json() or {}
+        test_email = data.get('test_email', 'codeitpy@gmail.com')
+        count = data.get('count', 100)
+        batch_size = data.get('batch_size', 10)
+        
+        # Uruchom zadanie Celery
+        task = test_email_sending_task.delay(test_email, count, batch_size)
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Test wysyłania {count} emaili uruchomiony',
+            'task_id': task.id,
+            'test_email': test_email,
+            'count': count,
+            'batch_size': batch_size
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+

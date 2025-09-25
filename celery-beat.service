@@ -1,0 +1,17 @@
+[Unit]
+Description=Celery Beat for Lepsze Życie Club
+After=network.target redis.service postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/klublepszezycie
+Environment=FLASK_APP=app
+Environment=FLASK_ENV=production
+ExecStart=/var/www/klublepszezycie/.venv/bin/celery -A celery_app beat --loglevel=info
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

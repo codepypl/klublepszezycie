@@ -383,10 +383,11 @@ def api_schedule(schedule_id):
                 if old_event_date != new_event_date:
                     print(f"🕐 Godzina wydarzenia zmieniła się z {old_event_date} na {new_event_date}")
                     
-                    from app.services.mailgun_service import EnhancedNotificationProcessor
-                    notification_processor = EnhancedNotificationProcessor()
-                    # TODO: Implement update_event_notifications in EnhancedNotificationProcessor
-                    success, message = True, "Event notifications updated (placeholder)"
+                    from app.services.email_automation import EmailAutomation
+                    email_automation = EmailAutomation()
+                    success, message = email_automation.update_event_notifications(
+                        schedule.id, old_event_date, new_event_date
+                    )
                     
                     if success:
                         print(f"✅ {message}")

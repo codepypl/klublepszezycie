@@ -41,6 +41,14 @@ function initializeModalListeners() {
         templateModal.addEventListener('hidden.bs.modal', function () {
             isTextContentManuallyEdited = false;
             window.isTextContentManuallyEdited = false; // Update global variable
+            
+            // Reset Quill HTML mode state and clear content when modal is closed
+            if (typeof resetQuillHtmlMode === 'function') {
+                resetQuillHtmlMode('template_html_content');
+            }
+            if (typeof clearQuillContent === 'function') {
+                clearQuillContent('template_html_content');
+            }
         });
     }
     
@@ -206,11 +214,20 @@ function waitForQuillAndSetContent(editorId, content, maxRetries = 50) {
 
 // Get content from Quill editor
 function getQuillContent(editorId) {
+    // Check if user is in HTML source mode
+    if (window.quillHtmlMode && window.quillHtmlMode[editorId]) {
+        // User is in HTML source mode, get content from HTML textarea
+        const htmlTextarea = document.getElementById(editorId + '_html_source');
+        if (htmlTextarea) {
+            return htmlTextarea.value;
+        }
+    }
+    
     if (window.quillInstances && window.quillInstances[editorId]) {
         try {
             // Check if quill instance is fully initialized
             if (window.quillInstances[editorId].root && typeof window.quillInstances[editorId].root.innerHTML !== 'undefined') {
-        return window.quillInstances[editorId].root.innerHTML;
+                return window.quillInstances[editorId].root.innerHTML;
             } else {
                 console.warn('Quill instance not fully initialized, falling back to textarea');
                 // Fallback to textarea
@@ -448,6 +465,14 @@ function showTemplateModal() {
     const resetSyncButton = document.querySelector('button[onclick*="isTextContentManuallyEdited = false"]');
     if (resetSyncButton) {
         resetSyncButton.style.display = 'none';
+    }
+    
+    // Reset Quill HTML mode state and clear content
+    if (typeof resetQuillHtmlMode === 'function') {
+        resetQuillHtmlMode('template_html_content');
+    }
+    if (typeof clearQuillContent === 'function') {
+        clearQuillContent('template_html_content');
     }
     
     const modal = new bootstrap.Modal(document.getElementById('templateModal'));
@@ -741,6 +766,14 @@ function editTemplate(templateId) {
                     resetSyncButton.style.display = 'none';
                 }
                 
+                // Reset Quill HTML mode state and clear content
+                if (typeof resetQuillHtmlMode === 'function') {
+                    resetQuillHtmlMode('template_html_content');
+                }
+                if (typeof clearQuillContent === 'function') {
+                    clearQuillContent('template_html_content');
+                }
+                
                 const modal = new bootstrap.Modal(document.getElementById('templateModal'));
                 modal.show();
                 
@@ -869,11 +902,68 @@ function performResetTemplates() {
     });
 }
 
+// Save current templates as defaults
+function saveTemplatesAsDefaults() {
+    // Set up modal for confirmation
+    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz zapisać obecne szablony jako domyślne wzory?<br><small class="text-muted">Ta operacja zastąpi wszystkie istniejące domyślne wzory obecnymi szablonami. Tej operacji nie można cofnąć.</small>';
+    
+    const modalElement = document.getElementById('bulkDeleteModal');
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+    
+    // Update confirm button
+    const confirmBtn = document.getElementById('confirmBulkDelete');
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    newConfirmBtn.innerHTML = '<i class="fas fa-save me-1"></i>Zapisz jako wzory';
+    
+    // Check if parent node exists before replacing
+    if (confirmBtn.parentNode) {
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    } else {
+        console.warn('Confirm button parent node not found');
+    }
+    
+    newConfirmBtn.onclick = function() {
+        // Hide modal using Bootstrap method
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
+        
+        // Then perform save
+        performSaveTemplatesAsDefaults();
+    };
+}
+
+// Perform actual save as defaults operation
+function performSaveTemplatesAsDefaults() {
+    fetch('/api/email/templates/save-as-defaults', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.toastManager.success(data.message);
+            loadTemplates();
+        } else {
+            window.toastManager.error('Błąd zapisywania: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving templates as defaults:', error);
+        window.toastManager.error('Błąd zapisywania szablonów jako wzory');
+    });
+}
+
 // Make functions globally available
 window.resetTemplates = resetTemplates;
 window.deleteTemplate = deleteTemplate;
 window.saveTemplate = saveTemplate;
 window.showTemplateModal = showTemplateModal;
+window.saveTemplatesAsDefaults = saveTemplatesAsDefaults;
 window.editTemplate = editTemplate;
 window.insertVariable = insertVariable;
 window.addVariable = addVariable;

@@ -198,6 +198,216 @@ class EmailService:
             print(f"Błąd dodawania do kolejki: {e}")
             db.session.rollback()
             return False, f"Błąd dodawania do kolejki: {str(e)}"
+    
+    def process_scheduled_campaigns(self):
+        """
+        Przetwarza zaplanowane kampanie - dodaje je do kolejki gdy nadejdzie czas
+        """
+        try:
+            from app.models import EmailCampaign
+            from datetime import datetime
+            import json
+            
+            # Znajdź kampanie zaplanowane na teraz lub wcześniej
+            now = datetime.utcnow()
+            scheduled_campaigns = EmailCampaign.query.filter(
+                EmailCampaign.status == 'scheduled',
+                EmailCampaign.scheduled_at <= now
+            ).all()
+            
+            processed_count = 0
+            
+            for campaign in scheduled_campaigns:
+                try:
+                    # Zmień status na sending
+                    campaign.status = 'sending'
+                    db.session.commit()
+                    
+                    # Dodaj kampanię do kolejki
+                    success, message = self._add_campaign_to_queue(campaign)
+                    
+                    if success:
+                        processed_count += 1
+                        print(f"✅ Kampania '{campaign.name}' dodana do kolejki")
+                    else:
+                        print(f"❌ Błąd dodawania kampanii '{campaign.name}' do kolejki: {message}")
+                        # Przywróć status scheduled jeśli błąd
+                        campaign.status = 'scheduled'
+                        db.session.commit()
+                        
+                except Exception as e:
+                    print(f"❌ Błąd przetwarzania kampanii {campaign.id}: {str(e)}")
+                    # Przywróć status scheduled jeśli błąd
+                    campaign.status = 'scheduled'
+                    db.session.commit()
+            
+            return True, f"Przetworzono {processed_count} zaplanowanych kampanii"
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Błąd przetwarzania zaplanowanych kampanii: {str(e)}")
+            return False, f"Błąd przetwarzania zaplanowanych kampanii: {str(e)}"
+    
+    def calculate_send_time(self, event_time, participants_count, batch_size=50, delay_per_email=1):
+        """
+        Kalkuluje optymalny czas wysyłki na podstawie liczby uczestników
+        
+        Args:
+            event_time: Czas wydarzenia
+            participants_count: Liczba uczestników
+            batch_size: Rozmiar paczki (domyślnie 50)
+            delay_per_email: Opóźnienie między emailami w sekundach
+            
+        Returns:
+            datetime: Optymalny czas rozpoczęcia wysyłki
+        """
+        from datetime import timedelta
+        
+        # Oblicz czas potrzebny na wysłanie wszystkich emaili
+        total_emails = participants_count
+        batches_needed = (total_emails + batch_size - 1) // batch_size
+        
+        # Czas na wysłanie jednej paczki (batch_size * delay_per_email)
+        time_per_batch = batch_size * delay_per_email
+        
+        # Całkowity czas wysyłki
+        total_send_time = batches_needed * time_per_batch
+        
+        # Dodaj 20% bufora na bezpieczeństwo
+        total_send_time_with_buffer = int(total_send_time * 1.2)
+        
+        # Oblicz czas rozpoczęcia wysyłki
+        send_start_time = event_time - timedelta(seconds=total_send_time_with_buffer)
+        
+        return send_start_time
+    
+    def schedule_smart_reminders(self, event_id, event_time, participants_count, reminder_hours=[24, 1]):
+        """
+        Planuje inteligentne przypomnienia z automatycznym dostosowaniem czasu
+        
+        Args:
+            event_id: ID wydarzenia
+            event_time: Czas wydarzenia
+            participants_count: Liczba uczestników
+            reminder_hours: Lista godzin przed wydarzeniem (domyślnie [24, 1])
+            
+        Returns:
+            dict: Informacje o zaplanowanych przypomnieniach
+        """
+        try:
+            from app.models import EmailQueue
+            from datetime import datetime, timedelta
+            import json
+            
+            scheduled_reminders = []
+            
+            for hours_before in reminder_hours:
+                # Oblicz docelowy czas przypomnienia
+                target_reminder_time = event_time - timedelta(hours=hours_before)
+                
+                # Oblicz optymalny czas rozpoczęcia wysyłki
+                optimal_send_time = self.calculate_send_time(
+                    target_reminder_time, 
+                    participants_count
+                )
+                
+                # Sprawdź czy nie jest za późno
+                if optimal_send_time < datetime.utcnow():
+                    print(f"⚠️ Za późno na przypomnienie {hours_before}h przed wydarzeniem")
+                    continue
+                
+                # Dodaj do kolejki z odpowiednim czasem
+                reminder_data = {
+                    'event_id': event_id,
+                    'reminder_type': f'{hours_before}h',
+                    'participants_count': participants_count,
+                    'target_time': target_reminder_time.isoformat(),
+                    'send_time': optimal_send_time.isoformat()
+                }
+                
+                # Tutaj można dodać logikę tworzenia emaili w kolejce
+                # Na razie zwracamy informacje o planowaniu
+                scheduled_reminders.append({
+                    'hours_before': hours_before,
+                    'target_time': target_reminder_time,
+                    'send_time': optimal_send_time,
+                    'participants_count': participants_count
+                })
+                
+                print(f"📅 Zaplanowano przypomnienie {hours_before}h przed: {optimal_send_time}")
+            
+            return {
+                'success': True,
+                'scheduled_reminders': scheduled_reminders,
+                'participants_count': participants_count
+            }
+            
+        except Exception as e:
+            print(f"❌ Błąd planowania przypomnień: {str(e)}")
+            return {'success': False, 'error': str(e)}
+    
+    def _add_campaign_to_queue(self, campaign):
+        """
+        Dodaje kampanię do kolejki emaili
+        """
+        try:
+            from app.models import UserGroupMember, User
+            import json
+            
+            # Pobierz grupy odbiorców
+            if campaign.recipient_groups:
+                try:
+                    group_ids = json.loads(campaign.recipient_groups)
+                except json.JSONDecodeError:
+                    return False, "Błąd parsowania grup odbiorców"
+                
+                # Pobierz członków grup
+                for group_id in group_ids:
+                    members = UserGroupMember.query.filter_by(
+                        group_id=group_id, 
+                        is_active=True
+                    ).all()
+                    
+                    for member in members:
+                        # Pobierz użytkownika
+                        user = User.query.get(member.user_id)
+                        if not user or not user.is_active:
+                            continue
+                        
+                        # Przygotuj treść emaila
+                        html_content = campaign.html_content
+                        text_content = campaign.text_content
+                        
+                        # Zastąp zmienne w treści
+                        if campaign.content_variables:
+                            try:
+                                variables = json.loads(campaign.content_variables)
+                                for key, value in variables.items():
+                                    placeholder = f"{{{{{key}}}}}"
+                                    html_content = html_content.replace(placeholder, str(value))
+                                    if text_content:
+                                        text_content = text_content.replace(placeholder, str(value))
+                            except json.JSONDecodeError:
+                                pass
+                        
+                        # Dodaj do kolejki
+                        success, message = self.add_to_queue(
+                            to_email=user.email,
+                            to_name=user.name,
+                            subject=campaign.subject,
+                            html_content=html_content,
+                            text_content=text_content,
+                            campaign_id=campaign.id,
+                            scheduled_at=datetime.utcnow()
+                        )
+                        
+                        if not success:
+                            print(f"Błąd dodawania emaila dla {user.email}: {message}")
+            
+            return True, "Kampania dodana do kolejki"
+            
+        except Exception as e:
+            return False, f"Błąd dodawania kampanii do kolejki: {str(e)}"
 
     def process_queue(self, limit: int = 50) -> Dict[str, int]:
         """
@@ -212,6 +422,9 @@ class EmailService:
         stats = {'processed': 0, 'success': 0, 'failed': 0}
         
         try:
+            # Najpierw przetwórz zaplanowane kampanie
+            self.process_scheduled_campaigns()
+            
             # Pobierz emaile do wysłania
             queue_items = EmailQueue.query.filter(
                 EmailQueue.status == 'pending',

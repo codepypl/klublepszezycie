@@ -417,11 +417,17 @@
                 
                 paginationInstance.setPageChangeCallback((page) => {
                     const perPage = paginationInstance.getPerPage();
-                    window.location.href = `{{ url_for('users.index') }}?page=${page}&per_page=${perPage}`;
+                    const currentParams = new URLSearchParams(window.location.search);
+                    currentParams.set('page', page);
+                    currentParams.set('per_page', perPage);
+                    window.location.href = `{{ url_for('users.index') }}?${currentParams.toString()}`;
                 });
                 
                 paginationInstance.setPerPageChangeCallback((newPage, perPage) => {
-                    window.location.href = `{{ url_for('users.index') }}?page=${newPage}&per_page=${perPage}`;
+                    const currentParams = new URLSearchParams(window.location.search);
+                    currentParams.set('page', newPage);
+                    currentParams.set('per_page', perPage);
+                    window.location.href = `{{ url_for('users.index') }}?${currentParams.toString()}`;
                 });
                 
                 paginationInstance.setData(paginationData);
