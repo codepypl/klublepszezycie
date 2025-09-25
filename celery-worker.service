@@ -9,9 +9,12 @@ Group=www-data
 WorkingDirectory=/var/www/klublepszezycie
 Environment=FLASK_APP=app
 Environment=FLASK_ENV=production
-ExecStart=/var/www/klublepszezycie/.venv/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --queues=email_queue,event_queue,default
+ExecStart=/var/www/klublepszezycie/.venv/bin/celery -A celery_app worker --loglevel=error --concurrency=1 --queues=email_queue,event_queue --max-memory-per-child=100000 --max-tasks-per-child=10 --without-gossip --without-mingle --without-heartbeat
 Restart=always
 RestartSec=10
+# Monitoring RAM
+MemoryLimit=120M
+MemoryAccounting=yes
 
 [Install]
 WantedBy=multi-user.target

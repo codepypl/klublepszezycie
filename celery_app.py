@@ -26,7 +26,7 @@ def make_celery(app=None):
         ]
     )
     
-    # Konfiguracja
+    # Konfiguracja - optymalizowana dla 1GB RAM
     celery.conf.update(
         task_serializer='json',
         accept_content=['json'],
@@ -42,6 +42,13 @@ def make_celery(app=None):
         task_compression='gzip',
         result_compression='gzip',
         result_expires=3600,  # 1 godzina
+        # Optymalizacje dla bardzo małej ilości RAM (100MB wolnego)
+        worker_max_memory_per_child=100000,  # 100MB per worker
+        worker_max_tasks_per_child=10,  # Restart worker po 10 zadaniach
+        worker_direct=True,  # Bezpośrednie połączenie z brokerem
+        worker_disable_rate_limits=True,  # Wyłącz limity
+        worker_send_task_events=False,  # Wyłącz eventy
+        task_send_sent_event=False,  # Wyłącz sent eventy
         task_routes={
             'app.tasks.email_tasks.*': {'queue': 'email_queue'},
             'app.tasks.event_tasks.*': {'queue': 'event_queue'},
