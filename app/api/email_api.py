@@ -1739,7 +1739,6 @@ def email_activate_campaign(campaign_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @email_bp.route('/email/test-sending', methods=['POST'])
-@login_required
 def email_test_sending():
     """Test wysyłania emaili - wysyła 100 emaili na testowy adres"""
     try:

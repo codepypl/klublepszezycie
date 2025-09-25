@@ -10,7 +10,7 @@ def test_email_sending():
     """Test wysyłania emaili przez API"""
     
     # Konfiguracja
-    base_url = "http://localhost:8000"  # Port serwera produkcyjnego
+    base_url = "http://localhost:5000"  # Port lokalny
     test_email = "codeitpy@gmail.com"
     count = 100
     batch_size = 10
