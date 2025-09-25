@@ -38,7 +38,6 @@ def make_celery(app=None):
         task_soft_time_limit=25 * 60,  # 25 minut soft timeout
         worker_prefetch_multiplier=1,
         task_acks_late=True,
-        worker_disable_rate_limits=False,
         task_compression='gzip',
         result_compression='gzip',
         result_expires=3600,  # 1 godzina
