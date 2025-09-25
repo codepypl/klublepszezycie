@@ -64,7 +64,7 @@ class SecurityMonitor:
                 template_name='security_alert',
                 context=context,
                 to_name='Administrator',
-                use_queue=False  # Send immediately for security alerts
+                use_queue=True  # Use queue for consistency and logging
             )
             
             if success:

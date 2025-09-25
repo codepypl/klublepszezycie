@@ -26,7 +26,7 @@ class EmailService:
         self.use_tls = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
         self.use_ssl = os.getenv('MAIL_USE_SSL', 'false').lower() == 'true'
 
-    def send_email(self, to_email: str, subject: str, html_content: str, text_content: str = None, template_id: int = None) -> Tuple[bool, str]:
+    def send_email(self, to_email: str, subject: str, html_content: str, text_content: str = None, template_id: int = None, use_queue: bool = True) -> Tuple[bool, str]:
         """
         Wysyła pojedynczy email
         
@@ -35,51 +35,64 @@ class EmailService:
             subject: Temat emaila
             html_content: Treść HTML
             text_content: Treść tekstowa (opcjonalna)
+            template_id: ID szablonu (opcjonalne)
+            use_queue: Czy dodać do kolejki (domyślnie True)
             
         Returns:
             Tuple[bool, str]: (sukces, komunikat)
         """
         try:
-            # Czyszczenie danych wejściowych
-            to_email = unidecode(to_email).strip()
-            subject = subject.strip()  # Nie usuwaj polskich znaków z tematu
-            
-            # Tworzenie wiadomości
-            msg = MIMEMultipart('alternative')
-            
-            # Properly encode headers with UTF-8
-            msg['From'] = create_proper_from_header(self.from_name, self.from_email)
-            msg['To'] = to_email
-            msg['Subject'] = create_proper_subject(subject)
-            
-            # Dodanie treści tekstowej
-            if text_content:
-                text_part = MIMEText(text_content, 'plain')
-                text_part.set_charset('utf-8')
-                msg.attach(text_part)
-            
-            # Dodanie treści HTML
-            html_part = MIMEText(html_content, 'html')
-            html_part.set_charset('utf-8')
-            msg.attach(html_part)
-            
-            # Wysyłanie
-            if self.use_ssl:
-                # Użyj SMTP_SSL dla połączeń SSL
-                with smtplib.SMTP_SSL(self.smtp_server, self.smtp_port) as server:
-                    server.login(self.smtp_username, self.smtp_password)
-                    server.send_message(msg)
+            if use_queue:
+                # Dodaj do kolejki zamiast wysyłać bezpośrednio
+                return self.add_to_queue(
+                    to_email=to_email,
+                    subject=subject,
+                    html_content=html_content,
+                    text_content=text_content,
+                    template_id=template_id
+                )
             else:
-                # Użyj SMTP z TLS
-                with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                    if self.use_tls:
-                        server.starttls()
-                    server.login(self.smtp_username, self.smtp_password)
-                    server.send_message(msg)
-            
-            # Log successful email
-            self._log_email(to_email, subject, 'sent', template_id=template_id)
-            return True, "Email wysłany pomyślnie"
+                # Wysyłanie bezpośrednie (stara logika)
+                # Czyszczenie danych wejściowych
+                to_email = unidecode(to_email).strip()
+                subject = subject.strip()  # Nie usuwaj polskich znaków z tematu
+                
+                # Tworzenie wiadomości
+                msg = MIMEMultipart('alternative')
+                
+                # Properly encode headers with UTF-8
+                msg['From'] = create_proper_from_header(self.from_name, self.from_email)
+                msg['To'] = to_email
+                msg['Subject'] = create_proper_subject(subject)
+                
+                # Dodanie treści tekstowej
+                if text_content:
+                    text_part = MIMEText(text_content, 'plain')
+                    text_part.set_charset('utf-8')
+                    msg.attach(text_part)
+                
+                # Dodanie treści HTML
+                html_part = MIMEText(html_content, 'html')
+                html_part.set_charset('utf-8')
+                msg.attach(html_part)
+                
+                # Wysyłanie
+                if self.use_ssl:
+                    # Użyj SMTP_SSL dla połączeń SSL
+                    with smtplib.SMTP_SSL(self.smtp_server, self.smtp_port) as server:
+                        server.login(self.smtp_username, self.smtp_password)
+                        server.send_message(msg)
+                else:
+                    # Użyj SMTP z TLS
+                    with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                        if self.use_tls:
+                            server.starttls()
+                        server.login(self.smtp_username, self.smtp_password)
+                        server.send_message(msg)
+                
+                # Log successful email
+                self._log_email(to_email, subject, 'sent', template_id=template_id)
+                return True, "Email wysłany pomyślnie"
             
         except Exception as e:
             # Log failed email

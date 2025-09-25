@@ -282,7 +282,7 @@ class MailgunAPIService:
         try:
             from app.services.email_service import EmailService
             email_service = EmailService()
-            return email_service.send_email(to_email, subject, html_content, text_content, template_id)
+            return email_service.send_email(to_email, subject, html_content, text_content, template_id, use_queue=True)
         except Exception as e:
             self.logger.error(f"❌ SMTP fallback failed: {e}")
             return False, f"Both Mailgun API and SMTP failed: {str(e)}"

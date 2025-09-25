@@ -103,7 +103,8 @@ def send_batch_emails_task(self, email_ids, batch_number=1, total_batches=1):
                         subject=email.subject,
                         html_content=email.html_content,
                         text_content=email.text_content,
-                        template_id=email.template_id
+                        template_id=email.template_id,
+                        use_queue=False  # Don't queue in Celery task to avoid infinite loop
                     )
                     
                     if success:
