@@ -106,10 +106,10 @@ class EnhancedNotificationProcessor:
             return False, f"Error: {str(e)}"
     
     def send_template_email(self, to_email: str, template_name: str, 
-                          context: Dict = None, to_name: str = None) -> Tuple[bool, str]:
-        """Send template email with enhanced logging"""
+                          context: Dict = None, to_name: str = None, use_queue: bool = True) -> Tuple[bool, str]:
+        """Send template email with enhanced logging - through queue by default"""
         try:
-            self.logger.info(f"📧 Sending template email '{template_name}' to {to_email}")
+            self.logger.info(f"📧 Sending template email '{template_name}' to {to_email} (queue: {use_queue})")
             
             # Get template
             template = EmailTemplate.query.filter_by(name=template_name, is_active=True).first()
@@ -144,22 +144,45 @@ class EnhancedNotificationProcessor:
                 self.logger.error(f"❌ {error_msg}")
                 return False, error_msg
             
-            # Send email
-            success, message = self.mailgun_service.send_email(
-                to_email=to_email,
-                subject=template.subject,
-                html_content=html_content,
-                text_content=text_content,
-                template_id=template.id,
-                context=context
-            )
-            
-            if success:
-                self.logger.info(f"✅ Template email sent successfully: {message}")
+            # Send through queue or directly
+            if use_queue:
+                # Add to email queue for Celery processing
+                from app.services.email_service import EmailService
+                email_service = EmailService()
+                
+                email_id = email_service.add_to_queue(
+                    to_email=to_email,
+                    subject=template.subject,
+                    html_content=html_content,
+                    text_content=text_content,
+                    template_id=template.id,
+                    to_name=to_name,
+                    context=context
+                )
+                
+                if email_id[0]:
+                    self.logger.info(f"✅ Template email added to queue (ID: {email_id[1]})")
+                    return True, f"Email added to queue (ID: {email_id[1]})"
+                else:
+                    self.logger.error(f"❌ Failed to add template email to queue: {email_id[1]}")
+                    return False, f"Failed to add to queue: {email_id[1]}"
             else:
-                self.logger.error(f"❌ Template email failed: {message}")
-            
-            return success, message
+                # Send directly (old behavior)
+                success, message = self.mailgun_service.send_email(
+                    to_email=to_email,
+                    subject=template.subject,
+                    html_content=html_content,
+                    text_content=text_content,
+                    template_id=template.id,
+                    context=context
+                )
+                
+                if success:
+                    self.logger.info(f"✅ Template email sent directly: {message}")
+                else:
+                    self.logger.error(f"❌ Template email failed: {message}")
+                
+                return success, message
             
         except Exception as e:
             self.logger.error(f"❌ Error sending template email: {e}")
