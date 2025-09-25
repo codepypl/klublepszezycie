@@ -12,7 +12,7 @@ from celery_app import celery
 from app import create_app
 from app.models import EmailQueue, EmailCampaign, UserGroupMember, User
 from app.services.email_service import EmailService
-from app.services.mailgun_service import EnhancedNotificationProcessor
+# from app.services.mailgun_service import EnhancedNotificationProcessor  # Nie używane
 
 # Konfiguracja logowania
 logging.basicConfig(level=logging.INFO)
@@ -87,9 +87,47 @@ def send_batch_emails_task(self, email_ids, batch_number=1, total_batches=1):
                 logger.warning("⚠️ Brak emaili do wysłania")
                 return {'success': True, 'sent': 0, 'failed': 0}
             
-            # Użyj EnhancedNotificationProcessor do wysyłki
-            processor = EnhancedNotificationProcessor()
-            success, message = processor.process_email_queue_batch(emails)
+            # Użyj EmailService do wysyłki
+            from app.services.email_service import EmailService
+            from app import db
+            from datetime import datetime
+            email_service = EmailService()
+            
+            sent_count = 0
+            failed_count = 0
+            
+            for email in emails:
+                try:
+                    success, message = email_service.send_email(
+                        to_email=email.recipient_email,
+                        subject=email.subject,
+                        html_content=email.html_content,
+                        text_content=email.text_content,
+                        template_id=email.template_id
+                    )
+                    
+                    if success:
+                        # Oznacz jako wysłany
+                        email.status = 'sent'
+                        email.sent_at = datetime.utcnow()
+                        sent_count += 1
+                    else:
+                        # Oznacz jako błąd
+                        email.status = 'failed'
+                        email.error_message = message
+                        failed_count += 1
+                        
+                except Exception as e:
+                    email.status = 'failed'
+                    email.error_message = str(e)
+                    failed_count += 1
+                    logger.error(f"❌ Błąd wysyłki email {email.id}: {e}")
+            
+            # Zapisz zmiany
+            db.session.commit()
+            
+            success = failed_count == 0
+            message = f"Wysłano: {sent_count}, Błędy: {failed_count}"
             
             if success:
                 logger.info(f"✅ Paczka {batch_number} wysłana: {message}")

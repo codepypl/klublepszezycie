@@ -27,7 +27,7 @@ class EmailAutomation:
             from app.services.email_service import EmailService
             self.email_service = EmailService()
         return self.email_service
-
+    
     def on_user_joined_club(self, user_id):
         """Wywoływane przy dołączeniu do klubu"""
         try:
