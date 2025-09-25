@@ -29,6 +29,10 @@ def create_app():
     app.config['UPLOAD_FOLDER'] = 'static/uploads'
     app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
     
+    # Celery Configuration
+    app.config['CELERY_BROKER_URL'] = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+    app.config['CELERY_RESULT_BACKEND'] = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+    
     # Setup logging for Flask app
     import logging
     logger = logging.getLogger(__name__)
@@ -178,6 +182,17 @@ def create_app():
         
     # Automatic group synchronization is disabled - using manual sync only
     logger.info("⏸️ Automatic group synchronization is disabled - using manual sync only")
+    
+    # Initialize Celery
+    logger.info("🔄 Initializing Celery...")
+    try:
+        from celery_app import make_celery
+        celery = make_celery(app)
+        app.celery = celery
+        logger.info("✅ Celery initialized successfully!")
+    except Exception as e:
+        logger.warning(f"⚠️ Celery initialization failed: {e}")
+        logger.info("📧 Email processing will use cron job as backup")
     
     logger.info("✅ Flask application initialized successfully!")
     return app

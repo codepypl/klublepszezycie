@@ -6,11 +6,20 @@ from celery import Celery
 from celery.schedules import crontab
 
 # Konfiguracja Celery
-def make_celery(app_name=__name__):
+def make_celery(app=None):
+    if app is None:
+        app_name = __name__
+        broker_url = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+        backend_url = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+    else:
+        app_name = app.import_name
+        broker_url = app.config.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+        backend_url = app.config.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+    
     celery = Celery(
         app_name,
-        broker=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0'),
-        backend=os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0'),
+        broker=broker_url,
+        backend=backend_url,
         include=[
             'app.tasks.email_tasks',
             'app.tasks.event_tasks'
@@ -53,6 +62,15 @@ def make_celery(app_name=__name__):
             },
         }
     )
+    
+    # Kontekst aplikacji Flask dla zadań Celery
+    if app is not None:
+        class ContextTask(celery.Task):
+            def __call__(self, *args, **kwargs):
+                with app.app_context():
+                    return self.run(*args, **kwargs)
+        
+        celery.Task = ContextTask
     
     # Zaplanowane zadania
     celery.conf.beat_schedule = {
