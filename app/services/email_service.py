@@ -12,6 +12,7 @@ from unidecode import unidecode
 from app import db
 from app.models import EmailTemplate, EmailQueue, EmailLog, UserGroup, UserGroupMember, User, EmailCampaign
 from app.utils.email_utils import create_proper_from_header, create_proper_subject
+from app.services.email_template_enricher import EmailTemplateEnricher
 
 
 class EmailService:
@@ -56,6 +57,20 @@ class EmailService:
                 # Czyszczenie danych wejściowych
                 to_email = unidecode(to_email).strip()
                 subject = subject.strip()  # Nie usuwaj polskich znaków z tematu
+
+                # Wzbogacenie treści o linki wypisu i usunięcia konta
+                try:
+                    enricher = EmailTemplateEnricher()
+                    enriched = enricher.enrich_template_content(
+                        html_content=html_content or "",
+                        text_content=text_content or "",
+                        user_email=to_email
+                    )
+                    html_content = enriched.get('html_content') or html_content or ""
+                    text_content = enriched.get('text_content') or text_content or ""
+                except Exception:
+                    # Jeśli nie udało się wzbogacić, wysyłamy oryginalną treść
+                    pass
                 
                 # Tworzenie wiadomości
                 msg = MIMEMultipart('alternative')
