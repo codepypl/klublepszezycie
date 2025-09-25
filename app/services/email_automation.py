@@ -12,8 +12,22 @@ class EmailAutomation:
     """Automatyzacje emailowe"""
     
     def __init__(self):
-        self.email_processor = EnhancedNotificationProcessor()
+        self.email_processor = None
+        self.email_service = None
     
+    def _get_email_processor(self):
+        """Lazy loading dla email_processor"""
+        if self.email_processor is None:
+            self.email_processor = EnhancedNotificationProcessor()
+        return self.email_processor
+    
+    def _get_email_service(self):
+        """Lazy loading dla email_service"""
+        if self.email_service is None:
+            from app.services.email_service import EmailService
+            self.email_service = EmailService()
+        return self.email_service
+
     def on_user_joined_club(self, user_id):
         """Wywoływane przy dołączeniu do klubu"""
         try:
@@ -150,8 +164,7 @@ class EmailAutomation:
             now = get_local_now()
             
             # Inteligentne planowanie - oblicz optymalny czas wysyłki
-            from app.services.email_service import EmailService
-            email_service = EmailService()
+            email_service = self._get_email_service()
             
             # Dla 600 uczestników: 600/50 = 12 paczek, 12*50*1s = 600s = 10min + 20% bufora = 12min
             # Więc zamiast wysyłać dokładnie 2h przed, wysyłamy 2h12min przed
