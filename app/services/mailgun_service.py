@@ -139,6 +139,15 @@ class EnhancedNotificationProcessor:
                     text_template = Template(template.text_content)
                     text_content = text_template.render(**context)
                 
+                # Enrich template with unsubscribe/delete links if needed
+                from app.services.email_template_enricher import email_template_enricher
+                if email_template_enricher.should_add_links(template_name):
+                    enriched = email_template_enricher.enrich_template_content(
+                        html_content, text_content or '', to_email
+                    )
+                    html_content = enriched['html_content']
+                    text_content = enriched['text_content']
+                
             except Exception as e:
                 error_msg = f"Template rendering error: {str(e)}"
                 self.logger.error(f"❌ {error_msg}")
