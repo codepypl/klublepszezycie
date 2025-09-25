@@ -282,11 +282,11 @@ def test_email_sending_task(self, test_email='codeitpy@gmail.com', count=100, ba
                 start_idx = batch_num * batch_size
                 end_idx = min(start_idx + batch_size, count)
                 
-                # Pobierz ID emaili dla tej paczki
+                # Pobierz ID emaili dla tej paczki - użyj offset i limit
                 batch_emails = EmailQueue.query.filter(
                     EmailQueue.recipient_email == test_email,
-                    EmailQueue.subject.like(f'%Test Email #{start_idx+1}%')
-                ).limit(batch_size).all()
+                    EmailQueue.subject.like('Test Email #%')
+                ).order_by(EmailQueue.id).offset(start_idx).limit(batch_size).all()
                 
                 batch_ids = [email.id for email in batch_emails]
                 
