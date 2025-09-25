@@ -1,4 +1,4 @@
-# Instalacja i uruchomienie systemu mailingowego z Celery
+apt-get install# Instalacja i uruchomienie systemu mailingowego z Celery
 
 ## 🎯 Przegląd systemu
 

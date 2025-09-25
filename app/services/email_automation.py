@@ -268,7 +268,7 @@ class EmailAutomation:
             db.session.commit()
             
             return True, f"Zarchiwizowano {archived_count} wydarzeń"
-            
+                
         except Exception as e:
             db.session.rollback()
             return False, f"Błąd archiwizowania wydarzeń: {str(e)}"
