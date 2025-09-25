@@ -109,7 +109,7 @@ flask run --host=0.0.0.0 --port=5000
 sudo cp celery-worker.service /etc/systemd/system/
 sudo cp celery-beat.service /etc/systemd/system/
 
-# Edytuj ścieżki w plikach service
+# Edytuj ścieżki w plikach service (dostosuj do swojego serwera)
 sudo nano /etc/systemd/system/celery-worker.service
 sudo nano /etc/systemd/system/celery-beat.service
 
@@ -127,6 +127,30 @@ sudo systemctl enable celery-beat
 # Sprawdź status
 sudo systemctl status celery-worker
 sudo systemctl status celery-beat
+```
+
+### Opcja C: Supervisor (alternatywa)
+
+```bash
+# Zainstaluj supervisor
+sudo apt install supervisor  # Ubuntu/Debian
+# lub
+sudo yum install supervisor  # CentOS/RHEL
+
+# Utwórz pliki konfiguracyjne
+sudo nano /etc/supervisor/conf.d/celery-worker.conf
+sudo nano /etc/supervisor/conf.d/celery-beat.conf
+
+# Przeładuj konfigurację
+sudo supervisorctl reread
+sudo supervisorctl update
+
+# Uruchom procesy
+sudo supervisorctl start celery-worker
+sudo supervisorctl start celery-beat
+
+# Sprawdź status
+sudo supervisorctl status
 ```
 
 ## 🧪 Test systemu
@@ -224,6 +248,9 @@ sudo journalctl -u celery-worker -u celery-beat -f
 
 # Tylko błędy
 sudo journalctl -u celery-worker -u celery-beat -p err
+
+# Logi z ostatniej godziny
+sudo journalctl -u celery-worker -u celery-beat --since "1 hour ago"
 ```
 
 ### Monitoring przez Flower

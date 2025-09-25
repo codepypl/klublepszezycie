@@ -193,7 +193,7 @@ class EmailAutomation:
                     eta=optimal_send_time
                 )
                 
-                reminders_scheduled += 1
+                            reminders_scheduled += 1
             
             return True, f"Zaplanowano {reminders_scheduled} przypomnień dla {participants_count} uczestników"
             
@@ -236,8 +236,8 @@ class EmailAutomation:
                 try:
                     # Zaplanuj przypomnienia dla tego wydarzenia
                     success, message = self.schedule_event_reminders(event.id)
-                    if success:
-                        processed += 1
+                        if success:
+                            processed += 1
                         print(f"✅ Zaplanowano przypomnienia dla wydarzenia: {event.title}")
                     else:
                         print(f"❌ Błąd planowania przypomnień dla {event.title}: {message}")
@@ -267,7 +267,7 @@ class EmailAutomation:
             
             db.session.commit()
             
-            return True, f"Zarchiwizowano {archived_count} wydarzeń"
+                return True, f"Zarchiwizowano {archived_count} wydarzeń"
                 
         except Exception as e:
             db.session.rollback()

@@ -10,7 +10,7 @@ def test_email_sending():
     """Test wysyłania emaili przez API"""
     
     # Konfiguracja
-    base_url = "http://localhost:5000"  # Zmień na właściwy URL
+    base_url = "http://localhost:8000"  # Port serwera produkcyjnego
     test_email = "codeitpy@gmail.com"
     count = 100
     batch_size = 10
@@ -34,25 +34,33 @@ def test_email_sending():
             headers={'Content-Type': 'application/json'}
         )
         
+        print(f"📊 Status HTTP: {response.status_code}")
+        print(f"📄 Headers: {dict(response.headers)}")
+        print(f"📄 Raw response: {response.text[:500]}...")
+        
         if response.status_code == 200:
-            result = response.json()
-            print(f"✅ Test uruchomiony pomyślnie!")
-            print(f"📋 Task ID: {result.get('task_id')}")
-            print(f"📧 Test email: {result.get('test_email')}")
-            print(f"🔢 Liczba emaili: {result.get('count')}")
-            print(f"📦 Rozmiar paczki: {result.get('batch_size')}")
-            print(f"💬 Wiadomość: {result.get('message')}")
-            
-            # Sprawdź status zadania
-            print(f"\n⏳ Sprawdzanie statusu zadania...")
-            time.sleep(5)
-            
-            # Tutaj można dodać sprawdzanie statusu zadania przez Celery API
-            print(f"📊 Sprawdź status w Flower: http://localhost:5555")
-            print(f"📊 Lub sprawdź logi Celery Worker")
-            
+            try:
+                result = response.json()
+                print(f"✅ Test uruchomiony pomyślnie!")
+                print(f"📋 Task ID: {result.get('task_id')}")
+                print(f"📧 Test email: {result.get('test_email')}")
+                print(f"🔢 Liczba emaili: {result.get('count')}")
+                print(f"📦 Rozmiar paczki: {result.get('batch_size')}")
+                print(f"💬 Wiadomość: {result.get('message')}")
+                
+                # Sprawdź status zadania
+                print(f"\n⏳ Sprawdzanie statusu zadania...")
+                time.sleep(5)
+                
+                # Tutaj można dodać sprawdzanie statusu zadania przez Celery API
+                print(f"📊 Sprawdź status w Flower: http://localhost:5555")
+                print(f"📊 Lub sprawdź logi Celery Worker")
+                
+            except ValueError as e:
+                print(f"❌ Błąd parsowania JSON: {e}")
+                print(f"📄 Raw response: {response.text}")
         else:
-            print(f"❌ Błąd: {response.status_code}")
+            print(f"❌ Błąd HTTP: {response.status_code}")
             print(f"📄 Odpowiedź: {response.text}")
             
     except requests.exceptions.ConnectionError:
