@@ -54,8 +54,27 @@ class EmailTemplateEnricher:
     def _add_links_to_html(self, html_content: str, unsubscribe_url: str, delete_account_url: str) -> str:
         """Dodaje linki unsubscribe do HTML"""
         
-        # Sprawdź czy linki już istnieją
-        if 'Zrezygnuj z członkostwa w klubie' in html_content or 'unsubscribe_url' in html_content:
+        # Zastąp placeholdery lub usuń linki unsubscribe jeśli użytkownik nie jest członkiem klubu
+        # Obsługa obu formatów: {{unsubscribe_url}} i {{ unsubscribe_url }}
+        if unsubscribe_url:
+            html_content = html_content.replace('{{unsubscribe_url}}', unsubscribe_url)
+            html_content = html_content.replace('{{ unsubscribe_url }}', unsubscribe_url)
+        else:
+            # Usuń link unsubscribe jeśli użytkownik nie jest członkiem klubu
+            html_content = html_content.replace('<a href="{{unsubscribe_url}}" target="_blank">Wypisz się z klubu</a> | ', '')
+            html_content = html_content.replace(' | <a href="{{unsubscribe_url}}" target="_blank">Wypisz się z klubu</a>', '')
+            html_content = html_content.replace('<a href="{{unsubscribe_url}}" target="_blank">Wypisz się z klubu</a>', '')
+            html_content = html_content.replace('<a href="{{ unsubscribe_url }}" target="_blank">Wypisz się z klubu</a> | ', '')
+            html_content = html_content.replace(' | <a href="{{ unsubscribe_url }}" target="_blank">Wypisz się z klubu</a>', '')
+            html_content = html_content.replace('<a href="{{ unsubscribe_url }}" target="_blank">Wypisz się z klubu</a>', '')
+        
+        # Zawsze zastąp delete_account_url (oba formaty)
+        if delete_account_url:
+            html_content = html_content.replace('{{delete_account_url}}', delete_account_url)
+            html_content = html_content.replace('{{ delete_account_url }}', delete_account_url)
+        
+        # Sprawdź czy linki już istnieją (po zastąpieniu placeholderów)
+        if 'Zrezygnuj z członkostwa w klubie' in html_content or 'Usuń konto' in html_content:
             return html_content
         
         # Buduj linki dynamicznie
@@ -95,8 +114,27 @@ class EmailTemplateEnricher:
     def _add_links_to_text(self, text_content: str, unsubscribe_url: str, delete_account_url: str) -> str:
         """Dodaje linki unsubscribe do tekstu"""
         
-        # Sprawdź czy linki już istnieją
-        if 'Zrezygnuj z członkostwa w klubie' in text_content or 'unsubscribe_url' in text_content:
+        # Zastąp placeholdery lub usuń linki unsubscribe jeśli użytkownik nie jest członkiem klubu
+        # Obsługa obu formatów: {{unsubscribe_url}} i {{ unsubscribe_url }}
+        if unsubscribe_url:
+            text_content = text_content.replace('{{unsubscribe_url}}', unsubscribe_url)
+            text_content = text_content.replace('{{ unsubscribe_url }}', unsubscribe_url)
+        else:
+            # Usuń link unsubscribe jeśli użytkownik nie jest członkiem klubu
+            text_content = text_content.replace('{{unsubscribe_url}}\n', '')
+            text_content = text_content.replace('\n{{unsubscribe_url}}', '')
+            text_content = text_content.replace('{{unsubscribe_url}}', '')
+            text_content = text_content.replace('{{ unsubscribe_url }}\n', '')
+            text_content = text_content.replace('\n{{ unsubscribe_url }}', '')
+            text_content = text_content.replace('{{ unsubscribe_url }}', '')
+        
+        # Zawsze zastąp delete_account_url (oba formaty)
+        if delete_account_url:
+            text_content = text_content.replace('{{delete_account_url}}', delete_account_url)
+            text_content = text_content.replace('{{ delete_account_url }}', delete_account_url)
+        
+        # Sprawdź czy linki już istnieją (po zastąpieniu placeholderów)
+        if 'Zrezygnuj z członkostwa w klubie' in text_content or 'Usuń konto:' in text_content:
             return text_content
         
         # Buduj linki dynamicznie

@@ -68,8 +68,53 @@ class EmailService:
                     )
                     html_content = enriched.get('html_content') or html_content or ""
                     text_content = enriched.get('text_content') or text_content or ""
-                except Exception:
+                except Exception as e:
+                    print(f"❌ Błąd wzbogacania treści: {e}")
                     # Jeśli nie udało się wzbogacić, wysyłamy oryginalną treść
+                    pass
+                
+                # Zastąp placeholdery rzeczywistymi URL-ami z tokenami
+                try:
+                    from app.services.unsubscribe_manager import unsubscribe_manager
+                    
+                    # Sprawdź czy użytkownik jest członkiem klubu
+                    from app.models.user_model import User
+                    user = User.query.filter_by(email=to_email).first()
+                    is_club_member = user.club_member if user else False
+                    
+                    # Generuj URL-e z tokenami
+                    # Link unsubscribe tylko dla członków klubu
+                    unsubscribe_url = unsubscribe_manager.get_unsubscribe_url(to_email) if is_club_member else None
+                    # Link delete zawsze dla wszystkich użytkowników
+                    delete_account_url = unsubscribe_manager.get_delete_account_url(to_email)
+                    
+                    # Zastąp placeholdery w HTML (oba formaty: ze spacjami i bez)
+                    if unsubscribe_url:
+                        html_content = html_content.replace('{{unsubscribe_url}}', unsubscribe_url)
+                        html_content = html_content.replace('{{ unsubscribe_url }}', unsubscribe_url)
+                    else:
+                        # Usuń link unsubscribe jeśli użytkownik nie jest członkiem klubu (oba formaty)
+                        html_content = html_content.replace('<a href="{{unsubscribe_url}}" target="_blank">Wypisz się z klubu</a> | ', '')
+                        html_content = html_content.replace(' | <a href="{{unsubscribe_url}}" target="_blank">Wypisz się z klubu</a>', '')
+                        html_content = html_content.replace('<a href="{{unsubscribe_url}}" target="_blank">Wypisz się z klubu</a>', '')
+                        html_content = html_content.replace('<a href="{{ unsubscribe_url }}" target="_blank">Wypisz się z klubu</a> | ', '')
+                        html_content = html_content.replace(' | <a href="{{ unsubscribe_url }}" target="_blank">Wypisz się z klubu</a>', '')
+                        html_content = html_content.replace('<a href="{{ unsubscribe_url }}" target="_blank">Wypisz się z klubu</a>', '')
+                    
+                    if delete_account_url:
+                        html_content = html_content.replace('{{delete_account_url}}', delete_account_url)
+                        html_content = html_content.replace('{{ delete_account_url }}', delete_account_url)
+                    
+                    # Zastąp placeholdery w tekście (oba formaty)
+                    if unsubscribe_url:
+                        text_content = text_content.replace('{{unsubscribe_url}}', unsubscribe_url)
+                        text_content = text_content.replace('{{ unsubscribe_url }}', unsubscribe_url)
+                    if delete_account_url:
+                        text_content = text_content.replace('{{delete_account_url}}', delete_account_url)
+                        text_content = text_content.replace('{{ delete_account_url }}', delete_account_url)
+                        
+                except Exception as e:
+                    print(f"❌ Błąd zastępowania placeholderów: {e}")
                     pass
                 
                 # Tworzenie wiadomości
@@ -159,7 +204,7 @@ class EmailService:
                 return success, message
             else:
                 # Wysyłanie bezpośrednie
-                return self.send_email(to_email, subject, html_content, text_content, template_id=template.id)
+                return self.send_email(to_email, subject, html_content, text_content, template_id=template.id, use_queue=False)
             
         except Exception as e:
             return False, f"Błąd wysyłania szablonu: {str(e)}"

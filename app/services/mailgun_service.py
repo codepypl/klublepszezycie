@@ -125,6 +125,22 @@ class EnhancedNotificationProcessor:
             if to_name:
                 context['recipient_name'] = to_name
             
+            # Add unsubscribe URLs to context BEFORE Jinja2 rendering
+            from app.services.email_template_enricher import email_template_enricher
+            if email_template_enricher.should_add_links(template_name):
+                # Check if user is club member
+                from app.models.user_model import User
+                user = User.query.filter_by(email=to_email).first()
+                is_club_member = user.club_member if user else False
+                
+                # Generate URLs and add to context
+                from app.services.unsubscribe_manager import unsubscribe_manager
+                if is_club_member:
+                    context['unsubscribe_url'] = unsubscribe_manager.get_unsubscribe_url(to_email)
+                else:
+                    context['unsubscribe_url'] = ''  # Empty for non-members
+                context['delete_account_url'] = unsubscribe_manager.get_delete_account_url(to_email)
+            
             # Render template content
             try:
                 from jinja2 import Template
@@ -139,8 +155,7 @@ class EnhancedNotificationProcessor:
                     text_template = Template(template.text_content)
                     text_content = text_template.render(**context)
                 
-                # Enrich template with unsubscribe/delete links if needed
-                from app.services.email_template_enricher import email_template_enricher
+                # Enrich template with unsubscribe/delete links if needed (fallback)
                 if email_template_enricher.should_add_links(template_name):
                     enriched = email_template_enricher.enrich_template_content(
                         html_content, text_content or '', to_email
