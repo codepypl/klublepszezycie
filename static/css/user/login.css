@@ -140,6 +140,32 @@
     transform: translateY(0);
 }
 
+/* Password Requirements */
+.password-requirements {
+    background: linear-gradient(135deg, rgba(30, 58, 138, 0.05) 0%, rgba(30, 64, 175, 0.05) 100%);
+    border: 1px solid rgba(30, 58, 138, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.password-requirements h6 {
+    color: #1e3a8a;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.password-requirements ul li {
+    color: #6b7280;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+.password-requirements .text-success {
+    color: #10b981 !important;
+}
+
 /* Footer */
 .admin-login-footer {
     text-align: center;

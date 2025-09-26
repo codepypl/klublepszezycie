@@ -71,6 +71,135 @@ def process_scheduled_campaigns_task(self):
             logger.error(f"❌ Błąd przetwarzania kampanii: {exc}")
             raise self.retry(exc=exc, countdown=60)
 
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_event_reminder_task(self, event_id, reminder_type, group_type='event_based'):
+    """
+    Wysyła przypomnienia o wydarzeniu do grupy użytkowników
+    """
+    with get_app_context():
+        try:
+            from app.models import EventSchedule, UserGroup, UserGroupMember, User
+            from app.services.email_service import EmailService
+            
+            logger.info(f"📧 Wysyłam przypomnienia {reminder_type} dla wydarzenia {event_id}")
+            
+            # Pobierz wydarzenie
+            event = EventSchedule.query.get(event_id)
+            if not event:
+                return {'success': False, 'message': 'Wydarzenie nie znalezione'}
+            
+            # Sprawdź czy czas przypomnienia już minął
+            from app.utils.timezone_utils import get_local_now, get_local_timezone
+            now = get_local_now()
+            
+            # Oblicz docelowy czas przypomnienia
+            if event.event_date.tzinfo is None:
+                tz = get_local_timezone()
+                event_date_aware = tz.localize(event.event_date)
+            else:
+                event_date_aware = event.event_date
+            
+            # Oblicz docelowy czas przypomnienia
+            if reminder_type == '24h':
+                target_time = event_date_aware - timedelta(hours=24)
+            elif reminder_type == '1h':
+                target_time = event_date_aware - timedelta(hours=1)
+            elif reminder_type == '5min':
+                target_time = event_date_aware - timedelta(minutes=5)
+            else:
+                target_time = event_date_aware
+            
+            # Sprawdź czy czas przypomnienia już minął
+            if now > target_time:
+                logger.warning(f"⚠️ Czas przypomnienia {reminder_type} już minął - pomijam wysyłkę")
+                return {'success': False, 'message': f'Czas przypomnienia {reminder_type} już minął'}
+            
+            logger.info(f"✅ Czas przypomnienia {reminder_type} jest w przyszłości - kontynuuję wysyłkę")
+            logger.info(f"📧 Planuję wysłać przypomnienia dla wydarzenia: {event.title} ({event.event_date})")
+            
+            # Pobierz członków z obu grup: klubu i wydarzenia
+            all_members = set()  # Używamy set() aby uniknąć duplikatów
+            
+            # 1. Pobierz członków klubu
+            club_group = UserGroup.query.filter_by(
+                name="Członkowie klubu",
+                group_type='club_members'
+            ).first()
+            
+            if club_group:
+                club_members = UserGroupMember.query.filter_by(
+                    group_id=club_group.id, 
+                    is_active=True
+                ).all()
+                for member in club_members:
+                    all_members.add(member.user_id)
+                logger.info(f"👥 Znaleziono {len(club_members)} członków klubu")
+            
+            # 2. Pobierz członków grupy wydarzenia (jeśli istnieje)
+            event_group = UserGroup.query.filter_by(
+                name=f"Wydarzenie: {event.title}",
+                group_type='event_based'
+            ).first()
+            
+            if event_group:
+                event_members = UserGroupMember.query.filter_by(
+                    group_id=event_group.id, 
+                    is_active=True
+                ).all()
+                for member in event_members:
+                    all_members.add(member.user_id)
+                logger.info(f"📅 Znaleziono {len(event_members)} członków grupy wydarzenia")
+            
+            if not all_members:
+                return {'success': False, 'message': 'Brak członków w żadnej grupie'}
+            
+            logger.info(f"📧 Łącznie unikalnych odbiorców: {len(all_members)}")
+            
+            # Przygotuj dane dla szablonu
+            template_data = {
+                'event_title': event.title,
+                'event_date': event.event_date.strftime('%Y-%m-%d'),
+                'event_time': event.event_date.strftime('%H:%M'),
+                'event_location': event.location or 'Online',
+                'event_url': event.meeting_link or '#'
+            }
+            
+            # Wybierz szablon na podstawie typu przypomnienia
+            template_name = f'event_reminder_{reminder_type}'
+            
+            email_service = EmailService()
+            sent_count = 0
+            
+            # Wyślij emaile do wszystkich unikalnych członków
+            for user_id in all_members:
+                user = User.query.get(user_id)
+                if user and user.email:
+                    # Dodaj dane użytkownika
+                    user_template_data = template_data.copy()
+                    user_template_data['user_name'] = user.first_name or user.email
+                    
+                    # Wyślij email (używaj kolejki)
+                    success, message = email_service.send_template_email(
+                        to_email=user.email,
+                        template_name=template_name,
+                        context=user_template_data,
+                        to_name=user.first_name,
+                        use_queue=True  # Zawsze używaj kolejki
+                    )
+                    
+                    if success:
+                        sent_count += 1
+                        logger.info(f"✅ Wysłano przypomnienie {reminder_type} do {user.email} dla wydarzenia {event.title}")
+                    else:
+                        logger.error(f"❌ Błąd wysyłania przypomnienia {reminder_type} do {user.email}: {message}")
+            
+            logger.info(f"✅ Wysłano {sent_count}/{len(all_members)} przypomnień {reminder_type}")
+            return {'success': True, 'sent_count': sent_count, 'total_members': len(all_members)}
+            
+        except Exception as exc:
+            logger.error(f"❌ Błąd wysyłania przypomnień: {exc}")
+            raise self.retry(exc=exc, countdown=60)
+
 @celery.task(bind=True, max_retries=2, default_retry_delay=30)
 def send_batch_emails_task(self, email_ids, batch_number=1, total_batches=1):
     """

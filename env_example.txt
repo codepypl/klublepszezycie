@@ -29,3 +29,6 @@ EMAIL_DELAY=1
 TIMEZONE=Europe/Warsaw
 USE_LOCAL_TIME=true
 
+# Group Synchronization
+AUTO_GROUP_SYNC=false
+

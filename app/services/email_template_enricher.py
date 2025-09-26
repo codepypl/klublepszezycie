@@ -37,8 +37,8 @@ class EmailTemplateEnricher:
             delete_account_url = self._get_unsubscribe_manager().get_delete_account_url(user_email)
         else:
             # Użyj placeholderów
-            unsubscribe_url = "{{ unsubscribe_url }}"
-            delete_account_url = "{{ delete_account_url }}"
+            unsubscribe_url = "{{unsubscribe_url}}"
+            delete_account_url = "{{delete_account_url}}"
         
         # Dodaj linki do HTML
         enriched_html = self._add_links_to_html(html_content, unsubscribe_url, delete_account_url)

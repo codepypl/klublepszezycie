@@ -1576,6 +1576,8 @@ def create_event_group(event_id, event_title):
         db.session.add(group)
         db.session.commit()
         
+        print(f"✅ Utworzono grupę wydarzenia '{event_title}' (bez automatycznego dodawania członków klubu)")
+        
         return group.id
         
     except Exception as e:

@@ -124,6 +124,19 @@ def api_event_schedule():
             db.session.add(event)
             db.session.commit()
             
+            # Automatycznie utwórz grupę dla wydarzenia
+            from app.api.email_api import create_event_group
+            create_event_group(event.id, event.title)
+            
+            # Automatycznie zaplanuj przypomnienia o wydarzeniu
+            from app.services.email_automation import EmailAutomation
+            email_automation = EmailAutomation()
+            success, message = email_automation.schedule_event_reminders(event.id, 'event_based')
+            if success:
+                print(f"✅ Zaplanowano przypomnienia dla wydarzenia: {event.title}")
+            else:
+                print(f"⚠️ Błąd planowania przypomnień: {message}")
+            
             return jsonify({
                 'success': True,
                 'message': 'Event created successfully',
@@ -152,17 +165,51 @@ def api_event_schedule():
                 return jsonify({'success': False, 'message': 'No events selected'}), 400
             
             deleted_count = 0
+            total_cancelled_tasks = 0
+            
             for event_id in event_ids:
                 event = EventSchedule.query.get(event_id)
                 if event:
+                    # Clean up related groups and cancel Celery tasks before deleting event
+                    from app.services.group_manager import GroupManager
+                    from app.services.celery_cleanup import CeleryCleanupService
+                    
+                    group_manager = GroupManager()
+                    celery_cleanup = CeleryCleanupService()
+                    
+                    # 1. Cancel all scheduled Celery tasks for this event
+                    cancelled_tasks = celery_cleanup.cancel_event_tasks(event_id)
+                    total_cancelled_tasks += cancelled_tasks
+                    print(f"🚫 Anulowano {cancelled_tasks} zadań Celery dla wydarzenia {event_id}")
+                    
+                    # 2. Clean up event groups
+                    success, message = group_manager.cleanup_event_groups(event_id)
+                    if success:
+                        print(f"🧹 {message}")
+                    else:
+                        print(f"❌ Błąd czyszczenia grup: {message}")
+                    
+                    # 3. Delete event groups
+                    success, message = group_manager.delete_event_groups(event_id)
+                    if success:
+                        print(f"🗑️ {message}")
+                    else:
+                        print(f"❌ Błąd usuwania grup: {message}")
+                    
+                    # 4. Delete the event
                     db.session.delete(event)
                     deleted_count += 1
             
             db.session.commit()
             
+            # Clean up any orphaned groups (safety measure)
+            success, message = group_manager.cleanup_orphaned_groups()
+            if success and "Usunięto" in message:
+                print(f"🧹 {message}")
+            
             return jsonify({
                 'success': True,
-                'message': f'Successfully deleted {deleted_count} events'
+                'message': f'Successfully deleted {deleted_count} events. Cancelled {total_cancelled_tasks} Celery tasks.'
             })
         except Exception as e:
             db.session.rollback()
@@ -231,12 +278,43 @@ def api_event(event_id):
             })
         
         elif request.method == 'DELETE':
+            # Clean up related groups and cancel Celery tasks before deleting event
+            from app.services.group_manager import GroupManager
+            from app.services.celery_cleanup import CeleryCleanupService
+            
+            group_manager = GroupManager()
+            celery_cleanup = CeleryCleanupService()
+            
+            # 1. Cancel all scheduled Celery tasks for this event
+            cancelled_tasks = celery_cleanup.cancel_event_tasks(event_id)
+            print(f"🚫 Anulowano {cancelled_tasks} zadań Celery dla wydarzenia {event_id}")
+            
+            # 2. Clean up event groups
+            success, message = group_manager.cleanup_event_groups(event_id)
+            if success:
+                print(f"🧹 {message}")
+            else:
+                print(f"❌ Błąd czyszczenia grup: {message}")
+            
+            # 3. Delete event groups
+            success, message = group_manager.delete_event_groups(event_id)
+            if success:
+                print(f"🗑️ {message}")
+            else:
+                print(f"❌ Błąd usuwania grup: {message}")
+            
+            # 4. Delete the event
             db.session.delete(event)
             db.session.commit()
             
+            # 5. Clean up any orphaned groups (safety measure)
+            success, message = group_manager.cleanup_orphaned_groups()
+            if success and "Usunięto" in message:
+                print(f"🧹 {message}")
+            
             return jsonify({
                 'success': True,
-                'message': 'Event deleted successfully'
+                'message': f'Event deleted successfully. Cancelled {cancelled_tasks} Celery tasks.'
             })
     
     except Exception as e:
@@ -282,6 +360,10 @@ def api_schedules():
             
             db.session.add(schedule)
             db.session.commit()
+            
+            # Automatycznie utwórz grupę dla wydarzenia
+            from app.api.email_api import create_event_group
+            create_event_group(schedule.id, schedule.title)
             
             return jsonify({
                 'success': True,
@@ -490,17 +572,51 @@ def api_bulk_delete_events():
             return jsonify({'success': False, 'message': 'No events selected'}), 400
         
         deleted_count = 0
+        total_cancelled_tasks = 0
+        
         for event_id in event_ids:
             event = EventSchedule.query.get(event_id)
             if event:
+                # Clean up related groups and cancel Celery tasks before deleting event
+                from app.services.group_manager import GroupManager
+                from app.services.celery_cleanup import CeleryCleanupService
+                
+                group_manager = GroupManager()
+                celery_cleanup = CeleryCleanupService()
+                
+                # 1. Cancel all scheduled Celery tasks for this event
+                cancelled_tasks = celery_cleanup.cancel_event_tasks(event_id)
+                total_cancelled_tasks += cancelled_tasks
+                print(f"🚫 Anulowano {cancelled_tasks} zadań Celery dla wydarzenia {event_id}")
+                
+                # 2. Clean up event groups
+                success, message = group_manager.cleanup_event_groups(event_id)
+                if success:
+                    print(f"🧹 {message}")
+                else:
+                    print(f"❌ Błąd czyszczenia grup: {message}")
+                
+                # 3. Delete event groups
+                success, message = group_manager.delete_event_groups(event_id)
+                if success:
+                    print(f"🗑️ {message}")
+                else:
+                    print(f"❌ Błąd usuwania grup: {message}")
+                
+                # 4. Delete the event
                 db.session.delete(event)
                 deleted_count += 1
         
         db.session.commit()
         
+        # Clean up any orphaned groups (safety measure)
+        success, message = group_manager.cleanup_orphaned_groups()
+        if success and "Usunięto" in message:
+            print(f"🧹 {message}")
+        
         return jsonify({
             'success': True,
-            'message': f'Successfully deleted {deleted_count} events'
+            'message': f'Successfully deleted {deleted_count} events. Cancelled {total_cancelled_tasks} Celery tasks.'
         })
     except Exception as e:
         db.session.rollback()

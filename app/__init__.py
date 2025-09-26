@@ -22,16 +22,13 @@ def create_app():
     """Application factory pattern"""
     app = Flask(__name__, template_folder='../templates', static_folder='../static')
     
-    # Configuration
-    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://shadi@localhost:5432/betterlife')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['UPLOAD_FOLDER'] = 'static/uploads'
-    app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
-    
-    # Celery Configuration
-    app.config['CELERY_BROKER_URL'] = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-    app.config['CELERY_RESULT_BACKEND'] = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+    # Load configuration from config.py
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from config import config
+    config_name = os.getenv('FLASK_ENV', 'development')
+    app.config.from_object(config[config_name])
     
     # Setup logging for Flask app
     import logging
@@ -180,8 +177,13 @@ def create_app():
         db.create_all()
         logger.info("✅ Database tables created successfully!")
         
-    # Automatic group synchronization is disabled - using manual sync only
-    logger.info("⏸️ Automatic group synchronization is disabled - using manual sync only")
+    # Configure group synchronization
+    if app.config.get('AUTO_GROUP_SYNC', False):
+        from app.services.group_sync_service import GroupSyncService
+        GroupSyncService.enable_auto_sync()
+        logger.info("🚀 Automatic group synchronization is enabled")
+    else:
+        logger.info("⏸️ Automatic group synchronization is disabled - using manual sync only")
     
     # Initialize Celery
     logger.info("🔄 Initializing Celery...")

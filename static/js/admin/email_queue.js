@@ -23,6 +23,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup auto-refresh
     setupEmailQueueAutoRefresh();
     
+    // Clean up interval when leaving page
+    window.addEventListener('beforeunload', function() {
+        if (emailQueueRefreshInterval) {
+            console.log('🧹 Cleaning up email queue auto-refresh interval');
+            clearInterval(emailQueueRefreshInterval);
+        }
+    });
+    
     // Make functions globally available
     window.processQueue = processQueue;
     window.retryFailed = retryFailed;
@@ -32,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.showProgressBar = showProgressBar;
     window.hideProgressBar = hideProgressBar;
     window.startProgressMonitoring = startProgressMonitoring;
+    window.restartEmailQueueAutoRefresh = restartEmailQueueAutoRefresh;
     
     // Initialize CRUD Refresh Manager for email queue
     if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
@@ -455,35 +464,86 @@ let emailQueueRefreshInterval;
 let isProcessing = false;
 
 function setupEmailQueueAutoRefresh() {
+    console.log('🔄 Setting up email queue auto-refresh...');
+    
+    // Clear any existing interval
+    if (emailQueueRefreshInterval) {
+        clearInterval(emailQueueRefreshInterval);
+    }
+    
     // Refresh every 15 seconds (more frequent than CRM pages)
     emailQueueRefreshInterval = setInterval(() => {
+        console.log('⏰ Auto-refresh triggered, isProcessing:', isProcessing);
         // Only refresh if not currently processing
         if (!isProcessing) {
+            console.log('🔄 Refreshing email queue data...');
             refreshEmailQueueData();
+        } else {
+            console.log('⏸️ Skipping refresh - processing in progress');
         }
     }, 15000); // 15 seconds
+    
+    console.log('✅ Auto-refresh interval set:', emailQueueRefreshInterval);
     
     // Add refresh indicator
     addEmailQueueRefreshIndicator();
     
     // Add manual refresh button
     addEmailQueueRefreshButton();
+    
+    // Initial refresh after 2 seconds
+    setTimeout(() => {
+        console.log('🚀 Initial auto-refresh...');
+        refreshEmailQueueData();
+    }, 2000);
 }
 
 function refreshEmailQueueData() {
+    console.log('📊 Starting email queue data refresh...');
+    
     // Show subtle loading indicator
     showEmailQueueRefreshIndicator();
     
     // Load both stats and queue
     Promise.all([
-        fetch('/api/email/queue-stats').then(response => response.json()),
-        fetch(`/api/email/queue?page=${currentPage}&per_page=${currentPerPage}&filter=${currentFilter}`).then(response => response.json())
+        fetch('/api/email/queue-stats').then(response => {
+            console.log('📡 Stats API response status:', response.status);
+            
+            // Sprawdź czy response to JSON czy HTML (strona logowania)
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return response.json();
+            } else {
+                console.warn('⚠️ Stats API zwróciło HTML zamiast JSON - prawdopodobnie sesja wygasła');
+                throw new Error('Sesja wygasła - wymagane ponowne logowanie');
+            }
+        }),
+        fetch(`/api/email/queue?page=${currentPage}&per_page=${currentPerPage}&filter=${currentFilter}`).then(response => {
+            console.log('📡 Queue API response status:', response.status);
+            
+            // Sprawdź czy response to JSON czy HTML (strona logowania)
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return response.json();
+            } else {
+                console.warn('⚠️ Queue API zwróciło HTML zamiast JSON - prawdopodobnie sesja wygasła');
+                throw new Error('Sesja wygasła - wymagane ponowne logowanie');
+            }
+        })
     ])
     .then(([statsData, queueData]) => {
+        console.log('📊 Stats data received:', statsData);
+        console.log('📋 Queue data received:', queueData);
+        
         if (statsData.success) {
+            console.log('✅ Updating stats:', statsData.stats);
             updateEmailQueueStats(statsData.stats);
+        } else {
+            console.error('❌ Stats API error:', statsData.error);
         }
+        
         if (queueData.success) {
+            console.log('✅ Updating queue display with', queueData.emails.length, 'emails');
             displayQueue(queueData.emails);
             // Update pagination if it exists
             if (queueData.pagination) {
@@ -492,26 +552,73 @@ function refreshEmailQueueData() {
                     paginationElement.paginationInstance.setData(queueData.pagination);
                 }
             }
+        } else {
+            console.error('❌ Queue API error:', queueData.error);
         }
+        
         hideEmailQueueRefreshIndicator();
+        console.log('✅ Email queue refresh completed');
     })
     .catch(error => {
-        console.error('Error refreshing email queue data:', error);
+        console.error('❌ Error refreshing email queue data:', error);
         hideEmailQueueRefreshIndicator();
+        
+        // Sprawdź czy to błąd sesji
+        if (error.message && error.message.includes('Sesja wygasła')) {
+            console.warn('🔐 Sesja wygasła - zatrzymuję automatyczne odświeżanie');
+            
+            // Zatrzymaj automatyczne odświeżanie
+            if (emailQueueRefreshInterval) {
+                clearInterval(emailQueueRefreshInterval);
+                emailQueueRefreshInterval = null;
+            }
+            
+            // Pokaż powiadomienie użytkownikowi
+            if (window.toastManager) {
+                window.toastManager.warning('Sesja wygasła - zaloguj się ponownie aby kontynuować automatyczne odświeżanie');
+            }
+        }
     });
 }
 
 function updateEmailQueueStats(stats) {
+    console.log('📊 Updating email queue stats:', stats);
+    
     // Update stats cards
     const totalElement = document.getElementById('totalEmails');
     const pendingElement = document.getElementById('pendingEmails');
     const sentElement = document.getElementById('sentEmails');
     const failedElement = document.getElementById('failedEmails');
     
-    if (totalElement) totalElement.textContent = stats.total || 0;
-    if (pendingElement) pendingElement.textContent = stats.pending || 0;
-    if (sentElement) sentElement.textContent = stats.sent || 0;
-    if (failedElement) failedElement.textContent = stats.failed || 0;
+    console.log('🔍 DOM elements found:', {
+        total: !!totalElement,
+        pending: !!pendingElement,
+        sent: !!sentElement,
+        failed: !!failedElement
+    });
+    
+    if (totalElement) {
+        const oldValue = totalElement.textContent;
+        totalElement.textContent = stats.total || 0;
+        console.log('📈 Total updated:', oldValue, '->', stats.total || 0);
+    }
+    if (pendingElement) {
+        const oldValue = pendingElement.textContent;
+        pendingElement.textContent = stats.pending || 0;
+        console.log('⏳ Pending updated:', oldValue, '->', stats.pending || 0);
+    }
+    if (sentElement) {
+        const oldValue = sentElement.textContent;
+        sentElement.textContent = stats.sent || 0;
+        console.log('✅ Sent updated:', oldValue, '->', stats.sent || 0);
+    }
+    if (failedElement) {
+        const oldValue = failedElement.textContent;
+        failedElement.textContent = stats.failed || 0;
+        console.log('❌ Failed updated:', oldValue, '->', stats.failed || 0);
+    }
+    
+    console.log('✅ Stats update completed');
 }
 
 function addEmailQueueRefreshIndicator() {
@@ -583,6 +690,19 @@ processQueue = function() {
     }, 30000);
 };
 
+// Restart auto-refresh after login
+function restartEmailQueueAutoRefresh() {
+    console.log('🔄 Restarting email queue auto-refresh after login...');
+    
+    // Clear existing interval
+    if (emailQueueRefreshInterval) {
+        clearInterval(emailQueueRefreshInterval);
+    }
+    
+    // Setup auto-refresh again
+    setupEmailQueueAutoRefresh();
+}
+
 // Clear all emails from queue (except sent ones)
 function clearAllQueue() {
     if (confirm('⚠️ UWAGA: Czy na pewno chcesz wyczyścić całą kolejkę emaili?\n\nTo usunie wszystkie oczekujące, nieudane i przetwarzane emaile.\nWysłane emaile zostaną zachowane jako historia.\n\nTa operacja jest nieodwracalna!')) {
@@ -623,3 +743,16 @@ retryFailed = function() {
         refreshEmailQueueData();
     }, 30000);
 };
+
+// Restart auto-refresh after login
+function restartEmailQueueAutoRefresh() {
+    console.log('🔄 Restarting email queue auto-refresh after login...');
+    
+    // Clear existing interval
+    if (emailQueueRefreshInterval) {
+        clearInterval(emailQueueRefreshInterval);
+    }
+    
+    // Setup auto-refresh again
+    setupEmailQueueAutoRefresh();
+}

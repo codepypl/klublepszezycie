@@ -59,6 +59,71 @@ def email_logs():
     """Logi emaili"""
     return render_template('admin/email_logs.html')
 
+@admin_bp.route('/celery-monitor')
+@login_required
+def celery_monitor():
+    """Monitor zadań Celery"""
+    return render_template('admin/celery_monitor.html')
+
+# API endpoints for Celery monitoring
+@admin_bp.route('/api/celery/status')
+@login_required
+def api_celery_status():
+    """API: Status Celery"""
+    try:
+        from app.services.celery_monitor import CeleryMonitorService
+        monitor = CeleryMonitorService()
+        status = monitor.get_celery_status()
+        return jsonify(status)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@admin_bp.route('/api/celery/tasks')
+@login_required
+def api_celery_tasks():
+    """API: Lista zadań Celery"""
+    try:
+        from app.services.celery_monitor import CeleryMonitorService
+        monitor = CeleryMonitorService()
+        
+        # Pobierz parametry filtrowania
+        task_type = request.args.get('type', 'all')  # all, scheduled, active, completed
+        event_id = request.args.get('event_id')
+        limit = int(request.args.get('limit', 50))
+        
+        tasks = monitor.get_tasks(task_type=task_type, event_id=event_id, limit=limit)
+        return jsonify(tasks)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@admin_bp.route('/api/celery/tasks/<task_id>/cancel', methods=['POST'])
+@login_required
+def api_cancel_task(task_id):
+    """API: Anuluj zadanie Celery"""
+    try:
+        from app.services.celery_monitor import CeleryMonitorService
+        monitor = CeleryMonitorService()
+        result = monitor.cancel_task(task_id)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@admin_bp.route('/api/celery/events/<event_id>/cancel-all', methods=['POST'])
+@login_required
+def api_cancel_event_tasks(event_id):
+    """API: Anuluj wszystkie zadania dla wydarzenia"""
+    try:
+        from app.services.celery_cleanup import CeleryCleanupService
+        cleanup = CeleryCleanupService()
+        cancelled_count = cleanup.cancel_event_tasks(int(event_id))
+        return jsonify({
+            'success': True, 
+            'cancelled_count': cancelled_count,
+            'message': f'Anulowano {cancelled_count} zadań dla wydarzenia {event_id}'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # Content Management Routes
 @admin_bp.route('/menu')
 @login_required

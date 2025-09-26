@@ -91,12 +91,12 @@
         <!-- Grupa: Mailing - Tylko dla administratorów -->
         {% if current_user.is_admin_role() %}
         <li class="nav-item">
-            <a href="#mailingSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['admin.email_templates', 'admin.email_campaigns', 'admin.email_groups', 'admin.email_queue', 'admin.email_logs'] %}true{% else %}false{% endif %}">
+            <a href="#mailingSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['admin.email_templates', 'admin.email_campaigns', 'admin.email_groups', 'admin.email_queue', 'admin.email_logs', 'admin.celery_monitor'] %}true{% else %}false{% endif %}">
                 <i class="fas fa-envelope me-2"></i>
                 <span class="nav-link-text">Mailing</span>
                 <i class="fas fa-chevron-down ms-auto"></i>
             </a>
-            <div class="collapse{% if request.endpoint in ['admin.email_templates', 'admin.email_campaigns', 'admin.email_groups', 'admin.email_queue', 'admin.email_logs'] %} show{% endif %}" id="mailingSubmenu">
+            <div class="collapse{% if request.endpoint in ['admin.email_templates', 'admin.email_campaigns', 'admin.email_groups', 'admin.email_queue', 'admin.email_logs', 'admin.celery_monitor'] %} show{% endif %}" id="mailingSubmenu">
                 <ul class="nav flex-column ms-3">
                     <li class="nav-item">
                         <a href="{{ url_for('admin.email_templates') }}" class="nav-link {% if request.endpoint == 'admin.email_templates' %}active{% endif %}">
@@ -126,6 +126,12 @@
                         <a href="{{ url_for('admin.email_logs') }}" class="nav-link {% if request.endpoint == 'admin.email_logs' %}active{% endif %}">
                             <i class="fas fa-file-alt"></i>
                             <span class="nav-link-text">Log</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin.celery_monitor') }}" class="nav-link {% if request.endpoint == 'admin.celery_monitor' %}active{% endif %}">
+                            <i class="fas fa-tasks"></i>
+                            <span class="nav-link-text">Monitor Celery</span>
                         </a>
                     </li>
                 </ul>

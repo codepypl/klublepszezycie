@@ -95,6 +95,19 @@ class EventsController:
             db.session.add(event)
             db.session.commit()
             
+            # Automatycznie utwórz grupę dla wydarzenia
+            from app.api.email_api import create_event_group
+            create_event_group(event.id, event.title)
+            
+            # Automatycznie zaplanuj przypomnienia o wydarzeniu
+            from app.services.email_automation import EmailAutomation
+            email_automation = EmailAutomation()
+            success, message = email_automation.schedule_event_reminders(event.id, 'event_based')
+            if success:
+                print(f"✅ Zaplanowano przypomnienia dla wydarzenia: {event.title}")
+            else:
+                print(f"⚠️ Błąd planowania przypomnień: {message}")
+            
             return {
                 'success': True,
                 'event': event,
@@ -167,6 +180,15 @@ class EventsController:
             else:
                 print(f"❌ Błąd synchronizacji grupy wydarzenia: {message}")
             
+            # Ponownie zaplanuj przypomnienia po aktualizacji wydarzenia
+            from app.services.email_automation import EmailAutomation
+            email_automation = EmailAutomation()
+            success, message = email_automation.schedule_event_reminders(event_id, 'event_based')
+            if success:
+                print(f"✅ Ponownie zaplanowano przypomnienia dla wydarzenia: {title}")
+            else:
+                print(f"⚠️ Błąd ponownego planowania przypomnień: {message}")
+            
             return {
                 'success': True,
                 'event': event,
@@ -201,12 +223,43 @@ class EventsController:
                     'error': f'Nie można usunąć wydarzenia z {registrations_count} rejestracjami'
                 }
             
+            # Clean up related groups and cancel Celery tasks before deleting event
+            from app.services.group_manager import GroupManager
+            from app.services.celery_cleanup import CeleryCleanupService
+            
+            group_manager = GroupManager()
+            celery_cleanup = CeleryCleanupService()
+            
+            # 1. Cancel all scheduled Celery tasks for this event
+            cancelled_tasks = celery_cleanup.cancel_event_tasks(event_id)
+            print(f"🚫 Anulowano {cancelled_tasks} zadań Celery dla wydarzenia {event_id}")
+            
+            # 2. Clean up event groups
+            success, message = group_manager.cleanup_event_groups(event_id)
+            if success:
+                print(f"🧹 {message}")
+            else:
+                print(f"❌ Błąd czyszczenia grup: {message}")
+            
+            # 3. Delete event groups
+            success, message = group_manager.delete_event_groups(event_id)
+            if success:
+                print(f"🗑️ {message}")
+            else:
+                print(f"❌ Błąd usuwania grup: {message}")
+            
+            # 4. Delete the event
             db.session.delete(event)
             db.session.commit()
             
+            # 5. Clean up any orphaned groups (safety measure)
+            success, message = group_manager.cleanup_orphaned_groups()
+            if success and "Usunięto" in message:
+                print(f"🧹 {message}")
+            
             return {
                 'success': True,
-                'message': 'Wydarzenie zostało usunięte pomyślnie'
+                'message': f'Wydarzenie zostało usunięte pomyślnie. Anulowano {cancelled_tasks} zadań Celery.'
             }
         except Exception as e:
             db.session.rollback()

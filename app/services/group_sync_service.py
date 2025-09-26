@@ -12,6 +12,11 @@ _local = threading.local()
 # Flag to disable automatic sync for API operations
 _auto_sync_disabled = threading.local()
 
+# Throttling mechanism - last sync time
+import time
+_last_sync_time = time.time()
+SYNC_THROTTLE_SECONDS = 30  # Minimum 30 seconds between syncs
+
 class GroupSyncService:
     """Serwis automatycznej synchronizacji grup"""
     
@@ -51,8 +56,23 @@ class GroupSyncService:
                     print("⏸️ Automatyczna synchronizacja wyłączona dla tej operacji")
                     return
                 
+                # Check throttling - don't sync too often
+                current_time = time.time()
+                global _last_sync_time
+                if current_time - _last_sync_time < SYNC_THROTTLE_SECONDS:
+                    print(f"⏸️ Synchronizacja throttled - ostatnia synchronizacja {int(current_time - _last_sync_time)}s temu")
+                    return
+                
                 if hasattr(_local, 'pending_changes'):
                     changes = _local.pending_changes
+                    
+                    # Check if there are any changes to process
+                    has_changes = any(changes.get(key, []) for key in ['new', 'modified', 'deleted'])
+                    if not has_changes:
+                        return
+                    
+                    # Update last sync time
+                    _last_sync_time = current_time
                     
                     # Process new users
                     for user in changes['new']:
@@ -80,6 +100,9 @@ class GroupSyncService:
     def _sync_after_user_change(user):
         """Synchronizacja po zmianie użytkownika"""
         try:
+            # Wyłącz automatyczną synchronizację podczas synchronizacji
+            GroupSyncService.disable_auto_sync_for_operation()
+            
             # Use a new session for synchronization
             from flask import current_app
             with current_app.app_context():
@@ -102,11 +125,17 @@ class GroupSyncService:
                     
         except Exception as e:
             print(f"❌ Błąd automatycznej synchronizacji grup: {str(e)}")
+        finally:
+            # Włącz automatyczną synchronizację z powrotem
+            GroupSyncService.enable_auto_sync_for_operation()
     
     @staticmethod
     def _sync_after_user_delete(user):
         """Synchronizacja po usunięciu użytkownika"""
         try:
+            # Wyłącz automatyczną synchronizację podczas synchronizacji
+            GroupSyncService.disable_auto_sync_for_operation()
+            
             # Use a new session for synchronization
             from flask import current_app
             with current_app.app_context():
@@ -128,6 +157,9 @@ class GroupSyncService:
                     
         except Exception as e:
             print(f"❌ Błąd automatycznej synchronizacji grup po usunięciu: {str(e)}")
+        finally:
+            # Włącz automatyczną synchronizację z powrotem
+            GroupSyncService.enable_auto_sync_for_operation()
     
     @staticmethod
     def enable_auto_sync():

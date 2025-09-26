@@ -630,8 +630,38 @@ function removeVariable(variable) {
     }
 }
 
-// Insert variable into HTML content
+// Track which field was last focused
+let lastFocusedField = null;
+
+// Track focus on textareas
+document.addEventListener('DOMContentLoaded', function() {
+    const htmlTextarea = document.getElementById('template_html_content');
+    const textTextarea = document.getElementById('template_text_content');
+    
+    if (htmlTextarea) {
+        htmlTextarea.addEventListener('focus', function() {
+            lastFocusedField = 'html';
+        });
+    }
+    
+    if (textTextarea) {
+        textTextarea.addEventListener('focus', function() {
+            lastFocusedField = 'text';
+        });
+    }
+});
+
+// Insert variable into the appropriate field based on last focus
 function insertVariable(variable) {
+    if (lastFocusedField === 'text') {
+        insertVariableIntoTextarea(variable, 'template_text_content');
+    } else {
+        insertVariableIntoHtmlContent(variable);
+    }
+}
+
+// Insert variable into HTML content
+function insertVariableIntoHtmlContent(variable) {
     if (window.quillInstances && window.quillInstances['template_html_content']) {
         // Insert into Quill editor
         const quill = window.quillInstances['template_html_content'];
@@ -639,54 +669,55 @@ function insertVariable(variable) {
         try {
             // Check if quill instance is fully initialized
             if (typeof quill.getSelection === 'function' && typeof quill.insertText === 'function') {
-        const range = quill.getSelection();
-        if (range) {
-            quill.insertText(range.index, variable);
-            quill.setSelection(range.index + variable.length);
-        } else {
-            quill.insertText(quill.getLength(), variable);
+                const range = quill.getSelection();
+                if (range) {
+                    quill.insertText(range.index, variable);
+                    quill.setSelection(range.index + variable.length);
+                } else {
+                    quill.insertText(quill.getLength(), variable);
                 }
             } else {
                 console.warn('Quill instance not fully initialized, falling back to textarea');
-                // Fallback to textarea
-                const textarea = document.getElementById('template_html_content');
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                const text = textarea.value;
-                const before = text.substring(0, start);
-                const after = text.substring(end, text.length);
-                
-                textarea.value = before + variable + after;
-                textarea.focus();
-                textarea.setSelectionRange(start + variable.length, start + variable.length);
+                insertVariableIntoTextarea(variable, 'template_html_content');
             }
         } catch (error) {
             console.error('Error inserting variable into Quill:', error);
-            // Fallback to textarea
-            const textarea = document.getElementById('template_html_content');
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const text = textarea.value;
-            const before = text.substring(0, start);
-            const after = text.substring(end, text.length);
-            
-            textarea.value = before + variable + after;
-            textarea.focus();
-            textarea.setSelectionRange(start + variable.length, start + variable.length);
+            insertVariableIntoTextarea(variable, 'template_html_content');
         }
     } else {
-        // Fallback to textarea
-        const textarea = document.getElementById('template_html_content');
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const text = textarea.value;
-        const before = text.substring(0, start);
-        const after = text.substring(end, text.length);
-        
-        textarea.value = before + variable + after;
-        textarea.focus();
-        textarea.setSelectionRange(start + variable.length, start + variable.length);
+        insertVariableIntoTextarea(variable, 'template_html_content');
     }
+}
+
+// Insert variable into textarea at cursor position
+function insertVariableIntoTextarea(variable, textareaId) {
+    let textarea = document.getElementById(textareaId);
+    
+    // Check if we're in HTML source mode for HTML content
+    if (textareaId === 'template_html_content') {
+        const htmlSourceTextarea = document.getElementById(textareaId + '_html_source');
+        if (htmlSourceTextarea && htmlSourceTextarea.style.display !== 'none') {
+            textarea = htmlSourceTextarea;
+        }
+    }
+    
+    if (!textarea) {
+        console.error('Textarea not found:', textareaId);
+        return;
+    }
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+    
+    textarea.value = before + variable + after;
+    textarea.focus();
+    textarea.setSelectionRange(start + variable.length, start + variable.length);
+    
+    // Update last focused field
+    lastFocusedField = textareaId === 'template_text_content' ? 'text' : 'html';
 }
 
 // Save template

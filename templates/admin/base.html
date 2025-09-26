@@ -358,6 +358,13 @@
                 }
             });
             
+            // Track focus for variable insertion in HTML mode
+            htmlTextarea.addEventListener('focus', function() {
+                if (window.lastFocusedField !== undefined) {
+                    window.lastFocusedField = 'html';
+                }
+            });
+            
         } else {
             // Switch back to WYSIWYG mode
             const htmlTextarea = document.getElementById(editorId + '_html_source');
@@ -547,6 +554,16 @@
                 
                 // Store instance
                 quillInstances[editorId] = quill;
+                
+                // Track focus for variable insertion
+                quill.on('selection-change', function(range, oldRange, source) {
+                    if (range && source === 'user') {
+                        // Update last focused field when user clicks in Quill
+                        if (window.lastFocusedField !== undefined) {
+                            window.lastFocusedField = 'html';
+                        }
+                    }
+                });
                 
                 // Sync content back to textarea on change
                 quill.on('text-change', function() {

@@ -84,33 +84,16 @@ class EmailAutomation:
             if not event:
                 return False, "Wydarzenie nie zostało znalezione"
             
-            # Znajdź odpowiednią grupę
-            if group_type == 'event_based':
-                group = UserGroup.query.filter_by(
-                    name=f"Wydarzenie: {event.title}",
-                    group_type='event_based'
-                ).first()
-                group_name = "wydarzenia"
-            elif group_type == 'club_members':
-                group = UserGroup.query.filter_by(
-                    name="Członkowie klubu",
-                    group_type='club_members'
-                ).first()
-                group_name = "klubu"
-            else:
-                return False, "Nieprawidłowy typ grupy"
+            # Sprawdź czy przypomnienia już zostały zaplanowane dla tego wydarzenia
+            from app.services.celery_cleanup import CeleryCleanupService
+            existing_tasks = CeleryCleanupService.get_scheduled_event_tasks(event_id)
             
-            if not group:
-                return False, f"Grupa {group_name} nie została znaleziona"
+            if existing_tasks:
+                print(f"⚠️ Przypomnienia już zaplanowane dla wydarzenia {event_id} - pomijam duplikaty")
+                return True, f"Przypomnienia już zaplanowane ({len(existing_tasks)} zadań)"
             
-            # Pobierz członków grupy
-            members = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).all()
-            
-            if not members:
-                return False, "Grupa nie ma członków"
-            
-            # Użyj inteligentnego planowania
-            return self.schedule_event_reminders_smart(event_id, group_type, len(members))
+            # Użyj inteligentnego planowania - sprawdzi członków klubu i wydarzenia
+            return self.schedule_event_reminders_smart(event_id, group_type)
             
         except Exception as e:
             return False, f"Błąd planowania przypomnień: {str(e)}"
@@ -122,42 +105,55 @@ class EmailAutomation:
             if not event:
                 return False, "Wydarzenie nie zostało znalezione"
             
-            # Znajdź odpowiednią grupę
-            if group_type == 'event_based':
-                group = UserGroup.query.filter_by(
-                    name=f"Wydarzenie: {event.title}",
-                    group_type='event_based'
-                ).first()
-                group_name = "wydarzenia"
-            elif group_type == 'club_members':
-                group = UserGroup.query.filter_by(
-                    name="Członkowie klubu",
-                    group_type='club_members'
-                ).first()
-                group_name = "klubu"
-            else:
-                return False, "Nieprawidłowy typ grupy"
+            # Pobierz członków z obu grup: klubu i wydarzenia (jak w send_event_reminder_task)
+            all_members = set()  # Używamy set() aby uniknąć duplikatów
             
-            if not group:
-                return False, f"Grupa {group_name} nie została znaleziona"
+            # 1. Pobierz członków klubu
+            club_group = UserGroup.query.filter_by(
+                name="Członkowie klubu",
+                group_type='club_members'
+            ).first()
             
-            # Pobierz członków grupy
-            members = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).all()
+            if club_group:
+                club_members = UserGroupMember.query.filter_by(
+                    group_id=club_group.id, 
+                    is_active=True
+                ).all()
+                for member in club_members:
+                    all_members.add(member.user_id)
+                print(f"👥 Znaleziono {len(club_members)} członków klubu")
             
-            if not members:
-                return False, "Grupa nie ma członków"
+            # 2. Pobierz członków grupy wydarzenia (jeśli istnieje)
+            event_group = UserGroup.query.filter_by(
+                name=f"Wydarzenie: {event.title}",
+                group_type='event_based'
+            ).first()
+            
+            if event_group:
+                event_members = UserGroupMember.query.filter_by(
+                    group_id=event_group.id, 
+                    is_active=True
+                ).all()
+                for member in event_members:
+                    all_members.add(member.user_id)
+                print(f"📅 Znaleziono {len(event_members)} członków grupy wydarzenia")
+            
+            if not all_members:
+                return False, "Brak członków w żadnej grupie"
             
             # Użyj podanej liczby uczestników lub policz
             if participants_count is None:
-                participants_count = len(members)
+                participants_count = len(all_members)
             
             # Zaplanuj przypomnienia z inteligentnym planowaniem
             reminders_scheduled = 0
             
             # Convert event date to timezone-aware for comparison
             if event.event_date.tzinfo is None:
-                from app.utils.timezone_utils import convert_to_local
-                event_date_aware = convert_to_local(event.event_date)
+                # Jeśli data nie ma strefy czasowej, traktuj ją jako lokalną
+                from app.utils.timezone_utils import get_local_timezone
+                tz = get_local_timezone()
+                event_date_aware = tz.localize(event.event_date)
             else:
                 event_date_aware = event.event_date
             
@@ -192,18 +188,23 @@ class EmailAutomation:
                     delay_per_email
                 )
                 
-                # Sprawdź czy nie jest za późno
-                if optimal_send_time < now:
+                # Sprawdź czy nie jest za późno - porównaj z target_time, nie z optimal_send_time
+                if target_time.replace(tzinfo=None) < now.replace(tzinfo=None):
                     print(f"⚠️ Za późno na przypomnienie {schedule['type']} przed wydarzeniem")
+                    continue
+                
+                # Dodatkowe zabezpieczenie - sprawdź czy optimal_send_time nie jest w przeszłości
+                if optimal_send_time.replace(tzinfo=None) < now.replace(tzinfo=None):
+                    print(f"⚠️ Optymalny czas wysyłki {schedule['type']} jest w przeszłości - pomijam")
                     continue
                 
                 print(f"📅 Zaplanowano przypomnienie {schedule['type']}: {optimal_send_time} (docelowo: {target_time})")
                 
-                # Zaplanuj wysyłkę przez Celery (tymczasowo wyłączone)
+                # Zaplanuj wysyłkę przez Celery
                 try:
-                    from app.tasks.email_tasks import schedule_event_reminders_task
-                    schedule_event_reminders_task.apply_async(
-                        args=[event_id, group_type],
+                    from app.tasks.email_tasks import send_event_reminder_task
+                    send_event_reminder_task.apply_async(
+                        args=[event_id, schedule['type'], group_type],
                         eta=optimal_send_time
                     )
                 except ImportError:
