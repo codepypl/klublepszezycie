@@ -8,6 +8,43 @@ from app import create_app, db
 from app.models.email_model import EmailTemplate, DefaultEmailTemplate
 import json
 import datetime
+import os
+
+
+def load_css_styles():
+    """Ładuje style CSS z pliku static/css/email_templates.css"""
+    css_file = os.path.join(os.path.dirname(__file__), 'static', 'css', 'email_templates.css')
+    
+    try:
+        with open(css_file, 'r', encoding='utf-8') as f:
+            css_content = f.read()
+        return css_content
+    except FileNotFoundError:
+        print(f'⚠️ Nie znaleziono pliku CSS: {css_file}')
+        return None
+    except Exception as e:
+        print(f'❌ Błąd odczytu pliku CSS: {e}')
+        return None
+
+
+def apply_styles_to_template(html_content, css_content):
+    """Dodaje style CSS do szablonu HTML"""
+    if not css_content:
+        return html_content
+    
+    # Sprawdź czy szablon już ma style
+    if '<style>' in html_content:
+        print('   - Szablon już ma style, pomijam dodawanie')
+        return html_content
+    
+    # Dodaj style na początku szablonu
+    styled_content = f"""<style>
+{css_content}
+</style>
+
+{html_content}"""
+    
+    return styled_content
 
 
 def save_templates_as_default():
@@ -16,6 +53,13 @@ def save_templates_as_default():
     app = create_app()
     with app.app_context():
         print('💾 Zapisywanie szablonów jako domyślne...')
+        
+        # Załaduj style CSS
+        css_content = load_css_styles()
+        if css_content:
+            print('✅ Załadowano style CSS')
+        else:
+            print('⚠️ Nie udało się załadować stylów CSS')
         
         # Pobierz wszystkie szablony
         templates = EmailTemplate.query.all()
@@ -45,8 +89,11 @@ def save_templates_as_default():
                 default_template = DefaultEmailTemplate(name=template.name)
                 db.session.add(default_template)
             
+            # Zastosuj style do szablonu HTML
+            styled_html_content = apply_styles_to_template(template.html_content, css_content)
+            
             default_template.subject = template.subject
-            default_template.html_content = template.html_content
+            default_template.html_content = styled_html_content
             default_template.text_content = template.text_content
             default_template.updated_at = db.func.now()
             
@@ -64,6 +111,55 @@ def save_templates_as_default():
         
         print(f'✅ Pomyślnie zaktualizowano {updated_count} domyślnych szablonów!')
         print('🎉 Szablony zostały zapisane jako domyślne i będą przywracane przy resetowaniu.')
+
+
+def update_templates_with_styles():
+    """Aktualizuje wszystkie szablony w bazie danych, dodając style CSS"""
+    
+    app = create_app()
+    with app.app_context():
+        print('🎨 Aktualizowanie szablonów ze stylami CSS...')
+        
+        # Załaduj style CSS
+        css_content = load_css_styles()
+        if not css_content:
+            print('❌ Nie udało się załadować stylów CSS')
+            return
+        
+        print('✅ Załadowano style CSS')
+        
+        # Pobierz wszystkie szablony
+        templates = EmailTemplate.query.all()
+        
+        if not templates:
+            print('❌ Nie znaleziono szablonów do aktualizacji.')
+            return
+        
+        updated_count = 0
+        
+        for template in templates:
+            print(f'📝 Sprawdzam szablon: {template.name}')
+            
+            # Sprawdź czy szablon już ma style
+            if '<style>' in template.html_content:
+                print('   - Szablon już ma style, pomijam')
+                continue
+            
+            # Zastosuj style do szablonu HTML
+            styled_html_content = apply_styles_to_template(template.html_content, css_content)
+            
+            # Aktualizuj szablon w bazie danych
+            template.html_content = styled_html_content
+            template.updated_at = db.func.now()
+            
+            updated_count += 1
+            print('   - ✅ Dodano style do szablonu')
+        
+        # Zatwierdź zmiany
+        db.session.commit()
+        
+        print(f'✅ Pomyślnie zaktualizowano {updated_count} szablonów ze stylami!')
+        print('🎉 Wszystkie szablony mają teraz style CSS.')
 
 
 def restore_templates_from_backup(backup_file):
@@ -109,12 +205,24 @@ def restore_templates_from_backup(backup_file):
 if __name__ == '__main__':
     import sys
     
-    if len(sys.argv) > 1 and sys.argv[1] == 'restore':
-        if len(sys.argv) > 2:
-            restore_templates_from_backup(sys.argv[2])
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'restore':
+            if len(sys.argv) > 2:
+                restore_templates_from_backup(sys.argv[2])
+            else:
+                print('❌ Podaj ścieżkę do pliku backup.')
+                print('Użycie: python save_templates_as_default.py restore backup_file.json')
+        elif sys.argv[1] == 'update-styles':
+            update_templates_with_styles()
+        elif sys.argv[1] == 'save-defaults':
+            save_templates_as_default()
         else:
-            print('❌ Podaj ścieżkę do pliku backup.')
-            print('Użycie: python save_templates_as_default.py restore backup_file.json')
+            print('❌ Nieznana komenda.')
+            print('Dostępne komendy:')
+            print('  - python save_templates_as_default.py                    # Zapisuje szablony jako domyślne ze stylami')
+            print('  - python save_templates_as_default.py save-defaults     # Zapisuje szablony jako domyślne ze stylami')
+            print('  - python save_templates_as_default.py update-styles     # Aktualizuje szablony w bazie ze stylami')
+            print('  - python save_templates_as_default.py restore backup.json # Przywraca szablony z backup')
     else:
         save_templates_as_default()
 
