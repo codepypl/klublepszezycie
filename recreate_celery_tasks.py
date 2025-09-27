@@ -94,7 +94,6 @@ def recreate_scheduled_campaigns():
         
         # Find scheduled campaigns
         scheduled_campaigns = EmailCampaign.query.filter(
-            EmailCampaign.is_active == True,
             EmailCampaign.scheduled_at > now,
             EmailCampaign.status == 'scheduled'
         ).all()
