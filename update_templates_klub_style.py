@@ -58,8 +58,8 @@ def create_klub_template_content(template_name, css_styles):
             <p>W razie pytań skontaktuj się z nami: kontakt@klublepszezycie.pl</p>
             
             <div class="unsubscribe-links">
-                <a href="{{unsubscribe_url}}" target="_blank">Opuść klub</a> |
-                <a href="{{delete_account_url}}" target="_blank">Usuń konto</a>
+                <a href="{{{{unsubscribe_url}}}}" target="_blank">Opuść klub</a> |
+                <a href="{{{{delete_account_url}}}}" target="_blank">Usuń konto</a>
             </div>
         </div>
     </div>
