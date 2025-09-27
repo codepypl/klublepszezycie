@@ -1,3 +1,6 @@
+*.pid
+celerybeat-schedule*
+celerybeat-schedule-shm
 celerybeat-schedule-wal
 */.DS_Store
 # Byte-compiled / optimized / DLL files
