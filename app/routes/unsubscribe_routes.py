@@ -6,9 +6,9 @@ from app.services.unsubscribe_manager import unsubscribe_manager
 from app import db
 import logging
 
-unsubscribe_v2_bp = Blueprint('unsubscribe_v2', __name__)
+unsubscribe_bp = Blueprint('unsubscribe', __name__)
 
-@unsubscribe_v2_bp.route('/unsubscribe/<token>')
+@unsubscribe_bp.route('/unsubscribe/<token>')
 def unsubscribe(token):
     """Obsługuje wypisanie z klubu"""
     
@@ -44,14 +44,14 @@ def unsubscribe(token):
                          token=token,
                          user_email=user.email)
 
-@unsubscribe_v2_bp.route('/unsubscribe/confirm', methods=['POST'])
+@unsubscribe_bp.route('/unsubscribe/confirm', methods=['POST'])
 def confirm_unsubscribe():
     """Potwierdza wypisanie z klubu"""
     token = request.form.get('token')
     
     if not token:
         flash('Brak tokenu autoryzacji', 'error')
-        return redirect(url_for('unsubscribe_v2.unsubscribe', token=''))
+        return redirect(url_for('unsubscribe.unsubscribe', token=''))
     
     # Weryfikuj token ponownie
     is_valid, user_data = unsubscribe_manager.verify_token(token)
@@ -77,7 +77,7 @@ def confirm_unsubscribe():
                              error="Błąd wypisania",
                              message=message)
 
-@unsubscribe_v2_bp.route('/delete-account/<token>')
+@unsubscribe_bp.route('/delete-account/<token>')
 def delete_account(token):
     """Obsługuje usunięcie konta"""
     
@@ -107,7 +107,7 @@ def delete_account(token):
                          token=token,
                          user_email=user.email)
 
-@unsubscribe_v2_bp.route('/delete-account/confirm', methods=['POST'])
+@unsubscribe_bp.route('/delete-account/confirm', methods=['POST'])
 def confirm_delete_account():
     """Potwierdza usunięcie konta"""
     token = request.form.get('token')
@@ -115,7 +115,7 @@ def confirm_delete_account():
     
     if not token:
         flash('Brak tokenu autoryzacji', 'error')
-        return redirect(url_for('unsubscribe_v2.delete_account', token=''))
+        return redirect(url_for('unsubscribe.delete_account', token=''))
     
     if confirmation != 'DELETE':
         return render_template('unsubscribe/error.html',
@@ -148,7 +148,7 @@ def confirm_delete_account():
                              message=message)
 
 # API endpoints dla programistów/adminów
-@unsubscribe_v2_bp.route('/api/unsubscribe/<email>')
+@unsubscribe_bp.route('/api/unsubscribe/<email>')
 def api_unsubscribe(email):
     """API endpoint do wypisania użytkownika (dla testów/adminów)"""
     try:
@@ -168,7 +168,7 @@ def api_unsubscribe(email):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@unsubscribe_v2_bp.route('/api/delete-account/<email>')
+@unsubscribe_bp.route('/api/delete-account/<email>')
 def api_delete_account(email):
     """API endpoint do usunięcia konta użytkownika (dla testów/adminów)"""
     try:
@@ -188,7 +188,7 @@ def api_delete_account(email):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@unsubscribe_v2_bp.route('/api/generate-token/<email>/<action>')
+@unsubscribe_bp.route('/api/generate-token/<email>/<action>')
 def api_generate_token(email, action):
     """API endpoint do generowania tokenów (dla testów)"""
     try:

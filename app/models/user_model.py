@@ -86,7 +86,7 @@ class PasswordResetToken(db.Model):
     
     def is_expired(self):
         """Check if token is expired"""
-        return datetime.utcnow() > self.expires_at
+        return __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() > self.expires_at
     
     def is_valid(self):
         """Check if token is valid (not expired and not used)"""

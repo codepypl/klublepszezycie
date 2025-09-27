@@ -54,7 +54,7 @@ class SecurityMonitor:
                 'details': details,
                 'client_ip': client_ip,
                 'user_agent': user_agent[:200],  # Limit length
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'timestamp': __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now().strftime('%Y-%m-%d %H:%M:%S'),
                 'server_name': os.getenv('SERVER_NAME', 'klublepszezycie.pl')
             }
             

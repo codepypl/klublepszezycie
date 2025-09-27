@@ -273,7 +273,7 @@ class EmailAutomation:
     def archive_old_events(self, days_old=30):
         """Archiwizuje stare wydarzenia"""
         try:
-            cutoff_date = datetime.utcnow() - timedelta(days=days_old)
+            cutoff_date = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() - timedelta(days=days_old)
             
             old_events = EventSchedule.query.filter(
                 EventSchedule.event_date < cutoff_date,

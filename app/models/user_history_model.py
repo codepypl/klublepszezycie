@@ -52,7 +52,7 @@ class UserHistory(db.Model):
             event_id=event_id,
             registration_type='participation',
             was_club_member=was_club_member,
-            participation_date=datetime.utcnow(),
+            participation_date=__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now(),
             status='participated',
             notes=notes
         )
@@ -68,7 +68,7 @@ class UserHistory(db.Model):
             if notes:
                 history.notes = notes
             if status == 'participated':
-                history.participation_date = datetime.utcnow()
+                history.participation_date = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             return history
         return None
     

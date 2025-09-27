@@ -439,7 +439,7 @@ def email_logs_clear_old():
         from datetime import datetime, timedelta
         
         # Delete logs older than 30 days
-        cutoff_date = datetime.utcnow() - timedelta(days=30)
+        cutoff_date = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() - timedelta(days=30)
         deleted_count = EmailLog.query.filter(EmailLog.sent_at < cutoff_date).delete()
         
         db.session.commit()
@@ -791,7 +791,7 @@ def email_create_campaign():
             scheduled_at = datetime.fromisoformat(data['scheduled_at'].replace('Z', '+00:00'))
             
             # Sprawdź czy data jest w przyszłości
-            if scheduled_at <= datetime.utcnow():
+            if scheduled_at <= __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now():
                 return jsonify({'success': False, 'error': 'Data wysyłki musi być w przyszłości'}), 400
             
             # Kampania zostaje jako draft - będzie zaplanowana gdy admin kliknie "Wyślij"
@@ -989,7 +989,7 @@ def email_send_campaign(campaign_id):
         
         # Sprawdź logikę wysyłki
         from datetime import datetime
-        now = datetime.utcnow()
+        now = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
         
         # Jeśli kampania ma scheduled_at - zaplanuj ją
         if campaign.scheduled_at:
@@ -1046,7 +1046,7 @@ def email_send_campaign(campaign_id):
             campaign.total_recipients = total_emails
             campaign.sent_count = 0  # Zostanie zaktualizowane po wysłaniu
             campaign.failed_count = 0
-            campaign.updated_at = datetime.utcnow()
+            campaign.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             db.session.commit()
         
         if total_errors == 0:
@@ -1706,7 +1706,7 @@ def email_activate_campaign(campaign_id):
         
         # Aktywuj kampanię
         from datetime import datetime
-        now = datetime.utcnow()
+        now = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
         
         # Sprawdź czy kampania ma datę planowania
         if campaign.scheduled_at:

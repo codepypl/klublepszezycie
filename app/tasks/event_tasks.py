@@ -50,7 +50,7 @@ def cleanup_old_reminders_task(self, days_old=7):
         try:
             from app import db
             
-            cutoff_date = datetime.utcnow() - timedelta(days=days_old)
+            cutoff_date = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() - timedelta(days=days_old)
             
             # Usuń stare przypomnienia
             old_reminders = EmailReminder.query.filter(

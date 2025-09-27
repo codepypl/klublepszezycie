@@ -166,7 +166,7 @@ class MailgunAPIService:
                     
                     # Update email status
                     email.status = 'sent'
-                    email.sent_at = datetime.utcnow()
+                    email.sent_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
                     email.message_id = message_id
                     
                     # Log successful email
@@ -308,7 +308,7 @@ class MailgunAPIService:
                 subject=subject,
                 status=status,
                 template_id=template_id,
-                sent_at=datetime.utcnow(),
+                sent_at=__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now(),
                 error_message=error_message
             )
             

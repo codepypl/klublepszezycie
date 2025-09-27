@@ -266,7 +266,7 @@ class EmailService:
                 template_id=template_id,
                 campaign_id=campaign_id,
                 context=json.dumps(context) if context else None,
-                scheduled_at=scheduled_at or datetime.utcnow(),
+                scheduled_at=scheduled_at or __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now(),
                 status='pending',
                 duplicate_check_key=duplicate_check_key
             )
@@ -290,7 +290,7 @@ class EmailService:
             import json
             
             # Znajdź kampanie zaplanowane na teraz lub wcześniej
-            now = datetime.utcnow()
+            now = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             scheduled_campaigns = EmailCampaign.query.filter(
                 EmailCampaign.status == 'scheduled',
                 EmailCampaign.scheduled_at <= now
@@ -393,7 +393,7 @@ class EmailService:
                 )
                 
                 # Sprawdź czy nie jest za późno
-                if optimal_send_time < datetime.utcnow():
+                if optimal_send_time < __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now():
                     print(f"⚠️ Za późno na przypomnienie {hours_before}h przed wydarzeniem")
                     continue
                 
@@ -479,7 +479,7 @@ class EmailService:
                             html_content=html_content,
                             text_content=text_content,
                             campaign_id=campaign.id,
-                            scheduled_at=datetime.utcnow()
+                            scheduled_at=__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
                         )
                         
                         if not success:
@@ -509,7 +509,7 @@ class EmailService:
             # Pobierz emaile do wysłania
             queue_items = EmailQueue.query.filter(
                 EmailQueue.status == 'pending',
-                EmailQueue.scheduled_at <= datetime.utcnow()
+                EmailQueue.scheduled_at <= __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             ).limit(limit).all()
             
             for item in queue_items:
@@ -530,7 +530,7 @@ class EmailService:
                     
                     if success:
                         item.status = 'sent'
-                        item.sent_at = datetime.utcnow()
+                        item.sent_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
                         stats['success'] += 1
                         # Email już został zalogowany przez send_email
                     else:
@@ -598,11 +598,11 @@ class EmailService:
             # Ustaw status na podstawie statystyk
             if sent_emails + failed_emails >= total_queued and total_queued > 0:
                 campaign.status = 'completed'
-                campaign.sent_at = datetime.utcnow()
+                campaign.sent_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             elif sent_emails > 0 or failed_emails > 0:
                 campaign.status = 'sending'
             
-            campaign.updated_at = datetime.utcnow()
+            campaign.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             db.session.commit()
             
             return True
@@ -809,7 +809,7 @@ class EmailService:
                     
                     if success:
                         item.status = 'sent'
-                        item.sent_at = datetime.utcnow()
+                        item.sent_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
                         stats['success'] += 1
                     else:
                         item.status = 'failed'
@@ -875,7 +875,7 @@ class EmailService:
                 campaign_id=campaign_id,
                 recipient_data=context,
                 error_message=error_message,
-                sent_at=datetime.now() if status == 'sent' else None
+                sent_at=__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() if status == 'sent' else None
             )
             
             db.session.add(log_entry)

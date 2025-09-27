@@ -15,7 +15,7 @@ class SystemLog(db.Model):
     message = db.Column(db.Text, nullable=False)  # Detailed message
     details = db.Column(db.JSON, nullable=True)  # Additional details as JSON
     execution_time = db.Column(db.Float, nullable=True)  # Execution time in seconds
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime, default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now(), index=True)
     
     def __repr__(self):
         return f'<SystemLog {self.operation_type} - {self.status}>'

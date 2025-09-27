@@ -31,7 +31,7 @@ class EnhancedNotificationProcessor:
             self.logger.info("🔄 Starting enhanced email queue processing")
             
             # Get pending emails
-            now = datetime.utcnow()
+            now = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             pending_emails = EmailQueue.query.filter(
                 EmailQueue.status == 'pending',
                 EmailQueue.scheduled_at <= now
@@ -215,7 +215,7 @@ class EnhancedNotificationProcessor:
     def get_delivery_statistics(self, hours: int = 24) -> Dict[str, Any]:
         """Get delivery statistics for the last N hours"""
         try:
-            since = datetime.utcnow() - timedelta(hours=hours)
+            since = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() - timedelta(hours=hours)
             
             # Get email logs
             logs = EmailLog.query.filter(EmailLog.sent_at >= since).all()
@@ -264,7 +264,7 @@ class EnhancedNotificationProcessor:
             # Get recent emails to Gmail
             gmail_logs = EmailLog.query.filter(
                 EmailLog.email.like('%@gmail.com'),
-                EmailLog.sent_at >= datetime.utcnow() - timedelta(hours=24)
+                EmailLog.sent_at >= __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() - timedelta(hours=24)
             ).all()
             
             gmail_stats = {
@@ -282,7 +282,7 @@ class EnhancedNotificationProcessor:
             # Get recent Gmail emails
             recent_gmail = EmailLog.query.filter(
                 EmailLog.email.like('%@gmail.com'),
-                EmailLog.sent_at >= datetime.utcnow() - timedelta(hours=24)
+                EmailLog.sent_at >= __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() - timedelta(hours=24)
             ).order_by(EmailLog.sent_at.desc()).limit(5).all()
             
             gmail_stats['recent_gmail_emails'] = [
@@ -338,7 +338,7 @@ class EnhancedNotificationProcessor:
                     
                     if success:
                         item.status = 'sent'
-                        item.sent_at = datetime.utcnow()
+                        item.sent_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
                         stats['success'] += 1
                         self.logger.info(f"✅ Retry successful: {item.recipient_email}")
                     else:

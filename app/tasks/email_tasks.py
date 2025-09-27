@@ -239,7 +239,7 @@ def send_batch_emails_task(self, email_ids, batch_number=1, total_batches=1):
                     if success:
                         # Oznacz jako wysłany
                         email.status = 'sent'
-                        email.sent_at = datetime.utcnow()
+                        email.sent_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
                         sent_count += 1
                     else:
                         # Oznacz jako błąd
@@ -396,11 +396,11 @@ def test_email_sending_task(self, test_email='codeitpy@gmail.com', count=100, ba
                     <h2>Test Email #{i+1}</h2>
                     <p>To jest testowy email numer {i+1} z {count}.</p>
                     <p>Paczka: {((i // batch_size) + 1)}/{total_batches}</p>
-                    <p>Wysłano: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                    <p>Wysłano: {__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now().strftime('%Y-%m-%d %H:%M:%S')}</p>
                     <p>Celery Task ID: {self.request.id}</p>
                     """,
                     text_content=f"Test Email #{i+1} - To jest testowy email numer {i+1} z {count}.",
-                    scheduled_at=datetime.utcnow() + timedelta(seconds=i*2)  # Rozłóż w czasie
+                    scheduled_at=__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() + timedelta(seconds=i*2)  # Rozłóż w czasie
                 )
                 if email_id[0]:  # Jeśli email został dodany
                     created_emails.append(i+1)

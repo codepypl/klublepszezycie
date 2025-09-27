@@ -2,13 +2,13 @@
 Public routes
 """
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, send_from_directory
-from app.blueprints.public_controller import PublicController, generate_unsubscribe_token
+from app.blueprints.public_controller import PublicController
 from app.api.email_api import add_user_to_event_group
 from app.services.mailgun_service import EnhancedNotificationProcessor
 from app.utils.timezone_utils import get_local_now, convert_to_local
 from app.utils.blog_utils import generate_blog_link
 from app.utils.validation_utils import validate_email, validate_phone
-from app.utils.crypto_utils import encrypt_email
+# encrypt_email import removed - using new UnsubscribeManager system
 from app.models import db, EventSchedule, User, UserGroup
 import logging
 from datetime import datetime
@@ -259,7 +259,7 @@ def register():
                 'user_name': user.first_name,
                 'user_email': user.email,
                 'user_phone': user.phone or 'Nie podano',
-                'registration_date': datetime.now().strftime('%d.%m.%Y %H:%M'),
+                'registration_date': __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now().strftime('%d.%m.%Y %H:%M'),
                 'registration_source': 'Formularz CTA (sekcja Dołącz do klubu)'
             }
             
@@ -540,9 +540,8 @@ def register_event(event_id):
             # Send confirmation email
             email_processor = EnhancedNotificationProcessor()
             
-            # Generate unsubscribe and delete account URLs
-            unsubscribe_token = generate_unsubscribe_token(created_user.email, 'unsubscribe')
-            delete_token = generate_unsubscribe_token(created_user.email, 'delete_account')
+            # Generate unsubscribe and delete account URLs using new UnsubscribeManager
+            from app.services.unsubscribe_manager import unsubscribe_manager
             
             context = {
                 'user_name': created_user.first_name,
@@ -551,8 +550,8 @@ def register_event(event_id):
                 'event_time': event.event_date.strftime('%H:%M') if event.event_date else '',
                 'event_location': event.location or 'Online',
                 'event_description': event.description or '',
-                'unsubscribe_url': request.url_root + f'api/unsubscribe/{encrypt_email(created_user.email)}/{unsubscribe_token}',
-                'delete_account_url': request.url_root + f'api/delete-account/{encrypt_email(created_user.email)}/{delete_token}'
+                'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(created_user.email),
+                'delete_account_url': unsubscribe_manager.get_delete_account_url(created_user.email)
             }
             
             success, message = email_processor.send_template_email(
@@ -650,102 +649,8 @@ def terms():
                          footer_settings=footer_settings,
                          active_social_links=active_social_links)
 
-@public_bp.route('/api/unsubscribe/<email>/<token>')
-def unsubscribe_api(email, token):
-    """API endpoint for unsubscribe from newsletter"""
-    import logging
-    from flask import request
-    from datetime import datetime
-    from app.utils.crypto_utils import decrypt_email
-    
-    try:
-        # Decrypt email from URL parameter
-        decoded_email = decrypt_email(email)
-        if not decoded_email:
-            # Fallback: try URL decoding for backward compatibility
-            import urllib.parse
-            decoded_email = urllib.parse.unquote(email)
-        
-        # Log security event
-        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
-        user_agent = request.headers.get('User-Agent', 'unknown')
-        
-        # Log the attempt
-        logging.warning(f"SECURITY: Unsubscribe attempt - Email: {decoded_email}, IP: {client_ip}, User-Agent: {user_agent}, Token: {token[:16]}...")
-        
-        result = PublicController.unsubscribe_from_newsletter(decoded_email, token)
-        
-        # Check for suspicious activity
-        from app.utils.security_utils import security_monitor
-        security_monitor.check_suspicious_activity(decoded_email, 'unsubscribe', token, result)
-        
-        if result['success']:
-            logging.info(f"SUCCESS: Unsubscribe successful - Email: {decoded_email}, IP: {client_ip}")
-            return render_template('email/unsubscribe_success.html', 
-                                 message=result['message'])
-        else:
-            # Log failed attempt with more details
-            logging.error(f"SECURITY: Unsubscribe failed - Email: {decoded_email}, IP: {client_ip}, Error: {result['error']}")
-            return render_template('email/unsubscribe_error.html', 
-                                 error=result['error'],
-                                 error_code=result.get('error_code', 'UNKNOWN_ERROR'),
-                                 timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    except Exception as e:
-        # Log critical error
-        logging.critical(f"SECURITY: Unsubscribe critical error - Email: {decoded_email if 'decoded_email' in locals() else email}, IP: {client_ip if 'client_ip' in locals() else 'unknown'}, Exception: {str(e)}")
-        return render_template('email/unsubscribe_error.html', 
-                             error=f'Wystąpił błąd: {str(e)}',
-                             error_code='CRITICAL_ERROR',
-                             timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-
-@public_bp.route('/api/delete-account/<email>/<token>')
-def delete_account_api(email, token):
-    """API endpoint for delete account"""
-    import urllib.parse
-    import logging
-    from flask import request
-    from datetime import datetime
-    from app.utils.crypto_utils import decrypt_email
-    
-    try:
-        # Decrypt email from URL parameter
-        decoded_email = decrypt_email(email)
-        if not decoded_email:
-            # Fallback: try URL decoding for backward compatibility
-            import urllib.parse
-            decoded_email = urllib.parse.unquote(email)
-        
-        # Log security event
-        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
-        user_agent = request.headers.get('User-Agent', 'unknown')
-        
-        # Log the attempt
-        logging.warning(f"SECURITY: Delete account attempt - Email: {decoded_email}, IP: {client_ip}, User-Agent: {user_agent}, Token: {token[:16]}...")
-        
-        result = PublicController.delete_user_account(decoded_email, token)
-        
-        # Check for suspicious activity
-        from app.utils.security_utils import security_monitor
-        security_monitor.check_suspicious_activity(decoded_email, 'delete_account', token, result)
-        
-        if result['success']:
-            logging.info(f"SUCCESS: Account deletion successful - Email: {decoded_email}, IP: {client_ip}")
-            return render_template('email/delete_account_success.html', 
-                                 message=result['message'])
-        else:
-            # Log failed attempt with more details
-            logging.error(f"SECURITY: Delete account failed - Email: {decoded_email}, IP: {client_ip}, Error: {result['error']}")
-            return render_template('email/delete_account_error.html', 
-                                 error=result['error'],
-                                 error_code=result.get('error_code', 'UNKNOWN_ERROR'),
-                                 timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    except Exception as e:
-        # Log critical error
-        logging.critical(f"SECURITY: Delete account critical error - Email: {decoded_email if 'decoded_email' in locals() else email}, IP: {client_ip if 'client_ip' in locals() else 'unknown'}, Exception: {str(e)}")
-        return render_template('email/delete_account_error.html', 
-                             error=f'Wystąpił błąd: {str(e)}',
-                             error_code='CRITICAL_ERROR',
-                             timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+# NOTE: Unsubscribe and delete-account routes moved to unsubscribe_routes.py
+# These endpoints are now handled by the new UnsubscribeManager system
 
 def register_for_event(user, event_id):
     """Register existing user for a specific event"""
@@ -844,15 +749,8 @@ def register_for_event(user, event_id):
         try:
             email_processor = EnhancedNotificationProcessor()
             
-            # Generate unsubscribe token
-            unsubscribe_token = generate_unsubscribe_token(user.email, 'unsubscribe')
-            
-            # Get base URL safely
-            try:
-                from flask import request
-                base_url = request.url_root if request else 'http://localhost:5000/'
-            except:
-                base_url = 'http://localhost:5000/'
+            # Generate unsubscribe URL using new UnsubscribeManager
+            from app.services.unsubscribe_manager import unsubscribe_manager
             
             context = {
                 'user_name': user.first_name,
@@ -861,7 +759,7 @@ def register_for_event(user, event_id):
                 'event_time': event.event_date.strftime('%H:%M') if event.event_date else 'Nie podano',
                 'event_location': event.location or 'Nie podano',
                 'event_description': event.description or '',
-                'unsubscribe_url': base_url + f'api/unsubscribe/{encrypt_email(user.email)}/{unsubscribe_token}'
+                'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(user.email)
             }
             
             success, message = email_processor.send_template_email(

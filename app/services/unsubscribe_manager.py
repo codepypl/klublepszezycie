@@ -35,7 +35,7 @@ class UnsubscribeManager:
             encrypted_email = self._encrypt_email(email)
             
             # Utwórz payload
-            expires_at = datetime.utcnow() + timedelta(days=self.token_expiry_days)
+            expires_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() + timedelta(days=self.token_expiry_days)
             payload = {
                 'email': encrypted_email,
                 'action': action,
@@ -100,7 +100,7 @@ class UnsubscribeManager:
             
             # Sprawdź czy token nie wygasł
             expires_at = datetime.fromisoformat(payload['expires_at'])
-            if datetime.utcnow() > expires_at:
+            if __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() > expires_at:
                 print(f"❌ Token expired at {expires_at}")
                 return False, None
             
@@ -142,7 +142,7 @@ class UnsubscribeManager:
         token = self.generate_token(email, 'delete_account')
         if not token:
             return None
-        return f"{self.base_url}/remove-account/{token}"
+        return f"{self.base_url}/delete-account/{token}"
     
     def process_unsubscribe(self, user: User) -> Tuple[bool, str]:
         """Przetwarza wypisanie użytkownika z klubu"""

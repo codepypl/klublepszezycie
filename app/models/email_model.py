@@ -289,7 +289,7 @@ class EmailLog(db.Model):
     subject = db.Column(db.String(200), nullable=False)
     status = db.Column(db.String(20), nullable=False)  # sent, failed, bounced, opened, clicked
     error_message = db.Column(db.Text)
-    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sent_at = db.Column(db.DateTime, default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     campaign_id = db.Column(db.Integer, db.ForeignKey('email_campaigns.id'), nullable=True)
     recipient_data = db.Column(db.Text)  # JSON string of recipient information
     

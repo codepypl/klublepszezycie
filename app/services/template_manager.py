@@ -42,7 +42,7 @@ class TemplateManager:
                     existing.description = default_template.description
                     existing.template_type = default_template.template_type
                     existing.is_default = True
-                    existing.updated_at = datetime.utcnow()
+                    existing.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
                     updated_count += 1
                     logging.info(f"🔄 Zaktualizowano szablon: {default_template.name}")
                 else:
@@ -134,7 +134,7 @@ class TemplateManager:
             default_template.variables = template.variables
             default_template.description = template.description
             default_template.is_active = template.is_active
-            default_template.updated_at = datetime.utcnow()
+            default_template.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             
             db.session.commit()
             return True, f"Szablon '{template.name}' oznaczono jako domyślny"
@@ -211,7 +211,7 @@ class TemplateManager:
                     else:
                         setattr(default_template, key, value)
             
-            default_template.updated_at = datetime.utcnow()
+            default_template.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             db.session.commit()
             
             return True, f"Szablon '{name}' zaktualizowano"

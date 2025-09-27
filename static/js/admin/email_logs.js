@@ -135,7 +135,7 @@ function displayLogs(logs) {
             <td>${log.email}</td>
             <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">${log.subject}</td>
             <td><span class="admin-badge admin-badge-${statusClass}">${statusText}</span></td>
-            <td>${log.sent_at ? new Date(log.sent_at + 'Z').toLocaleString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'}) : '-'}</td>
+            <td>${log.sent_at ? new Date(log.sent_at).toLocaleString('pl-PL', {hour12: false}) : '-'}</td>
             <td title="${log.error_message || ''}">${errorMessage}</td>
             <td>${log.template_name || '-'}</td>
             <td>${log.campaign_name || '-'}</td>
@@ -232,7 +232,7 @@ function displayLogDetails(log) {
                     <tr><td><strong>Email:</strong></td><td>${log.email}</td></tr>
                     <tr><td><strong>Temat:</strong></td><td>${log.subject}</td></tr>
                     <tr><td><strong>Status:</strong></td><td><span class="admin-badge admin-badge-${log.status === 'sent' ? 'success' : log.status === 'failed' ? 'danger' : 'warning'}">${log.status}</span></td></tr>
-                    <tr><td><strong>Wysłano:</strong></td><td>${log.sent_at ? new Date(log.sent_at + 'Z').toLocaleString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'}) : '-'}</td></tr>
+                    <tr><td><strong>Wysłano:</strong></td><td>${log.sent_at ? new Date(log.sent_at).toLocaleString('pl-PL', {hour12: false}) : '-'}</td></tr>
                 </table>
             </div>
             <div class="col-md-6">

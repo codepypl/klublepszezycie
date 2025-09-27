@@ -53,7 +53,7 @@ class Stats(db.Model):
         """Increment stat value"""
         stat = cls.get_or_create(stat_type, related_id, related_type, date_period)
         stat.stat_value += amount
-        stat.updated_at = datetime.utcnow()
+        stat.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
         db.session.commit()
         return stat
     
@@ -62,7 +62,7 @@ class Stats(db.Model):
         """Decrement stat value"""
         stat = cls.get_or_create(stat_type, related_id, related_type, date_period)
         stat.stat_value = max(0, stat.stat_value - amount)
-        stat.updated_at = datetime.utcnow()
+        stat.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
         db.session.commit()
         return stat
     
@@ -71,7 +71,7 @@ class Stats(db.Model):
         """Set stat value"""
         stat = cls.get_or_create(stat_type, related_id, related_type, date_period)
         stat.stat_value = value
-        stat.updated_at = datetime.utcnow()
+        stat.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
         db.session.commit()
         return stat
     

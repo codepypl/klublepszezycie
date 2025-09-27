@@ -74,7 +74,7 @@ class FooterController:
             footer_settings.company_name = company_name
             footer_settings.show_privacy_policy = show_privacy_policy
             footer_settings.show_terms = show_terms
-            footer_settings.updated_at = datetime.utcnow()
+            footer_settings.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             
             db.session.commit()
             
