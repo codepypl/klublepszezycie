@@ -34,9 +34,8 @@ def send_test_email(template_name, recipient_email, test_data=None):
                 'event_url': 'https://zoom.us/j/123456789',
                 'request_id': 'REQ-12345',
                 'session_id': 'SESS-67890',
-                'severity': 'Medium',
-                'unsubscribe_url': f'{base_url}/unsubscribe',
-                'delete_account_url': f'{base_url}/delete-account'
+                'severity': 'Medium'
+                # unsubscribe_url i delete_account_url są generowane automatycznie przez EmailTemplateEnricher
             }
         
         print(f'📊 Dane testowe:')

@@ -23,7 +23,7 @@ class UnsubscribeManager:
         
         # Ensure URL has protocol
         if self.base_url and not self.base_url.startswith(('http://', 'https://')):
-            self.base_url = f'https://{self.base_url}'
+            self.base_url = f'http://{self.base_url}'
     
     def generate_token(self, email: str, action: str) -> str:
         """

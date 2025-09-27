@@ -54,6 +54,21 @@ class MailgunAPIService:
             if not self.use_api:
                 return self._fallback_to_smtp(to_email, subject, html_content, text_content, template_id)
             
+            # Enrich template with unsubscribe/delete links
+            try:
+                from app.services.email_template_enricher import EmailTemplateEnricher
+                enricher = EmailTemplateEnricher()
+                enriched = enricher.enrich_template_content(
+                    html_content=html_content or "",
+                    text_content=text_content or "",
+                    user_email=to_email
+                )
+                html_content = enriched.get('html_content') or html_content or ""
+                text_content = enriched.get('text_content') or text_content or ""
+            except Exception as e:
+                self.logger.warning(f"⚠️ Failed to enrich template: {e}")
+                # Continue with original content
+            
             # Prepare email data with proper encoding
             from_header = f"{self.from_name} <{self.from_email}>"
             email_data = {
@@ -135,17 +150,35 @@ class MailgunAPIService:
         
         for email in emails:
             try:
+                # Enrich template with unsubscribe/delete links
+                html_content = email.html_content
+                text_content = email.text_content
+                
+                try:
+                    from app.services.email_template_enricher import EmailTemplateEnricher
+                    enricher = EmailTemplateEnricher()
+                    enriched = enricher.enrich_template_content(
+                        html_content=html_content or "",
+                        text_content=text_content or "",
+                        user_email=email.recipient_email
+                    )
+                    html_content = enriched.get('html_content') or html_content or ""
+                    text_content = enriched.get('text_content') or text_content or ""
+                except Exception as e:
+                    self.logger.warning(f"⚠️ Failed to enrich template for {email.recipient_email}: {e}")
+                    # Continue with original content
+                
                 # Prepare email data with proper encoding
                 from_header = f"{self.from_name} <{self.from_email}>"
                 email_data = {
                     "from": from_header,
                     "to": [email.recipient_email],
                     "subject": email.subject,
-                    "html": email.html_content
+                    "html": html_content
                 }
                 
-                if email.text_content:
-                    email_data["text"] = email.text_content
+                if text_content:
+                    email_data["text"] = text_content
                 
                 # Add tracking parameters
                 email_data["o:tracking"] = "yes"

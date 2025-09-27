@@ -67,63 +67,23 @@ class EmailService:
                     html_content = self._replace_variables(html_content or "", self._current_context)
                     text_content = self._replace_variables(text_content or "", self._current_context)
 
-                # Wzbogacenie treści o linki wypisu i usunięcia konta
-                try:
-                    enricher = EmailTemplateEnricher()
-                    enriched = enricher.enrich_template_content(
-                        html_content=html_content or "",
-                        text_content=text_content or "",
-                        user_email=to_email
-                    )
-                    html_content = enriched.get('html_content') or html_content or ""
-                    text_content = enriched.get('text_content') or text_content or ""
-                except Exception as e:
-                    print(f"❌ Błąd wzbogacania treści: {e}")
-                    # Jeśli nie udało się wzbogacić, wysyłamy oryginalną treść
-                    pass
+                # Wzbogacenie treści o linki wypisu i usunięcia konta (tylko jeśli nie zostało już wzbogacone)
+                if '{{unsubscribe_url}}' in html_content or '{{delete_account_url}}' in html_content:
+                    try:
+                        enricher = EmailTemplateEnricher()
+                        enriched = enricher.enrich_template_content(
+                            html_content=html_content or "",
+                            text_content=text_content or "",
+                            user_email=to_email
+                        )
+                        html_content = enriched.get('html_content') or html_content or ""
+                        text_content = enriched.get('text_content') or text_content or ""
+                    except Exception as e:
+                        print(f"❌ Błąd wzbogacania treści: {e}")
+                        # Jeśli nie udało się wzbogacić, wysyłamy oryginalną treść
+                        pass
                 
-                # Zastąp placeholdery rzeczywistymi URL-ami z tokenami (tylko jeśli jeszcze istnieją)
-                try:
-                    from app.services.unsubscribe_manager import unsubscribe_manager
-                    
-                    # Sprawdź czy użytkownik jest członkiem klubu
-                    from app.models.user_model import User
-                    user = User.query.filter_by(email=to_email).first()
-                    is_club_member = user.club_member if user else False
-                    
-                    # Generuj URL-e z tokenami
-                    # Link unsubscribe tylko dla członków klubu
-                    unsubscribe_url = unsubscribe_manager.get_unsubscribe_url(to_email) if is_club_member else None
-                    # Link delete zawsze dla wszystkich użytkowników
-                    delete_account_url = unsubscribe_manager.get_delete_account_url(to_email)
-                    
-                    # Zastąp placeholdery w HTML tylko jeśli jeszcze istnieją (oba formaty: ze spacjami i bez)
-                    if unsubscribe_url and '{{unsubscribe_url}}' in html_content:
-                        html_content = html_content.replace('{{unsubscribe_url}}', unsubscribe_url)
-                    if unsubscribe_url and '{{ unsubscribe_url }}' in html_content:
-                        html_content = html_content.replace('{{ unsubscribe_url }}', unsubscribe_url)
-                    
-                    if delete_account_url and '{{delete_account_url}}' in html_content:
-                        html_content = html_content.replace('{{delete_account_url}}', delete_account_url)
-                    if delete_account_url and '{{ delete_account_url }}' in html_content:
-                        html_content = html_content.replace('{{ delete_account_url }}', delete_account_url)
-                    
-                    # Zastąp placeholdery w tekście tylko jeśli jeszcze istnieją (oba formaty)
-                    if unsubscribe_url and text_content:
-                        if '{{unsubscribe_url}}' in text_content:
-                            text_content = text_content.replace('{{unsubscribe_url}}', unsubscribe_url)
-                        if '{{ unsubscribe_url }}' in text_content:
-                            text_content = text_content.replace('{{ unsubscribe_url }}', unsubscribe_url)
-                    
-                    if delete_account_url and text_content:
-                        if '{{delete_account_url}}' in text_content:
-                            text_content = text_content.replace('{{delete_account_url}}', delete_account_url)
-                        if '{{ delete_account_url }}' in text_content:
-                            text_content = text_content.replace('{{ delete_account_url }}', delete_account_url)
-                        
-                except Exception as e:
-                    print(f"❌ Błąd zastępowania placeholderów: {e}")
-                    pass
+                # Placeholdery unsubscribe/delete są już obsługiwane przez EmailTemplateEnricher
                 
                 # Tworzenie wiadomości
                 msg = MIMEMultipart('alternative')
@@ -193,10 +153,26 @@ class EmailService:
             if to_name:
                 context['recipient_name'] = to_name
             
-            # Zastąpienie zmiennych w szablonie
+            # Najpierw wzbogać szablon o linki unsubscribe/delete
+            try:
+                from app.services.email_template_enricher import EmailTemplateEnricher
+                enricher = EmailTemplateEnricher()
+                enriched = enricher.enrich_template_content(
+                    html_content=template.html_content or "",
+                    text_content=template.text_content or "",
+                    user_email=to_email
+                )
+                enriched_html = enriched.get('html_content') or template.html_content or ""
+                enriched_text = enriched.get('text_content') or template.text_content or ""
+            except Exception as e:
+                print(f"❌ Błąd wzbogacania szablonu: {e}")
+                enriched_html = template.html_content or ""
+                enriched_text = template.text_content or ""
+            
+            # Następnie zastąp zmienne w wzbogaconym szablonie
             subject = self._replace_variables(template.subject, context)
-            html_content = self._replace_variables(template.html_content, context)
-            text_content = self._replace_variables(template.text_content or '', context)
+            html_content = self._replace_variables(enriched_html, context)
+            text_content = self._replace_variables(enriched_text, context)
             
             if use_queue:
                 # Dodaj do kolejki
