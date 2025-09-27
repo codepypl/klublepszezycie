@@ -281,7 +281,7 @@ class BlogController:
             )
             
             if status == 'published':
-                post.published_at = datetime.utcnow()
+                post.published_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             
             db.session.add(post)
             db.session.flush()
@@ -339,7 +339,7 @@ class BlogController:
                 post.slug = new_slug
             
             if status == 'published' and not post.published_at:
-                post.published_at = datetime.utcnow()
+                post.published_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             
             # Update categories
             if category_ids:

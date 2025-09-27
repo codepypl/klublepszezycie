@@ -2,7 +2,7 @@
 Timezone utility functions
 """
 import pytz
-from datetime import datetime
+from datetime import datetime, timezone
 
 def get_local_datetime():
     """Get current datetime in local timezone for database defaults"""
@@ -12,10 +12,10 @@ def get_local_datetime():
             tz = get_local_timezone()
             return datetime.now(tz)
         else:
-            return datetime.utcnow()
+            return datetime.now(timezone.utc)
     except:
         # Fallback to local time if config fails
-        return datetime.now()
+        return datetime.now(get_local_timezone())
 
 def get_local_timezone():
     """Get the configured timezone from config"""
@@ -35,10 +35,10 @@ def get_local_now():
             tz = get_local_timezone()
             return datetime.now(tz)
         else:
-            return datetime.utcnow()
+            return datetime.now(timezone.utc)
     except:
         # Fallback to local time if config fails
-        return datetime.now()
+        return datetime.now(get_local_timezone())
 
 def convert_to_local(dt):
     """Convert UTC datetime to local timezone"""

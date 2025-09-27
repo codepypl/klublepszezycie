@@ -206,7 +206,7 @@ def api_blog_admin_posts():
                 post.published_at = data['published_at']
             elif data.get('status') == 'published' and not post.published_at:
                 from datetime import datetime
-                post.published_at = datetime.utcnow()
+                post.published_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             
             # Add categories
             if data.get('categories') and len(data['categories']) > 0:
@@ -390,7 +390,7 @@ def api_blog_admin_post(post_id):
                 # Set published_at when status changes to published
                 if data['status'] == 'published' and not post.published_at:
                     from datetime import datetime
-                    post.published_at = datetime.utcnow()
+                    post.published_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             if 'allow_comments' in data:
                 post.allow_comments = data['allow_comments']
             # Update categories
@@ -920,7 +920,7 @@ def api_blog_comments():
                     if comment:
                         comment.is_approved = True
                         comment.moderated_by = current_user.id
-                        comment.moderated_at = datetime.utcnow()
+                        comment.moderated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
                         db.session.commit()
                 
                 return jsonify({
@@ -1013,7 +1013,7 @@ def api_blog_comment_approve(comment_id):
     try:
         comment.is_approved = True
         comment.moderated_by = current_user.id
-        comment.moderated_at = datetime.utcnow()
+        comment.moderated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
         comment.moderation_reason = None  # Clear any previous reason
         db.session.commit()
         
@@ -1042,7 +1042,7 @@ def api_blog_comment_reject(comment_id):
         
         comment.is_approved = False
         comment.moderated_by = current_user.id
-        comment.moderated_at = datetime.utcnow()
+        comment.moderated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
         comment.moderation_reason = reason
         db.session.commit()
         
@@ -1069,7 +1069,7 @@ def api_blog_comment_spam(comment_id):
         comment.is_spam = True
         comment.is_approved = False
         comment.moderated_by = current_user.id
-        comment.moderated_at = datetime.utcnow()
+        comment.moderated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
         comment.moderation_reason = reason
         db.session.commit()
         

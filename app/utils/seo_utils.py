@@ -320,7 +320,7 @@ class SEOManager:
                 for key, value in seo_data.items():
                     if hasattr(seo, key):
                         setattr(seo, key, value)
-                seo.updated_at = datetime.utcnow()
+                seo.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             else:
                 # Utwórz nowe
                 seo = SEOSettings(

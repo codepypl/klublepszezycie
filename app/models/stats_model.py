@@ -338,7 +338,7 @@ class Stats(db.Model):
             (User.role == 'admin') | (User.account_type == 'admin')
         ).count()
         
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        thirty_days_ago = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() - timedelta(days=30)
         new_users_30_days = User.query.filter(User.created_at >= thirty_days_ago).count()
         
         cls.set_value('total_users', total_users)

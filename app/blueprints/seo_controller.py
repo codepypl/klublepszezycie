@@ -121,7 +121,7 @@ class SEOController:
             setting.og_title = og_title
             setting.og_description = og_description
             setting.og_image = og_image
-            setting.updated_at = datetime.utcnow()
+            setting.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             
             db.session.commit()
             

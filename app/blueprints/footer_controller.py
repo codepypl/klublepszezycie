@@ -148,7 +148,7 @@ class FooterController:
             
             document.title = title
             document.content = content
-            document.updated_at = datetime.utcnow()
+            document.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             
             db.session.commit()
             

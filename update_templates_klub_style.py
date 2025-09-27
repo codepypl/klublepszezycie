@@ -233,7 +233,7 @@ def update_templates_with_klub_style():
                 
                 # Aktualizuj szablon
                 template.html_content = new_html_content
-                template.updated_at = datetime.utcnow()
+                template.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
                 
                 updated_count += 1
             
@@ -251,7 +251,7 @@ def update_templates_with_klub_style():
 def main():
     """Główna funkcja"""
     print("🚀 Rozpoczynam aktualizację szablonów e-mail...")
-    print(f"📅 Czas: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"📅 Czas: {__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("-" * 50)
     
     success, message = update_templates_with_klub_style()

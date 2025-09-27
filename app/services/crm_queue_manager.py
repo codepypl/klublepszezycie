@@ -67,7 +67,7 @@ class QueueManager:
             ankieter_id=ankieter_id,
             priority=priority,
             queue_status='pending',
-            call_date=datetime.utcnow()
+            call_date=__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
         )
         
         db.session.add(call_entry)
@@ -98,7 +98,7 @@ class QueueManager:
                 priority='low',
                 queue_status='pending',
                 queue_type='new',
-                call_date=datetime.utcnow()
+                call_date=__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             )
             
             db.session.add(call_entry)
@@ -118,7 +118,7 @@ class QueueManager:
             scheduled_date=callback_date,
             queue_status='pending',
             queue_type='callback',
-            call_date=datetime.utcnow()
+            call_date=__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
         )
         
         db.session.add(call_entry)

@@ -85,7 +85,7 @@ class FileImportService:
             
             # Update import file status
             import_file.import_status = 'completed'
-            import_file.processed_at = datetime.utcnow()
+            import_file.processed_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             
             db.session.commit()
             

@@ -28,7 +28,7 @@ class AuthController:
             if user and check_password_hash(user.password_hash, password):
                 if user.is_active:
                     # Update last login time
-                    user.last_login = datetime.utcnow()
+                    user.last_login = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
                     db.session.commit()
                     
                     return {
@@ -222,7 +222,7 @@ class AuthController:
             
             # Generate reset token
             token = secrets.token_urlsafe(32)
-            expires_at = datetime.utcnow() + timedelta(hours=1)
+            expires_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() + timedelta(hours=1)
             
             # Delete existing tokens for this user
             PasswordResetToken.query.filter_by(user_id=user.id).delete()
@@ -275,7 +275,7 @@ class AuthController:
             # Find valid token
             reset_token = PasswordResetToken.query.filter_by(
                 token=token
-            ).filter(PasswordResetToken.expires_at > datetime.utcnow()).first()
+            ).filter(PasswordResetToken.expires_at > __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()).first()
             
             if not reset_token:
                 return {
