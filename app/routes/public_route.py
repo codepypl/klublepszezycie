@@ -33,6 +33,23 @@ def index():
             (EventSchedule.end_date.is_(None)) | (EventSchedule.end_date >= now_naive)
         ).order_by(EventSchedule.event_date.asc()).limit(6).all()
         
+        # Auto-archive any ended events that are still active
+        for event in upcoming_events:
+            if event.is_ended():
+                success, message = event.archive()
+                if success:
+                    print(f"🔄 Auto-archived ended event on homepage: {event.title}")
+        
+        # Refresh the query after potential archiving
+        upcoming_events = EventSchedule.query.filter(
+            EventSchedule.is_active == True,
+            EventSchedule.is_published == True,
+            EventSchedule.is_archived == False  # Exclude archived events
+        ).filter(
+            # Include events that haven't ended yet (either no end_date or end_date is in future)
+            (EventSchedule.end_date.is_(None)) | (EventSchedule.end_date >= now_naive)
+        ).order_by(EventSchedule.event_date.asc()).limit(6).all()
+        
         # Convert event dates to local timezone for display
         for event in upcoming_events:
             if event.event_date:
@@ -307,6 +324,16 @@ def api_event_status():
         # Check if event is still open for registration
         now = get_local_now()
         now_naive = now.replace(tzinfo=None)
+        
+        # Check if event has ended and auto-archive if needed
+        if event.is_ended() and event.is_active and event.is_published:
+            # Event has ended but is still active - auto-archive it
+            success, message = event.archive()
+            if success:
+                print(f"🔄 Auto-archived ended event: {event.title}")
+                # Refresh event data after archiving
+                from app import db
+                db.session.refresh(event)
         
         # Registration is open only if event hasn't started yet
         is_registration_open = event.event_date and event.event_date > now_naive

@@ -69,3 +69,26 @@ def cleanup_old_reminders_task(self, days_old=7):
         except Exception as exc:
             logger.error(f"❌ Błąd czyszczenia przypomnień: {exc}")
             return {'success': False, 'error': str(exc)}
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def archive_ended_events_task(self):
+    """
+    Archiwizuje zakończone wydarzenia i czyści grupy (wywoływane przez beat scheduler)
+    """
+    with get_app_context():
+        try:
+            logger.info("📦 Przetwarzam archiwizację zakończonych wydarzeń")
+            
+            email_automation = EmailAutomation()
+            success, message = email_automation.archive_ended_events()
+            
+            if success:
+                logger.info(f"✅ {message}")
+                return {'success': True, 'message': message}
+            else:
+                logger.error(f"❌ {message}")
+                return {'success': False, 'message': message}
+                
+        except Exception as exc:
+            logger.error(f"❌ Błąd archiwizacji wydarzeń: {exc}")
+            raise self.retry(exc=exc, countdown=60)

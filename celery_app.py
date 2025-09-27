@@ -106,6 +106,10 @@ def make_celery(app=None):
             'task': 'app.tasks.event_tasks.process_event_reminders_task',
             'schedule': 300.0,  # Co 5 minut
         },
+        'archive-ended-events': {
+            'task': 'app.tasks.event_tasks.archive_ended_events_task',
+            'schedule': 600.0,  # Co 10 minut
+        },
     }
     
     return celery

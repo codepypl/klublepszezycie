@@ -292,3 +292,40 @@ class EmailAutomation:
         except Exception as e:
             db.session.rollback()
             return False, f"Błąd archiwizowania wydarzeń: {str(e)}"
+    
+    def archive_ended_events(self):
+        """Archiwizuje zakończone wydarzenia i czyści grupy"""
+        try:
+            from app.models import EventSchedule
+            
+            # Znajdź zakończone wydarzenia
+            ended_events = []
+            all_events = EventSchedule.query.filter(
+                EventSchedule.is_active == True,
+                EventSchedule.is_published == True
+            ).all()
+            
+            for event in all_events:
+                if event.is_ended():
+                    ended_events.append(event)
+            
+            archived_count = 0
+            for event in ended_events:
+                # Użyj metody archive() z modelu EventSchedule
+                success, message = event.archive()
+                if success:
+                    archived_count += 1
+                    print(f"✅ Zarchiwizowano: {event.title}")
+                else:
+                    print(f"❌ Błąd archiwizacji {event.title}: {message}")
+            
+            # Loguj operację
+            from app.models.system_logs_model import SystemLog
+            SystemLog.log_archive_events(archived_count, True, f"Zarchiwizowano {archived_count} wydarzeń")
+            
+            return True, f"Zarchiwizowano {archived_count} zakończonych wydarzeń"
+                
+        except Exception as e:
+            from app.models.system_logs_model import SystemLog
+            SystemLog.log_archive_events(0, False, f"Błąd archiwizacji: {str(e)}")
+            return False, f"Błąd archiwizacji wydarzeń: {str(e)}"
