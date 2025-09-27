@@ -17,13 +17,13 @@ class UnsubscribeManager:
     """Nowy manager dla unsubscribe i delete account z tokenami zawierającymi email"""
     
     def __init__(self):
-        self.secret_key = "klublepszezycie_unsubscribe_v2_2024"  # In production, use env variable
+        self.secret_key = 'klublepszezycie_unsubscribe_v2_2024'  # Fixed secret key
         self.token_expiry_days = 30
-        self.base_url = os.getenv('BASE_URL', 'http://localhost:5000')  # In production, use env variable
+        self.base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
         
         # Ensure URL has protocol
         if self.base_url and not self.base_url.startswith(('http://', 'https://')):
-            self.base_url = f'http://{self.base_url}'
+            self.base_url = f'https://{self.base_url}'
     
     def generate_token(self, email: str, action: str) -> str:
         """

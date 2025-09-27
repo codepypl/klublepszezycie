@@ -47,6 +47,39 @@ def apply_styles_to_template(html_content, css_content):
     return styled_content
 
 
+def ensure_reminder_template_variables(html_content, template_name):
+    """Sprawdza i dodaje brakujące zmienne do szablonów przypomnień"""
+    
+    # Sprawdź czy to szablon przypomnienia
+    if not template_name.startswith('event_reminder_'):
+        return html_content
+    
+    # Wymagane zmienne dla szablonów przypomnień
+    required_variables = [
+        '{{event_url}}',
+        '{{user_name}}',
+        '{{event_title}}',
+        '{{event_date}}',
+        '{{event_time}}',
+        '{{event_location}}',
+        '{{unsubscribe_url}}',
+        '{{delete_account_url}}'
+    ]
+    
+    missing_variables = []
+    for variable in required_variables:
+        if variable not in html_content:
+            missing_variables.append(variable)
+    
+    if missing_variables:
+        print(f'   - ⚠️ Brakujące zmienne: {", ".join(missing_variables)}')
+        # Nie modyfikujemy automatycznie - tylko informujemy
+        return html_content
+    else:
+        print(f'   - ✅ Wszystkie wymagane zmienne są obecne')
+        return html_content
+
+
 def save_templates_as_default():
     """Zapisuje wszystkie aktualne szablony jako domyślne"""
     
@@ -91,6 +124,9 @@ def save_templates_as_default():
             
             # Zastosuj style do szablonu HTML
             styled_html_content = apply_styles_to_template(template.html_content, css_content)
+            
+            # Sprawdź zmienne w szablonach przypomnień
+            styled_html_content = ensure_reminder_template_variables(styled_html_content, template.name)
             
             default_template.subject = template.subject
             default_template.html_content = styled_html_content
@@ -147,6 +183,9 @@ def update_templates_with_styles():
             
             # Zastosuj style do szablonu HTML
             styled_html_content = apply_styles_to_template(template.html_content, css_content)
+            
+            # Sprawdź zmienne w szablonach przypomnień
+            styled_html_content = ensure_reminder_template_variables(styled_html_content, template.name)
             
             # Aktualizuj szablon w bazie danych
             template.html_content = styled_html_content

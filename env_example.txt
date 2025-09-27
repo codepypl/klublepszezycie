@@ -32,3 +32,6 @@ USE_LOCAL_TIME=true
 # Group Synchronization
 AUTO_GROUP_SYNC=false
 
+# Base URL for the application
+BASE_URL=https://klublepszezycie.pl
+
