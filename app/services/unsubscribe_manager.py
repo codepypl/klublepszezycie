@@ -142,7 +142,7 @@ class UnsubscribeManager:
         token = self.generate_token(email, 'delete_account')
         if not token:
             return None
-        return f"{self.base_url}/delete-account/{token}"
+        return f"{self.base_url}/remove-account/{token}"
     
     def process_unsubscribe(self, user: User) -> Tuple[bool, str]:
         """Przetwarza wypisanie użytkownika z klubu"""

@@ -19,6 +19,12 @@ def send_test_email(template_name, recipient_email, test_data=None):
         
         # Domyślne dane testowe
         if not test_data:
+            # Pobierz BASE_URL z .env
+            import os
+            from dotenv import load_dotenv
+            load_dotenv()
+            base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
+            
             test_data = {
                 'user_name': 'Test User',
                 'event_title': 'Test Event',
@@ -29,8 +35,8 @@ def send_test_email(template_name, recipient_email, test_data=None):
                 'request_id': 'REQ-12345',
                 'session_id': 'SESS-67890',
                 'severity': 'Medium',
-                'unsubscribe_url': 'https://example.com/unsubscribe',
-                'delete_account_url': 'https://example.com/delete-account'
+                'unsubscribe_url': f'{base_url}/unsubscribe',
+                'delete_account_url': f'{base_url}/delete-account'
             }
         
         print(f'📊 Dane testowe:')

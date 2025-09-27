@@ -27,7 +27,7 @@ class EmailService:
         self.use_tls = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
         self.use_ssl = os.getenv('MAIL_USE_SSL', 'false').lower() == 'true'
 
-    def send_email(self, to_email: str, subject: str, html_content: str, text_content: str = None, template_id: int = None, use_queue: bool = True) -> Tuple[bool, str]:
+    def send_email(self, to_email: str, subject: str, html_content: str, text_content: str = None, template_id: int = None, use_queue: bool = True, context: Dict = None) -> Tuple[bool, str]:
         """
         Wysyła pojedynczy email
         
@@ -38,11 +38,15 @@ class EmailService:
             text_content: Treść tekstowa (opcjonalna)
             template_id: ID szablonu (opcjonalne)
             use_queue: Czy dodać do kolejki (domyślnie True)
+            context: Słownik ze zmiennymi do zastąpienia w treści
             
         Returns:
             Tuple[bool, str]: (sukces, komunikat)
         """
         try:
+            # Ustaw context dla zastępowania zmiennych
+            self._current_context = context or {}
+            
             if use_queue:
                 # Dodaj do kolejki zamiast wysyłać bezpośrednio
                 return self.add_to_queue(
@@ -57,6 +61,11 @@ class EmailService:
                 # Czyszczenie danych wejściowych
                 to_email = unidecode(to_email).strip()
                 subject = subject.strip()  # Nie usuwaj polskich znaków z tematu
+
+                # Zastąp zmienne w treści (jeśli są przekazane w context)
+                if self._current_context:
+                    html_content = self._replace_variables(html_content or "", self._current_context)
+                    text_content = self._replace_variables(text_content or "", self._current_context)
 
                 # Wzbogacenie treści o linki wypisu i usunięcia konta
                 try:
@@ -73,7 +82,7 @@ class EmailService:
                     # Jeśli nie udało się wzbogacić, wysyłamy oryginalną treść
                     pass
                 
-                # Zastąp placeholdery rzeczywistymi URL-ami z tokenami
+                # Zastąp placeholdery rzeczywistymi URL-ami z tokenami (tylko jeśli jeszcze istnieją)
                 try:
                     from app.services.unsubscribe_manager import unsubscribe_manager
                     
@@ -88,30 +97,29 @@ class EmailService:
                     # Link delete zawsze dla wszystkich użytkowników
                     delete_account_url = unsubscribe_manager.get_delete_account_url(to_email)
                     
-                    # Zastąp placeholdery w HTML (oba formaty: ze spacjami i bez)
-                    if unsubscribe_url:
+                    # Zastąp placeholdery w HTML tylko jeśli jeszcze istnieją (oba formaty: ze spacjami i bez)
+                    if unsubscribe_url and '{{unsubscribe_url}}' in html_content:
                         html_content = html_content.replace('{{unsubscribe_url}}', unsubscribe_url)
+                    if unsubscribe_url and '{{ unsubscribe_url }}' in html_content:
                         html_content = html_content.replace('{{ unsubscribe_url }}', unsubscribe_url)
-                    else:
-                        # Usuń link unsubscribe jeśli użytkownik nie jest członkiem klubu (oba formaty)
-                        html_content = html_content.replace('<a href="{{unsubscribe_url}}" target="_blank">Wypisz się z klubu</a> | ', '')
-                        html_content = html_content.replace(' | <a href="{{unsubscribe_url}}" target="_blank">Wypisz się z klubu</a>', '')
-                        html_content = html_content.replace('<a href="{{unsubscribe_url}}" target="_blank">Wypisz się z klubu</a>', '')
-                        html_content = html_content.replace('<a href="{{ unsubscribe_url }}" target="_blank">Wypisz się z klubu</a> | ', '')
-                        html_content = html_content.replace(' | <a href="{{ unsubscribe_url }}" target="_blank">Wypisz się z klubu</a>', '')
-                        html_content = html_content.replace('<a href="{{ unsubscribe_url }}" target="_blank">Wypisz się z klubu</a>', '')
                     
-                    if delete_account_url:
+                    if delete_account_url and '{{delete_account_url}}' in html_content:
                         html_content = html_content.replace('{{delete_account_url}}', delete_account_url)
+                    if delete_account_url and '{{ delete_account_url }}' in html_content:
                         html_content = html_content.replace('{{ delete_account_url }}', delete_account_url)
                     
-                    # Zastąp placeholdery w tekście (oba formaty)
-                    if unsubscribe_url:
-                        text_content = text_content.replace('{{unsubscribe_url}}', unsubscribe_url)
-                        text_content = text_content.replace('{{ unsubscribe_url }}', unsubscribe_url)
-                    if delete_account_url:
-                        text_content = text_content.replace('{{delete_account_url}}', delete_account_url)
-                        text_content = text_content.replace('{{ delete_account_url }}', delete_account_url)
+                    # Zastąp placeholdery w tekście tylko jeśli jeszcze istnieją (oba formaty)
+                    if unsubscribe_url and text_content:
+                        if '{{unsubscribe_url}}' in text_content:
+                            text_content = text_content.replace('{{unsubscribe_url}}', unsubscribe_url)
+                        if '{{ unsubscribe_url }}' in text_content:
+                            text_content = text_content.replace('{{ unsubscribe_url }}', unsubscribe_url)
+                    
+                    if delete_account_url and text_content:
+                        if '{{delete_account_url}}' in text_content:
+                            text_content = text_content.replace('{{delete_account_url}}', delete_account_url)
+                        if '{{ delete_account_url }}' in text_content:
+                            text_content = text_content.replace('{{ delete_account_url }}', delete_account_url)
                         
                 except Exception as e:
                     print(f"❌ Błąd zastępowania placeholderów: {e}")
