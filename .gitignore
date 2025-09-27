@@ -1,3 +1,4 @@
+celerybeat-schedule-wal
 */.DS_Store
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -130,6 +131,8 @@ __pypackages__/
 
 # Celery stuff
 celerybeat-schedule
+celerybeat-schedule-shm
+celerybeat-schedule-wal
 celerybeat.pid
 
 # SageMath parsed files
