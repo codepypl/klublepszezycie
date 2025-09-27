@@ -25,11 +25,11 @@ class CeleryMonitorService:
             # Sprawdź połączenie z Celery z timeout
             inspect = celery.control.inspect(timeout=5)
             
-            # Pobierz informacje o workerach z timeout
-            stats = inspect.stats(timeout=5)
-            active = inspect.active(timeout=5)
-            scheduled = inspect.scheduled(timeout=5)
-            reserved = inspect.reserved(timeout=5)
+            # Pobierz informacje o workerach
+            stats = inspect.stats()
+            active = inspect.active()
+            scheduled = inspect.scheduled()
+            reserved = inspect.reserved()
             
             # Policz zadania
             total_scheduled = 0
@@ -104,7 +104,7 @@ class CeleryMonitorService:
             if task_type in ['all', 'active']:
                 # Pobierz aktywne zadania z timeout
                 inspect = celery.control.inspect(timeout=5)
-                active_tasks = inspect.active(timeout=5)
+                active_tasks = inspect.active()
                 
                 if active_tasks:
                     for worker, worker_tasks in active_tasks.items():
@@ -198,7 +198,7 @@ class CeleryMonitorService:
             
             # Sprawdź w aktywnych zadaniach z timeout
             inspect = celery.control.inspect(timeout=5)
-            active_tasks = inspect.active(timeout=5)
+            active_tasks = inspect.active()
             
             if active_tasks:
                 for worker, worker_tasks in active_tasks.items():
