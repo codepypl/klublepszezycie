@@ -246,13 +246,12 @@ document.addEventListener('DOMContentLoaded', function() {
     refreshData();
 });
 
-// Odświeżanie danych
+// Odświeżanie danych z retry
 function refreshData() {
     showLoading();
     
-    // Pobierz status Celery
-    fetch('/admin/api/celery/status')
-        .then(response => response.json())
+    // Pobierz status Celery z retry
+    fetchWithRetry('/admin/api/celery/status')
         .then(data => {
             updateCeleryStatus(data);
         })
@@ -261,8 +260,26 @@ function refreshData() {
             updateCeleryStatus({success: false, error: 'Błąd połączenia'});
         });
     
-    // Pobierz zadania
-    loadTasks();
+    // Pobierz zadania z retry
+    loadTasksWithRetry();
+}
+
+// Fetch z retry
+function fetchWithRetry(url, maxRetries = 3) {
+    return fetch(url)
+        .then(response => {
+            if (!response.ok) throw new Error('Network error');
+            return response.json();
+        })
+        .catch(error => {
+            if (maxRetries > 0) {
+                console.log(`Retry ${4-maxRetries} for ${url}`);
+                return new Promise(resolve => 
+                    setTimeout(() => resolve(fetchWithRetry(url, maxRetries - 1)), 1000)
+                );
+            }
+            throw error;
+        });
 }
 
 // Aktualizacja statusu Celery
@@ -325,8 +342,8 @@ function updateCeleryStatus(data) {
     }
 }
 
-// Ładowanie zadań
-function loadTasks() {
+// Ładowanie zadań z retry
+function loadTasksWithRetry() {
     const taskType = document.getElementById('taskTypeFilter').value;
     const eventId = document.getElementById('eventIdFilter').value;
     const limit = document.getElementById('limitFilter').value;
@@ -336,8 +353,7 @@ function loadTasks() {
         url += `&event_id=${eventId}`;
     }
     
-    fetch(url)
-        .then(response => response.json())
+    fetchWithRetry(url)
         .then(data => {
             displayTasks(data);
             hideLoading();
@@ -347,6 +363,11 @@ function loadTasks() {
             displayTasks({success: false, error: 'Błąd połączenia', tasks: []});
             hideLoading();
         });
+}
+
+// Ładowanie zadań (bez retry dla kompatybilności)
+function loadTasks() {
+    loadTasksWithRetry();
 }
 
 // Wyświetlanie zadań
@@ -462,8 +483,8 @@ function startAutoRefresh() {
         clearInterval(autoRefreshInterval);
     }
     
-    autoRefreshInterval = setInterval(refreshData, 10000); // Co 10 sekund
-    alert('Auto-odświeżanie włączone (co 10 sekund)');
+    autoRefreshInterval = setInterval(refreshData, 60000); // Co 60 sekund
+    alert('Auto-odświeżanie włączone (co 60 sekund)');
 }
 
 function stopAutoRefresh() {

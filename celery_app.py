@@ -41,6 +41,15 @@ def make_celery(app=None):
         task_compression='gzip',
         result_compression='gzip',
         result_expires=3600,  # 1 godzina
+        # Ulepszone ustawienia połączenia
+        broker_connection_retry_on_startup=True,
+        broker_connection_retry=True,
+        broker_connection_max_retries=10,
+        result_backend_connection_retry=True,
+        result_backend_connection_retry_on_startup=True,
+        # Timeouty dla operacji
+        broker_transport_options={'visibility_timeout': 3600},
+        result_backend_transport_options={'master_name': 'mymaster'},
         # Optymalizacje dla bardzo małej ilości RAM (50MB wolnego)
         worker_max_memory_per_child=50000,  # 50MB per worker - bardziej agresywne
         worker_max_tasks_per_child=5,  # Restart worker po 5 zadaniach - częściej
