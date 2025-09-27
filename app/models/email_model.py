@@ -6,7 +6,7 @@ from datetime import datetime
 from . import db
 
 class EmailTemplate(db.Model):
-    """Email templates"""
+    """Email templates with versioning support"""
     __tablename__ = 'email_templates'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -22,8 +22,177 @@ class EmailTemplate(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Versioning fields
+    version = db.Column(db.Integer, default=1)
+    parent_template_id = db.Column(db.Integer, db.ForeignKey('email_templates.id'), nullable=True)
+    is_edited_copy = db.Column(db.Boolean, default=False)
+    original_template_name = db.Column(db.String(100), nullable=True)
+    edited_from_default = db.Column(db.Boolean, default=False)
+    
+    # Relationships
+    parent_template = db.relationship('EmailTemplate', remote_side=[id], backref='child_versions')
+    
     def __repr__(self):
-        return f'<EmailTemplate {self.name}>'
+        return f'<EmailTemplate {self.name} v{self.version}>'
+    
+    def create_version(self, user_changes=None):
+        """Create a new version of this template"""
+        new_version = EmailTemplate(
+            name=self.name,
+            subject=self.subject,
+            html_content=self.html_content,
+            text_content=self.text_content,
+            template_type=self.template_type,
+            variables=self.variables,
+            description=self.description,
+            is_active=self.is_active,
+            is_default=False,  # New versions are never default by default
+            parent_template_id=self.id,
+            is_edited_copy=True,
+            original_template_name=self.original_template_name or self.name,
+            edited_from_default=self.is_default,
+            version=self.get_next_version_number()
+        )
+        
+        # Apply user changes if provided
+        if user_changes:
+            for key, value in user_changes.items():
+                if hasattr(new_version, key):
+                    setattr(new_version, key, value)
+        
+        db.session.add(new_version)
+        db.session.commit()
+        return new_version
+    
+    def get_next_version_number(self):
+        """Get the next version number for this template"""
+        max_version = db.session.query(db.func.max(EmailTemplate.version))\
+            .filter_by(name=self.name)\
+            .scalar()
+        return (max_version or 0) + 1
+    
+    def get_all_versions(self):
+        """Get all versions of this template"""
+        return EmailTemplate.query.filter_by(name=self.name)\
+            .order_by(EmailTemplate.version.desc()).all()
+    
+    def get_latest_version(self):
+        """Get the latest version of this template"""
+        return EmailTemplate.query.filter_by(name=self.name)\
+            .order_by(EmailTemplate.version.desc()).first()
+    
+    def restore_to_version(self, version_number):
+        """Restore this template to a specific version"""
+        target_version = EmailTemplate.query.filter_by(
+            name=self.name, 
+            version=version_number
+        ).first()
+        
+        if not target_version:
+            return False, f"Version {version_number} not found"
+        
+        # Copy content from target version
+        self.subject = target_version.subject
+        self.html_content = target_version.html_content
+        self.text_content = target_version.text_content
+        self.template_type = target_version.template_type
+        self.variables = target_version.variables
+        self.description = target_version.description
+        
+        db.session.commit()
+        return True, f"Restored to version {version_number}"
+    
+    def make_default(self):
+        """Make this template the default template"""
+        if not self.original_template_name:
+            return False, "Cannot make template default - no original template name"
+        
+        # Update the default template
+        default_template = DefaultEmailTemplate.query.filter_by(
+            name=self.original_template_name
+        ).first()
+        
+        if default_template:
+            default_template.subject = self.subject
+            default_template.html_content = self.html_content
+            default_template.text_content = self.text_content
+            default_template.template_type = self.template_type
+            default_template.variables = self.variables
+            default_template.description = self.description
+            default_template.updated_at = datetime.utcnow()
+        
+        # Mark this as default
+        self.is_default = True
+        db.session.commit()
+        
+        return True, f"Template '{self.original_template_name}' updated as default"
+    
+    @classmethod
+    def create_from_default(cls, template_name):
+        """Create an edited copy from a default template"""
+        default_template = DefaultEmailTemplate.query.filter_by(name=template_name).first()
+        
+        if not default_template:
+            return None, f"Default template '{template_name}' not found"
+        
+        # Create new template as edited copy
+        new_template = cls(
+            name=f"{template_name}_edited_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            subject=default_template.subject,
+            html_content=default_template.html_content,
+            text_content=default_template.text_content,
+            template_type=default_template.template_type,
+            variables=default_template.variables,
+            description=default_template.description,
+            is_active=True,
+            is_default=False,
+            is_edited_copy=True,
+            original_template_name=template_name,
+            edited_from_default=True,
+            version=1
+        )
+        
+        db.session.add(new_template)
+        db.session.commit()
+        
+        return new_template, f"Created edited copy of '{template_name}'"
+    
+    @classmethod
+    def get_active_template(cls, template_name):
+        """Get the active (non-default) template for a given name"""
+        return cls.query.filter_by(
+            name=template_name,
+            is_default=False,
+            is_active=True
+        ).first()
+    
+    @classmethod
+    def get_default_or_active(cls, template_name):
+        """Get default template or active edited version"""
+        # First try to get active edited version
+        active_template = cls.get_active_template(template_name)
+        if active_template:
+            return active_template
+        
+        # If no active version, get from default templates
+        default_template = DefaultEmailTemplate.query.filter_by(name=template_name).first()
+        
+        if default_template:
+            # Create a temporary template object for compatibility
+            temp_template = cls(
+                name=template_name,
+                subject=default_template.subject,
+                html_content=default_template.html_content,
+                text_content=default_template.text_content,
+                template_type=default_template.template_type,
+                variables=default_template.variables,
+                description=default_template.description,
+                is_default=True,
+                is_active=True
+            )
+            return temp_template
+        
+        return None
 
 class DefaultEmailTemplate(db.Model):
     """Default email templates stored in database"""
