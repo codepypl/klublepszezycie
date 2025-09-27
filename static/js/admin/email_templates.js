@@ -524,8 +524,117 @@ function loadVariablesDisplay(variablesJson) {
     }
 }
 
-// Load default variables
+// Load default variables from all templates
 function loadDefaultVariables() {
+    const container = document.getElementById('variablesContainer');
+    
+    // Pobierz wszystkie zmienne ze wszystkich szablonów
+    fetch('/api/email/templates?per_page=100')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Zbierz wszystkie unikalne zmienne ze wszystkich szablonów
+                const allVariables = {};
+                
+                data.templates.forEach(template => {
+                    if (template.variables) {
+                        try {
+                            const variables = typeof template.variables === 'string' 
+                                ? JSON.parse(template.variables) 
+                                : template.variables;
+                            
+                            Object.entries(variables).forEach(([variable, description]) => {
+                                if (!allVariables[variable]) {
+                                    allVariables[variable] = description;
+                                }
+                            });
+                        } catch (e) {
+                            console.error('Error parsing variables for template:', template.name, e);
+                        }
+                    }
+                });
+                
+                // Dodaj domyślne zmienne, które mogą nie być w żadnym szablonie
+                const defaultVariables = {
+                    'user_name': 'Imię użytkownika',
+                    'user_email': 'Email użytkownika',
+                    'temporary_password': 'Hasło tymczasowe',
+                    'login_url': 'Link do logowania',
+                    'unsubscribe_url': 'Link do wypisania się',
+                    'delete_account_url': 'Link do usunięcia konta',
+                    'change_date': 'Data zmiany hasła',
+                    'post_title': 'Tytuł artykułu',
+                    'post_url': 'Link do artykułu',
+                    'comment_author': 'Autor komentarza',
+                    'comment_email': 'Email autora komentarza',
+                    'comment_content': 'Treść komentarza',
+                    'comment_date': 'Data komentarza',
+                    'comment_ip': 'Adres IP autora',
+                    'comment_browser': 'Przeglądarka autora',
+                    'moderation_url': 'Link do panelu moderacji',
+                    'event_title': 'Tytuł wydarzenia',
+                    'event_date': 'Data wydarzenia',
+                    'event_time': 'Godzina wydarzenia',
+                    'event_location': 'Lokalizacja wydarzenia',
+                    'event_url': 'Link do wydarzenia',
+                    'club_name': 'Nazwa klubu',
+                    'base_url': 'URL strony głównej'
+                };
+                
+                // Połącz zmienne z szablonów z domyślnymi
+                Object.entries(defaultVariables).forEach(([variable, description]) => {
+                    if (!allVariables[variable]) {
+                        allVariables[variable] = description;
+                    }
+                });
+                
+                const existingVariables = getCurrentVariables();
+                const availableVariables = Object.entries(allVariables).filter(([variable, description]) => {
+                    return !existingVariables.includes(variable);
+                });
+                
+                if (availableVariables.length > 0) {
+                    const defaultSection = document.createElement('div');
+                    defaultSection.className = 'mt-3';
+                    defaultSection.innerHTML = '<h6 class="text-success">Dostępne zmienne do dodania:</h6>';
+                    
+                    availableVariables.forEach(([variable, description]) => {
+                        const variableElement = document.createElement('div');
+                        variableElement.className = 'd-flex justify-content-between align-items-center p-2 border-bottom';
+                        variableElement.innerHTML = `
+                            <div>
+                                <code class="text-success cursor-pointer" onclick="addVariable('${variable}', '${description}')">{{${variable}}}</code>
+                                <small class="text-muted ms-2">${description}</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-success" onclick="addVariable('${variable}', '${description}')" title="Dodaj zmienną">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        `;
+                        defaultSection.appendChild(variableElement);
+                    });
+                    
+                    container.appendChild(defaultSection);
+                } else {
+                    const noMoreSection = document.createElement('div');
+                    noMoreSection.className = 'mt-3 text-muted';
+                    noMoreSection.innerHTML = '<small>Wszystkie dostępne zmienne zostały już dodane do szablonu.</small>';
+                    container.appendChild(noMoreSection);
+                }
+            } else {
+                console.error('Error loading templates for variables:', data.error);
+                // Fallback do hardkodowanych zmiennych
+                loadDefaultVariablesFallback();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading templates for variables:', error);
+            // Fallback do hardkodowanych zmiennych
+            loadDefaultVariablesFallback();
+        });
+}
+
+// Fallback function with hardcoded variables
+function loadDefaultVariablesFallback() {
     const container = document.getElementById('variablesContainer');
     const defaultVariables = {
         'user_name': 'Imię użytkownika',
@@ -548,6 +657,7 @@ function loadDefaultVariables() {
         'event_date': 'Data wydarzenia',
         'event_time': 'Godzina wydarzenia',
         'event_location': 'Lokalizacja wydarzenia',
+        'event_url': 'Link do wydarzenia',
         'club_name': 'Nazwa klubu',
         'base_url': 'URL strony głównej'
     };
