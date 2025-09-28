@@ -74,21 +74,39 @@ def cleanup_old_reminders_task(self, days_old=7):
 def archive_ended_events_task(self):
     """
     Archiwizuje zakończone wydarzenia i czyści grupy (wywoływane przez beat scheduler)
+    Improved version with better logging and error handling
     """
     with get_app_context():
         try:
-            logger.info("📦 Przetwarzam archiwizację zakończonych wydarzeń")
+            logger.info("📦 === ROZPOCZYNAM AUTOMATYCZNĄ ARCHIWIZACJĘ WYDARZEŃ ===")
+            
+            from app.services.email_automation import EmailAutomation
+            from app.models.events_model import EventSchedule
+            
+            # First, let's see what events we have
+            total_events = EventSchedule.query.filter_by(is_active=True, is_published=True).count()
+            logger.info(f"📊 Znaleziono {total_events} aktywnych wydarzeń do sprawdzenia")
             
             email_automation = EmailAutomation()
             success, message = email_automation.archive_ended_events()
             
             if success:
+                logger.info(f"✅ === ARCHIWIZACJA ZAKOŃCZONA SUKCESEM ===")
                 logger.info(f"✅ {message}")
-                return {'success': True, 'message': message}
+                
+                # Log additional statistics
+                archived_events = EventSchedule.query.filter_by(is_archived=True).count()
+                active_events = EventSchedule.query.filter_by(is_active=True, is_published=True).count()
+                logger.info(f"📊 Statystyki: {archived_events} zarchiwizowanych, {active_events} aktywnych wydarzeń")
+                
+                return {'success': True, 'message': message, 'archived_count': archived_events}
             else:
+                logger.error(f"❌ === ARCHIWIZACJA ZAKOŃCZONA BŁĘDEM ===")
                 logger.error(f"❌ {message}")
                 return {'success': False, 'message': message}
                 
         except Exception as exc:
+            logger.error(f"❌ === KRYTYCZNY BŁĄD ARCHIWIZACJI ===")
             logger.error(f"❌ Błąd archiwizacji wydarzeń: {exc}")
+            logger.error(f"❌ Stack trace: {str(exc)}")
             raise self.retry(exc=exc, countdown=60)

@@ -302,38 +302,68 @@ class EmailAutomation:
             return False, f"Błąd archiwizowania wydarzeń: {str(e)}"
     
     def archive_ended_events(self):
-        """Archiwizuje zakończone wydarzenia i czyści grupy"""
+        """Archiwizuje zakończone wydarzenia i czyści grupy - improved version"""
         try:
             from app.models import EventSchedule
+            from app.models.system_logs_model import SystemLog
             
-            # Znajdź zakończone wydarzenia
-            ended_events = []
+            print(f"🔍 === SPRAWDZAM WYDARZENIA DO ARCHIWIZACJI ===")
+            
+            # Znajdź wszystkie aktywne wydarzenia
             all_events = EventSchedule.query.filter(
                 EventSchedule.is_active == True,
-                EventSchedule.is_published == True
+                EventSchedule.is_published == True,
+                EventSchedule.is_archived == False
             ).all()
             
+            print(f"📊 Znaleziono {len(all_events)} aktywnych wydarzeń do sprawdzenia")
+            
+            # Sprawdź które są zakończone
+            ended_events = []
             for event in all_events:
                 if event.is_ended():
                     ended_events.append(event)
+                    print(f"⏰ Wydarzenie '{event.title}' (ID: {event.id}) jest zakończone")
+                else:
+                    print(f"🟢 Wydarzenie '{event.title}' (ID: {event.id}) jest jeszcze aktywne")
             
+            print(f"📦 Do archiwizacji: {len(ended_events)} wydarzeń")
+            
+            if not ended_events:
+                message = "Brak wydarzeń do archiwizacji"
+                print(f"ℹ️ {message}")
+                SystemLog.log_archive_events(0, True, message)
+                return True, message
+            
+            # Archiwizuj każde zakończone wydarzenie
             archived_count = 0
+            failed_events = []
+            
             for event in ended_events:
-                # Użyj metody archive() z modelu EventSchedule
+                print(f"🏁 Archiwizuję: {event.title} (ID: {event.id})")
                 success, message = event.archive()
+                
                 if success:
                     archived_count += 1
                     print(f"✅ Zarchiwizowano: {event.title}")
                 else:
+                    failed_events.append(event.title)
                     print(f"❌ Błąd archiwizacji {event.title}: {message}")
             
-            # Loguj operację
-            from app.models.system_logs_model import SystemLog
-            SystemLog.log_archive_events(archived_count, True, f"Zarchiwizowano {archived_count} wydarzeń")
-            
-            return True, f"Zarchiwizowano {archived_count} zakończonych wydarzeń"
+            # Loguj wyniki
+            if failed_events:
+                error_msg = f"Zarchiwizowano {archived_count} z {len(ended_events)} wydarzeń. Błędy: {', '.join(failed_events)}"
+                SystemLog.log_archive_events(archived_count, False, error_msg)
+                return False, error_msg
+            else:
+                success_msg = f"Zarchiwizowano {archived_count} zakończonych wydarzeń"
+                SystemLog.log_archive_events(archived_count, True, success_msg)
+                print(f"✅ === ARCHIWIZACJA ZAKOŃCZONA SUKCESEM ===")
+                return True, success_msg
                 
         except Exception as e:
+            error_msg = f"Błąd archiwizacji wydarzeń: {str(e)}"
+            print(f"❌ {error_msg}")
             from app.models.system_logs_model import SystemLog
-            SystemLog.log_archive_events(0, False, f"Błąd archiwizacji: {str(e)}")
-            return False, f"Błąd archiwizacji wydarzeń: {str(e)}"
+            SystemLog.log_archive_events(0, False, error_msg)
+            return False, error_msg

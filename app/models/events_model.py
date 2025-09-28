@@ -52,47 +52,90 @@ class EventSchedule(db.Model):
         return max(0, self.max_participants - self.current_participants)
     
     def is_ended(self):
-        """Check if event has ended"""
+        """Check if event has ended - improved with debugging"""
+        from app.utils.timezone_utils import get_local_now
+        
+        now = get_local_now().replace(tzinfo=None)
+        
         if not self.end_date:
             # If no end_date, consider event ended if event_date has passed
-            from app.utils.timezone_utils import get_local_now
-            now = get_local_now().replace(tzinfo=None)
-            return now > self.event_date
+            is_ended = now > self.event_date
+            print(f"🔍 Event {self.id} ({self.title}): No end_date, checking event_date {self.event_date} vs now {now} = {is_ended}")
+            return is_ended
         else:
-            from app.utils.timezone_utils import get_local_now
-            now = get_local_now().replace(tzinfo=None)
-            return now > self.end_date
+            # If has end_date, check if current time is past end_date
+            is_ended = now > self.end_date
+            print(f"🔍 Event {self.id} ({self.title}): Checking end_date {self.end_date} vs now {now} = {is_ended}")
+            return is_ended
     
     def archive(self):
-        """Archive the event and clean up related groups"""
+        """Archive the event and clean up related groups - improved version"""
         try:
-            # Archive the event - unarchive and unpublish
+            print(f"🏁 Rozpoczynam archiwizację wydarzenia: {self.title} (ID: {self.id})")
+            
+            # Step 1: Remove all users from event groups first
+            from app.services.group_manager import GroupManager
+            from app.models.user_groups_model import UserGroup, UserGroupMember
+            
+            group_manager = GroupManager()
+            
+            # Find all event-based groups for this event
+            event_groups = UserGroup.query.filter_by(
+                event_id=self.id,
+                group_type='event_based'
+            ).all()
+            
+            total_members_removed = 0
+            for group in event_groups:
+                print(f"📦 Przetwarzam grupę: {group.name} (ID: {group.id})")
+                
+                # Count members before removal
+                members_before = group.members.count()
+                print(f"   👥 Członków przed usunięciem: {members_before}")
+                
+                # Remove all members from this group
+                removed_count = UserGroupMember.query.filter_by(
+                    group_id=group.id,
+                    is_active=True
+                ).delete(synchronize_session=False)
+                
+                total_members_removed += removed_count
+                print(f"   ✅ Usunięto {removed_count} członków z grupy")
+                
+                # Update member count
+                group.member_count = 0
+            
+            print(f"👥 Łącznie usunięto {total_members_removed} członków ze wszystkich grup wydarzenia")
+            
+            # Step 2: Delete the event groups
+            groups_deleted = 0
+            for group in event_groups:
+                print(f"🗑️ Usuwam grupę: {group.name} (ID: {group.id})")
+                db.session.delete(group)
+                groups_deleted += 1
+            
+            print(f"🗑️ Usunięto {groups_deleted} grup wydarzenia")
+            
+            # Step 3: Archive the event itself
             self.is_archived = True
             self.is_active = False
             self.is_published = False  # Unpublish archived events
             
-            # Clean up related groups
-            from app.services.group_manager import GroupManager
-            group_manager = GroupManager()
+            print(f"📦 Wydarzenie zarchiwizowane: is_archived={self.is_archived}, is_active={self.is_active}, is_published={self.is_published}")
             
-            # Remove all users from event groups
-            success, message = group_manager.cleanup_event_groups(self.id)
-            if success:
-                print(f"✅ Wyczyściono grupy dla wydarzenia: {self.title}")
-            else:
-                print(f"❌ Błąd czyszczenia grup dla wydarzenia {self.title}: {message}")
+            # Commit all changes
+            db.session.commit()
             
-            # Delete event groups
-            success, message = group_manager.delete_event_groups(self.id)
-            if success:
-                print(f"✅ Usunięto grupy dla wydarzenia: {self.title}")
-            else:
-                print(f"❌ Błąd usuwania grup dla wydarzenia {self.title}: {message}")
+            message = f"Wydarzenie '{self.title}' zostało zarchiwizowane. Usunięto {total_members_removed} członków z {groups_deleted} grup."
+            print(f"✅ {message}")
             
-            return True, "Wydarzenie zostało zarchiwizowane i odopublikowane"
+            return True, message
             
         except Exception as e:
-            return False, f"Błąd archiwizacji wydarzenia: {str(e)}"
+            db.session.rollback()
+            error_msg = f"Błąd archiwizacji wydarzenia '{self.title}': {str(e)}"
+            print(f"❌ {error_msg}")
+            return False, error_msg
     
     def __repr__(self):
         return f'<EventSchedule {self.title}>'
