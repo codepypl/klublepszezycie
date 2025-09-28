@@ -19,11 +19,12 @@ def make_celery(app=None):
     celery = Celery(
         app_name,
         broker=broker_url,
-        backend=backend_url
+        backend=backend_url,
+        include=[
+            'app.tasks.email_tasks',
+            'app.tasks.event_tasks'
+        ]
     )
-    
-    # Automatycznie załaduj zadania
-    celery.autodiscover_tasks(['app.tasks'])
     
     # Konfiguracja - optymalizowana dla 1GB RAM
     celery.conf.update(
