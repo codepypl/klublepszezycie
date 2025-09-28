@@ -19,12 +19,11 @@ def make_celery(app=None):
     celery = Celery(
         app_name,
         broker=broker_url,
-        backend=backend_url,
-        include=[
-            'app.tasks.email_tasks',
-            'app.tasks.event_tasks'
-        ]
+        backend=backend_url
     )
+    
+    # Automatycznie załaduj zadania
+    celery.autodiscover_tasks(['app.tasks'])
     
     # Konfiguracja - optymalizowana dla 1GB RAM
     celery.conf.update(
@@ -111,14 +110,6 @@ def make_celery(app=None):
             'schedule': 600.0,  # Co 10 minut
         },
     }
-    
-    # Wymuś rejestrację zadań po utworzeniu harmonogramu
-    try:
-        import app.tasks.email_tasks
-        import app.tasks.event_tasks
-        print("✅ Zadania Celery zaimportowane pomyślnie")
-    except ImportError as e:
-        print(f"❌ Błąd importu zadań Celery: {e}")
     
     return celery
 
