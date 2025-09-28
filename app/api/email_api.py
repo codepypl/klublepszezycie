@@ -391,6 +391,14 @@ def email_update_template(template_id):
             return jsonify({'success': False, 'error': 'Szablon nie istnieje'}), 404
         data = request.get_json()
         
+        # Check if trying to change name of default template
+        if template.is_default and data.get('name') != template.name:
+            return jsonify({'success': False, 'error': 'Nazwa szablonu domyślnego nie może być zmieniona'}), 400
+        
+        # Check if trying to change is_default flag of default template
+        if template.is_default and not data.get('is_default', False):
+            return jsonify({'success': False, 'error': 'Szablon domyślny nie może być zmieniony na niestandardowy'}), 400
+        
         template.name = data['name']
         template.subject = data['subject']
         template.template_type = data.get('template_type') or template.template_type or 'custom'
@@ -432,14 +440,14 @@ def email_delete_template(template_id):
         if not template:
             return jsonify({'success': False, 'error': 'Szablon nie istnieje'}), 404
         
-        # Lista domyślnych szablonów (nie można ich usuwać)
+        # Check if template is default (either by name or is_default flag)
         default_templates = [
             'welcome', 'event_registration', 'event_reminder_24h', 
             'event_reminder_1h', 'event_reminder_5min', 'admin_notification', 
             'admin_message', 'password_reset'
         ]
         
-        if template.name in default_templates:
+        if template.is_default or template.name in default_templates:
             return jsonify({'success': False, 'error': 'Nie można usunąć szablonu domyślnego'}), 400
         
         db.session.delete(template)

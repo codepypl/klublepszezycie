@@ -884,7 +884,20 @@ function editTemplate(templateId) {
             if (data.success) {
                 const template = data.template;
                 document.getElementById('template_id').value = template.id;
-                document.getElementById('template_name').value = template.name;
+                
+                // Handle template name field - disable if it's a default template
+                const templateNameField = document.getElementById('template_name');
+                templateNameField.value = template.name;
+                if (template.is_default) {
+                    templateNameField.disabled = true;
+                    templateNameField.title = 'Nazwa szablonu domyślnego nie może być edytowana';
+                    templateNameField.classList.add('form-control', 'bg-light');
+                } else {
+                    templateNameField.disabled = false;
+                    templateNameField.title = '';
+                    templateNameField.classList.remove('bg-light');
+                }
+                
                 document.getElementById('template_subject').value = template.subject;
                 document.getElementById('template_type').value = template.template_type;
                 // Set content in textarea first
@@ -894,7 +907,17 @@ function editTemplate(templateId) {
                 document.getElementById('template_text_content').value = template.text_content || '';
                 document.getElementById('template_variables').value = template.variables || '';
                 document.getElementById('template_is_active').checked = template.is_active;
-                document.getElementById('template_is_default').checked = template.is_default || false;
+                
+                // Handle is_default checkbox - disable if it's a default template
+                const isDefaultCheckbox = document.getElementById('template_is_default');
+                isDefaultCheckbox.checked = template.is_default || false;
+                if (template.is_default) {
+                    isDefaultCheckbox.disabled = true;
+                    isDefaultCheckbox.title = 'Szablon domyślny nie może być zmieniony na niestandardowy';
+                } else {
+                    isDefaultCheckbox.disabled = false;
+                    isDefaultCheckbox.title = '';
+                }
                 
                 // Load variables display
                 loadVariablesDisplay(template.variables);
