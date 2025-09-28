@@ -112,6 +112,14 @@ def make_celery(app=None):
         },
     }
     
+    # Wymuś rejestrację zadań po utworzeniu harmonogramu
+    try:
+        import app.tasks.email_tasks
+        import app.tasks.event_tasks
+        print("✅ Zadania Celery zaimportowane pomyślnie")
+    except ImportError as e:
+        print(f"❌ Błąd importu zadań Celery: {e}")
+    
     return celery
 
 # Utwórz instancję Celery
