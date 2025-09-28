@@ -387,6 +387,12 @@
     color: var(--admin-white);
 }
 
+.admin-btn-outline.active {
+    background: #1e3a8a !important;
+    color: #ffffff !important;
+    border-color: #1e3a8a !important;
+}
+
 .admin-btn-danger {
     background: var(--admin-danger);
     color: var(--admin-white);
@@ -780,6 +786,17 @@
 
 .btn-group .btn:last-child {
     margin-right: 0;
+}
+
+.btn-group .btn.active {
+    background-color: var(--admin-primary);
+    border-color: var(--admin-primary);
+    color: white;
+}
+
+.btn-group .btn.active:hover {
+    background-color: var(--admin-primary-dark);
+    border-color: var(--admin-primary-dark);
 }
 
 /* Forms */

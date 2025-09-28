@@ -65,28 +65,6 @@ def email_retry_single(email_id):
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@email_bp.route('/email/queue-stats', methods=['GET'])
-@login_required
-def email_queue_stats():
-    """Get email queue statistics"""
-    try:
-        from app.models import Stats
-        
-        # Update stats from database before returning
-        stats_data = Stats.update_email_stats()
-        
-        return jsonify({
-            'success': True,
-            'stats': {
-                'total': stats_data['total_emails'],
-                'pending': stats_data['pending_emails'],
-                'sent': stats_data['sent_emails'],
-                'failed': stats_data['failed_emails']
-            }
-        })
-    except Exception as e:
-        logging.error(f"Error getting queue stats: {str(e)}")
-        return jsonify({'success': False, 'message': str(e)}), 500
 
 @email_bp.route('/email/queue', methods=['GET'])
 @login_required
@@ -300,26 +278,6 @@ def email_queue_clear_all():
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@email_bp.route('/email/logs/stats', methods=['GET'])
-@login_required
-def email_logs_stats():
-    """Pobiera statystyki logów e-maili"""
-    try:
-        from app.models import EmailLog
-        
-        from app.models import Stats
-        
-        stats = {
-            'total': Stats.get_total_email_logs(),
-            'sent': Stats.get_sent_emails(),
-            'failed': Stats.get_failed_emails(),
-            'bounced': Stats.get_bounced_emails()
-        }
-        
-        return jsonify({'success': True, 'stats': stats})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
 
 @email_bp.route('/email/logs', methods=['GET'])
 @login_required
@@ -665,8 +623,8 @@ def email_reset_templates():
         
         manager = TemplateManager()
         
-        # First sync default templates
-        success, message = manager.sync_templates_from_defaults()
+        # First sync default templates (with force reload from fixtures)
+        success, message = manager.sync_templates_from_defaults(force_reload_fixtures=True)
         if not success:
             return jsonify({'success': False, 'error': message}), 500
         
@@ -684,20 +642,217 @@ def email_reset_templates():
 @email_bp.route('/email/templates/initialize-defaults', methods=['POST'])
 @login_required
 def email_initialize_default_templates():
-    """Inicjalizuje domyślne szablony w bazie danych"""
+    """Inicjalizuje domyślne szablony z fixtures"""
     try:
         from app.services.template_manager import TemplateManager
         
         manager = TemplateManager()
         success, message = manager.initialize_default_templates()
         
-        if not success:
+        if success:
+            return jsonify({'success': True, 'message': message})
+        else:
             return jsonify({'success': False, 'error': message}), 500
-        
-        return jsonify({'success': True, 'message': message})
             
     except Exception as e:
         db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@email_bp.route('/email/queue/clear', methods=['POST'])
+@login_required
+def email_queue_clear():
+    """Czyści kolejkę emaili (zachowuje wysłane jako historię)"""
+    try:
+        from app.models import EmailQueue
+        
+        # Policz emaile przed usunięciem
+        total_before = EmailQueue.query.count()
+        pending_before = EmailQueue.query.filter_by(status='pending').count()
+        failed_before = EmailQueue.query.filter_by(status='failed').count()
+        processing_before = EmailQueue.query.filter_by(status='processing').count()
+        sent_before = EmailQueue.query.filter_by(status='sent').count()
+        
+        if total_before == 0:
+            return jsonify({
+                'success': True, 
+                'message': 'Kolejka emaili jest już pusta!',
+                'stats': {
+                    'total_before': total_before,
+                    'deleted': 0,
+                    'kept': 0
+                }
+            })
+        
+        # Usuń wszystkie emaile oprócz wysłanych
+        deleted_count = EmailQueue.query.filter(
+            EmailQueue.status.in_(['pending', 'failed', 'processing'])
+        ).delete(synchronize_session=False)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Usunięto {deleted_count} emaili z kolejki, zachowano {sent_before} wysłanych jako historię',
+            'stats': {
+                'total_before': total_before,
+                'deleted': deleted_count,
+                'kept': sent_before,
+                'pending': pending_before,
+                'failed': failed_before,
+                'processing': processing_before
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@email_bp.route('/email/queue/stats', methods=['GET'])
+@login_required
+def email_queue_stats():
+    """Pobiera statystyki kolejki emaili"""
+    try:
+        from app.models import EmailQueue
+        
+        total = EmailQueue.query.count()
+        pending = EmailQueue.query.filter_by(status='pending').count()
+        failed = EmailQueue.query.filter_by(status='failed').count()
+        processing = EmailQueue.query.filter_by(status='processing').count()
+        sent = EmailQueue.query.filter_by(status='sent').count()
+        
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total': total,
+                'pending': pending,
+                'failed': failed,
+                'processing': processing,
+                'sent': sent
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@email_bp.route('/email/logs/cleanup', methods=['POST'])
+@login_required
+def email_logs_cleanup():
+    """Czyści stare pliki logów (starsze niż 30 dni)"""
+    try:
+        import os
+        import glob
+        from datetime import datetime, timedelta
+        
+        logs_dir = 'app/logs'
+        
+        if not os.path.exists(logs_dir):
+            return jsonify({
+                'success': False, 
+                'error': f'Katalog {logs_dir} nie istnieje'
+            }), 404
+        
+        # Calculate cutoff date (30 days ago)
+        cutoff_date = datetime.now() - timedelta(days=30)
+        cutoff_timestamp = cutoff_date.timestamp()
+        
+        # Find all log files
+        log_patterns = [
+            os.path.join(logs_dir, 'wsgi_*.log'),
+            os.path.join(logs_dir, 'app_console_*.log'),
+            os.path.join(logs_dir, '*.log.*'),  # Rotated files
+        ]
+        
+        deleted_count = 0
+        total_size_freed = 0
+        deleted_files = []
+        
+        for pattern in log_patterns:
+            for log_file in glob.glob(pattern):
+                try:
+                    # Get file modification time
+                    file_mtime = os.path.getmtime(log_file)
+                    file_size = os.path.getsize(log_file)
+                    
+                    # Check if file is older than cutoff
+                    if file_mtime < cutoff_timestamp:
+                        os.remove(log_file)
+                        deleted_count += 1
+                        total_size_freed += file_size
+                        deleted_files.append({
+                            'file': log_file,
+                            'size': file_size,
+                            'modified': datetime.fromtimestamp(file_mtime).isoformat()
+                        })
+                        
+                except Exception as e:
+                    return jsonify({
+                        'success': False, 
+                        'error': f'Błąd podczas usuwania {log_file}: {str(e)}'
+                    }), 500
+        
+        return jsonify({
+            'success': True,
+            'message': f'Usunięto {deleted_count} plików logów, zwolniono {total_size_freed / 1024 / 1024:.2f} MB',
+            'stats': {
+                'deleted_count': deleted_count,
+                'size_freed_mb': round(total_size_freed / 1024 / 1024, 2),
+                'cutoff_date': cutoff_date.isoformat(),
+                'deleted_files': deleted_files
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@email_bp.route('/email/logs/stats', methods=['GET'])
+@login_required
+def email_logs_stats():
+    """Pobiera statystyki plików logów"""
+    try:
+        import os
+        import glob
+        from datetime import datetime
+        
+        logs_dir = 'app/logs'
+        
+        if not os.path.exists(logs_dir):
+            return jsonify({
+                'success': False, 
+                'error': f'Katalog {logs_dir} nie istnieje'
+            }), 404
+        
+        # Find all log files
+        log_files = glob.glob(os.path.join(logs_dir, '*.log'))
+        log_files.extend(glob.glob(os.path.join(logs_dir, '*.log.*')))
+        
+        total_size = 0
+        file_stats = []
+        
+        for log_file in log_files:
+            try:
+                file_size = os.path.getsize(log_file)
+                file_mtime = os.path.getmtime(log_file)
+                total_size += file_size
+                
+                file_stats.append({
+                    'file': os.path.basename(log_file),
+                    'size': file_size,
+                    'size_mb': round(file_size / 1024 / 1024, 2),
+                    'modified': datetime.fromtimestamp(file_mtime).isoformat()
+                })
+            except Exception as e:
+                continue
+        
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total_files': len(file_stats),
+                'total_size_mb': round(total_size / 1024 / 1024, 2),
+                'files': file_stats
+            }
+        })
+        
+    except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @email_bp.route('/email/templates/load-fixtures', methods=['POST'])

@@ -127,9 +127,16 @@ Usuń konto: {{delete_account_url}}''',
             logging.error(f"Błąd inicjalizacji domyślnych szablonów: {str(e)}")
             return False, f"Błąd inicjalizacji: {str(e)}"
     
-    def sync_templates_from_defaults(self):
+    def sync_templates_from_defaults(self, force_reload_fixtures=False):
         """Synchronizuje szablony z domyślnych w bazie danych"""
         try:
+            # Jeśli wymagane, załaduj ponownie fixtures
+            if force_reload_fixtures:
+                from app.services.fixture_loader import load_email_templates_fixtures
+                success, message = load_email_templates_fixtures(force_update=True)
+                if not success:
+                    logging.warning(f"Nie udało się załadować fixtures: {message}")
+            
             default_templates = self.get_default_templates()
             
             if not default_templates:
@@ -183,7 +190,13 @@ Usuń konto: {{delete_account_url}}''',
     def reset_templates_to_defaults(self):
         """Resetuje wszystkie szablony do domyślnych z bazy danych"""
         try:
-            # Najpierw usuń referencje w tabelach, które używają template_id
+            # Najpierw załaduj ponownie fixtures (zaktualizuj DefaultEmailTemplate)
+            from app.services.fixture_loader import load_email_templates_fixtures
+            success, message = load_email_templates_fixtures(force_update=True)
+            if not success:
+                logging.warning(f"Nie udało się załadować fixtures: {message}")
+            
+            # Usuń referencje w tabelach, które używają template_id
             from app.models import EmailLog, EmailQueue, EmailCampaign
             
             # Ustaw template_id na NULL we wszystkich tabelach
@@ -196,7 +209,7 @@ Usuń konto: {{delete_account_url}}''',
             EmailTemplate.query.delete()
             db.session.commit()
             
-            # Dodaj domyślne szablony z bazy
+            # Dodaj domyślne szablony z bazy (teraz zaktualizowane z fixtures)
             default_templates = self.get_default_templates()
             
             for default_template in default_templates:

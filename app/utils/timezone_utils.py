@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 def get_local_datetime():
     """Get current datetime in local timezone for database defaults"""
     try:
-        from config import config
+        from app.config.config import config
         if getattr(config['development'], 'USE_LOCAL_TIME', True):
             tz = get_local_timezone()
             return datetime.now(tz)
@@ -20,7 +20,7 @@ def get_local_datetime():
 def get_local_timezone():
     """Get the configured timezone from config"""
     try:
-        from config import config
+        from app.config.config import config
         timezone_name = getattr(config['development'], 'TIMEZONE', 'Europe/Warsaw')
         return pytz.timezone(timezone_name)
     except:
@@ -30,7 +30,7 @@ def get_local_timezone():
 def get_local_now():
     """Get current time in local timezone"""
     try:
-        from config import config
+        from app.config.config import config
         if getattr(config['development'], 'USE_LOCAL_TIME', True):
             tz = get_local_timezone()
             return datetime.now(tz)

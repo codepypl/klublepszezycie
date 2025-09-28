@@ -9,7 +9,7 @@ let progressStartTime = null;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-    if (!window.location.pathname.includes('email_queue')) {
+    if (!window.location.pathname.includes('email-queue')) {
         return;
     }
     
@@ -121,11 +121,28 @@ function loadStats() {
 function loadQueue(filter) {
     currentFilter = filter;
     
-    // Update filter buttons
-    document.querySelectorAll('[id^="filter"]').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.getElementById(`filter${filter.charAt(0).toUpperCase() + filter.slice(1)}`).classList.add('active');
+    // Map filter names to button IDs
+    const filterMap = {
+        'pending': 'filterPending',
+        'sent': 'filterSent', 
+        'failed': 'filterFailed',
+        'all': 'filterAll'
+    };
+    
+    const buttonId = filterMap[filter];
+    
+    if (buttonId) {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            // Remove active class from all filter buttons first
+            document.querySelectorAll('[id^="filter"]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Add active class to current button
+            button.classList.add('active');
+        }
+    }
     
     const params = new URLSearchParams({
         page: currentPage,
@@ -133,7 +150,6 @@ function loadQueue(filter) {
         filter: filter
     });
     
-    console.log('🔍 Loading queue with params:', params.toString());
     fetch(`/api/email/queue?${params}`)
         .then(response => {
             console.log('📡 Queue API response status:', response.status);
@@ -706,7 +722,7 @@ function restartEmailQueueAutoRefresh() {
 // Clear all emails from queue (except sent ones)
 function clearAllQueue() {
     if (confirm('⚠️ UWAGA: Czy na pewno chcesz wyczyścić całą kolejkę emaili?\n\nTo usunie wszystkie oczekujące, nieudane i przetwarzane emaile.\nWysłane emaile zostaną zachowane jako historia.\n\nTa operacja jest nieodwracalna!')) {
-        fetch('/api/email/queue/clear-all', {
+        fetch('/api/email/queue/clear', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

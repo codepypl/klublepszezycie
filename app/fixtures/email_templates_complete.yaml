@@ -444,14 +444,6 @@
                           </div>
                       </div>
                   </div>
-                  
-                  <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
-                      <p style="margin: 0; font-weight: 600; color: #92400e;">Nowy członek czeka na akceptację przez administratora.</p>
-                  </div>
-                  
-                  <div style="text-align: center; margin: 40px 0;">
-                      <a href="{{admin_panel_url}}" style="display: inline-block; background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); color: white; padding: 18px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 18px; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);">Przejdź do panelu admin</a>
-                  </div>
               </div>
               
               <!-- Footer -->
@@ -483,7 +475,7 @@
       © 2025 Klub Lepsze Życie. Wszystkie prawa zastrzeżone.
       Kontakt: kontakt@klublepszezycie.pl
     variables: |
-      {"additional_info": "Dodatkowe informacje", "admin_panel_url": "Zmienna: admin_panel_url", "delete_account_url": "Link do usunięcia konta", "notification_date": "Data powiadomienia", "notification_message": "Treść powiadomienia", "notification_type": "Typ powiadomienia", "registration_date": "Zmienna: registration_date", "unsubscribe_url": "Link do rezygnacji z członkostwa", "user_email": "Email użytkownika", "user_name": "Imię użytkownika"}
+      {"additional_info": "Dodatkowe informacje", "delete_account_url": "Link do usunięcia konta", "notification_date": "Data powiadomienia", "notification_message": "Treść powiadomienia", "notification_type": "Typ powiadomienia", "registration_date": "Zmienna: registration_date", "unsubscribe_url": "Link do rezygnacji z członkostwa", "user_email": "Email użytkownika", "user_name": "Imię użytkownika"}
     is_active: true
     created_at: "2024-01-01 00:00:00"
     updated_at: "2024-01-01 00:00:00"

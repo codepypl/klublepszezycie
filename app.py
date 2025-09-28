@@ -13,7 +13,7 @@ def setup_logging():
     from logging.handlers import TimedRotatingFileHandler
     
     # Create logs directory if it doesn't exist
-    logs_dir = os.path.join(os.getcwd(), 'logs')
+    logs_dir = os.path.join(os.getcwd(), 'app', 'logs')
     os.makedirs(logs_dir, exist_ok=True)
     
     # Create log filename (without timestamp - rotation will handle it)

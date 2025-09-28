@@ -8,7 +8,7 @@ from datetime import datetime
 def setup_email_logging():
     """Setup dedicated email logging"""
     # Create logs directory if it doesn't exist
-    logs_dir = os.path.join(os.getcwd(), 'logs')
+    logs_dir = os.path.join(os.getcwd(), 'app', 'logs')
     os.makedirs(logs_dir, exist_ok=True)
     
     # Create email logger

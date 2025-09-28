@@ -9,10 +9,10 @@ from app.models import db, DefaultEmailTemplate
 class FixtureLoader:
     """Loader dla fixtures w formacie YAML (podobny do Django)"""
     
-    def __init__(self, fixtures_dir='fixtures'):
+    def __init__(self, fixtures_dir='app/fixtures'):
         self.fixtures_dir = fixtures_dir
     
-    def load_fixtures(self, fixture_file):
+    def load_fixtures(self, fixture_file, force_update=False):
         """Ładuje fixtures z pliku YAML"""
         try:
             fixture_path = os.path.join(self.fixtures_dir, fixture_file)
@@ -29,6 +29,7 @@ class FixtureLoader:
                 return False, f"Plik fixture jest pusty: {fixture_path}"
             
             loaded_count = 0
+            updated_count = 0
             skipped_count = 0
             
             for fixture in fixtures:
@@ -36,23 +37,30 @@ class FixtureLoader:
                 fields = fixture.get('fields', {})
                 
                 if model_name == 'DefaultEmailTemplate':
-                    success = self._load_email_template(fields)
+                    success = self._load_email_template(fields, force_update=force_update)
                     if success:
-                        loaded_count += 1
+                        if force_update and DefaultEmailTemplate.query.filter_by(name=fields.get('name')).first():
+                            updated_count += 1
+                        else:
+                            loaded_count += 1
                     else:
                         skipped_count += 1
                 else:
                     logging.warning(f"Nieznany model: {model_name}")
                     skipped_count += 1
             
-            logging.info(f"Załadowano {loaded_count} fixtures, pominięto {skipped_count}")
-            return True, f"Załadowano {loaded_count} fixtures, pominięto {skipped_count}"
+            if force_update:
+                logging.info(f"Zaktualizowano {updated_count} fixtures, załadowano {loaded_count}, pominięto {skipped_count}")
+                return True, f"Zaktualizowano {updated_count} fixtures, załadowano {loaded_count}, pominięto {skipped_count}"
+            else:
+                logging.info(f"Załadowano {loaded_count} fixtures, pominięto {skipped_count}")
+                return True, f"Załadowano {loaded_count} fixtures, pominięto {skipped_count}"
             
         except Exception as e:
             logging.error(f"Błąd ładowania fixtures: {str(e)}")
             return False, f"Błąd ładowania fixtures: {str(e)}"
     
-    def _load_email_template(self, fields):
+    def _load_email_template(self, fields, force_update=False):
         """Ładuje szablon email z fixture"""
         try:
             name = fields.get('name')
@@ -62,27 +70,41 @@ class FixtureLoader:
             
             # Sprawdź czy szablon już istnieje
             existing = DefaultEmailTemplate.query.filter_by(name=name).first()
-            if existing:
+            if existing and not force_update:
                 logging.info(f"Szablon {name} już istnieje, pomijam")
                 return False
             
-            # Utwórz nowy szablon
-            template = DefaultEmailTemplate(
-                name=name,
-                template_type=fields.get('template_type', 'html'),
-                subject=fields.get('subject', ''),
-                html_content=fields.get('html_content', ''),
-                text_content=fields.get('text_content', ''),
-                variables=fields.get('variables', '{}'),
-                description=fields.get('description', ''),
-                is_active=fields.get('is_active', True)
-            )
-            
-            db.session.add(template)
-            db.session.commit()
-            
-            logging.info(f"Załadowano szablon: {name}")
-            return True
+            if existing and force_update:
+                # Aktualizuj istniejący szablon
+                existing.template_type = fields.get('template_type', 'html')
+                existing.subject = fields.get('subject', '')
+                existing.html_content = fields.get('html_content', '')
+                existing.text_content = fields.get('text_content', '')
+                existing.variables = fields.get('variables', '{}')
+                existing.description = fields.get('description', '')
+                existing.is_active = fields.get('is_active', True)
+                
+                db.session.commit()
+                logging.info(f"Zaktualizowano szablon: {name}")
+                return True
+            else:
+                # Utwórz nowy szablon
+                template = DefaultEmailTemplate(
+                    name=name,
+                    template_type=fields.get('template_type', 'html'),
+                    subject=fields.get('subject', ''),
+                    html_content=fields.get('html_content', ''),
+                    text_content=fields.get('text_content', ''),
+                    variables=fields.get('variables', '{}'),
+                    description=fields.get('description', ''),
+                    is_active=fields.get('is_active', True)
+                )
+                
+                db.session.add(template)
+                db.session.commit()
+                
+                logging.info(f"Załadowano szablon: {name}")
+                return True
             
         except Exception as e:
             db.session.rollback()
@@ -117,10 +139,10 @@ class FixtureLoader:
             logging.error(f"Błąd ładowania wszystkich fixtures: {str(e)}")
             return False, f"Błąd ładowania wszystkich fixtures: {str(e)}"
 
-def load_email_templates_fixtures():
+def load_email_templates_fixtures(force_update=False):
     """Funkcja pomocnicza do ładowania szablonów email z fixtures"""
     loader = FixtureLoader()
-    return loader.load_fixtures('email_templates_complete.yaml')
+    return loader.load_fixtures('email_templates_complete.yaml', force_update=force_update)
 
 def load_all_fixtures():
     """Funkcja pomocnicza do ładowania wszystkich fixtures"""

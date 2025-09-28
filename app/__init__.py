@@ -22,25 +22,37 @@ def create_app():
     """Application factory pattern"""
     app = Flask(__name__, template_folder='../templates', static_folder='../static')
     
-    # Load configuration from config.py
-    import sys
-    import os
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from config import config
-    config_name = os.getenv('FLASK_ENV', 'development')
-    app.config.from_object(config[config_name])
-    
-    # Setup logging for Flask app
+    # Setup logging for Flask app first
     import logging
     logger = logging.getLogger(__name__)
     logger.info("🔧 Initializing Flask application...")
+    
+    # Load configuration from config.py with validation
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from app.config.config import get_config, ConfigValidationError
+    
+    config_name = os.getenv('FLASK_ENV', 'development')
+    
+    try:
+        # Validate configuration before loading
+        config_class = get_config(config_name)
+        app.config.from_object(config_class)
+        logger.info(f"✅ Configuration loaded successfully for environment: {config_name}")
+    except ConfigValidationError as e:
+        logger.error(f"❌ Configuration validation failed: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"❌ Configuration loading failed: {e}")
+        raise
     
     # Initialize extensions with app
     logger.info("🔗 Initializing database connection...")
     db.init_app(app)
     
     logger.info("🔄 Setting up database migrations...")
-    migrate.init_app(app, db)
+    migrate.init_app(app, db, directory='app/migrations')
     
     logger.info("🔐 Setting up authentication...")
     login_manager.init_app(app)

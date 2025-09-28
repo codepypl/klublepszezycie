@@ -291,7 +291,7 @@ function updatePagination(pagination) {
 // Clear old logs
 function clearOldLogs() {
     if (confirm('Czy na pewno chcesz wyczyścić stare logi (starsze niż 30 dni)? Tej operacji nie można cofnąć.')) {
-        fetch('/api/email/logs/clear-old', {
+        fetch('/api/email/logs/cleanup', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

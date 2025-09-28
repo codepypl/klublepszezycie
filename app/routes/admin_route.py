@@ -59,6 +59,7 @@ def email_logs():
     """Logi emaili"""
     return render_template('admin/email_logs.html')
 
+
 @admin_bp.route('/celery-monitor')
 @login_required
 def celery_monitor():
