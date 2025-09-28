@@ -1,3 +1,4 @@
+logs/*
 *.pid
 celerybeat-schedule*
 celerybeat-schedule-shm
