@@ -811,7 +811,16 @@ def email_create_campaign():
                 scheduled_at = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
             
             # Sprawdź czy data jest w przyszłości
-            if scheduled_at <= __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now():
+            now = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
+            # Upewnij się, że oba datetimes mają strefy czasowe
+            if now.tzinfo is None:
+                from app.utils.timezone_utils import get_local_timezone
+                now = now.replace(tzinfo=get_local_timezone())
+            if scheduled_at.tzinfo is None:
+                from app.utils.timezone_utils import get_local_timezone
+                scheduled_at = scheduled_at.replace(tzinfo=get_local_timezone())
+            
+            if scheduled_at <= now:
                 return jsonify({'success': False, 'error': 'Data wysyłki musi być w przyszłości'}), 400
             
             # Kampania zostaje jako draft - będzie zaplanowana gdy admin kliknie "Wyślij"
@@ -1042,7 +1051,8 @@ def email_send_campaign(campaign_id):
         
         # Sprawdź logikę wysyłki
         from datetime import datetime
-        now = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
+        from app.utils.timezone_utils import get_local_now, get_local_timezone
+        now = get_local_now()
         
         # Jeśli kampania ma scheduled_at - zaplanuj ją
         # Zawsze dodaj kampanię do kolejki (niezależnie od daty)
@@ -1074,8 +1084,17 @@ def email_send_campaign(campaign_id):
             db.session.commit()
             
             # Przygotuj komunikat w zależności od daty
-            if campaign.scheduled_at and campaign.scheduled_at > now:
-                message_text = f'Kampania dodana do kolejki dla {campaign.total_recipients} odbiorców. Zostanie wysłana {campaign.scheduled_at.strftime("%Y-%m-%d o %H:%M")}'
+            if campaign.scheduled_at:
+                # Upewnij się, że oba datetimes mają strefy czasowe
+                if now.tzinfo is None:
+                    now = now.replace(tzinfo=get_local_timezone())
+                if campaign.scheduled_at.tzinfo is None:
+                    campaign.scheduled_at = campaign.scheduled_at.replace(tzinfo=get_local_timezone())
+                
+                if campaign.scheduled_at > now:
+                    message_text = f'Kampania dodana do kolejki dla {campaign.total_recipients} odbiorców. Zostanie wysłana {campaign.scheduled_at.strftime("%Y-%m-%d o %H:%M")}'
+                else:
+                    message_text = f'Kampania dodana do kolejki dla {campaign.total_recipients} odbiorców i zostanie wysłana natychmiast'
             else:
                 message_text = f'Kampania dodana do kolejki dla {campaign.total_recipients} odbiorców i zostanie wysłana natychmiast'
             
@@ -1751,10 +1770,19 @@ def email_activate_campaign(campaign_id):
         
         # Aktywuj kampanię
         from datetime import datetime
-        now = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
+        from app.utils.timezone_utils import get_local_now, get_local_timezone
+        now = get_local_now()
         
         # Sprawdź czy kampania ma datę planowania
         if campaign.scheduled_at:
+            # Upewnij się, że oba datetimes mają strefy czasowe
+            if now.tzinfo is None:
+                # Jeśli now jest naive, dodaj lokalną strefę czasową
+                now = now.replace(tzinfo=get_local_timezone())
+            if campaign.scheduled_at.tzinfo is None:
+                # Jeśli scheduled_at jest naive, dodaj lokalną strefę czasową
+                campaign.scheduled_at = campaign.scheduled_at.replace(tzinfo=get_local_timezone())
+            
             if campaign.scheduled_at > now:
                 # Zaplanuj kampanię
                 campaign.status = 'scheduled'
@@ -1801,6 +1829,10 @@ def email_activate_campaign(campaign_id):
         
     except Exception as e:
         db.session.rollback()
+        print(f"❌ CRITICAL ERROR in campaign activation: {str(e)}")
+        print(f"❌ Error type: {type(e).__name__}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @email_bp.route('/email/test-sending', methods=['POST'])
