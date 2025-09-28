@@ -26,6 +26,14 @@ def make_celery(app=None):
         ]
     )
     
+    # Automatycznie zaimportuj wszystkie zadania
+    try:
+        import app.tasks.email_tasks
+        import app.tasks.event_tasks
+        print("✅ Zaimportowano zadania Celery")
+    except ImportError as e:
+        print(f"❌ Błąd importu zadań Celery: {e}")
+    
     # Konfiguracja - optymalizowana dla 1GB RAM
     celery.conf.update(
         task_serializer='json',
