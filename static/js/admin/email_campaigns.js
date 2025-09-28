@@ -401,7 +401,12 @@ function editCampaign(campaignId) {
                     
                     // Set scheduled time if it's a scheduled campaign
                     if (campaign.send_type === 'scheduled' && campaign.scheduled_at) {
+                        console.log('🔍 DEBUG: Raw scheduled_at from API:', campaign.scheduled_at);
+                        
                         const scheduledDate = new Date(campaign.scheduled_at);
+                        console.log('🔍 DEBUG: Parsed Date object:', scheduledDate);
+                        console.log('🔍 DEBUG: Date in local time:', scheduledDate.toString());
+                        
                         // Format for datetime-local input (YYYY-MM-DDTHH:MM)
                         // Use local time, not UTC
                         const year = scheduledDate.getFullYear();
@@ -410,6 +415,8 @@ function editCampaign(campaignId) {
                         const hours = String(scheduledDate.getHours()).padStart(2, '0');
                         const minutes = String(scheduledDate.getMinutes()).padStart(2, '0');
                         const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+                        
+                        console.log('🔍 DEBUG: Formatted for input:', formattedDateTime);
                         document.getElementById('campaign_scheduled_at').value = formattedDateTime;
                     }
                 }

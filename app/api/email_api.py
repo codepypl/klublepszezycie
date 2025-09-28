@@ -901,6 +901,12 @@ def email_get_campaign(campaign_id):
             except json.JSONDecodeError:
                 content_variables = {}
         
+        # DEBUG: Sprawdź jak wygląda scheduled_at
+        if campaign.scheduled_at:
+            print(f"🔍 DEBUG GET: Campaign {campaign.id} scheduled_at raw: {campaign.scheduled_at}")
+            print(f"🔍 DEBUG GET: Campaign {campaign.id} scheduled_at isoformat: {campaign.scheduled_at.isoformat()}")
+            print(f"🔍 DEBUG GET: Campaign {campaign.id} scheduled_at timezone: {campaign.scheduled_at.tzinfo}")
+        
         return jsonify({
             'success': True,
             'campaign': {
@@ -997,6 +1003,7 @@ def email_update_campaign(campaign_id):
             # Jeśli kampania jest zaplanowana i ma status 'scheduled', zaktualizuj emailQueue
             if campaign.status == 'scheduled':
                 print(f"🔄 Updating email queue for campaign {campaign_id} with new scheduled time")
+                print(f"🔍 DEBUG: New scheduled_at: {campaign.scheduled_at}")
                 try:
                     from app.models.email_model import EmailQueue
                     from app.services.email_service import EmailService

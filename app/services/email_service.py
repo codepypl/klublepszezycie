@@ -453,7 +453,16 @@ class EmailService:
                                 pass
                         
                         # Dodaj do kolejki z datą kampanii (jeśli zaplanowana) lub teraz (jeśli natychmiastowa)
-                        email_scheduled_at = campaign.scheduled_at if campaign.scheduled_at else __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
+                        if campaign.scheduled_at:
+                            email_scheduled_at = campaign.scheduled_at
+                            print(f"📅 Using campaign scheduled time: {email_scheduled_at}")
+                        else:
+                            email_scheduled_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
+                            print(f"⚠️ Campaign has no scheduled time, using current time: {email_scheduled_at}")
+                        
+                        # DEBUG: Sprawdź czy scheduled_at jest prawidłowo przekazywane
+                        print(f"🔍 DEBUG: Campaign {campaign.id} scheduled_at: {campaign.scheduled_at}")
+                        print(f"🔍 DEBUG: Email scheduled_at: {email_scheduled_at}")
                         
                         success, message = self.add_to_queue(
                             to_email=user.email,
