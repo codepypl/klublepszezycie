@@ -69,12 +69,16 @@ def create_app():
     logger.info("🛣️ Registering routes...")
     from app.routes import public_bp, admin_bp, auth_bp, blog_bp, seo_bp, social_bp, events_bp, users_bp, footer_bp, crm_bp, ankieter_bp
     from app.routes.unsubscribe_routes import unsubscribe_bp
+    from app.routes.user_groups_route import user_groups_bp
     from app.api import email_bp, users_api_bp, testimonials_api_bp, sections_api_bp, menu_api_bp, faq_api_bp, benefits_api_bp, events_api_bp, blog_api_bp, seo_api_bp, social_api_bp, crm_api_bp, agent_api_bp, stats_api_bp
+    from app.api.user_groups_api import user_groups_bp as user_groups_api_bp
     
     app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(user_groups_bp)
     # Main API blueprint removed - individual API modules are registered separately
     app.register_blueprint(email_bp, url_prefix='/api')
+    app.register_blueprint(user_groups_api_bp, url_prefix='/api')
     app.register_blueprint(users_api_bp, url_prefix='/api')
     app.register_blueprint(testimonials_api_bp, url_prefix='/api')
     app.register_blueprint(sections_api_bp, url_prefix='/api')

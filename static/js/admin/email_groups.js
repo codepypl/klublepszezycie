@@ -70,7 +70,7 @@ function loadGroups() {
         per_page: currentPerPage
     });
     
-    fetch(`/api/email/groups?${params}`)
+    fetch(`/api/user-groups?${params}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -174,12 +174,12 @@ function displayGroups(groups) {
             <td><span class="badge admin-badge admin-badge-primary">${group.id}</span></td>
             <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">${group.name} ${group.is_default ? '<span class="admin-badge admin-badge-info ms-1">Systemowa</span>' : ''} ${group.group_type === 'event_based' ? '<span class="admin-badge admin-badge-warning ms-1">Wydarzenie</span>' : ''}</td>
             <td>
-                ${group.template_id ? 
-                    `<a href="#" onclick="editTemplate(${group.template_id})" 
+                ${group.event_id ? 
+                    `<a href="/admin/events/${group.event_id}" 
                        data-bs-toggle="tooltip" 
                        data-bs-placement="top" 
-                       title="${group.template_name || 'Szablon e-mail'}">
-                        <span class="badge admin-badge admin-badge-primary">${group.template_id}</span>
+                       title="${group.event_title || 'Wydarzenie'}">
+                        <span class="badge admin-badge admin-badge-info">${group.event_id}</span>
                      </a>` : 
                     `<span class="text-muted">${group.group_type}</span>`
                 }
@@ -193,7 +193,7 @@ function displayGroups(groups) {
         tbody.appendChild(row);
     });
     
-    // Initialize tooltips for template IDs
+    // Initialize tooltips for event IDs
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
@@ -230,7 +230,7 @@ function showGroupModal() {
 // Synchronizacja grup systemowych
 function syncSystemGroups() {
     if (confirm('Czy na pewno chcesz zsynchronizować grupy systemowe?\n\nTa operacja zaktualizuje listę członków grup "Wszyscy użytkownicy" i "Członkowie klubu" na podstawie aktualnych danych użytkowników.')) {
-        fetch('/api/email/groups/sync', {
+        fetch('/api/user-groups/sync', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -255,7 +255,7 @@ function syncSystemGroups() {
 
 function syncEventGroups() {
     if (confirm('Czy na pewno chcesz zsynchronizować grupy wydarzeń?\n\nTa operacja zaktualizuje listę członków wszystkich grup wydarzeń na podstawie aktualnych rejestracji.')) {
-        fetch('/api/email/groups/sync-events', {
+        fetch('/api/user-groups/sync-events', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -322,7 +322,7 @@ function saveGroup() {
     
     const groupId = document.getElementById('group_id').value;
     const method = groupId ? 'PUT' : 'POST';
-    const url = groupId ? `/api/email/groups/${groupId}` : '/api/email/groups';
+    const url = groupId ? `/api/user-groups/${groupId}` : '/api/user-groups';
     
     fetch(url, {
         method: method,
@@ -365,7 +365,7 @@ function editGroup(groupId) {
         return;
     }
     
-    fetch(`/api/email/groups/${groupId}`)
+    fetch(`/api/user-groups/${groupId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -439,7 +439,7 @@ function viewGroupMembers(groupId) {
     currentGroupId = groupId;
     
     // Get group info to show in modal title and get event_id for filtering
-    fetch(`/api/email/groups/${groupId}`)
+    fetch(`/api/user-groups/${groupId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -483,7 +483,7 @@ function viewGroupMembers(groupId) {
 function loadGroupMembers() {
     if (!currentGroupId) return;
     
-    fetch(`/api/email/groups/${currentGroupId}/members`)
+    fetch(`/api/user-groups/${currentGroupId}/members`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -589,7 +589,7 @@ function displayAvailableUsers(users) {
 function addGroupMember(userId) {
     if (!currentGroupId) return;
     
-    fetch(`/api/email/groups/${currentGroupId}/members`, {
+        fetch(`/api/user-groups/${currentGroupId}/members`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -621,7 +621,7 @@ function removeGroupMember(memberId) {
     window.deleteConfirmation.showSingleDelete(
         'członka z grupy',
         () => {
-            fetch(`/api/email/groups/members/${memberId}`, {
+            fetch(`/api/user-groups/members/${memberId}`, {
                 method: 'DELETE'
             })
             .then(response => response.json())
@@ -655,7 +655,7 @@ function deleteGroup(groupId) {
     window.deleteConfirmation.showSingleDelete(
         'grupę',
         () => {
-            fetch(`/api/email/groups/${groupId}`, {
+            fetch(`/api/user-groups/${groupId}`, {
                 method: 'DELETE'
             })
             .then(response => response.json())
@@ -851,7 +851,7 @@ function editCategory(categoryId) {
 
 // Load group members for editing (pre-select checkboxes)
 function loadGroupMembersForEdit(groupId) {
-    fetch(`/api/email/groups/${groupId}/members`)
+    fetch(`/api/user-groups/${groupId}/members`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {

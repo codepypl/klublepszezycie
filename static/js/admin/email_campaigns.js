@@ -209,7 +209,7 @@ function showCampaignModal() {
 
 // Load groups for campaign
 function loadGroupsForCampaign() {
-    return fetch('/api/email/groups')
+    return fetch('/api/user-groups')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -560,7 +560,7 @@ function loadTemplates() {
 
 // Load groups
 function loadGroups() {
-    fetch('/api/email/groups')
+    fetch('/api/user-groups')
         .then(response => response.json())
         .then(data => {
             if (data.success) {

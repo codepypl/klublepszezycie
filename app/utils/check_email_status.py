@@ -11,7 +11,7 @@ from app import create_app, db
 from app.models.email_model import EmailLog, EmailTemplate, EmailQueue
 from app.models.events_model import EventSchedule
 from app.models.user_model import User
-from app.models.email_model import UserGroup, UserGroupMember
+from app.models.user_groups_model import UserGroup, UserGroupMember
 
 def check_email_status(template_id, event_id):
     """

@@ -13,7 +13,8 @@ db = SQLAlchemy()
 from .user_model import User, PasswordResetToken
 from .content_model import MenuItem, Section, BenefitItem, Testimonial, SocialLink, FAQ
 from .events_model import EventSchedule
-from .email_model import EmailTemplate, DefaultEmailTemplate, UserGroup, UserGroupMember, EmailCampaign, EmailQueue, EmailLog, EmailReminder
+from .email_model import EmailTemplate, DefaultEmailTemplate, EmailCampaign, EmailQueue, EmailLog, EmailReminder
+from .user_groups_model import UserGroup, UserGroupMember
 from .blog_model import BlogCategory, BlogTag, BlogPost, BlogComment, BlogPostImage
 from .seo_model import SEOSettings, FooterSettings, LegalDocument
 from .user_logs_model import UserLogs
