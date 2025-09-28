@@ -5,6 +5,9 @@ import logging
 from datetime import datetime, timedelta
 
 from celery_app import celery
+
+# Wymuś rejestrację zadań
+celery.autodiscover_tasks(['app.tasks'])
 from app import create_app
 from app.models import EventSchedule, EmailReminder, UserGroup, UserGroupMember
 from app.services.email_automation import EmailAutomation
