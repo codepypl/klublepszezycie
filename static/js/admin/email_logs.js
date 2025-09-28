@@ -145,30 +145,28 @@ function displayLogs(logs) {
         let eventInfo = '-';
         if (log.event_id) {
             if (log.event_info) {
-                eventInfo = `<a href="/admin/events/${log.event_id}" class="text-decoration-none">
+                eventInfo = `<a href="/admin/events/${log.event_id}" class="text-decoration-none" title="${log.event_info.title}">
                     <span class="badge admin-badge admin-badge-info">${log.event_id}</span>
-                    <br><small>${log.event_info.title}</small>
                 </a>`;
             } else {
-                eventInfo = `<span class="badge admin-badge admin-badge-secondary">${log.event_id}</span>`;
+                eventInfo = `<span class="badge admin-badge admin-badge-secondary" title="Usunięte wydarzenie">${log.event_id}</span>`;
             }
         }
         
         // Template info
         let templateInfo = '-';
         if (log.template_id) {
-            templateInfo = `<a href="/admin/email-templates/${log.template_id}" class="text-decoration-none">
-                <span class="badge admin-badge admin-badge-primary">${log.template_id}</span>
-                <br><small>${log.template_name || 'Usunięty szablon'}</small>
-            </a>`;
+            const templateName = log.template_name || 'Usunięty szablon';
+            templateInfo = `<span class="badge admin-badge admin-badge-primary" style="cursor: pointer;" 
+                onclick="openTemplateModal(${log.template_id})" title="${templateName}">${log.template_id}</span>`;
         }
         
         // Campaign info
         let campaignInfo = '-';
         if (log.campaign_id) {
-            campaignInfo = `<a href="/admin/email-campaigns/${log.campaign_id}" class="text-decoration-none">
+            const campaignName = log.campaign_name || 'Usunięta kampania';
+            campaignInfo = `<a href="/admin/email-campaigns/${log.campaign_id}" class="text-decoration-none" title="${campaignName}">
                 <span class="badge admin-badge admin-badge-warning">${log.campaign_id}</span>
-                <br><small>${log.campaign_name || 'Usunięta kampania'}</small>
             </a>`;
         }
         
@@ -234,6 +232,12 @@ function clearFilters() {
     currentFilters = {};
     currentPage = 1;
     loadLogs();
+}
+
+// Open template modal
+function openTemplateModal(templateId) {
+    // Redirect to email templates page with modal
+    window.location.href = `/admin/email-templates?modal=${templateId}`;
 }
 
 // Refresh logs
@@ -330,6 +334,7 @@ function displayLogDetails(log) {
                 <h6>Szczegóły</h6>
                 <table class="table table-sm">
                     <tr><td><strong>Wydarzenie:</strong></td><td>${eventInfo}</td></tr>
+                    <tr><td><strong>ID Wydarzenia:</strong></td><td>${log.event_id || '-'}</td></tr>
                     <tr><td><strong>Szablon:</strong></td><td>${templateInfo}</td></tr>
                     <tr><td><strong>Kampania:</strong></td><td>${campaignInfo}</td></tr>
                     <tr><td><strong>Błąd:</strong></td><td>${log.error_message || '-'}</td></tr>
