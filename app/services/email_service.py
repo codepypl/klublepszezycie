@@ -68,7 +68,7 @@ class EmailService:
                     text_content = self._replace_variables(text_content or "", self._current_context)
 
                 # Wzbogacenie treści o linki wypisu i usunięcia konta (tylko jeśli nie zostało już wzbogacone)
-                if '{{unsubscribe_url}}' in html_content or '{{delete_account_url}}' in html_content:
+                if html_content and ('{{unsubscribe_url}}' in html_content or '{{delete_account_url}}' in html_content):
                     try:
                         enricher = EmailTemplateEnricher()
                         enriched = enricher.enrich_template_content(
@@ -432,8 +432,13 @@ class EmailService:
                             continue
                         
                         # Przygotuj treść emaila
-                        html_content = campaign.html_content
-                        text_content = campaign.text_content
+                        html_content = campaign.html_content or ""
+                        text_content = campaign.text_content or ""
+                        
+                        # Sprawdź czy kampania ma jakąkolwiek treść
+                        if not html_content and not text_content:
+                            print(f"⚠️ Kampania '{campaign.name}' nie ma treści - pomijam użytkownika {user.email}")
+                            continue
                         
                         # Zastąp zmienne w treści
                         if campaign.content_variables:
@@ -447,15 +452,17 @@ class EmailService:
                             except json.JSONDecodeError:
                                 pass
                         
-                        # Dodaj do kolejki
+                        # Dodaj do kolejki z datą kampanii (jeśli zaplanowana) lub teraz (jeśli natychmiastowa)
+                        email_scheduled_at = campaign.scheduled_at if campaign.scheduled_at else __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
+                        
                         success, message = self.add_to_queue(
                             to_email=user.email,
-                            to_name=user.name,
+                            to_name=user.first_name,
                             subject=campaign.subject,
                             html_content=html_content,
                             text_content=text_content,
                             campaign_id=campaign.id,
-                            scheduled_at=__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
+                            scheduled_at=email_scheduled_at
                         )
                         
                         if not success:
@@ -479,8 +486,8 @@ class EmailService:
         stats = {'processed': 0, 'success': 0, 'failed': 0}
         
         try:
-            # Najpierw przetwórz zaplanowane kampanie
-            self.process_scheduled_campaigns()
+            # Zaplanowane kampanie są już w kolejce z przyszłą datą
+            # process_scheduled_campaigns() nie jest już potrzebne
             
             # Pobierz emaile do wysłania
             queue_items = EmailQueue.query.filter(
@@ -496,7 +503,7 @@ class EmailService:
                     
                     # Wyślij email bezpośrednio (nie dodawaj do kolejki)
                     success, message = self.send_email(
-                        item.to_email,
+                        item.recipient_email,
                         item.subject,
                         item.html_content,
                         item.text_content,
@@ -526,7 +533,7 @@ class EmailService:
                     
                     # Loguj błąd
                     self._log_email(
-                        item.to_email,
+                        item.recipient_email,
                         item.subject,
                         'failed',
                         item.template_id,
@@ -775,7 +782,7 @@ class EmailService:
                     
                     # Wyślij email bezpośrednio (nie dodawaj do kolejki)
                     success, message = self.send_email(
-                        item.to_email,
+                        item.recipient_email,
                         item.subject,
                         item.html_content,
                         item.text_content,

@@ -186,7 +186,7 @@ function displayGroups(groups) {
             </td>
             <td>${group.member_count}</td>
             <td><span class="admin-badge admin-badge-${group.is_active ? 'success' : 'secondary'}">${group.is_active ? 'Aktywna' : 'Nieaktywna'}</span></td>
-            <td>${new Date(group.created_at + 'Z').toLocaleDateString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'})}</td>
+            <td>${new Date(group.created_at).toLocaleDateString('pl-PL', {hour12: false})}</td>
             <td>${actionButtonsHtml}</td>
         `;
         

@@ -19,8 +19,8 @@ class EmailTemplate(db.Model):
     description = db.Column(db.Text)
     is_active = db.Column(db.Boolean, default=True)
     is_default = db.Column(db.Boolean, default=False)  # Whether this is a default template
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
+    updated_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now(), onupdate=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     
     def __repr__(self):
         return f'<EmailTemplate {self.name}>'
@@ -38,8 +38,8 @@ class DefaultEmailTemplate(db.Model):
     variables = db.Column(db.Text)  # JSON string of template variables with descriptions
     description = db.Column(db.Text)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
+    updated_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now(), onupdate=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     
     def __repr__(self):
         return f'<DefaultEmailTemplate {self.name}>'
@@ -56,8 +56,8 @@ class UserGroup(db.Model):
     criteria = db.Column(db.Text)  # JSON string for automatic group criteria
     is_active = db.Column(db.Boolean, default=True)
     member_count = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
+    updated_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now(), onupdate=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     
     # Relationships
     members = db.relationship('UserGroupMember', backref='group', lazy='dynamic', cascade='all, delete-orphan')
@@ -77,9 +77,9 @@ class UserGroupMember(db.Model):
     name = db.Column(db.String(120))  # For external members
     member_metadata = db.Column(db.Text)  # JSON string for additional member data
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
+    updated_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now(), onupdate=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
+    joined_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     
     # Relationships
     user = db.relationship('User', backref='group_memberships')
@@ -107,13 +107,13 @@ class EmailCampaign(db.Model):
     content_variables = db.Column(db.Text)  # JSON string of template variables
     status = db.Column(db.String(20), default='draft')  # draft, scheduled, sending, sent, cancelled
     send_type = db.Column(db.String(20), default='immediate')  # immediate, scheduled
-    scheduled_at = db.Column(db.DateTime)
-    sent_at = db.Column(db.DateTime)
+    scheduled_at = db.Column(db.DateTime(timezone=True))
+    sent_at = db.Column(db.DateTime(timezone=True))
     total_recipients = db.Column(db.Integer, default=0)
     sent_count = db.Column(db.Integer, default=0)
     failed_count = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
+    updated_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now(), onupdate=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     
     # Relationships
     template = db.relationship('EmailTemplate', backref='campaigns')
@@ -140,11 +140,11 @@ class EmailQueue(db.Model):
     priority = db.Column(db.Integer, default=2)  # Priority: 1=high, 2=normal, 3=low
     retry_count = db.Column(db.Integer, default=0)
     max_retries = db.Column(db.Integer, default=3)
-    scheduled_at = db.Column(db.DateTime, default=datetime.utcnow)
-    sent_at = db.Column(db.DateTime)
+    scheduled_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
+    sent_at = db.Column(db.DateTime(timezone=True))
     error_message = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
+    updated_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now(), onupdate=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     
     # Duplicate prevention fields
     content_hash = db.Column(db.String(64), nullable=False, index=True)  # Hash of email content for duplicate detection
@@ -267,9 +267,9 @@ class EmailReminder(db.Model):
     user_id = db.Column(db.Integer, nullable=False)
     event_id = db.Column(db.Integer, nullable=False)
     reminder_type = db.Column(db.String(20), nullable=False)  # '24h', '1h', '5min'
-    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sent_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     email_queue_id = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     
     # Unique constraint to prevent duplicates
     __table_args__ = (
@@ -289,7 +289,7 @@ class EmailLog(db.Model):
     subject = db.Column(db.String(200), nullable=False)
     status = db.Column(db.String(20), nullable=False)  # sent, failed, bounced, opened, clicked
     error_message = db.Column(db.Text)
-    sent_at = db.Column(db.DateTime, default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
+    sent_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     campaign_id = db.Column(db.Integer, db.ForeignKey('email_campaigns.id'), nullable=True)
     recipient_data = db.Column(db.Text)  # JSON string of recipient information
     

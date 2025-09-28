@@ -141,12 +141,14 @@ function displayCampaigns(campaigns) {
             <td><span class="admin-badge admin-badge-${statusClass}">${statusText}</span></td>
             <td>${campaign.total_recipients}</td>
             <td>${campaign.sent_count}</td>
-            <td>${new Date(campaign.created_at + 'Z').toLocaleDateString('pl-PL', {hour12: false, timeZone: 'Europe/Warsaw'})}</td>
+            <td>${new Date(campaign.created_at).toLocaleDateString('pl-PL', {hour12: false})}</td>
             <td>
                 <div class="btn-group" role="group">
-                    <button class="btn btn-sm admin-btn-outline" onclick="editCampaign(${campaign.id})" title="Edytuj kampanię">
-                        <i class="fas fa-edit"></i>
-                    </button>
+                    ${campaign.status !== 'completed' && campaign.status !== 'sent' && campaign.status !== 'sending' ? `
+                        <button class="btn btn-sm admin-btn-outline" onclick="editCampaign(${campaign.id})" title="Edytuj kampanię">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    ` : ''}
                     ${campaign.status === 'draft' ? `<button class="btn btn-sm admin-btn-success" onclick="activateCampaign(${campaign.id})" title="Aktywuj kampanię">
                         <i class="fas fa-play"></i>
                     </button>` : ''}

@@ -788,7 +788,17 @@ def email_create_campaign():
                 return jsonify({'success': False, 'error': 'Proszę wybrać datę i czas wysyłki dla zaplanowanej kampanii'}), 400
             
             from datetime import datetime
-            scheduled_at = datetime.fromisoformat(data['scheduled_at'].replace('Z', '+00:00'))
+            from app.utils.timezone_utils import get_local_timezone
+            
+            # Parse date from frontend (może być bez timezone)
+            date_str = data['scheduled_at']
+            if 'T' in date_str and '+' not in date_str and 'Z' not in date_str:
+                # Format: "2025-09-28T15:30" (bez timezone) - dodaj lokalną strefę czasową
+                scheduled_at = datetime.fromisoformat(date_str)
+                scheduled_at = scheduled_at.replace(tzinfo=get_local_timezone())
+            else:
+                # Format z timezone: "2025-09-28T15:30Z" lub "2025-09-28T15:30+02:00"
+                scheduled_at = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
             
             # Sprawdź czy data jest w przyszłości
             if scheduled_at <= __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now():
@@ -797,9 +807,24 @@ def email_create_campaign():
             # Kampania zostaje jako draft - będzie zaplanowana gdy admin kliknie "Wyślij"
             # scheduled_at jest zapisane, ale status pozostaje draft
         
+        # Pobierz treść z szablonu jeśli wybrano szablon
+        html_content = data.get('html_content', '')
+        text_content = data.get('text_content', '')
+        
+        if data.get('template_id'):
+            template = EmailTemplate.query.get(data['template_id'])
+            if template:
+                html_content = template.html_content or ''
+                text_content = template.text_content or ''
+                # Jeśli nie podano subject, użyj z szablonu
+                if not data.get('subject') and template.subject:
+                    data['subject'] = template.subject
+        
         campaign = EmailCampaign(
             name=data['name'],
             subject=data['subject'],
+            html_content=html_content,
+            text_content=text_content,
             template_id=data.get('template_id'),
             content_variables=json.dumps(data.get('content_variables', {})),
             recipient_groups=json.dumps(data['recipient_groups']),
@@ -930,7 +955,17 @@ def email_update_campaign(campaign_id):
             campaign.status = data['status']
         if 'scheduled_at' in data and data['scheduled_at']:
             from datetime import datetime
-            campaign.scheduled_at = datetime.fromisoformat(data['scheduled_at'].replace('Z', '+00:00'))
+            from app.utils.timezone_utils import get_local_timezone
+            
+            # Parse date from frontend (może być bez timezone)
+            date_str = data['scheduled_at']
+            if 'T' in date_str and '+' not in date_str and 'Z' not in date_str:
+                # Format: "2025-09-28T15:30" (bez timezone) - dodaj lokalną strefę czasową
+                scheduled_at = datetime.fromisoformat(date_str)
+                campaign.scheduled_at = scheduled_at.replace(tzinfo=get_local_timezone())
+            else:
+                # Format z timezone: "2025-09-28T15:30Z" lub "2025-09-28T15:30+02:00"
+                campaign.scheduled_at = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
         
         db.session.commit()
         
@@ -992,22 +1027,8 @@ def email_send_campaign(campaign_id):
         now = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
         
         # Jeśli kampania ma scheduled_at - zaplanuj ją
-        if campaign.scheduled_at:
-            if campaign.scheduled_at > now:
-                # Zaplanuj na przyszłość
-                campaign.status = 'scheduled'
-                db.session.commit()
-                return jsonify({
-                    'success': True, 
-                    'message': f'Kampania zaplanowana na {campaign.scheduled_at.strftime("%Y-%m-%d %H:%M")}'
-                })
-            else:
-                # Data już minęła - wyślij natychmiast
-                campaign.scheduled_at = None  # Usuń datę
-                campaign.status = 'sending'
-        else:
-            # Brak daty - wyślij natychmiast
-            campaign.status = 'sending'
+        # Zawsze dodaj kampanię do kolejki (niezależnie od daty)
+        campaign.status = 'sending'
         
         # Pobierz grupy odbiorców
         if not campaign.recipient_groups:
@@ -1021,38 +1042,28 @@ def email_send_campaign(campaign_id):
         if not group_ids:
             return jsonify({'success': False, 'error': 'Kampania nie ma przypisanych grup odbiorców'}), 400
         
-        email_processor = EnhancedNotificationProcessor()
+        # Użyj systemu kolejki EmailService zamiast bezpośredniego wysyłania
+        from app.services.email_service import EmailService
+        email_service = EmailService()
         
-        # Wyślij do każdej grupy
-        total_sent = 0
-        total_emails = 0
-        total_errors = 0
-        messages = []
+        # Dodaj kampanię do kolejki
+        success, message = email_service._add_campaign_to_queue(campaign)
         
-        for group_id in group_ids:
-            success, message, email_count = email_processor.send_campaign_to_group(campaign_id, group_id)
-            if success:
-                total_sent += 1
-                total_emails += email_count
-                messages.append(f"Grupa {group_id}: {message}")
-            else:
-                total_errors += 1
-                messages.append(f"Grupa {group_id}: BŁĄD - {message}")
-        
-        # Aktualizuj status kampanii
-        campaign = EmailCampaign.query.get(campaign_id)
-        if campaign:
+        if success:
+            # Aktualizuj status kampanii
             campaign.status = 'sending'
-            campaign.total_recipients = total_emails
-            campaign.sent_count = 0  # Zostanie zaktualizowane po wysłaniu
-            campaign.failed_count = 0
             campaign.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             db.session.commit()
-        
-        if total_errors == 0:
-            return jsonify({'success': True, 'message': f'Kampania dodana do kolejki dla {total_emails} odbiorców w {total_sent} grupach'})
+            
+            # Przygotuj komunikat w zależności od daty
+            if campaign.scheduled_at and campaign.scheduled_at > now:
+                message_text = f'Kampania dodana do kolejki dla {campaign.total_recipients} odbiorców. Zostanie wysłana {campaign.scheduled_at.strftime("%Y-%m-%d o %H:%M")}'
+            else:
+                message_text = f'Kampania dodana do kolejki dla {campaign.total_recipients} odbiorców i zostanie wysłana natychmiast'
+            
+            return jsonify({'success': True, 'message': message_text})
         else:
-            return jsonify({'success': False, 'error': f'Wysłano do {total_sent} grup, {total_errors} błędów. Szczegóły: {"; ".join(messages)}'}), 500
+            return jsonify({'success': False, 'error': f'Błąd dodawania kampanii do kolejki: {message}'}), 500
             
     except Exception as e:
         db.session.rollback()
