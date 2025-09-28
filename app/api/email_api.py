@@ -1717,14 +1717,21 @@ def get_queue_stats():
 def email_activate_campaign(campaign_id):
     """Aktywuje kampanię (zmienia z draft na ready)"""
     try:
+        print(f"🔍 DEBUG: Starting campaign activation for ID {campaign_id}")
         # Pobierz kampanię
         campaign = EmailCampaign.query.get(campaign_id)
         if not campaign:
+            print(f"❌ DEBUG: Campaign {campaign_id} not found")
             return jsonify({'success': False, 'error': 'Kampania nie została znaleziona'}), 404
+        
+        print(f"✅ DEBUG: Found campaign {campaign_id}: {campaign.name}, status: {campaign.status}")
         
         # Można aktywować tylko draft
         if campaign.status != 'draft':
+            print(f"❌ DEBUG: Campaign {campaign_id} status is {campaign.status}, not draft")
             return jsonify({'success': False, 'error': 'Można aktywować tylko kampanie w statusie draft'}), 400
+        
+        print(f"✅ DEBUG: Campaign {campaign_id} validation passed")
         
         # Sprawdź czy kampania ma wszystkie wymagane dane
         missing_fields = []
@@ -1754,12 +1761,16 @@ def email_activate_campaign(campaign_id):
                 db.session.commit()
                 
                 # Dodaj kampanię do kolejki email z zaplanowanym czasem
-                from app.services.email_service import EmailService
-                email_service = EmailService()
-                success, message = email_service._add_campaign_to_queue(campaign)
-                
-                if not success:
-                    print(f"⚠️ Błąd dodawania zaplanowanej kampanii do kolejki: {message}")
+                try:
+                    from app.services.email_service import EmailService
+                    email_service = EmailService()
+                    success, message = email_service._add_campaign_to_queue(campaign)
+                    
+                    if not success:
+                        print(f"⚠️ Błąd dodawania zaplanowanej kampanii do kolejki: {message}")
+                except Exception as e:
+                    print(f"⚠️ Błąd dodawania kampanii do kolejki (Celery może nie działać): {str(e)}")
+                    # Kontynuuj bez dodawania do kolejki - kampania zostanie przetworzona przez Celery Beat
                 
                 # Format time in local timezone for display
                 from app.utils.timezone_utils import get_local_timezone
