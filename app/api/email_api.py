@@ -777,6 +777,16 @@ def email_create_campaign():
     try:
         data = request.get_json()
         
+        # Validate required fields
+        if not data.get('name') or data.get('name', '').strip() == '':
+            return jsonify({'success': False, 'error': 'Nazwa kampanii jest wymagana'}), 400
+        
+        if not data.get('subject') or data.get('subject', '').strip() == '':
+            return jsonify({'success': False, 'error': 'Temat kampanii jest wymagany'}), 400
+        
+        if not data.get('recipient_groups') or len(data.get('recipient_groups', [])) == 0:
+            return jsonify({'success': False, 'error': 'Musisz wybrać co najmniej jedną grupę odbiorców'}), 400
+        
         # Handle scheduling - POPRAWIONA LOGIKA
         send_type = data.get('send_type', 'immediate')
         scheduled_at = None
@@ -892,6 +902,7 @@ def email_get_campaign(campaign_id):
                 'content_variables': content_variables,
                 'recipient_groups': recipient_groups,
                 'status': campaign.status,
+                'send_type': campaign.send_type,
                 'scheduled_at': campaign.scheduled_at.isoformat() if campaign.scheduled_at else None,
                 'sent_at': campaign.sent_at.isoformat() if campaign.sent_at else None,
                 'total_recipients': campaign.total_recipients,
@@ -916,6 +927,13 @@ def email_update_campaign(campaign_id):
             return jsonify({'success': False, 'error': 'Kampania nie została znaleziona'}), 404
         
         data = request.get_json()
+        
+        # Validate required fields if they are being updated
+        if 'name' in data and (not data['name'] or data['name'].strip() == ''):
+            return jsonify({'success': False, 'error': 'Nazwa kampanii nie może być pusta'}), 400
+        
+        if 'subject' in data and (not data['subject'] or data['subject'].strip() == ''):
+            return jsonify({'success': False, 'error': 'Temat kampanii nie może być pusty'}), 400
         
         # Update campaign fields
         if 'name' in data:
@@ -1709,8 +1727,17 @@ def email_activate_campaign(campaign_id):
             return jsonify({'success': False, 'error': 'Można aktywować tylko kampanie w statusie draft'}), 400
         
         # Sprawdź czy kampania ma wszystkie wymagane dane
-        if not campaign.name or not campaign.subject:
-            return jsonify({'success': False, 'error': 'Kampania musi mieć nazwę i temat'}), 400
+        missing_fields = []
+        if not campaign.name or campaign.name.strip() == '':
+            missing_fields.append('nazwę')
+        if not campaign.subject or campaign.subject.strip() == '':
+            missing_fields.append('temat')
+        
+        if missing_fields:
+            return jsonify({
+                'success': False, 
+                'error': f'Kampania musi mieć {", ".join(missing_fields)} przed aktywacją'
+            }), 400
         
         if not campaign.recipient_groups:
             return jsonify({'success': False, 'error': 'Kampania musi mieć przypisane grupy odbiorców'}), 400
@@ -1725,9 +1752,23 @@ def email_activate_campaign(campaign_id):
                 # Zaplanuj kampanię
                 campaign.status = 'scheduled'
                 db.session.commit()
+                
+                # Dodaj kampanię do kolejki email z zaplanowanym czasem
+                from app.services.email_service import EmailService
+                email_service = EmailService()
+                success, message = email_service._add_campaign_to_queue(campaign)
+                
+                if not success:
+                    print(f"⚠️ Błąd dodawania zaplanowanej kampanii do kolejki: {message}")
+                
+                # Format time in local timezone for display
+                from app.utils.timezone_utils import get_local_timezone
+                local_tz = get_local_timezone()
+                local_time = campaign.scheduled_at.astimezone(local_tz)
+                
                 return jsonify({
                     'success': True, 
-                    'message': f'Kampania została zaplanowana na {campaign.scheduled_at.strftime("%Y-%m-%d %H:%M")}'
+                    'message': f'Kampania została zaplanowana na {local_time.strftime("%Y-%m-%d %H:%M")}'
                 })
             else:
                 # Data już minęła - usuń datę i ustaw jako ready

@@ -197,6 +197,11 @@ function initializeBulkDelete() {
 function showCampaignModal() {
     document.getElementById('campaignForm').reset();
     document.getElementById('campaign_id').value = '';
+    
+    // Reset scheduling to default (immediate)
+    document.getElementById('send_immediate').checked = true;
+    document.getElementById('schedulingOptions').style.display = 'none';
+    
     loadGroupsForCampaign();
     const modal = new bootstrap.Modal(document.getElementById('campaignModal'));
     modal.show();
@@ -247,6 +252,20 @@ function saveCampaign() {
     const form = document.getElementById('campaignForm');
     const formData = new FormData(form);
     
+    // Walidacja wymaganych pól
+    const name = formData.get('campaign_name');
+    const subject = formData.get('campaign_subject');
+    
+    if (!name || name.trim() === '') {
+        toastManager.error('Nazwa kampanii jest wymagana');
+        return;
+    }
+    
+    if (!subject || subject.trim() === '') {
+        toastManager.error('Temat kampanii jest wymagany');
+        return;
+    }
+    
     // Walidacja planowania
     const sendType = formData.get('send_type') || 'immediate';
     const scheduledAt = formData.get('campaign_scheduled_at');
@@ -268,6 +287,12 @@ function saveCampaign() {
     
     const selectedGroups = Array.from(document.getElementById('campaign_groups').selectedOptions)
         .map(option => parseInt(option.value));
+    
+    // Walidacja grup odbiorców
+    if (selectedGroups.length === 0) {
+        toastManager.error('Musisz wybrać co najmniej jedną grupę odbiorców');
+        return;
+    }
     
     // Collect content variables
     const contentVariables = {};
@@ -364,6 +389,28 @@ function editCampaign(campaignId) {
                                 }
                             });
                         }, 100);
+                    }
+                }
+                
+                // Set scheduling information
+                if (campaign.send_type) {
+                    document.getElementById(campaign.send_type === 'immediate' ? 'send_immediate' : 'send_scheduled').checked = true;
+                    
+                    // Show/hide scheduling options
+                    toggleScheduling();
+                    
+                    // Set scheduled time if it's a scheduled campaign
+                    if (campaign.send_type === 'scheduled' && campaign.scheduled_at) {
+                        const scheduledDate = new Date(campaign.scheduled_at);
+                        // Format for datetime-local input (YYYY-MM-DDTHH:MM)
+                        // Use local time, not UTC
+                        const year = scheduledDate.getFullYear();
+                        const month = String(scheduledDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(scheduledDate.getDate()).padStart(2, '0');
+                        const hours = String(scheduledDate.getHours()).padStart(2, '0');
+                        const minutes = String(scheduledDate.getMinutes()).padStart(2, '0');
+                        const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+                        document.getElementById('campaign_scheduled_at').value = formattedDateTime;
                     }
                 }
                 
