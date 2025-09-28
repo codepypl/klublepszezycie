@@ -57,7 +57,12 @@ def email_queue():
 @login_required
 def email_logs():
     """Logi emaili"""
-    return render_template('admin/email_logs.html')
+    from app.services.log_service import LogService
+    
+    # Get initial stats
+    stats = LogService.get_logs_stats()
+    
+    return render_template('admin/email_logs.html', stats=stats)
 
 
 @admin_bp.route('/celery-monitor')

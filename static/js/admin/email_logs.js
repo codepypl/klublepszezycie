@@ -7,6 +7,7 @@ let currentFilters = {};
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Load stats and logs
     loadLogsStats();
     loadLogs();
     
@@ -52,24 +53,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Load logs statistics
 function loadLogsStats() {
-    fetch('/api/email/logs/stats')
-        .then(response => response.json())
+    fetch('/admin/logs/stats/refresh')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Stats API Response:', data); // Debug log
             if (data.success) {
                 updateLogsStats(data.stats);
+            } else {
+                console.error('Error in stats response:', data.error);
+                window.toastManager.show('Błąd ładowania statystyk: ' + data.error, 'error');
             }
         })
         .catch(error => {
             console.error('Error loading logs stats:', error);
+            window.toastManager.show('Błąd ładowania statystyk logów', 'error');
         });
 }
 
 // Update stats display
 function updateLogsStats(stats) {
-    document.getElementById('totalLogs').textContent = stats.total || 0;
-    document.getElementById('sentLogs').textContent = stats.sent || 0;
-    document.getElementById('failedLogs').textContent = stats.failed || 0;
-    document.getElementById('bouncedLogs').textContent = stats.bounced || 0;
+    document.getElementById('totalLogs').textContent = stats.total_emails || 0;
+    document.getElementById('sentLogs').textContent = stats.status_breakdown?.sent || 0;
+    document.getElementById('failedLogs').textContent = stats.status_breakdown?.failed || 0;
+    document.getElementById('bouncedLogs').textContent = stats.status_breakdown?.bounced || 0;
 }
 
 // Load logs
@@ -80,7 +91,7 @@ function loadLogs() {
         ...currentFilters
     });
     
-    fetch(`/api/email/logs?${params}`)
+    fetch(`/api/logs?${params}`)
         .then(response => response.json())
         .then(data => {
             console.log('API Response:', data); // Debug log
@@ -130,15 +141,46 @@ function displayLogs(logs) {
             (log.error_message.length > 50 ? log.error_message.substring(0, 50) + '...' : log.error_message) : 
             '-';
         
+        // Event info
+        let eventInfo = '-';
+        if (log.event_id) {
+            if (log.event_info) {
+                eventInfo = `<a href="/admin/events/${log.event_id}" class="text-decoration-none">
+                    <span class="badge admin-badge admin-badge-info">${log.event_id}</span>
+                    <br><small>${log.event_info.title}</small>
+                </a>`;
+            } else {
+                eventInfo = `<span class="badge admin-badge admin-badge-secondary">${log.event_id}</span>`;
+            }
+        }
+        
+        // Template info
+        let templateInfo = '-';
+        if (log.template_id) {
+            templateInfo = `<a href="/admin/email-templates/${log.template_id}" class="text-decoration-none">
+                <span class="badge admin-badge admin-badge-primary">${log.template_id}</span>
+                <br><small>${log.template_name || 'Usunięty szablon'}</small>
+            </a>`;
+        }
+        
+        // Campaign info
+        let campaignInfo = '-';
+        if (log.campaign_id) {
+            campaignInfo = `<a href="/admin/email-campaigns/${log.campaign_id}" class="text-decoration-none">
+                <span class="badge admin-badge admin-badge-warning">${log.campaign_id}</span>
+                <br><small>${log.campaign_name || 'Usunięta kampania'}</small>
+            </a>`;
+        }
+        
         row.innerHTML = `
             <td><span class="badge admin-badge admin-badge-primary">${log.id}</span></td>
             <td>${log.email}</td>
-            <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">${log.subject}</td>
+            <td>${eventInfo}</td>
             <td><span class="admin-badge admin-badge-${statusClass}">${statusText}</span></td>
             <td>${log.sent_at ? new Date(log.sent_at).toLocaleString('pl-PL', {hour12: false}) : '-'}</td>
             <td title="${log.error_message || ''}">${errorMessage}</td>
-            <td>${log.template_name || '-'}</td>
-            <td>${log.campaign_name || '-'}</td>
+            <td>${templateInfo}</td>
+            <td>${campaignInfo}</td>
             <td>
                 <div class="btn-group" role="group">
                     <button class="btn btn-sm admin-btn-outline" onclick="viewLogDetails(${log.id})" title="Zobacz szczegóły">
@@ -157,8 +199,13 @@ function searchLogs() {
     currentFilters = {
         search: document.getElementById('searchInput').value,
         status: document.getElementById('statusFilter').value,
+        event_id: document.getElementById('eventIdFilter').value,
+        template_id: document.getElementById('templateIdFilter').value,
+        campaign_id: document.getElementById('campaignIdFilter').value,
         date_from: document.getElementById('dateFrom').value,
-        date_to: document.getElementById('dateTo').value
+        date_to: document.getElementById('dateTo').value,
+        time_from: document.getElementById('timeFrom').value,
+        time_to: document.getElementById('timeTo').value
     };
     
     // Remove empty filters
@@ -176,8 +223,13 @@ function searchLogs() {
 function clearFilters() {
     document.getElementById('searchInput').value = '';
     document.getElementById('statusFilter').value = 'all';
+    document.getElementById('eventIdFilter').value = '';
+    document.getElementById('templateIdFilter').value = '';
+    document.getElementById('campaignIdFilter').value = '';
     document.getElementById('dateFrom').value = '';
     document.getElementById('dateTo').value = '';
+    document.getElementById('timeFrom').value = '';
+    document.getElementById('timeTo').value = '';
     
     currentFilters = {};
     currentPage = 1;
@@ -200,11 +252,17 @@ function setupEmailLogsAutoRefresh() {
     }, 30000); // 30 seconds
     
     console.log('Email logs auto-refresh setup: every 30 seconds');
+    
+    // Initial refresh after 2 seconds
+    setTimeout(() => {
+        console.log('🚀 Initial email logs refresh...');
+        refreshLogs();
+    }, 2000);
 }
 
 // View log details
 function viewLogDetails(logId) {
-    fetch(`/api/email/logs/${logId}`)
+    fetch(`/api/logs/${logId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -223,6 +281,39 @@ function viewLogDetails(logId) {
 function displayLogDetails(log) {
     const content = document.getElementById('logDetailsContent');
     
+    // Event info
+    let eventInfo = '-';
+    if (log.event_info) {
+        eventInfo = `<a href="/admin/events/${log.event_info.id}" class="text-decoration-none">
+            <span class="badge admin-badge admin-badge-info">${log.event_info.id}</span>
+            ${log.event_info.title}
+        </a>`;
+    } else if (log.event_id) {
+        eventInfo = `<span class="badge admin-badge admin-badge-secondary">${log.event_id}</span>`;
+    }
+    
+    // Template info
+    let templateInfo = '-';
+    if (log.template_info) {
+        templateInfo = `<a href="/admin/email-templates/${log.template_info.id}" class="text-decoration-none">
+            <span class="badge admin-badge admin-badge-primary">${log.template_info.id}</span>
+            ${log.template_info.name}
+        </a>`;
+    } else if (log.template_id) {
+        templateInfo = `<span class="badge admin-badge admin-badge-secondary">${log.template_id}</span>`;
+    }
+    
+    // Campaign info
+    let campaignInfo = '-';
+    if (log.campaign_info) {
+        campaignInfo = `<a href="/admin/email-campaigns/${log.campaign_info.id}" class="text-decoration-none">
+            <span class="badge admin-badge admin-badge-warning">${log.campaign_info.id}</span>
+            ${log.campaign_info.name}
+        </a>`;
+    } else if (log.campaign_id) {
+        campaignInfo = `<span class="badge admin-badge admin-badge-secondary">${log.campaign_id}</span>`;
+    }
+    
     content.innerHTML = `
         <div class="row">
             <div class="col-md-6">
@@ -238,8 +329,9 @@ function displayLogDetails(log) {
             <div class="col-md-6">
                 <h6>Szczegóły</h6>
                 <table class="table table-sm">
-                    <tr><td><strong>Szablon:</strong></td><td>${log.template_name || '-'}</td></tr>
-                    <tr><td><strong>Kampania:</strong></td><td>${log.campaign_name || '-'}</td></tr>
+                    <tr><td><strong>Wydarzenie:</strong></td><td>${eventInfo}</td></tr>
+                    <tr><td><strong>Szablon:</strong></td><td>${templateInfo}</td></tr>
+                    <tr><td><strong>Kampania:</strong></td><td>${campaignInfo}</td></tr>
                     <tr><td><strong>Błąd:</strong></td><td>${log.error_message || '-'}</td></tr>
                 </table>
             </div>
@@ -291,7 +383,7 @@ function updatePagination(pagination) {
 // Clear old logs
 function clearOldLogs() {
     if (confirm('Czy na pewno chcesz wyczyścić stare logi (starsze niż 48 godzin)? Tej operacji nie można cofnąć.')) {
-        fetch('/api/email/logs/cleanup', {
+        fetch('/api/logs/cleanup', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

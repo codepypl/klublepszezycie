@@ -33,7 +33,7 @@ class MailgunAPIService:
     
     def send_email(self, to_email: str, subject: str, html_content: str, 
                    text_content: str = None, template_id: int = None, 
-                   context: Dict = None) -> Tuple[bool, str]:
+                   context: Dict = None, event_id: int = None) -> Tuple[bool, str]:
         """
         Send single email via Mailgun API
         
@@ -103,7 +103,7 @@ class MailgunAPIService:
                 self.logger.info(f"   Response: {result.get('message', 'No message')}")
                 
                 # Log successful email
-                self._log_email(to_email, subject, 'sent', template_id, message_id, context)
+                self._log_email(to_email, subject, 'sent', template_id, message_id, context, None, event_id)
                 
                 return True, f"Email sent via Mailgun API (ID: {message_id})"
             else:
@@ -111,7 +111,7 @@ class MailgunAPIService:
                 self.logger.error(f"❌ {error_msg}")
                 
                 # Log failed email
-                self._log_email(to_email, subject, 'failed', template_id, None, context, error_msg)
+                self._log_email(to_email, subject, 'failed', template_id, None, context, error_msg, event_id)
                 
                 # Try SMTP fallback
                 return self._fallback_to_smtp(to_email, subject, html_content, text_content, template_id)
@@ -121,7 +121,7 @@ class MailgunAPIService:
             self.logger.error(f"❌ {error_msg}")
             
             # Log failed email
-            self._log_email(to_email, subject, 'failed', template_id, None, context, error_msg)
+            self._log_email(to_email, subject, 'failed', template_id, None, context, error_msg, event_id)
             
             # Try SMTP fallback
             return self._fallback_to_smtp(to_email, subject, html_content, text_content, template_id)
@@ -208,7 +208,10 @@ class MailgunAPIService:
                         email.subject, 
                         'sent', 
                         email.template_id, 
-                        message_id
+                        message_id,
+                        None,
+                        None,
+                        email.event_id
                     )
                     
                     sent_count += 1
@@ -226,7 +229,8 @@ class MailgunAPIService:
                         email.template_id, 
                         None, 
                         None, 
-                        error_msg
+                        error_msg,
+                        email.event_id
                     )
                     
                     failed_count += 1
@@ -246,7 +250,8 @@ class MailgunAPIService:
                     email.template_id, 
                     None, 
                     None, 
-                    error_msg
+                    error_msg,
+                    email.event_id
                 )
                 
                 failed_count += 1
@@ -333,24 +338,23 @@ class MailgunAPIService:
             return False, f"Both Mailgun API and SMTP batch failed: {str(e)}"
     
     def _log_email(self, email: str, subject: str, status: str, template_id: int = None, 
-                   message_id: str = None, context: Dict = None, error_message: str = None):
-        """Log email sending attempt"""
+                   message_id: str = None, context: Dict = None, error_message: str = None, event_id: int = None):
+        """Log email sending attempt using LogService"""
         try:
-            log_entry = EmailLog(
-                email=email,
+            from app.services.log_service import LogService
+            
+            success, message = LogService.log_email(
+                to_email=email,
                 subject=subject,
                 status=status,
                 template_id=template_id,
-                sent_at=__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now(),
+                event_id=event_id,
+                context=context,
                 error_message=error_message
             )
             
-            # Add context as JSON if provided
-            if context:
-                log_entry.recipient_data = json.dumps(context)
-            
-            db.session.add(log_entry)
-            db.session.commit()
+            if not success:
+                self.logger.error(f"❌ Failed to log email: {message}")
             
         except Exception as e:
             self.logger.error(f"❌ Failed to log email: {e}")

@@ -27,7 +27,7 @@ class EmailService:
         self.use_tls = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
         self.use_ssl = os.getenv('MAIL_USE_SSL', 'false').lower() == 'true'
 
-    def send_email(self, to_email: str, subject: str, html_content: str, text_content: str = None, template_id: int = None, use_queue: bool = True, context: Dict = None) -> Tuple[bool, str]:
+    def send_email(self, to_email: str, subject: str, html_content: str, text_content: str = None, template_id: int = None, event_id: int = None, use_queue: bool = True, context: Dict = None) -> Tuple[bool, str]:
         """
         Wysyła pojedynczy email
         
@@ -37,6 +37,7 @@ class EmailService:
             html_content: Treść HTML
             text_content: Treść tekstowa (opcjonalna)
             template_id: ID szablonu (opcjonalne)
+            event_id: ID wydarzenia (opcjonalne)
             use_queue: Czy dodać do kolejki (domyślnie True)
             context: Słownik ze zmiennymi do zastąpienia w treści
             
@@ -54,7 +55,8 @@ class EmailService:
                     subject=subject,
                     html_content=html_content,
                     text_content=text_content,
-                    template_id=template_id
+                    template_id=template_id,
+                    event_id=event_id
                 )
             else:
                 # Wysyłanie bezpośrednie (stara logika)
@@ -119,15 +121,15 @@ class EmailService:
                         server.send_message(msg)
                 
                 # Log successful email
-                self._log_email(to_email, subject, 'sent', template_id=template_id)
+                self._log_email(to_email, subject, 'sent', template_id=template_id, event_id=event_id)
                 return True, "Email wysłany pomyślnie"
             
         except Exception as e:
             # Log failed email
-            self._log_email(to_email, subject, 'failed', template_id=template_id, error_message=str(e))
+            self._log_email(to_email, subject, 'failed', template_id=template_id, event_id=event_id, error_message=str(e))
             return False, f"Błąd wysyłania emaila: {str(e)}"
 
-    def send_template_email(self, to_email: str, template_name: str, context: Dict = None, to_name: str = None, use_queue: bool = True) -> Tuple[bool, str]:
+    def send_template_email(self, to_email: str, template_name: str, context: Dict = None, to_name: str = None, use_queue: bool = True, event_id: int = None) -> Tuple[bool, str]:
         """
         Wysyła email używając szablonu
         
@@ -137,6 +139,7 @@ class EmailService:
             context: Kontekst dla zmiennych w szablonie
             to_name: Nazwa odbiorcy (opcjonalna)
             use_queue: Czy dodać do kolejki (domyślnie True)
+            event_id: ID wydarzenia (opcjonalne)
             
         Returns:
             Tuple[bool, str]: (sukces, komunikat)
@@ -182,20 +185,21 @@ class EmailService:
                     html_content=html_content,
                     text_content=text_content,
                     template_id=template.id,
+                    event_id=event_id,
                     context=context,
                     to_name=to_name
                 )
                 return success, message
             else:
                 # Wysyłanie bezpośrednie
-                return self.send_email(to_email, subject, html_content, text_content, template_id=template.id, use_queue=False)
+                return self.send_email(to_email, subject, html_content, text_content, template_id=template.id, event_id=event_id, use_queue=False)
             
         except Exception as e:
             return False, f"Błąd wysyłania szablonu: {str(e)}"
 
     def add_to_queue(self, to_email: str, subject: str, html_content: str, 
                     text_content: str = None, template_id: int = None, 
-                    campaign_id: int = None, context: Dict = None, 
+                    campaign_id: int = None, event_id: int = None, context: Dict = None, 
                     scheduled_at: datetime = None, to_name: str = None, 
                     duplicate_check_key: str = None, skip_duplicate_check: bool = False) -> Tuple[bool, str]:
         """
@@ -208,6 +212,7 @@ class EmailService:
             text_content: Treść tekstowa (opcjonalna)
             template_id: ID szablonu (opcjonalne)
             campaign_id: ID kampanii (opcjonalne)
+            event_id: ID wydarzenia (opcjonalne)
             context: Kontekst dla zmiennych (opcjonalne)
             scheduled_at: Data wysłania (opcjonalne)
             to_name: Nazwa odbiorcy (opcjonalna)
@@ -262,6 +267,7 @@ class EmailService:
                 text_content=text_content,
                 template_id=template_id,
                 campaign_id=campaign_id,
+                event_id=event_id,
                 context=json.dumps(context) if context else None,
                 scheduled_at=scheduled_at or __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now(),
                 status='pending',
@@ -568,6 +574,7 @@ class EmailService:
                         'failed',
                         item.template_id,
                         item.campaign_id,
+                        item.event_id,
                         item.context,
                         str(e)
                     )
@@ -866,9 +873,9 @@ class EmailService:
 
     def _log_email(self, to_email: str, subject: str, status: str, 
                    template_id: int = None, campaign_id: int = None, 
-                   context: str = None, error_message: str = None):
+                   event_id: int = None, context: dict = None, error_message: str = None):
         """
-        Loguje email
+        Loguje email używając LogService
         
         Args:
             to_email: Adres email odbiorcy
@@ -876,24 +883,26 @@ class EmailService:
             status: Status wysłania
             template_id: ID szablonu (opcjonalne)
             campaign_id: ID kampanii (opcjonalne)
+            event_id: ID wydarzenia (opcjonalne)
             context: Kontekst (opcjonalne)
             error_message: Komunikat błędu (opcjonalne)
         """
         try:
-            log_entry = EmailLog(
-                email=to_email,
+            from app.services.log_service import LogService
+            
+            success, message = LogService.log_email(
+                to_email=to_email,
                 subject=subject,
                 status=status,
                 template_id=template_id,
                 campaign_id=campaign_id,
-                recipient_data=context,
-                error_message=error_message,
-                sent_at=__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() if status == 'sent' else None
+                event_id=event_id,
+                context=context,
+                error_message=error_message
             )
             
-            db.session.add(log_entry)
-            db.session.commit()
+            if not success:
+                print(f"Błąd logowania emaila: {message}")
             
         except Exception as e:
             print(f"Błąd logowania emaila: {e}")
-            db.session.rollback()

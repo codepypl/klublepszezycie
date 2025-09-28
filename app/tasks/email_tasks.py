@@ -185,7 +185,8 @@ def send_event_reminder_task(self, event_id, reminder_type, group_type='event_ba
                         template_name=template_name,
                         context=user_template_data,
                         to_name=user.first_name,
-                        use_queue=True  # Zawsze używaj kolejki
+                        use_queue=True,  # Zawsze używaj kolejki
+                        event_id=event_id
                     )
                     
                     if success:

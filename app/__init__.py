@@ -99,6 +99,12 @@ def create_app():
     app.register_blueprint(stats_api_bp, url_prefix='/api')
     app.register_blueprint(unsubscribe_bp)
     
+    # Log blueprints
+    from app.api.log_api import log_bp
+    from app.routes.log_route import log_route
+    app.register_blueprint(log_bp, url_prefix='/api')
+    app.register_blueprint(log_route)
+    
     # Import user loader
     logger.info("👤 Setting up user authentication...")
     

@@ -106,7 +106,7 @@ class EnhancedNotificationProcessor:
             return False, f"Error: {str(e)}"
     
     def send_template_email(self, to_email: str, template_name: str, 
-                          context: Dict = None, to_name: str = None, use_queue: bool = True) -> Tuple[bool, str]:
+                          context: Dict = None, to_name: str = None, use_queue: bool = True, event_id: int = None) -> Tuple[bool, str]:
         """Send template email with enhanced logging - through queue by default"""
         try:
             self.logger.info(f"📧 Sending template email '{template_name}' to {to_email} (queue: {use_queue})")
@@ -195,6 +195,7 @@ class EnhancedNotificationProcessor:
                     html_content=html_content,
                     text_content=text_content,
                     template_id=template.id,
+                    event_id=event_id,
                     to_name=to_name,
                     context=context,
                     duplicate_check_key=duplicate_check_key
@@ -214,7 +215,8 @@ class EnhancedNotificationProcessor:
                     html_content=html_content,
                     text_content=text_content,
                     template_id=template.id,
-                    context=context
+                    context=context,
+                    event_id=event_id
                 )
                 
                 if success:

@@ -315,11 +315,13 @@ class EmailLog(db.Model):
     error_message = db.Column(db.Text)
     sent_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     campaign_id = db.Column(db.Integer, db.ForeignKey('email_campaigns.id'), nullable=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=True)
     recipient_data = db.Column(db.Text)  # JSON string of recipient information
     
     # Relationships
     template = db.relationship('EmailTemplate', backref='email_logs')
     campaign = db.relationship('EmailCampaign', backref='email_logs')
+    event = db.relationship('EventSchedule', backref='email_logs')
     
     def __repr__(self):
         return f'<EmailLog {self.email} - {self.status}>'
