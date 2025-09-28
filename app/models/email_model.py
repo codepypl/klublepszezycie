@@ -175,6 +175,30 @@ class EmailQueue(db.Model):
         return hashlib.md5(content.encode('utf-8')).hexdigest()
     
     @classmethod
+    def check_event_reminder_duplicate(cls, user_id, event_id, template_id, reminder_type):
+        """
+        Check if event reminder already exists in the queue
+        
+        Args:
+            user_id: User ID
+            event_id: Event ID
+            template_id: Template ID
+            reminder_type: Reminder type (24h, 1h, 5min)
+            
+        Returns:
+            EmailQueue object if duplicate found, None otherwise
+        """
+        # Generate specific duplicate check key for event reminders
+        duplicate_key = f"event_reminder_{event_id}_{user_id}_{template_id}_{reminder_type}"
+        
+        existing = cls.query.filter_by(
+            duplicate_check_key=duplicate_key,
+            status='pending'
+        ).first()
+        
+        return existing
+
+    @classmethod
     def check_duplicate(cls, recipient_email, subject, campaign_id=None, html_content=None, text_content=None, duplicate_check_key=None):
         """
         Check if a similar email already exists in the queue

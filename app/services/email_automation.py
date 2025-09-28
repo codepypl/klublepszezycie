@@ -105,6 +105,14 @@ class EmailAutomation:
             if not event:
                 return False, "Wydarzenie nie zostało znalezione"
             
+            # Sprawdź czy przypomnienia już zostały zaplanowane dla tego wydarzenia
+            from app.services.celery_cleanup import CeleryCleanupService
+            existing_tasks = CeleryCleanupService.get_scheduled_event_tasks(event_id)
+            
+            if existing_tasks:
+                print(f"⚠️ Przypomnienia już zaplanowane dla wydarzenia {event_id} - pomijam duplikaty")
+                return True, f"Przypomnienia już zaplanowane ({len(existing_tasks)} zadań)"
+            
             # Pobierz członków z obu grup: klubu i wydarzenia (jak w send_event_reminder_task)
             all_members = set()  # Używamy set() aby uniknąć duplikatów
             

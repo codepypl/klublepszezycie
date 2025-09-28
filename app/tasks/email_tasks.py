@@ -157,6 +157,7 @@ def send_event_reminder_task(self, event_id, reminder_type, group_type='event_ba
             
             # Przygotuj dane dla szablonu
             template_data = {
+                'event_id': event.id,
                 'event_title': event.title,
                 'event_date': event.event_date.strftime('%Y-%m-%d'),
                 'event_time': event.event_date.strftime('%H:%M'),

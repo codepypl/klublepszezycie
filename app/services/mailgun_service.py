@@ -174,6 +174,21 @@ class EnhancedNotificationProcessor:
                 from app.services.email_service import EmailService
                 email_service = EmailService()
                 
+                # Generate duplicate check key for event reminders
+                duplicate_check_key = None
+                if template_name.startswith('event_reminder_'):
+                    # Extract event info from context for duplicate checking
+                    event_id = context.get('event_id')
+                    reminder_type = template_name.replace('event_reminder_', '')
+                    
+                    # Get user ID from email
+                    from app.models.user_model import User
+                    user = User.query.filter_by(email=to_email).first()
+                    user_id = user.id if user else None
+                    
+                    if event_id and user_id and template.id:
+                        duplicate_check_key = f"event_reminder_{event_id}_{user_id}_{template.id}_{reminder_type}"
+                
                 email_id = email_service.add_to_queue(
                     to_email=to_email,
                     subject=template.subject,
@@ -181,7 +196,8 @@ class EnhancedNotificationProcessor:
                     text_content=text_content,
                     template_id=template.id,
                     to_name=to_name,
-                    context=context
+                    context=context,
+                    duplicate_check_key=duplicate_check_key
                 )
                 
                 if email_id[0]:

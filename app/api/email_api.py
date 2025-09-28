@@ -737,11 +737,15 @@ def email_queue_stats():
 @email_bp.route('/email/logs/cleanup', methods=['POST'])
 @login_required
 def email_logs_cleanup():
-    """Czyści stare pliki logów (starsze niż 30 dni)"""
+    """Czyści stare pliki logów i wpisy z bazy danych (starsze niż 48 godzin)"""
     try:
         import os
         import glob
         from datetime import datetime, timedelta
+        from app import db
+        from app.models.email_model import EmailLog
+        from app.models.system_logs_model import SystemLog
+        from app.models.user_logs_model import UserLogs
         
         logs_dir = 'app/logs'
         
@@ -751,8 +755,8 @@ def email_logs_cleanup():
                 'error': f'Katalog {logs_dir} nie istnieje'
             }), 404
         
-        # Calculate cutoff date (30 days ago)
-        cutoff_date = datetime.now() - timedelta(days=30)
+        # Calculate cutoff date (48 hours ago)
+        cutoff_date = datetime.now() - timedelta(hours=48)
         cutoff_timestamp = cutoff_date.timestamp()
         
         # Find all log files
@@ -790,14 +794,54 @@ def email_logs_cleanup():
                         'error': f'Błąd podczas usuwania {log_file}: {str(e)}'
                     }), 500
         
+        # Clean up database logs
+        db_stats = {
+            'email_logs': 0,
+            'system_logs': 0,
+            'user_logs': 0
+        }
+        
+        try:
+            # Clean EmailLog entries older than 48 hours
+            old_email_logs = EmailLog.query.filter(EmailLog.sent_at < cutoff_date).all()
+            for log in old_email_logs:
+                db.session.delete(log)
+            db_stats['email_logs'] = len(old_email_logs)
+            
+            # Clean SystemLog entries older than 48 hours
+            old_system_logs = SystemLog.query.filter(SystemLog.created_at < cutoff_date).all()
+            for log in old_system_logs:
+                db.session.delete(log)
+            db_stats['system_logs'] = len(old_system_logs)
+            
+            # Clean UserLogs entries older than 48 hours
+            old_user_logs = UserLogs.query.filter(UserLogs.created_at < cutoff_date).all()
+            for log in old_user_logs:
+                db.session.delete(log)
+            db_stats['user_logs'] = len(old_user_logs)
+            
+            # Commit database changes
+            db.session.commit()
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({
+                'success': False, 
+                'error': f'Błąd podczas czyszczenia bazy danych: {str(e)}'
+            }), 500
+        
+        total_db_cleaned = db_stats['email_logs'] + db_stats['system_logs'] + db_stats['user_logs']
+        
         return jsonify({
             'success': True,
-            'message': f'Usunięto {deleted_count} plików logów, zwolniono {total_size_freed / 1024 / 1024:.2f} MB',
+            'message': f'Usunięto {deleted_count} plików logów i {total_db_cleaned} wpisów z bazy danych. Zwolniono {total_size_freed / 1024 / 1024:.2f} MB',
             'stats': {
-                'deleted_count': deleted_count,
+                'deleted_files': deleted_count,
                 'size_freed_mb': round(total_size_freed / 1024 / 1024, 2),
                 'cutoff_date': cutoff_date.isoformat(),
-                'deleted_files': deleted_files
+                'deleted_files_list': deleted_files,
+                'database_cleaned': db_stats,
+                'total_db_cleaned': total_db_cleaned
             }
         })
         

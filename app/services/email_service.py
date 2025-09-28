@@ -220,17 +220,38 @@ class EmailService:
         try:
             # Sprawdź duplikaty jeśli nie pomijamy sprawdzania
             if not skip_duplicate_check:
-                existing_email = EmailQueue.check_duplicate(
-                    recipient_email=to_email,
-                    subject=subject,
-                    campaign_id=campaign_id,
-                    html_content=html_content,
-                    text_content=text_content,
-                    duplicate_check_key=duplicate_check_key
-                )
-                
-                if existing_email:
-                    return False, f"Duplikat emaila już istnieje w kolejce (ID: {existing_email.id}, status: {existing_email.status})"
+                # Special handling for event reminders
+                if duplicate_check_key and duplicate_check_key.startswith('event_reminder_'):
+                    # Parse the duplicate check key to get IDs
+                    parts = duplicate_check_key.split('_')
+                    if len(parts) >= 5:
+                        event_id = parts[2]
+                        user_id = parts[3]
+                        template_id = parts[4]
+                        reminder_type = parts[5] if len(parts) > 5 else 'unknown'
+                        
+                        existing_email = EmailQueue.check_event_reminder_duplicate(
+                            user_id=int(user_id),
+                            event_id=int(event_id),
+                            template_id=int(template_id),
+                            reminder_type=reminder_type
+                        )
+                        
+                        if existing_email:
+                            return False, f"Duplikat przypomnienia o wydarzeniu już istnieje w kolejce (ID: {existing_email.id}, status: {existing_email.status})"
+                else:
+                    # Standard duplicate check for other emails
+                    existing_email = EmailQueue.check_duplicate(
+                        recipient_email=to_email,
+                        subject=subject,
+                        campaign_id=campaign_id,
+                        html_content=html_content,
+                        text_content=text_content,
+                        duplicate_check_key=duplicate_check_key
+                    )
+                    
+                    if existing_email:
+                        return False, f"Duplikat emaila już istnieje w kolejce (ID: {existing_email.id}, status: {existing_email.status})"
             
             # Utwórz nowy element kolejki
             queue_item = EmailQueue(
