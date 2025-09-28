@@ -3,7 +3,7 @@ Public routes
 """
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, send_from_directory
 from app.blueprints.public_controller import PublicController
-from app.api.email_api import add_user_to_event_group
+# add_user_to_event_group moved to GroupManager
 from app.services.mailgun_service import EnhancedNotificationProcessor
 from app.utils.timezone_utils import get_local_now, convert_to_local
 from app.utils.blog_utils import generate_blog_link

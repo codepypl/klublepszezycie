@@ -4,7 +4,7 @@ Public business logic controller
 from flask import request, jsonify, flash, redirect, url_for
 from app.models import db, EventSchedule, User, Section, MenuItem, FAQ, BenefitItem, Testimonial, SocialLink, FooterSettings, Stats, UserLogs, UserHistory
 from app.services.mailgun_service import EnhancedNotificationProcessor
-from app.api.email_api import add_user_to_event_group
+# add_user_to_event_group moved to GroupManager
 import os
 import hmac
 import hashlib
