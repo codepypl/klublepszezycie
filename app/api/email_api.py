@@ -993,6 +993,40 @@ def email_update_campaign(campaign_id):
             else:
                 # Format z timezone: "2025-09-28T15:30Z" lub "2025-09-28T15:30+02:00"
                 campaign.scheduled_at = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            
+            # Jeśli kampania jest zaplanowana i ma status 'scheduled', zaktualizuj emailQueue
+            if campaign.status == 'scheduled':
+                print(f"🔄 Updating email queue for campaign {campaign_id} with new scheduled time")
+                try:
+                    from app.models.email_model import EmailQueue
+                    from app.services.email_service import EmailService
+                    
+                    # Usuń stare elementy z kolejki dla tej kampanii
+                    EmailQueue.query.filter_by(campaign_id=campaign_id, status='pending').delete()
+                    print(f"✅ Removed old queue items for campaign {campaign_id}")
+                    
+                    # Dodaj nowe elementy z nową datą
+                    email_service = EmailService()
+                    success, message = email_service._add_campaign_to_queue(campaign)
+                    
+                    if success:
+                        print(f"✅ Added new queue items for campaign {campaign_id} with scheduled time {campaign.scheduled_at}")
+                    else:
+                        print(f"⚠️ Failed to add new queue items: {message}")
+                        
+                except Exception as e:
+                    print(f"⚠️ Error updating email queue for campaign {campaign_id}: {str(e)}")
+                    # Kontynuuj mimo błędu - kampania zostanie przetworzona przez Celery Beat
+        elif 'scheduled_at' in data and not data['scheduled_at']:
+            # Użytkownik usunął datę planowania - usuń elementy z kolejki
+            campaign.scheduled_at = None
+            print(f"🔄 Removing scheduled time for campaign {campaign_id}")
+            try:
+                from app.models.email_model import EmailQueue
+                EmailQueue.query.filter_by(campaign_id=campaign_id, status='pending').delete()
+                print(f"✅ Removed queue items for campaign {campaign_id} (no longer scheduled)")
+            except Exception as e:
+                print(f"⚠️ Error removing queue items for campaign {campaign_id}: {str(e)}")
         
         db.session.commit()
         
