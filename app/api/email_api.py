@@ -681,6 +681,43 @@ def email_reset_templates():
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@email_bp.route('/email/templates/initialize-defaults', methods=['POST'])
+@login_required
+def email_initialize_default_templates():
+    """Inicjalizuje domyślne szablony w bazie danych"""
+    try:
+        from app.services.template_manager import TemplateManager
+        
+        manager = TemplateManager()
+        success, message = manager.initialize_default_templates()
+        
+        if not success:
+            return jsonify({'success': False, 'error': message}), 500
+        
+        return jsonify({'success': True, 'message': message})
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@email_bp.route('/email/templates/load-fixtures', methods=['POST'])
+@login_required
+def email_load_fixtures():
+    """Ładuje szablony z fixtures (jak Django loaddata)"""
+    try:
+        from app.services.fixture_loader import load_email_templates_fixtures
+        
+        success, message = load_email_templates_fixtures()
+        
+        if not success:
+            return jsonify({'success': False, 'error': message}), 500
+        
+        return jsonify({'success': True, 'message': message})
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @email_bp.route('/email/templates/save-as-defaults', methods=['POST'])
 @login_required
 def email_save_templates_as_defaults():

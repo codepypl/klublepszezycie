@@ -1,0 +1,1088 @@
+# Email Templates Fixtures - Kompletne szablony z ulepszeniami
+# Format podobny do Django fixtures
+# Połączone z create_professional_templates.py + update_templates_enhanced.py
+# Wszystkie 11 szablonów z lepszym wyeksponowaniem
+
+- model: DefaultEmailTemplate
+  pk: 1
+  fields:
+    name: welcome
+    template_type: welcome
+    subject: "Witamy w Klubie Lepsze Życie!"
+    html_content: |
+      <!DOCTYPE html>
+      <html lang="pl">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Witamy w Klubie Lepsze Życie!</title>
+      </head>
+      <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1a202c; line-height: 1.6;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
+              
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; padding: 40px 30px; text-align: center; position: relative;">
+                  <h1 style="margin: 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">🎉 Witamy w Klubie!</h1>
+                  <p style="margin: 12px 0 0 0; font-size: 18px; opacity: 0.9;">Klub Lepsze Życie</p>
+              </div>
+              
+              <!-- Content -->
+              <div style="padding: 50px 40px;">
+                  <h2 style="color: #16a34a; font-size: 28px; font-weight: 600; margin-bottom: 25px; border-bottom: 3px solid #16a34a; padding-bottom: 15px;">Cześć {{user_name}}!</h2>
+                  
+                  <p style="font-size: 18px; margin-bottom: 25px; color: #2d3748;">Dziękujemy za dołączenie do <strong>Klubu Lepsze Życie</strong>! Jesteśmy podekscytowani, że będziesz częścią naszej społeczności.</p>
+                  
+                  <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-radius: 12px; padding: 30px; margin: 30px 0;">
+                      <h3 style="color: #15803d; font-size: 22px; font-weight: 600; margin-top: 0; margin-bottom: 20px;">🔑 Twoje dane logowania:</h3>
+                      <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #bbf7d0;">
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #15803d; min-width: 120px; margin-right: 16px;">📧 Email:</span>
+                              <span style="color: #2d3748; flex: 1; font-size: 16px; font-weight: 500;">{{user_email}}</span>
+                          </div>
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #15803d; min-width: 120px; margin-right: 16px;">🔐 Hasło:</span>
+                              <span style="color: #15803d; flex: 1; font-size: 18px; font-weight: 700; letter-spacing: 1px;">{{temporary_password}}</span>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                      <p style="margin: 0; font-weight: 600; color: #92400e; font-size: 16px;">⚠️ Ważne: Zalecamy zmianę hasła po pierwszym zalogowaniu.</p>
+                  </div>
+                  
+                  <div style="text-align: center; margin: 40px 0;">
+                      <a href="{{login_url}}" style="display: inline-block; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; padding: 18px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 18px; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);">Zaloguj się teraz</a>
+                  </div>
+                  
+                  <p style="font-size: 16px; margin: 30px 0; color: #2d3748;">Jeśli masz jakiekolwiek pytania, nie wahaj się z nami skontaktować.</p>
+              </div>
+              
+              <!-- Footer -->
+              <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; color: #64748b;">
+                  <div style="font-size: 20px; font-weight: 700; color: #16a34a; margin-bottom: 16px;">Klub Lepsze Życie</div>
+                  <p style="margin: 8px 0; font-size: 14px;">Dziękujemy za bycie częścią naszej społeczności!</p>
+                  <p style="margin: 8px 0; font-size: 14px;">W razie pytań skontaktuj się z nami: <a href="mailto:kontakt@klublepszezycie.pl" style="color: #16a34a; text-decoration: none;">kontakt@klublepszezycie.pl</a></p>
+                  
+                  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                      <a href="{{unsubscribe_url}}" style="color: #64748b; text-decoration: underline; font-size: 12px; margin: 0 8px;">Zrezygnuj z członkostwa</a> |
+                      <a href="{{delete_account_url}}" style="color: #dc2626; text-decoration: underline; font-size: 12px; margin: 0 8px;">Usuń konto</a>
+                  </div>
+              </div>
+          </div>
+      </body>
+      </html>
+    text_content: |
+      Witamy w Klubie Lepsze Życie! 🌟
+      
+      Cześć {{user_name}}!
+      
+      Dziękujemy za dołączenie do Klubu Lepsze Życie! Jesteśmy podekscytowani, że będziesz częścią naszej społeczności.
+      
+      🔑 Twoje dane logowania:
+      📧 Email: {{user_email}}
+      🔐 Hasło: {{temporary_password}}
+      
+      ⚠️ Ważne: Zalecamy zmianę hasła po pierwszym zalogowaniu.
+      
+      Zaloguj się teraz: {{login_url}}
+      
+      Jeśli masz jakiekolwiek pytania, nie wahaj się z nami skontaktować.
+      
+      Klub Lepsze Życie
+      kontakt@klublepszezycie.pl
+      
+      Zrezygnuj z członkostwa: {{unsubscribe_url}}
+      Usuń konto: {{delete_account_url}}
+    variables: |
+      {"delete_account_url": "Link do usunięcia konta", "login_url": "Link do logowania", "temporary_password": "Hasło tymczasowe", "unsubscribe_url": "Link do rezygnacji z członkostwa", "user_email": "Email użytkownika", "user_name": "Imię użytkownika"}
+    is_active: true
+    created_at: "2024-01-01 00:00:00"
+    updated_at: "2024-01-01 00:00:00"
+
+- model: DefaultEmailTemplate
+  pk: 2
+  fields:
+    name: event_reminder_5min
+    template_type: event_reminder
+    subject: "Przypomnienie: {{event_title}} za 5 minut!"
+    html_content: |
+      <!DOCTYPE html>
+      <html lang="pl">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Przypomnienie: {{event_title}} za 5 minut!</title>
+      </head>
+      <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1a202c; line-height: 1.6;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
+              
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 40px 30px; text-align: center; position: relative;">
+                  <h1 style="margin: 0; font-size: 36px; font-weight: 700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">⚡ ZA 5 MINUT!</h1>
+                  <p style="margin: 12px 0 0 0; font-size: 18px; opacity: 0.9;">{{event_title}}</p>
+              </div>
+              
+              <!-- Content -->
+              <div style="padding: 50px 40px;">
+                  <h2 style="color: #dc2626; font-size: 28px; font-weight: 600; margin-bottom: 25px; border-bottom: 3px solid #dc2626; padding-bottom: 15px;">Ostatni dzwonek!</h2>
+                  
+                  <p style="font-size: 18px; margin-bottom: 25px; color: #2d3748;">Cześć <strong>{{user_name}}</strong>!</p>
+                  
+                  <p style="font-size: 18px; margin-bottom: 30px; color: #2d3748;">Wydarzenie zaczyna się za <strong style="color: #dc2626; font-size: 20px;">5 minut</strong>!</p>
+                  
+                  <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1px solid #fecaca; border-radius: 12px; padding: 30px; margin: 30px 0;">
+                      <h3 style="color: #dc2626; font-size: 24px; font-weight: 600; margin-top: 0; margin-bottom: 20px;">{{event_title}}</h3>
+                      
+                      <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #fecaca;">
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #dc2626; min-width: 120px; margin-right: 16px;">📅 Data:</span>
+                              <span style="color: #dc2626; flex: 1; font-size: 18px; font-weight: 700;">{{event_date}}</span>
+                          </div>
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #dc2626; min-width: 120px; margin-right: 16px;">🕐 Godzina:</span>
+                              <span style="color: #dc2626; flex: 1; font-size: 20px; font-weight: 700;">{{event_time}}</span>
+                          </div>
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #dc2626; min-width: 120px; margin-right: 16px;">📍 Lokalizacja:</span>
+                              <span style="color: #2d3748; flex: 1; font-size: 16px; font-weight: 500;">{{event_location}}</span>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                      <p style="margin: 0; font-weight: 600; color: #92400e; font-size: 16px;">Nie przegap tego wydarzenia! Kliknij poniżej, aby dołączyć:</p>
+                  </div>
+                  
+                  <div style="text-align: center; margin: 40px 0;">
+                      <a href="{{event_url}}" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 18px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 18px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);">DOŁĄCZ TERAZ</a>
+                  </div>
+                  
+                  <p style="font-size: 18px; margin: 30px 0; color: #2d3748; text-align: center;">
+                      <strong style="color: #dc2626;">🎉 Czas na świetną zabawę!</strong><br>
+                      Życzymy Ci wspaniałego czasu!
+                  </p>
+              </div>
+              
+              <!-- Footer -->
+              <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; color: #64748b;">
+                  <div style="font-size: 20px; font-weight: 700; color: #dc2626; margin-bottom: 16px;">Klub Lepsze Życie</div>
+                  <p style="margin: 8px 0; font-size: 14px;">Dziękujemy za bycie częścią naszej społeczności!</p>
+                  <p style="margin: 8px 0; font-size: 14px;">W razie pytań skontaktuj się z nami: <a href="mailto:kontakt@klublepszezycie.pl" style="color: #dc2626; text-decoration: none;">kontakt@klublepszezycie.pl</a></p>
+                  
+                  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                      <a href="{{unsubscribe_url}}" style="color: #64748b; text-decoration: underline; font-size: 12px; margin: 0 8px;">Zrezygnuj z członkostwa</a> |
+                      <a href="{{delete_account_url}}" style="color: #dc2626; text-decoration: underline; font-size: 12px; margin: 0 8px;">Usuń konto</a>
+                  </div>
+              </div>
+          </div>
+      </body>
+      </html>
+    text_content: |
+      ⚡ ZA 5 MINUT! {{event_title}}
+      
+      Ostatni dzwonek!
+      
+      Cześć {{user_name}}!
+      
+      Wydarzenie zaczyna się za 5 minut!
+      
+      📅 Szczegóły wydarzenia:
+      📝 Tytuł: {{event_title}}
+      🕐 Czas: {{event_datetime}}
+      📍 Miejsce: {{event_location}}
+      
+      ⏰ Sprawdź połączenie i przygotuj się do wydarzenia!
+      
+      Dołącz teraz: {{event_url}}
+      
+      Jeśli masz problemy z połączeniem, skontaktuj się z nami.
+      
+      Klub Lepsze Życie
+      kontakt@klublepszezycie.pl
+      
+      Zrezygnuj z członkostwa: {{unsubscribe_url}}
+      Usuń konto: {{delete_account_url}}
+    variables: |
+      {"delete_account_url": "Link do usunięcia konta", "event_date": "Data wydarzenia", "event_datetime": "Data i godzina wydarzenia", "event_location": "Lokalizacja wydarzenia", "event_time": "Godzina wydarzenia", "event_title": "Tytuł wydarzenia", "event_url": "Link do wydarzenia", "unsubscribe_url": "Link do rezygnacji z członkostwa", "user_name": "Imię użytkownika"}
+    is_active: true
+    created_at: "2024-01-01 00:00:00"
+    updated_at: "2024-01-01 00:00:00"
+
+- model: DefaultEmailTemplate
+  pk: 3
+  fields:
+    name: event_registration
+    template_type: registration_confirmation
+    subject: "Rejestracja potwierdzona - {{event_title}}"
+    html_content: |
+      <!DOCTYPE html>
+      <html lang="pl">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Rejestracja potwierdzona</title>
+      </head>
+      <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1a202c; line-height: 1.6;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
+              
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 40px 30px; text-align: center; position: relative;">
+                  <h1 style="margin: 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">✅ Rejestracja potwierdzona</h1>
+                  <p style="margin: 12px 0 0 0; font-size: 18px; opacity: 0.9;">Klub Lepsze Życie</p>
+              </div>
+              
+              <!-- Content -->
+              <div style="padding: 50px 40px;">
+                  <p style="font-size: 18px; margin-bottom: 25px; color: #2d3748;">Cześć <strong>{{user_name}}</strong>!</p>
+                  
+                  <p style="font-size: 18px; margin-bottom: 30px; color: #2d3748;">Twoja rejestracja na wydarzenie została pomyślnie potwierdzona!</p>
+                  
+                  <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe; border-radius: 12px; padding: 30px; margin: 30px 0;">
+                      <h3 style="color: #1e3a8a; font-size: 24px; font-weight: 600; margin-top: 0; margin-bottom: 20px;">{{event_title}}</h3>
+                      
+                      <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #bfdbfe;">
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #1e3a8a; min-width: 120px; margin-right: 16px;">📅 Data:</span>
+                              <span style="color: #1e3a8a; flex: 1; font-size: 18px; font-weight: 700;">{{event_date}}</span>
+                          </div>
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #1e3a8a; min-width: 120px; margin-right: 16px;">🕐 Godzina:</span>
+                              <span style="color: #1e3a8a; flex: 1; font-size: 18px; font-weight: 700;">{{event_time}}</span>
+                          </div>
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #1e3a8a; min-width: 120px; margin-right: 16px;">📍 Lokalizacja:</span>
+                              <span style="color: #2d3748; flex: 1; font-size: 16px; font-weight: 500;">{{event_location}}</span>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <div style="background: #f0fdf4; border-left: 4px solid #16a34a; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                      <p style="margin: 0; font-weight: 600; color: #15803d; font-size: 16px;">🎉 Gratulacje! Jesteś już zarejestrowany na to wydarzenie.</p>
+                  </div>
+                  
+                  <div style="text-align: center; margin: 40px 0;">
+                      <a href="{{event_url}}" style="display: inline-block; background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 18px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 18px; box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);">Zobacz szczegóły wydarzenia</a>
+                  </div>
+                  
+                  <p style="font-size: 16px; margin: 30px 0; color: #2d3748;">Do zobaczenia na wydarzeniu!</p>
+              </div>
+              
+              <!-- Footer -->
+              <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; color: #64748b;">
+                  <div style="font-size: 20px; font-weight: 700; color: #1e3a8a; margin-bottom: 16px;">Klub Lepsze Życie</div>
+                  <p style="margin: 8px 0; font-size: 14px;">Dziękujemy za bycie częścią naszej społeczności!</p>
+                  <p style="margin: 8px 0; font-size: 14px;">W razie pytań skontaktuj się z nami: <a href="mailto:kontakt@klublepszezycie.pl" style="color: #1e3a8a; text-decoration: none;">kontakt@klublepszezycie.pl</a></p>
+                  
+                  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                      <a href="{{unsubscribe_url}}" style="color: #64748b; text-decoration: underline; font-size: 12px; margin: 0 8px;">Zrezygnuj z członkostwa</a> |
+                      <a href="{{delete_account_url}}" style="color: #dc2626; text-decoration: underline; font-size: 12px; margin: 0 8px;">Usuń konto</a>
+                  </div>
+              </div>
+          </div>
+      </body>
+      </html>
+    text_content: |
+      ✅ Rejestracja potwierdzona - {{event_title}}
+      
+      Cześć {{user_name}}!
+      
+      Twoja rejestracja na wydarzenie została pomyślnie potwierdzona!
+      
+      📅 Szczegóły wydarzenia:
+      📝 Tytuł: {{event_title}}
+      📅 Data: {{event_date}}
+      🕐 Godzina: {{event_time}}
+      📍 Lokalizacja: {{event_location}}
+      
+      🎉 Gratulacje! Jesteś już zarejestrowany na to wydarzenie.
+      
+      Zobacz szczegóły wydarzenia: {{event_url}}
+      
+      Jeśli masz pytania dotyczące wydarzenia, skontaktuj się z nami.
+      
+      Klub Lepsze Życie
+      kontakt@klublepszezycie.pl
+      
+      Zrezygnuj z członkostwa: {{unsubscribe_url}}
+      Usuń konto: {{delete_account_url}}
+    variables: |
+      {"delete_account_url": "Link do usunięcia konta", "event_date": "Data wydarzenia", "event_location": "Lokalizacja wydarzenia", "event_time": "Godzina wydarzenia", "event_title": "Tytuł wydarzenia", "event_url": "Link do wydarzenia", "unsubscribe_url": "Link do rezygnacji z członkostwa", "user_name": "Imię użytkownika"}
+    is_active: true
+    created_at: "2024-01-01 00:00:00"
+    updated_at: "2024-01-01 00:00:00"
+
+- model: DefaultEmailTemplate
+  pk: 4
+  fields:
+    name: password_reset
+    template_type: password_reset
+    subject: "Reset hasła - Klub Lepsze Życie"
+    html_content: |
+      <!DOCTYPE html>
+      <html lang="pl">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Resetowanie hasła - Klub Lepsze Życie</title>
+      </head>
+      <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1a202c; line-height: 1.6;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
+              
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 40px 30px; text-align: center; position: relative;">
+                  <h1 style="margin: 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">🔐 Resetowanie hasła</h1>
+                  <p style="margin: 12px 0 0 0; font-size: 18px; opacity: 0.9;">Klub Lepsze Życie</p>
+              </div>
+              
+              <!-- Content -->
+              <div style="padding: 50px 40px;">
+                  <h2 style="color: #f59e0b; font-size: 28px; font-weight: 600; margin-bottom: 25px; border-bottom: 3px solid #f59e0b; padding-bottom: 15px;">Resetowanie hasła</h2>
+                  
+                  <p style="font-size: 18px; margin-bottom: 25px; color: #2d3748;">Cześć <strong>{{user_name}}</strong>!</p>
+                  
+                  <p style="font-size: 18px; margin-bottom: 30px; color: #2d3748;">Otrzymaliśmy prośbę o resetowanie hasła do Twojego konta w Klubie Lepsze Życie.</p>
+                  
+                  <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1px solid #fed7aa; border-radius: 12px; padding: 30px; margin: 30px 0;">
+                      <h3 style="color: #d97706; font-size: 22px; font-weight: 600; margin-top: 0; margin-bottom: 20px;">🔑 Twoje nowe hasło:</h3>
+                      <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #fed7aa; text-align: center;">
+                          <p style="margin: 0; font-size: 20px; font-weight: 600; color: #d97706; letter-spacing: 2px;">{{temporary_password}}</p>
+                      </div>
+                  </div>
+                  
+                  <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                      <p style="margin: 0; font-weight: 600; color: #b91c1c;">⚠️ Ważne: Po zalogowaniu zalecamy zmianę hasła na własne.</p>
+                  </div>
+                  
+                  <div style="text-align: center; margin: 40px 0;">
+                      <a href="{{login_url}}" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 18px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 18px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">Zaloguj się teraz</a>
+                  </div>
+                  
+                  <p style="font-size: 16px; margin: 30px 0; color: #2d3748;">Jeśli nie prosiłeś o resetowanie hasła, zignoruj ten email.</p>
+              </div>
+              
+              <!-- Footer -->
+              <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; color: #64748b;">
+                  <div style="font-size: 20px; font-weight: 700; color: #f59e0b; margin-bottom: 16px;">Klub Lepsze Życie</div>
+                  <p style="margin: 8px 0; font-size: 14px;">Dziękujemy za bycie częścią naszej społeczności!</p>
+                  <p style="margin: 8px 0; font-size: 14px;">W razie pytań skontaktuj się z nami: <a href="mailto:kontakt@klublepszezycie.pl" style="color: #f59e0b; text-decoration: none;">kontakt@klublepszezycie.pl</a></p>
+                  
+                  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                      <a href="{{unsubscribe_url}}" style="color: #64748b; text-decoration: underline; font-size: 12px; margin: 0 8px;">Zrezygnuj z członkostwa</a> |
+                      <a href="{{delete_account_url}}" style="color: #dc2626; text-decoration: underline; font-size: 12px; margin: 0 8px;">Usuń konto</a>
+                  </div>
+              </div>
+          </div>
+      </body>
+      </html>
+    text_content: |
+      Reset hasła 🔐
+      
+      Cześć {{user_name}}!
+      
+      Otrzymałeś prośbę o reset hasła do swojego konta w Klubie Lepsze Życie.
+      
+      🔑 Twój kod resetujący:
+      {{reset_code}}
+      
+      ⚠️ Ważne: Ten kod jest ważny przez 1 godzinę.
+      
+      Zresetuj hasło: {{reset_url}}
+      
+      Jeśli nie prosiłeś o reset hasła, zignoruj ten email.
+      
+      © 2025 Klub Lepsze Życie. Wszystkie prawa zastrzeżone.
+      Kontakt: kontakt@klublepszezycie.pl
+      
+      Zrezygnuj z członkostwa: {{unsubscribe_url}}
+      Usuń konto: {{delete_account_url}}
+    variables: |
+      {"delete_account_url": "Link do usunięcia konta", "login_url": "Link do logowania", "reset_code": "Kod resetujący hasło", "reset_url": "Link do resetowania hasła", "temporary_password": "Hasło tymczasowe", "unsubscribe_url": "Link do rezygnacji z członkostwa", "user_name": "Imię użytkownika"}
+    is_active: true
+    created_at: "2024-01-01 00:00:00"
+    updated_at: "2024-01-01 00:00:00"
+
+- model: DefaultEmailTemplate
+  pk: 5
+  fields:
+    name: admin_notification
+    template_type: admin_notification
+    subject: "Powiadomienie administratora - {{notification_type}}"
+    html_content: |
+      <!DOCTYPE html>
+      <html lang="pl">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Nowa osoba dołączyła do klubu - {{user_name}}</title>
+      </head>
+      <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1a202c; line-height: 1.6;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
+              
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); color: white; padding: 40px 30px; text-align: center; position: relative;">
+                  <h1 style="margin: 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">📋 Nowy członek klubu</h1>
+                  <p style="margin: 12px 0 0 0; font-size: 18px; opacity: 0.9;">Klub Lepsze Życie</p>
+              </div>
+              
+              <!-- Content -->
+              <div style="padding: 50px 40px;">
+                  <h2 style="color: #7c3aed; font-size: 28px; font-weight: 600; margin-bottom: 25px; border-bottom: 3px solid #7c3aed; padding-bottom: 15px;">Powiadomienie administracyjne</h2>
+                  
+                  <p style="font-size: 18px; margin-bottom: 30px; color: #2d3748;">Do klubu dołączyła nowa osoba:</p>
+                  
+                  <div style="background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); border: 1px solid #e9d5ff; border-radius: 12px; padding: 30px; margin: 30px 0;">
+                      <h3 style="color: #7c3aed; font-size: 24px; font-weight: 600; margin-top: 0; margin-bottom: 20px;">👤 {{user_name}}</h3>
+                      
+                      <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #e9d5ff;">
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #7c3aed; min-width: 120px; margin-right: 16px;">📧 Email:</span>
+                              <span style="color: #2d3748; flex: 1;">{{user_email}}</span>
+                          </div>
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #7c3aed; min-width: 120px; margin-right: 16px;">📅 Data dołączenia:</span>
+                              <span style="color: #2d3748; flex: 1;">{{registration_date}}</span>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                      <p style="margin: 0; font-weight: 600; color: #92400e;">Nowy członek czeka na akceptację przez administratora.</p>
+                  </div>
+                  
+                  <div style="text-align: center; margin: 40px 0;">
+                      <a href="{{admin_panel_url}}" style="display: inline-block; background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); color: white; padding: 18px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 18px; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);">Przejdź do panelu admin</a>
+                  </div>
+              </div>
+              
+              <!-- Footer -->
+              <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; color: #64748b;">
+                  <div style="font-size: 20px; font-weight: 700; color: #7c3aed; margin-bottom: 16px;">Klub Lepsze Życie</div>
+                  <p style="margin: 8px 0; font-size: 14px;">System powiadomień administracyjnych</p>
+                  <p style="margin: 8px 0; font-size: 14px;">W razie pytań skontaktuj się z nami: <a href="mailto:kontakt@klublepszezycie.pl" style="color: #7c3aed; text-decoration: none;">kontakt@klublepszezycie.pl</a></p>
+                  
+                  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                      <a href="{{unsubscribe_url}}" style="color: #64748b; text-decoration: underline; font-size: 12px; margin: 0 8px;">Zrezygnuj z członkostwa</a> |
+                      <a href="{{delete_account_url}}" style="color: #dc2626; text-decoration: underline; font-size: 12px; margin: 0 8px;">Usuń konto</a>
+                  </div>
+              </div>
+          </div>
+      </body>
+      </html>
+    text_content: |
+      Powiadomienie administratora 📢
+      
+      {{notification_message}}
+      
+      Typ: {{notification_type}}
+      Użytkownik: {{user_name}}
+      Email: {{user_email}}
+      Data: {{notification_date}}
+      
+      {{additional_info}}
+      
+      © 2025 Klub Lepsze Życie. Wszystkie prawa zastrzeżone.
+      Kontakt: kontakt@klublepszezycie.pl
+    variables: |
+      {"additional_info": "Dodatkowe informacje", "admin_panel_url": "Zmienna: admin_panel_url", "delete_account_url": "Link do usunięcia konta", "notification_date": "Data powiadomienia", "notification_message": "Treść powiadomienia", "notification_type": "Typ powiadomienia", "registration_date": "Zmienna: registration_date", "unsubscribe_url": "Link do rezygnacji z członkostwa", "user_email": "Email użytkownika", "user_name": "Imię użytkownika"}
+    is_active: true
+    created_at: "2024-01-01 00:00:00"
+    updated_at: "2024-01-01 00:00:00"
+
+- model: DefaultEmailTemplate
+  pk: 6
+  fields:
+    name: admin_message
+    template_type: admin_notification
+    subject: "Wiadomość od administratora - Klub Lepsze Życie"
+    html_content: |
+      <!DOCTYPE html>
+      <html lang="pl">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Wiadomość od administratora - Klub Lepsze Życie</title>
+      </head>
+      <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1a202c; line-height: 1.6;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
+              
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 40px 30px; text-align: center; position: relative;">
+                  <h1 style="margin: 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">📢 Wiadomość od administratora</h1>
+                  <p style="margin: 12px 0 0 0; font-size: 18px; opacity: 0.9;">Klub Lepsze Życie</p>
+              </div>
+              
+              <!-- Content -->
+              <div style="padding: 50px 40px;">
+                  <h2 style="color: #059669; font-size: 28px; font-weight: 600; margin-bottom: 25px; border-bottom: 3px solid #059669; padding-bottom: 15px;">{{message_subject}}</h2>
+                  
+                  <p style="font-size: 18px; margin-bottom: 25px; color: #2d3748;">Cześć <strong>{{user_name}}</strong>!</p>
+                  
+                  <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0; border-radius: 12px; padding: 30px; margin: 30px 0;">
+                      <h3 style="color: #059669; font-size: 22px; font-weight: 600; margin-top: 0; margin-bottom: 20px;">📝 Treść wiadomości:</h3>
+                      
+                      <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #a7f3d0; font-size: 16px; line-height: 1.7;">
+                          {{message_content}}
+                      </div>
+                  </div>
+                  
+                  <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                      <p style="margin: 0; font-weight: 600; color: #92400e;">Jeśli masz pytania, odpowiedz na ten email lub skontaktuj się z nami bezpośrednio.</p>
+                  </div>
+                  
+                  <div style="text-align: center; margin: 40px 0;">
+                      <a href="{{contact_url}}" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 18px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 18px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);">Skontaktuj się z nami</a>
+                  </div>
+              </div>
+              
+              <!-- Footer -->
+              <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; color: #64748b;">
+                  <div style="font-size: 20px; font-weight: 700; color: #059669; margin-bottom: 16px;">Klub Lepsze Życie</div>
+                  <p style="margin: 8px 0; font-size: 14px;">Dziękujemy za bycie częścią naszej społeczności!</p>
+                  <p style="margin: 8px 0; font-size: 14px;">W razie pytań skontaktuj się z nami: <a href="mailto:kontakt@klublepszezycie.pl" style="color: #059669; text-decoration: none;">kontakt@klublepszezycie.pl</a></p>
+                  
+                  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                      <a href="{{unsubscribe_url}}" style="color: #64748b; text-decoration: underline; font-size: 12px; margin: 0 8px;">Zrezygnuj z członkostwa</a> |
+                      <a href="{{delete_account_url}}" style="color: #dc2626; text-decoration: underline; font-size: 12px; margin: 0 8px;">Usuń konto</a>
+                  </div>
+              </div>
+          </div>
+      </body>
+      </html>
+    text_content: |
+      Wiadomość od administratora 💬
+      
+      Cześć {{user_name}}!
+      
+      {{admin_message}}
+      
+      {{additional_info}}
+      
+      Jeśli masz pytania, skontaktuj się z nami.
+      
+      © 2025 Klub Lepsze Życie. Wszystkie prawa zastrzeżone.
+      Kontakt: kontakt@klublepszezycie.pl
+      
+      Zrezygnuj z członkostwa: {{unsubscribe_url}}
+      Usuń konto: {{delete_account_url}}
+    variables: |
+      {"additional_info": "Dodatkowe informacje", "admin_message": "Wiadomość od administratora", "contact_url": "Zmienna: contact_url", "delete_account_url": "Link do usunięcia konta", "message_content": "Zmienna: message_content", "message_subject": "Zmienna: message_subject", "unsubscribe_url": "Link do rezygnacji z członkostwa", "user_name": "Imię użytkownika"}
+    is_active: true
+    created_at: "2024-01-01 00:00:00"
+    updated_at: "2024-01-01 00:00:00"
+
+- model: DefaultEmailTemplate
+  pk: 7
+  fields:
+    name: comment_moderation
+    template_type: admin_notification
+    subject: "Komentarz wymaga moderacji - {{post_title}}"
+    html_content: |
+      <!DOCTYPE html>
+      <html lang="pl">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Nowy komentarz wymaga moderacji - {{post_title}}</title>
+      </head>
+      <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1a202c; line-height: 1.6;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
+              
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%); color: white; padding: 40px 30px; text-align: center; position: relative;">
+                  <h1 style="margin: 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">🔔 Komentarz do moderacji</h1>
+                  <p style="margin: 12px 0 0 0; font-size: 18px; opacity: 0.9;">Klub Lepsze Życie</p>
+              </div>
+              
+              <!-- Content -->
+              <div style="padding: 50px 40px;">
+                  <h2 style="color: #ea580c; font-size: 28px; font-weight: 600; margin-bottom: 25px; border-bottom: 3px solid #ea580c; padding-bottom: 15px;">Nowy komentarz czeka na akceptację</h2>
+                  
+                  <div style="background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%); border: 1px solid #fdba74; border-radius: 12px; padding: 30px; margin: 30px 0;">
+                      <h3 style="color: #ea580c; font-size: 24px; font-weight: 600; margin-top: 0; margin-bottom: 20px;">📝 {{post_title}}</h3>
+                      
+                      <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #fdba74; margin-bottom: 20px;">
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #ea580c; min-width: 120px; margin-right: 16px;">👤 Autor:</span>
+                              <span style="color: #2d3748; flex: 1;">{{comment_author}}</span>
+                          </div>
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #ea580c; min-width: 120px; margin-right: 16px;">📧 Email:</span>
+                              <span style="color: #2d3748; flex: 1;">{{comment_email}}</span>
+                          </div>
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #ea580c; min-width: 120px; margin-right: 16px;">📅 Data:</span>
+                              <span style="color: #2d3748; flex: 1;">{{comment_date}}</span>
+                          </div>
+                      </div>
+                      
+                      <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #fdba74;">
+                          <h4 style="color: #ea580c; font-size: 18px; font-weight: 600; margin-top: 0; margin-bottom: 15px;">💬 Treść komentarza:</h4>
+                          <div style="font-size: 16px; line-height: 1.7; color: #2d3748;">{{comment_content}}</div>
+                      </div>
+                  </div>
+                  
+                  <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                      <p style="margin: 0; font-weight: 600; color: #92400e;">Komentarz czeka na Twoją akceptację przed publikacją.</p>
+                  </div>
+                  
+                  <div style="text-align: center; margin: 40px 0;">
+                      <a href="{{moderation_url}}" style="display: inline-block; background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%); color: white; padding: 18px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 18px; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);">Przejdź do moderacji</a>
+                  </div>
+              </div>
+              
+              <!-- Footer -->
+              <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; color: #64748b;">
+                  <div style="font-size: 20px; font-weight: 700; color: #ea580c; margin-bottom: 16px;">Klub Lepsze Życie</div>
+                  <p style="margin: 8px 0; font-size: 14px;">System moderacji komentarzy</p>
+                  <p style="margin: 8px 0; font-size: 14px;">W razie pytań skontaktuj się z nami: <a href="mailto:kontakt@klublepszezycie.pl" style="color: #ea580c; text-decoration: none;">kontakt@klublepszezycie.pl</a></p>
+                  
+                  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                      <a href="{{unsubscribe_url}}" style="color: #64748b; text-decoration: underline; font-size: 12px; margin: 0 8px;">Zrezygnuj z członkostwa</a> |
+                      <a href="{{delete_account_url}}" style="color: #dc2626; text-decoration: underline; font-size: 12px; margin: 0 8px;">Usuń konto</a>
+                  </div>
+              </div>
+          </div>
+      </body>
+      </html>
+    text_content: |
+      Komentarz wymaga moderacji 💬
+      
+      Nowy komentarz wymaga Twojej moderacji:
+      
+      Post: {{post_title}}
+      Autor: {{comment_author}}
+      Email: {{comment_author_email}}
+      Treść: {{comment_content}}
+      
+      Data: {{comment_date}}
+      
+      Zatwierdź: {{approve_url}}
+      Odrzuć: {{reject_url}}
+      
+      © 2025 Klub Lepsze Życie. Wszystkie prawa zastrzeżone.
+      Kontakt: kontakt@klublepszezycie.pl
+    variables: |
+      {"approve_url": "Link do zatwierdzenia", "comment_author": "Autor komentarza", "comment_author_email": "Email autora komentarza", "comment_content": "Treść komentarza", "comment_date": "Data komentarza", "comment_email": "Zmienna: comment_email", "delete_account_url": "Link do usunięcia konta", "moderation_url": "Zmienna: moderation_url", "post_title": "Tytuł posta", "reject_url": "Link do odrzucenia", "unsubscribe_url": "Link do rezygnacji z członkostwa"}
+    is_active: true
+    created_at: "2024-01-01 00:00:00"
+    updated_at: "2024-01-01 00:00:00"
+
+- model: DefaultEmailTemplate
+  pk: 8
+  fields:
+    name: event_reminder_24h
+    template_type: event_reminder
+    subject: "Przypomnienie: {{event_title}} jutro!"
+    html_content: |
+      <!DOCTYPE html>
+      <html lang="pl">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Przypomnienie: wydarzenie już jutro!</title>
+      </head>
+      <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1a202c; line-height: 1.6;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
+              
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; padding: 40px 30px; text-align: center; position: relative;">
+                  <h1 style="margin: 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">📅 Jutro już wydarzenie!</h1>
+                  <p style="margin: 12px 0 0 0; font-size: 18px; opacity: 0.9;">Przypomnienie o wydarzeniu (24h)</p>
+              </div>
+              
+              <!-- Content -->
+              <div style="padding: 50px 40px;">
+                  <h2 style="color: #0891b2; font-size: 28px; font-weight: 600; margin-bottom: 25px; border-bottom: 3px solid #0891b2; padding-bottom: 15px;">Przypomnienie o wydarzeniu</h2>
+                  
+                  <p style="font-size: 18px; margin-bottom: 25px; color: #2d3748;">Cześć <strong>{{user_name}}</strong>!</p>
+                  
+                  <p style="font-size: 18px; margin-bottom: 30px; color: #2d3748;">Przypominamy o nadchodzącym wydarzeniu:</p>
+                  
+                  <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #7dd3fc; border-radius: 12px; padding: 30px; margin: 30px 0;">
+                      <h3 style="color: #0891b2; font-size: 24px; font-weight: 600; margin-top: 0; margin-bottom: 20px;">{{event_title}}</h3>
+                      
+                      <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #7dd3fc;">
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #0891b2; min-width: 120px; margin-right: 16px;">📅 Data:</span>
+                              <span style="color: #2d3748; flex: 1;">{{event_date}}</span>
+                          </div>
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #0891b2; min-width: 120px; margin-right: 16px;">🕐 Godzina:</span>
+                              <span style="color: #2d3748; flex: 1;">{{event_time}}</span>
+                          </div>
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #0891b2; min-width: 120px; margin-right: 16px;">📍 Lokalizacja:</span>
+                              <span style="color: #2d3748; flex: 1;">{{event_location}}</span>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                      <p style="margin: 0; font-weight: 600; color: #92400e;">Nie zapomnij o jutrzejszym wydarzeniu! Przygotuj się na świetną zabawę.</p>
+                  </div>
+                  
+                  <div style="text-align: center; margin: 40px 0;">
+                      <a href="{{event_url}}" style="display: inline-block; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; padding: 18px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 18px; box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);">Zobacz szczegóły wydarzenia</a>
+                  </div>
+                  
+                  <p style="font-size: 18px; margin: 30px 0; color: #2d3748; text-align: center;">
+                      <strong>🎉 Do zobaczenia jutro!</strong><br>
+                      Życzymy Ci wspaniałego czasu!
+                  </p>
+              </div>
+              
+              <!-- Footer -->
+              <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; color: #64748b;">
+                  <div style="font-size: 20px; font-weight: 700; color: #0891b2; margin-bottom: 16px;">Klub Lepsze Życie</div>
+                  <p style="margin: 8px 0; font-size: 14px;">Dziękujemy za bycie częścią naszej społeczności!</p>
+                  <p style="margin: 8px 0; font-size: 14px;">W razie pytań skontaktuj się z nami: <a href="mailto:kontakt@klublepszezycie.pl" style="color: #0891b2; text-decoration: none;">kontakt@klublepszezycie.pl</a></p>
+                  
+                  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                      <a href="{{unsubscribe_url}}" style="color: #64748b; text-decoration: underline; font-size: 12px; margin: 0 8px;">Zrezygnuj z członkostwa</a> |
+                      <a href="{{delete_account_url}}" style="color: #dc2626; text-decoration: underline; font-size: 12px; margin: 0 8px;">Usuń konto</a>
+                  </div>
+              </div>
+          </div>
+      </body>
+      </html>
+    text_content: |
+      📅 Jutro! {{event_title}}
+      
+      Przypomnienie o wydarzeniu
+      
+      Cześć {{user_name}}!
+      
+      Wydarzenie {{event_title}} odbędzie się jutro!
+      
+      📅 Szczegóły wydarzenia:
+      📝 Tytuł: {{event_title}}
+      🕐 Czas: {{event_datetime}}
+      📍 Miejsce: {{event_location}}
+      📝 Opis: {{event_description}}
+      
+      💡 Pamiętaj o przygotowaniu się do wydarzenia!
+      
+      Zobacz szczegóły: {{event_url}}
+      
+      Jeśli masz pytania dotyczące wydarzenia, skontaktuj się z nami.
+      
+      Klub Lepsze Życie
+      kontakt@klublepszezycie.pl
+      
+      Zrezygnuj z członkostwa: {{unsubscribe_url}}
+      Usuń konto: {{delete_account_url}}
+    variables: |
+      {"delete_account_url": "Link do usunięcia konta", "event_date": "Data wydarzenia", "event_datetime": "Data i godzina wydarzenia", "event_description": "Opis wydarzenia", "event_location": "Lokalizacja wydarzenia", "event_time": "Godzina wydarzenia", "event_title": "Tytuł wydarzenia", "event_url": "Link do wydarzenia", "unsubscribe_url": "Link do rezygnacji z członkostwa", "user_name": "Imię użytkownika"}
+    is_active: true
+    created_at: "2024-01-01 00:00:00"
+    updated_at: "2024-01-01 00:00:00"
+
+- model: DefaultEmailTemplate
+  pk: 9
+  fields:
+    name: event_reminder_1h
+    template_type: event_reminder
+    subject: "Przypomnienie: {{event_title}} za 1 godzinę!"
+    html_content: |
+      <!DOCTYPE html>
+      <html lang="pl">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Przypomnienie: {{event_title}} za 1 godzinę!</title>
+      </head>
+      <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1a202c; line-height: 1.6;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
+              
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #be185d 0%, #9d174d 100%); color: white; padding: 40px 30px; text-align: center; position: relative;">
+                  <h1 style="margin: 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">🚨 Za godzinę!</h1>
+                  <p style="margin: 12px 0 0 0; font-size: 18px; opacity: 0.9;">Przypomnienie o wydarzeniu (1h)</p>
+              </div>
+              
+              <!-- Content -->
+              <div style="padding: 50px 40px;">
+                  <h2 style="color: #be185d; font-size: 28px; font-weight: 600; margin-bottom: 25px; border-bottom: 3px solid #be185d; padding-bottom: 15px;">Przypomnienie o wydarzeniu</h2>
+                  
+                  <p style="font-size: 18px; margin-bottom: 25px; color: #2d3748;">Cześć <strong>{{user_name}}</strong>!</p>
+                  
+                  <p style="font-size: 18px; margin-bottom: 30px; color: #2d3748;">Przypominamy o nadchodzącym wydarzeniu:</p>
+                  
+                  <div style="background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%); border: 1px solid #f9a8d4; border-radius: 12px; padding: 30px; margin: 30px 0;">
+                      <h3 style="color: #be185d; font-size: 24px; font-weight: 600; margin-top: 0; margin-bottom: 20px;">{{event_title}}</h3>
+                      
+                      <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #f9a8d4;">
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #be185d; min-width: 120px; margin-right: 16px;">📅 Data:</span>
+                              <span style="color: #2d3748; flex: 1;">{{event_date}}</span>
+                          </div>
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #be185d; min-width: 120px; margin-right: 16px;">🕐 Godzina:</span>
+                              <span style="color: #2d3748; flex: 1;">{{event_time}}</span>
+                          </div>
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #be185d; min-width: 120px; margin-right: 16px;">📍 Lokalizacja:</span>
+                              <span style="color: #2d3748; flex: 1;">{{event_location}}</span>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                      <p style="margin: 0; font-weight: 600; color: #92400e;">Wydarzenie zaczyna się za godzinę! Przygotuj się i nie przegap.</p>
+                  </div>
+                  
+                  <div style="text-align: center; margin: 40px 0;">
+                      <a href="{{event_url}}" style="display: inline-block; background: linear-gradient(135deg, #be185d 0%, #9d174d 100%); color: white; padding: 18px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 18px; box-shadow: 0 4px 12px rgba(190, 24, 93, 0.3);">Dołącz do wydarzenia</a>
+                  </div>
+                  
+                  <p style="font-size: 18px; margin: 30px 0; color: #2d3748; text-align: center;">
+                      <strong>🎉 Czas na świetną zabawę!</strong><br>
+                      Życzymy Ci wspaniałego czasu!
+                  </p>
+              </div>
+              
+              <!-- Footer -->
+              <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; color: #64748b;">
+                  <div style="font-size: 20px; font-weight: 700; color: #be185d; margin-bottom: 16px;">Klub Lepsze Życie</div>
+                  <p style="margin: 8px 0; font-size: 14px;">Dziękujemy za bycie częścią naszej społeczności!</p>
+                  <p style="margin: 8px 0; font-size: 14px;">W razie pytań skontaktuj się z nami: <a href="mailto:kontakt@klublepszezycie.pl" style="color: #be185d; text-decoration: none;">kontakt@klublepszezycie.pl</a></p>
+                  
+                  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                      <a href="{{unsubscribe_url}}" style="color: #64748b; text-decoration: underline; font-size: 12px; margin: 0 8px;">Zrezygnuj z członkostwa</a> |
+                      <a href="{{delete_account_url}}" style="color: #dc2626; text-decoration: underline; font-size: 12px; margin: 0 8px;">Usuń konto</a>
+                  </div>
+              </div>
+          </div>
+      </body>
+      </html>
+    text_content: |
+      Za godzinę! 🚨
+      
+      Cześć {{user_name}}!
+      
+      Przypominamy o nadchodzącym wydarzeniu:
+      
+      {{event_title}}
+      Data: {{event_date}}
+      Godzina: {{event_time}}
+      Lokalizacja: {{event_location}}
+      
+      Wydarzenie zaczyna się za godzinę! Przygotuj się i nie przegap.
+      
+      Dołącz do wydarzenia: {{event_url}}
+      
+      🎉 Czas na świetną zabawę!
+      Życzymy Ci wspaniałego czasu!
+      
+      © 2025 Klub Lepsze Życie. Wszystkie prawa zastrzeżone.
+      Kontakt: kontakt@klublepszezycie.pl
+      
+      Zrezygnuj z członkostwa: {{unsubscribe_url}}
+      Usuń konto: {{delete_account_url}}
+    variables: |
+      {"delete_account_url": "Link do usunięcia konta", "event_date": "Data wydarzenia", "event_location": "Lokalizacja wydarzenia", "event_time": "Godzina wydarzenia", "event_title": "Tytuł wydarzenia", "event_url": "Link do wydarzenia", "unsubscribe_url": "Link do rezygnacji z członkostwa", "user_name": "Imię użytkownika"}
+    is_active: true
+    created_at: "2024-01-01 00:00:00"
+    updated_at: "2024-01-01 00:00:00"
+
+- model: DefaultEmailTemplate
+  pk: 10
+  fields:
+    name: admin_password_set
+    template_type: admin_notification
+    subject: "Nowe hasło zostało ustawione - Klub Lepsze Życie"
+    html_content: |
+      <!DOCTYPE html>
+      <html lang="pl">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Nowe hasło zostało ustawione - Klub Lepsze Życie</title>
+      </head>
+      <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1a202c; line-height: 1.6;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
+              
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%); color: white; padding: 40px 30px; text-align: center; position: relative;">
+                  <h1 style="margin: 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">🔐 Hasło zostało ustawione</h1>
+                  <p style="margin: 12px 0 0 0; font-size: 18px; opacity: 0.9;">Klub Lepsze Życie</p>
+              </div>
+              
+              <!-- Content -->
+              <div style="padding: 50px 40px;">
+                  <h2 style="color: #4338ca; font-size: 28px; font-weight: 600; margin-bottom: 25px; border-bottom: 3px solid #4338ca; padding-bottom: 15px;">Nowe hasło zostało ustawione</h2>
+                  
+                  <p style="font-size: 18px; margin-bottom: 25px; color: #2d3748;">Cześć <strong>{{user_name}}</strong>!</p>
+                  
+                  <p style="font-size: 18px; margin-bottom: 30px; color: #2d3748;">Administrator ustawił nowe hasło do Twojego konta w Klubie Lepsze Życie.</p>
+                  
+                  <div style="background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border: 1px solid #c7d2fe; border-radius: 12px; padding: 30px; margin: 30px 0;">
+                      <h3 style="color: #4338ca; font-size: 22px; font-weight: 600; margin-top: 0; margin-bottom: 20px;">🔑 Twoje nowe dane logowania:</h3>
+                      <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #c7d2fe;">
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #4338ca; min-width: 120px; margin-right: 16px;">📧 Email:</span>
+                              <span style="color: #2d3748; flex: 1;">{{user_email}}</span>
+                          </div>
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #4338ca; min-width: 120px; margin-right: 16px;">🔐 Hasło:</span>
+                              <span style="color: #2d3748; flex: 1;">{{new_password}}</span>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                      <p style="margin: 0; font-weight: 600; color: #92400e;">⚠️ Ważne: Po pierwszym zalogowaniu zalecamy zmianę hasła na własne.</p>
+                  </div>
+                  
+                  <div style="text-align: center; margin: 40px 0;">
+                      <a href="{{login_url}}" style="display: inline-block; background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%); color: white; padding: 18px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 18px; box-shadow: 0 4px 12px rgba(67, 56, 202, 0.3);">Zaloguj się teraz</a>
+                  </div>
+                  
+                  <p style="font-size: 16px; margin: 30px 0; color: #2d3748;">Jeśli masz jakiekolwiek pytania, nie wahaj się z nami skontaktować.</p>
+              </div>
+              
+              <!-- Footer -->
+              <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; color: #64748b;">
+                  <div style="font-size: 20px; font-weight: 700; color: #4338ca; margin-bottom: 16px;">Klub Lepsze Życie</div>
+                  <p style="margin: 8px 0; font-size: 14px;">Dziękujemy za bycie częścią naszej społeczności!</p>
+                  <p style="margin: 8px 0; font-size: 14px;">W razie pytań skontaktuj się z nami: <a href="mailto:kontakt@klublepszezycie.pl" style="color: #4338ca; text-decoration: none;">kontakt@klublepszezycie.pl</a></p>
+                  
+                  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                      <a href="{{unsubscribe_url}}" style="color: #64748b; text-decoration: underline; font-size: 12px; margin: 0 8px;">Zrezygnuj z członkostwa</a> |
+                      <a href="{{delete_account_url}}" style="color: #dc2626; text-decoration: underline; font-size: 12px; margin: 0 8px;">Usuń konto</a>
+                  </div>
+              </div>
+          </div>
+      </body>
+      </html>
+    text_content: |
+      Hasło zostało ustawione 🔐
+      
+      Cześć {{user_name}}!
+      
+      Administrator ustawił nowe hasło do Twojego konta w Klubie Lepsze Życie.
+      
+      🔑 Twoje nowe dane logowania:
+      📧 Email: {{user_email}}
+      🔐 Hasło: {{new_password}}
+      
+      ⚠️ Ważne: Po pierwszym zalogowaniu zalecamy zmianę hasła na własne.
+      
+      Zaloguj się: {{login_url}}
+      
+      Jeśli masz jakiekolwiek pytania, nie wahaj się z nami skontaktować.
+      
+      © 2025 Klub Lepsze Życie. Wszystkie prawa zastrzeżone.
+      Kontakt: kontakt@klublepszezycie.pl
+      
+      Zrezygnuj z członkostwa: {{unsubscribe_url}}
+      Usuń konto: {{delete_account_url}}
+    variables: |
+      {"delete_account_url": "Link do usunięcia konta", "login_url": "Link do logowania", "new_password": "Nowe hasło", "unsubscribe_url": "Link do rezygnacji z członkostwa", "user_email": "Email użytkownika", "user_name": "Imię użytkownika"}
+    is_active: true
+    created_at: "2024-01-01 00:00:00"
+    updated_at: "2024-01-01 00:00:00"
+
+- model: DefaultEmailTemplate
+  pk: 11
+  fields:
+    name: security_alert
+    template_type: system
+    subject: "Alert bezpieczeństwa - Klub Lepsze Życie"
+    html_content: |
+      <!DOCTYPE html>
+      <html lang="pl">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>🚨 Alert Bezpieczeństwa - {{server_name}}</title>
+      </head>
+      <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1a202c; line-height: 1.6;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
+              
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 40px 30px; text-align: center; position: relative;">
+                  <h1 style="margin: 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">🚨 Alert Bezpieczeństwa</h1>
+                  <p style="margin: 12px 0 0 0; font-size: 18px; opacity: 0.9;">{{server_name}}</p>
+              </div>
+              
+              <!-- Content -->
+              <div style="padding: 50px 40px;">
+                  <h2 style="color: #dc2626; font-size: 28px; font-weight: 600; margin-bottom: 25px; border-bottom: 3px solid #dc2626; padding-bottom: 15px;">Wykryto podejrzaną aktywność</h2>
+                  
+                  <p style="font-size: 18px; margin-bottom: 25px; color: #2d3748;">Cześć <strong>{{user_name}}</strong>!</p>
+                  
+                  <p style="font-size: 18px; margin-bottom: 30px; color: #2d3748;">Nasz system bezpieczeństwa wykrył podejrzaną aktywność na Twoim koncie.</p>
+                  
+                  <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1px solid #fecaca; border-radius: 12px; padding: 30px; margin: 30px 0;">
+                      <h3 style="color: #dc2626; font-size: 22px; font-weight: 600; margin-top: 0; margin-bottom: 20px;">🔍 Szczegóły alertu:</h3>
+                      
+                      <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #fecaca;">
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #dc2626; min-width: 120px; margin-right: 16px;">🆔 ID żądania:</span>
+                              <span style="color: #2d3748; flex: 1;">{{request_id}}</span>
+                          </div>
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #dc2626; min-width: 120px; margin-right: 16px;">🆔 ID sesji:</span>
+                              <span style="color: #2d3748; flex: 1;">{{session_id}}</span>
+                          </div>
+                          <div style="display: flex; margin-bottom: 12px; align-items: center;">
+                              <span style="font-weight: 600; color: #dc2626; min-width: 120px; margin-right: 16px;">⚠️ Poziom:</span>
+                              <span style="color: #2d3748; flex: 1;">{{severity}}</span>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                      <p style="margin: 0; font-weight: 600; color: #92400e;">Jeśli to nie Ty wykonałeś tę aktywność, natychmiast zmień hasło!</p>
+                  </div>
+                  
+                  <div style="text-align: center; margin: 40px 0;">
+                      <a href="{{login_url}}" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 18px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 18px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);">Zmień hasło</a>
+                  </div>
+                  
+                  <p style="font-size: 16px; margin: 30px 0; color: #2d3748;">Jeśli masz pytania dotyczące bezpieczeństwa, skontaktuj się z nami.</p>
+              </div>
+              
+              <!-- Footer -->
+              <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; color: #64748b;">
+                  <div style="font-size: 20px; font-weight: 700; color: #dc2626; margin-bottom: 16px;">Klub Lepsze Życie</div>
+                  <p style="margin: 8px 0; font-size: 14px;">Bezpieczeństwo Twojego konta jest dla nas priorytetem.</p>
+                  <p style="margin: 8px 0; font-size: 14px;">W razie pytań skontaktuj się z nami: <a href="mailto:kontakt@klublepszezycie.pl" style="color: #dc2626; text-decoration: none;">kontakt@klublepszezycie.pl</a></p>
+                  
+                  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                      <a href="{{unsubscribe_url}}" style="color: #64748b; text-decoration: underline; font-size: 12px; margin: 0 8px;">Zrezygnuj z członkostwa</a> |
+                      <a href="{{delete_account_url}}" style="color: #dc2626; text-decoration: underline; font-size: 12px; margin: 0 8px;">Usuń konto</a>
+                  </div>
+              </div>
+          </div>
+      </body>
+      </html>
+    text_content: |
+      Alert bezpieczeństwa 🚨
+      
+      Cześć {{user_name}}!
+      
+      Wykryliśmy podejrzaną aktywność na Twoim koncie:
+      
+      {{alert_message}}
+      
+      Data: {{alert_date}}
+      IP: {{ip_address}}
+      Lokalizacja: {{location}}
+      
+      Jeśli to nie Ty, natychmiast zmień hasło: {{password_reset_url}}
+      
+      Jeśli masz pytania, skontaktuj się z nami.
+      
+      © 2025 Klub Lepsze Życie. Wszystkie prawa zastrzeżone.
+      Kontakt: kontakt@klublepszezycie.pl
+      
+      Zrezygnuj z członkostwa: {{unsubscribe_url}}
+      Usuń konto: {{delete_account_url}}
+    variables: |
+      {"alert_date": "Data alertu", "alert_message": "Treść alertu", "delete_account_url": "Link do usunięcia konta", "ip_address": "Adres IP", "location": "Lokalizacja", "login_url": "Link do logowania", "password_reset_url": "Link do resetowania hasła", "request_id": "Zmienna: request_id", "server_name": "Zmienna: server_name", "session_id": "Zmienna: session_id", "severity": "Zmienna: severity", "unsubscribe_url": "Link do rezygnacji z członkostwa", "user_name": "Imię użytkownika"}
+    is_active: true
+    created_at: "2024-01-01 00:00:00"
+    updated_at: "2024-01-01 00:00:00"
+

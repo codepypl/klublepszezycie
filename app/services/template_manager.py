@@ -12,10 +12,120 @@ class TemplateManager:
     def get_default_templates(self):
         """Pobiera domyślne szablony z bazy danych"""
         try:
-            return DefaultEmailTemplate.query.filter_by(is_active=True).all()
+            templates = DefaultEmailTemplate.query.filter_by(is_active=True).all()
+            
+            # Jeśli nie ma domyślnych szablonów, utwórz je automatycznie
+            if not templates:
+                logging.info("Brak domyślnych szablonów, inicjalizuję...")
+                self.initialize_default_templates()
+                templates = DefaultEmailTemplate.query.filter_by(is_active=True).all()
+            
+            return templates
         except Exception as e:
             logging.error(f"Błąd pobierania domyślnych szablonów: {str(e)}")
             return []
+    
+    def initialize_default_templates(self):
+        """Inicjalizuje domyślne szablony w bazie danych"""
+        try:
+            # Użyj fixtures (jak Django) - to jest główna metoda
+            from app.services.fixture_loader import load_email_templates_fixtures
+            
+            success, message = load_email_templates_fixtures()
+            if success:
+                logging.info(f"Załadowano domyślne szablony z fixtures: {message}")
+                return True, f"Załadowano domyślne szablony z fixtures: {message}"
+            
+            # Fallback - utwórz podstawowe szablony programowo (tylko w przypadku błędu)
+            logging.warning("Nie udało się załadować z fixtures, tworzę podstawowe szablony...")
+            
+            # Importuj funkcje tworzące szablony z create_professional_templates
+            import sys
+            import os
+            sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+            
+            from create_professional_templates import create_welcome_template, create_event_reminder_5min_template
+            
+            # Podstawowe szablony do inicjalizacji
+            default_templates_data = [
+                {
+                    'name': 'welcome',
+                    'template_type': 'html',
+                    'subject': 'Witamy w Klubie Lepsze Życie!',
+                    'html_content': create_welcome_template(),
+                    'text_content': '''Witamy w Klubie Lepsze Życie! 🌟
+
+Cześć {{user_name}}
+
+Dziękujemy za dołączenie do Klubu Lepsze Życie!
+
+🔑 Twoje dane logowania:
+Email: {{user_email}}
+Hasło tymczasowe: {{temporary_password}}
+
+⚠️ Ważne: Zalecamy zmianę hasła po pierwszym zalogowaniu.
+
+Zaloguj się: {{login_url}}
+
+Jeśli masz jakiekolwiek pytania, nie wahaj się z nami skontaktować.
+
+© 2025 Klub Lepsze Życie. Wszystkie prawa zastrzeżone.
+Kontakt: kontakt@klublepszezycie.pl
+
+Zrezygnuj z członkostwa: {{unsubscribe_url}}
+Usuń konto: {{delete_account_url}}''',
+                    'variables': '{"user_name": "Imię użytkownika", "user_email": "Email użytkownika", "temporary_password": "Tymczasowe hasło", "login_url": "URL logowania", "unsubscribe_url": "URL rezygnacji", "delete_account_url": "URL usunięcia konta"}',
+                    'description': 'Szablon powitalny dla nowych członków klubu',
+                    'is_active': True
+                },
+                {
+                    'name': 'event_reminder_5min',
+                    'template_type': 'html',
+                    'subject': 'Przypomnienie: {{event_title}} za 5 minut! ⚡',
+                    'html_content': create_event_reminder_5min_template(),
+                    'text_content': '''Przypomnienie o wydarzeniu za 5 minut! ⚡
+
+Cześć {{user_name}}!
+
+Przypominamy o nadchodzącym wydarzeniu:
+
+{{event_title}}
+📅 Data: {{event_date}}
+🕐 Godzina: {{event_time}}
+📍 Lokalizacja: {{event_location}}
+
+Dołącz do wydarzenia: {{event_url}}
+
+Do zobaczenia na wydarzeniu!
+
+Zespół Klub Lepsze Życie
+
+Zrezygnuj z członkostwa: {{unsubscribe_url}}
+Usuń konto: {{delete_account_url}}''',
+                    'variables': '{"user_name": "Imię użytkownika", "event_title": "Tytuł wydarzenia", "event_date": "Data wydarzenia", "event_time": "Godzina wydarzenia", "event_location": "Lokalizacja wydarzenia", "event_url": "URL wydarzenia", "unsubscribe_url": "URL rezygnacji", "delete_account_url": "URL usunięcia konta"}',
+                    'description': 'Przypomnienie o wydarzeniu 5 minut przed rozpoczęciem',
+                    'is_active': True
+                }
+            ]
+            
+            created_count = 0
+            for template_data in default_templates_data:
+                # Sprawdź czy szablon już istnieje
+                existing = DefaultEmailTemplate.query.filter_by(name=template_data['name']).first()
+                if not existing:
+                    default_template = DefaultEmailTemplate(**template_data)
+                    db.session.add(default_template)
+                    created_count += 1
+                    logging.info(f"Utworzono domyślny szablon: {template_data['name']}")
+            
+            db.session.commit()
+            logging.info(f"Inicjalizacja zakończona: utworzono {created_count} domyślnych szablonów")
+            return True, f"Utworzono {created_count} domyślnych szablonów"
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Błąd inicjalizacji domyślnych szablonów: {str(e)}")
+            return False, f"Błąd inicjalizacji: {str(e)}"
     
     def sync_templates_from_defaults(self):
         """Synchronizuje szablony z domyślnych w bazie danych"""
