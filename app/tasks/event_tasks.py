@@ -35,6 +35,7 @@ def process_event_reminders_task(self):
             now = datetime.now()
             tomorrow = now + timedelta(days=1)
             in_one_hour = now + timedelta(hours=1)
+            in_five_minutes = now + timedelta(minutes=5)
             
             # Wydarzenia za 24h
             events_24h = EventSchedule.query.filter(
@@ -50,18 +51,34 @@ def process_event_reminders_task(self):
                 EventSchedule.is_active == True
             ).all()
             
+            # Wydarzenia za 5 minut
+            events_5min = EventSchedule.query.filter(
+                EventSchedule.event_date >= now,
+                EventSchedule.event_date <= in_five_minutes,
+                EventSchedule.is_active == True
+            ).all()
+            
             stats = {'processed': 0, 'success': 0, 'failed': 0}
             
             # Przetwórz wydarzenia za 24h
             for event in events_24h:
                 try:
-                    # Pobierz użytkowników zapisanych na wydarzenie
                     from app.models.user_model import User
                     
-                    users = User.query.filter_by(
+                    # Pobierz wszystkich członków klubu (account_type='member') + osoby zapisane na wydarzenie
+                    club_members = User.query.filter_by(account_type='member').all()
+                    event_registrations = User.query.filter_by(
                         event_id=event.id,
                         account_type='event_registration'
                     ).all()
+                    
+                    # Połącz listy i usuń duplikaty (po email)
+                    all_users = {}
+                    for user in club_members + event_registrations:
+                        all_users[user.email] = user
+                    
+                    users = list(all_users.values())
+                    logger.info(f"📧 Wysyłam przypomnienia 24h dla wydarzenia '{event.title}' do {len(users)} użytkowników")
                     
                     for user in users:
                         success, message = email_processor.send_template_email(
@@ -93,17 +110,73 @@ def process_event_reminders_task(self):
             # Przetwórz wydarzenia za 1h
             for event in events_1h:
                 try:
-                    # Pobierz użytkowników zapisanych na wydarzenie
                     from app.models.user_model import User
                     
-                    users = User.query.filter_by(
+                    # Pobierz wszystkich członków klubu (account_type='member') + osoby zapisane na wydarzenie
+                    club_members = User.query.filter_by(account_type='member').all()
+                    event_registrations = User.query.filter_by(
                         event_id=event.id,
                         account_type='event_registration'
                     ).all()
                     
+                    # Połącz listy i usuń duplikaty (po email)
+                    all_users = {}
+                    for user in club_members + event_registrations:
+                        all_users[user.email] = user
+                    
+                    users = list(all_users.values())
+                    logger.info(f"📧 Wysyłam przypomnienia 1h dla wydarzenia '{event.title}' do {len(users)} użytkowników")
+                    
                     for user in users:
                         success, message = email_processor.send_template_email(
                             template_name='event_reminder_1h',
+                            to_email=user.email,
+                            to_name=user.first_name,
+                            context={
+                                'event_title': event.title,
+                                'event_date': event.event_date.strftime('%d.%m.%Y'),
+                                'event_time': event.event_date.strftime('%H:%M'),
+                                'event_location': event.location or 'Online',
+                                'user_name': user.first_name,
+                                'event_id': event.id,
+                                'user_id': user.id
+                            },
+                            use_queue=True
+                        )
+                        
+                        stats['processed'] += 1
+                        if success:
+                            stats['success'] += 1
+                        else:
+                            stats['failed'] += 1
+                            
+                except Exception as exc:
+                    logger.error(f"❌ Błąd przetwarzania wydarzenia {event.id}: {exc}")
+                    stats['failed'] += 1
+            
+            # Przetwórz wydarzenia za 5 minut
+            for event in events_5min:
+                try:
+                    from app.models.user_model import User
+                    
+                    # Pobierz wszystkich członków klubu (account_type='member') + osoby zapisane na wydarzenie
+                    club_members = User.query.filter_by(account_type='member').all()
+                    event_registrations = User.query.filter_by(
+                        event_id=event.id,
+                        account_type='event_registration'
+                    ).all()
+                    
+                    # Połącz listy i usuń duplikaty (po email)
+                    all_users = {}
+                    for user in club_members + event_registrations:
+                        all_users[user.email] = user
+                    
+                    users = list(all_users.values())
+                    logger.info(f"📧 Wysyłam przypomnienia 5min dla wydarzenia '{event.title}' do {len(users)} użytkowników")
+                    
+                    for user in users:
+                        success, message = email_processor.send_template_email(
+                            template_name='event_reminder_5min',
                             to_email=user.email,
                             to_name=user.first_name,
                             context={
