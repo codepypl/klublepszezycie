@@ -135,6 +135,7 @@ def api_event_schedule():
             group_manager.create_event_group(event.id, event.title)
             
             # Automatycznie zaplanuj przypomnienia o wydarzeniu
+            print(f"🔄 PRÓBA PLANOWANIA PRZYPOMNIEŃ DLA WYDARZENIA {event.id}: {event.title}")
             from app.services.email_automation import EmailAutomation
             email_automation = EmailAutomation()
             success, message = email_automation.schedule_event_reminders(event.id, 'event_based')
@@ -375,6 +376,16 @@ def api_schedules():
             from app.services.group_manager import GroupManager
             group_manager = GroupManager()
             group_manager.create_event_group(schedule.id, schedule.title)
+            
+            # Automatycznie zaplanuj przypomnienia o wydarzeniu
+            print(f"🔄 PRÓBA PLANOWANIA PRZYPOMNIEŃ DLA WYDARZENIA {schedule.id}: {schedule.title}")
+            from app.services.email_automation import EmailAutomation
+            email_automation = EmailAutomation()
+            success, message = email_automation.schedule_event_reminders(schedule.id, 'event_based')
+            if success:
+                print(f"✅ Zaplanowano przypomnienia dla wydarzenia: {schedule.title}")
+            else:
+                print(f"⚠️ Błąd planowania przypomnień: {message}")
             
             return jsonify({
                 'success': True,

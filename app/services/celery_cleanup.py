@@ -180,6 +180,7 @@ class CeleryCleanupService:
                 return []
             
             event_tasks = []
+            seen_task_ids = set()  # Zabezpieczenie przed duplikatami
             
             # Przejdź przez wszystkich workerów
             for worker, tasks in scheduled_tasks.items():
@@ -193,23 +194,27 @@ class CeleryCleanupService:
                     if event_id is None:
                         # Zwróć wszystkie zadania wydarzeń
                         if CeleryCleanupService._is_event_task(task_name):
-                            event_tasks.append({
-                                'task_id': task_id,
-                                'task_name': task_name,
-                                'args': task_args,
-                                'eta': eta,
-                                'worker': worker
-                            })
+                            if task_id not in seen_task_ids:
+                                event_tasks.append({
+                                    'task_id': task_id,
+                                    'task_name': task_name,
+                                    'args': task_args,
+                                    'eta': eta,
+                                    'worker': worker
+                                })
+                                seen_task_ids.add(task_id)
                     else:
                         # Zwróć tylko zadania dla konkretnego wydarzenia
                         if CeleryCleanupService._is_event_related_task(task_name, task_args, event_id):
-                            event_tasks.append({
-                                'task_id': task_id,
-                                'task_name': task_name,
-                                'args': task_args,
-                                'eta': eta,
-                                'worker': worker
-                            })
+                            if task_id not in seen_task_ids:
+                                event_tasks.append({
+                                    'task_id': task_id,
+                                    'task_name': task_name,
+                                    'args': task_args,
+                                    'eta': eta,
+                                    'worker': worker
+                                })
+                                seen_task_ids.add(task_id)
             
             return event_tasks
             
