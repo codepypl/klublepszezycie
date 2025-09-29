@@ -81,6 +81,10 @@ class EventsManager {
         // Store current event data for validation
         this.currentEventData = event;
         
+        console.log('🔍 Populating edit form for event:', event.title);
+        console.log('🔍 Event is_archived:', event.is_archived);
+        console.log('🔍 Full event data:', event);
+        
         document.getElementById('editEventId').value = event.id;
         document.getElementById('editEventTitle').value = event.title || '';
         
@@ -257,6 +261,10 @@ class EventsManager {
             is_published: formData.get('is_published') === 'on',
             is_archived: this.currentEventData?.is_archived || false
         };
+        
+        console.log('🔍 Event data for validation:', eventData);
+        console.log('🔍 Current event data:', this.currentEventData);
+        console.log('🔍 Is archived:', eventData.is_archived);
 
         // Validate dates
         const validationErrors = this.validateEventDates(eventData);
@@ -570,8 +578,14 @@ class EventsManager {
         const now = new Date();
         const errors = [];
         
+        console.log('🔍 Validating dates for event:', eventData.title);
+        console.log('🔍 Is archived:', eventData.is_archived);
+        console.log('🔍 Event date:', eventData.event_date);
+        console.log('🔍 End date:', eventData.end_date);
+        
         // Skip validation for archived events
         if (eventData.is_archived === true) {
+            console.log('✅ Skipping validation for archived event');
             return errors;
         }
         
