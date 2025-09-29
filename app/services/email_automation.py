@@ -92,8 +92,25 @@ class EmailAutomation:
                 print(f"⚠️ Przypomnienia już zaplanowane dla wydarzenia {event_id} - pomijam duplikaty")
                 return True, f"Przypomnienia już zaplanowane ({len(existing_tasks)} zadań)"
             
+            # Dodatkowe zabezpieczenie: sprawdź czy wydarzenie ma flagę planowania
+            if event.reminders_scheduled:
+                print(f"⚠️ Przypomnienia już zaplanowane dla wydarzenia {event_id} (flaga w bazie)")
+                return True, "Przypomnienia już zaplanowane (flaga w bazie)"
+            
             # Użyj inteligentnego planowania - sprawdzi członków klubu i wydarzenia
-            return self.schedule_event_reminders_smart(event_id, group_type)
+            result = self.schedule_event_reminders_smart(event_id, group_type)
+            
+            # Jeśli planowanie się powiodło, ustaw flagę w bazie danych
+            if result[0]:  # success = True
+                try:
+                    event.reminders_scheduled = True
+                    from app import db
+                    db.session.commit()
+                    print(f"✅ Ustawiono flagę reminders_scheduled dla wydarzenia {event_id}")
+                except Exception as e:
+                    print(f"⚠️ Nie można ustawić flagi reminders_scheduled: {e}")
+            
+            return result
             
         except Exception as e:
             return False, f"Błąd planowania przypomnień: {str(e)}"

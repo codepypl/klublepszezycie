@@ -24,6 +24,7 @@ class EventSchedule(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     max_participants = db.Column(db.Integer)
     is_archived = db.Column(db.Boolean, default=False)
+    reminders_scheduled = db.Column(db.Boolean, default=False)  # Flaga zabezpieczająca przed duplikatami
     
     # Relationships - now using User model for registrations
     registered_users = db.relationship('User', backref='registered_event', lazy=True, foreign_keys='User.event_id')
