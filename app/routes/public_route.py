@@ -583,7 +583,7 @@ def register_event(event_id):
             
             success, message = email_processor.send_template_email(
                 to_email=created_user.email,
-                template_name='event_registration_confirmation',
+                template_name='event_registration',
                 context=context
             )
             
@@ -592,9 +592,11 @@ def register_event(event_id):
             else:
                 print(f"❌ Failed to send confirmation email: {message}")
             
-            # Call register_for_event to complete the registration process
-            # This will add user to group and send confirmation email
-            return register_for_event(created_user, event_id)
+            # Return success - user is already registered and email sent
+            return jsonify({
+                'success': True, 
+                'message': 'Rejestracja zakończona pomyślnie. Sprawdź email z potwierdzeniem.'
+            })
             
         except Exception as e:
             db.session.rollback()

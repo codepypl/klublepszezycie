@@ -544,6 +544,7 @@ class EmailService:
                         item.html_content,
                         item.text_content,
                         template_id=item.template_id,
+                        event_id=item.event_id,
                         use_queue=False  # WAŻNE: nie dodawaj do kolejki!
                     )
                     
@@ -824,6 +825,7 @@ class EmailService:
                         item.html_content,
                         item.text_content,
                         template_id=item.template_id,
+                        event_id=item.event_id,
                         use_queue=False  # WAŻNE: nie dodawaj do kolejki!
                     )
                     

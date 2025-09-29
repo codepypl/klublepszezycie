@@ -527,10 +527,18 @@ function deleteImport(importId) {
         const bsModal = new bootstrap.Modal(modal);
         bsModal.show();
     } else {
-        // Fallback to confirm() if modal not available
-        if (confirm('Czy na pewno chcesz usunąć ten import? Tej operacji nie można cofnąć.')) {
+        // Fallback - use modal confirmation
+        document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz usunąć ten import?<br><small class="text-muted">Ta operacja nie może być cofnięta.</small>';
+        
+        const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+        modal.show();
+        
+        // Update confirm button
+        const confirmBtn = document.getElementById('confirmBulkDelete');
+        confirmBtn.onclick = function() {
             confirmDeleteImport(importId);
-        }
+            modal.hide();
+        };
     }
 }
 

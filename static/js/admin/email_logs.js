@@ -387,7 +387,15 @@ function updatePagination(pagination) {
 
 // Clear old logs
 function clearOldLogs() {
-    if (confirm('Czy na pewno chcesz wyczyścić stare logi (starsze niż 48 godzin)? Tej operacji nie można cofnąć.')) {
+    // Use modal confirmation instead of confirm()
+    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz wyczyścić stare logi (starsze niż 48 godzin)?<br><small class="text-muted">Tej operacji nie można cofnąć.</small>';
+    
+    const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+    modal.show();
+    
+    // Update confirm button
+    const confirmBtn = document.getElementById('confirmBulkDelete');
+    confirmBtn.onclick = function() {
         fetch('/api/logs/cleanup', {
             method: 'POST',
             headers: {
@@ -407,6 +415,7 @@ function clearOldLogs() {
             console.error('Error clearing logs:', error);
             window.toastManager.show('Błąd czyszczenia logów', 'error');
         });
-    }
+        modal.hide();
+    };
 }
 

@@ -282,17 +282,35 @@ function saveBlacklistSettings() {
 }
 
 function clearOldCalls() {
-    if (confirm('Czy na pewno chcesz usunąć stare połączenia?')) {
+    // Use modal confirmation instead of confirm()
+    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz usunąć stare połączenia?<br><small class="text-muted">Ta operacja nie może być cofnięta.</small>';
+    
+    const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+    modal.show();
+    
+    // Update confirm button
+    const confirmBtn = document.getElementById('confirmBulkDelete');
+    confirmBtn.onclick = function() {
         // TODO: Implement API call to clear old calls
         showSuccess('Stare połączenia zostały usunięte!');
-    }
+        modal.hide();
+    };
 }
 
 function optimizeDatabase() {
-    if (confirm('Czy na pewno chcesz zoptymalizować bazę danych CRM?')) {
+    // Use modal confirmation instead of confirm()
+    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz zoptymalizować bazę danych CRM?<br><small class="text-muted">Ta operacja może zająć kilka minut.</small>';
+    
+    const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+    modal.show();
+    
+    // Update confirm button
+    const confirmBtn = document.getElementById('confirmBulkDelete');
+    confirmBtn.onclick = function() {
         // TODO: Implement API call to optimize database
         showSuccess('Baza danych została zoptymalizowana!');
-    }
+        modal.hide();
+    };
 }
 
 function exportSettings() {
@@ -301,8 +319,20 @@ function exportSettings() {
 }
 
 function clearAllData() {
-    if (confirm('UWAGA! Ta operacja usunie WSZYSTKIE dane CRM:\n\n- Wszystkie kontakty\n- Wszystkie połączenia\n- Wszystkie importy\n- Wszystkie wpisy z czarnej listy\n\nTa operacja jest NIEODWRACALNA!\n\nCzy na pewno chcesz kontynuować?')) {
-        if (confirm('Ostatnie ostrzeżenie!\n\nWszystkie dane CRM zostaną trwale usunięte.\n\nCzy jesteś pewien, że chcesz to zrobić?')) {
+    // Use modal confirmation instead of confirm()
+    document.getElementById('bulkDeleteMessage').innerHTML = 'UWAGA! Ta operacja usunie WSZYSTKIE dane CRM:<br><br>- Wszystkie kontakty<br>- Wszystkie połączenia<br>- Wszystkie importy<br>- Wszystkie wpisy z czarnej listy<br><br><strong class="text-danger">Ta operacja jest NIEODWRACALNA!</strong><br><br>Czy na pewno chcesz kontynuować?';
+    
+    const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+    modal.show();
+    
+    // Update confirm button
+    const confirmBtn = document.getElementById('confirmBulkDelete');
+    confirmBtn.onclick = function() {
+        // Show second confirmation
+        document.getElementById('bulkDeleteMessage').innerHTML = 'Ostatnie ostrzeżenie!<br><br><strong class="text-danger">Wszystkie dane CRM zostaną trwale usunięte.</strong><br><br>Czy jesteś pewien, że chcesz to zrobić?';
+        
+        // Update confirm button for second confirmation
+        confirmBtn.onclick = function() {
             // Create form and submit
             const form = document.createElement('form');
             form.method = 'POST';
@@ -320,8 +350,8 @@ function clearAllData() {
             
             document.body.appendChild(form);
             form.submit();
-        }
-    }
+        };
+    };
 }
 </script>
 {% endblock %}

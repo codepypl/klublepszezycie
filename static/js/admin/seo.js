@@ -137,7 +137,15 @@ function saveSeo() {
 
 // Delete SEO
 function deleteSeo(id) {
-    if (confirm('Czy na pewno chcesz usunąć te ustawienia SEO?')) {
+    // Use modal confirmation instead of confirm()
+    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz usunąć te ustawienia SEO?<br><small class="text-muted">Ta operacja nie może być cofnięta.</small>';
+    
+    const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+    modal.show();
+    
+    // Update confirm button
+    const confirmBtn = document.getElementById('confirmBulkDelete');
+    confirmBtn.onclick = function() {
         fetch(`/api/seo/${id}`, {
             method: 'DELETE',
             headers: {
@@ -158,7 +166,8 @@ function deleteSeo(id) {
             console.error('Error:', error);
             window.toastManager.error('Wystąpił błąd podczas usuwania ustawień SEO');
         });
-    }
+        modal.hide();
+    };
 }
 
 // Initialize event listeners when DOM is loaded

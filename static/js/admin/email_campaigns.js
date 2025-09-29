@@ -271,7 +271,7 @@ function saveCampaign() {
     const scheduledAt = formData.get('campaign_scheduled_at');
     
     if (sendType === 'scheduled' && !scheduledAt) {
-        alert('Proszę wybrać datę i czas wysyłki dla zaplanowanej kampanii.');
+        window.toastManager.error('Proszę wybrać datę i czas wysyłki dla zaplanowanej kampanii.');
         return;
     }
     
@@ -280,7 +280,7 @@ function saveCampaign() {
         const now = new Date();
         
         if (scheduledDate <= now) {
-            alert('Data wysyłki musi być w przyszłości.');
+            window.toastManager.error('Data wysyłki musi być w przyszłości.');
             return;
         }
     }
@@ -445,7 +445,15 @@ function editCampaign(campaignId) {
 
 // Activate campaign
 function activateCampaign(campaignId) {
-    if (confirm('Czy na pewno chcesz aktywować tę kampanię? Po aktywacji będzie można ją wysłać.')) {
+    // Use modal confirmation instead of confirm()
+    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz aktywować tę kampanię?<br><small class="text-muted">Po aktywacji będzie można ją wysłać.</small>';
+    
+    const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+    modal.show();
+    
+    // Update confirm button
+    const confirmBtn = document.getElementById('confirmBulkDelete');
+    confirmBtn.onclick = function() {
         fetch(`/api/email/campaigns/${campaignId}/activate`, {
             method: 'POST'
         })
@@ -463,12 +471,21 @@ function activateCampaign(campaignId) {
             console.error('Error activating campaign:', error);
             toastManager.error('Błąd aktywacji');
         });
-    }
+        modal.hide();
+    };
 }
 
 // Send campaign
 function sendCampaign(campaignId) {
-    if (confirm('Czy na pewno chcesz wysłać tę kampanię?')) {
+    // Use modal confirmation instead of confirm()
+    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz wysłać tę kampanię?<br><small class="text-muted">Ta operacja nie może być cofnięta.</small>';
+    
+    const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+    modal.show();
+    
+    // Update confirm button
+    const confirmBtn = document.getElementById('confirmBulkDelete');
+    confirmBtn.onclick = function() {
         fetch(`/api/email/campaigns/${campaignId}/send`, {
             method: 'POST'
         })
@@ -486,7 +503,8 @@ function sendCampaign(campaignId) {
             console.error('Error sending campaign:', error);
             toastManager.error('Błąd wysyłania');
         });
-    }
+        modal.hide();
+    };
 }
 
 // Delete campaign
@@ -518,8 +536,15 @@ function deleteCampaign(campaignId) {
             'kampanię'
         );
     } else {
-        // Fallback - użyj confirm() jeśli deleteConfirmation nie jest dostępne
-        if (confirm('Czy na pewno chcesz usunąć tę kampanię?')) {
+        // Fallback - use modal confirmation instead of confirm()
+        document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz usunąć tę kampanię?<br><small class="text-muted">Ta operacja nie może być cofnięta.</small>';
+        
+        const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+        modal.show();
+        
+        // Update confirm button
+        const confirmBtn = document.getElementById('confirmBulkDelete');
+        confirmBtn.onclick = function() {
             fetch(`/api/email/campaigns/${campaignId}`, {
                 method: 'DELETE'
             })
@@ -537,7 +562,8 @@ function deleteCampaign(campaignId) {
                 console.error('Error deleting campaign:', error);
                 toastManager.error('Błąd usuwania');
             });
-        }
+            modal.hide();
+        };
     }
 }
 

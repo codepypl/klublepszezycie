@@ -229,7 +229,15 @@ function showGroupModal() {
 
 // Synchronizacja grup systemowych
 function syncSystemGroups() {
-    if (confirm('Czy na pewno chcesz zsynchronizować grupy systemowe?\n\nTa operacja zaktualizuje listę członków grup "Wszyscy użytkownicy" i "Członkowie klubu" na podstawie aktualnych danych użytkowników.')) {
+    // Use modal confirmation instead of confirm()
+    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz zsynchronizować grupy systemowe?<br><br>Ta operacja zaktualizuje listę członków grup "Wszyscy użytkownicy" i "Członkowie klubu" na podstawie aktualnych danych użytkowników.';
+    
+    const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+    modal.show();
+    
+    // Update confirm button
+    const confirmBtn = document.getElementById('confirmBulkDelete');
+    confirmBtn.onclick = function() {
         fetch('/api/user-groups/sync', {
             method: 'POST',
             headers: {
@@ -250,11 +258,20 @@ function syncSystemGroups() {
             console.error('Error:', error);
             window.toastManager.show('Wystąpił błąd podczas synchronizacji grup', 'error');
         });
-    }
+        modal.hide();
+    };
 }
 
 function syncEventGroups() {
-    if (confirm('Czy na pewno chcesz zsynchronizować grupy wydarzeń?\n\nTa operacja zaktualizuje listę członków wszystkich grup wydarzeń na podstawie aktualnych rejestracji.')) {
+    // Use modal confirmation instead of confirm()
+    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz zsynchronizować grupy wydarzeń?<br><br>Ta operacja zaktualizuje listę członków wszystkich grup wydarzeń na podstawie aktualnych rejestracji.';
+    
+    const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+    modal.show();
+    
+    // Update confirm button
+    const confirmBtn = document.getElementById('confirmBulkDelete');
+    confirmBtn.onclick = function() {
         fetch('/api/user-groups/sync-events', {
             method: 'POST',
             headers: {
@@ -275,7 +292,8 @@ function syncEventGroups() {
             console.error('Error:', error);
             window.toastManager.show('Wystąpił błąd podczas synchronizacji grup wydarzeń', 'error');
         });
-    }
+        modal.hide();
+    };
 }
 
 // Make functions globally available

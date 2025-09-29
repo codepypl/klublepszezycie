@@ -256,10 +256,18 @@ function deleteTestimonial(testimonialId) {
         const bsModal = new bootstrap.Modal(modal);
         bsModal.show();
     } else {
-        // Fallback to confirm() if modal not available
-        if (confirm('Czy na pewno chcesz usunąć tę opinię? Tej operacji nie można cofnąć.')) {
+        // Fallback - use modal confirmation instead of confirm()
+        document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz usunąć tę opinię?<br><small class="text-muted">Tej operacji nie można cofnąć.</small>';
+        
+        const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+        modal.show();
+        
+        // Update confirm button
+        const confirmBtn = document.getElementById('confirmBulkDelete');
+        confirmBtn.onclick = function() {
             performDeleteTestimonial(testimonialId);
-        }
+            modal.hide();
+        };
     }
 }
 

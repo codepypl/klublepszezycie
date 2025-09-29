@@ -335,7 +335,15 @@ async function editSchedule(id) {
 
 // Usuwanie harmonogramu
 async function deleteSchedule(id) {
-    if (confirm('Czy na pewno chcesz usunąć ten harmonogram?')) {
+    // Use modal confirmation instead of confirm()
+    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz usunąć ten harmonogram?<br><small class="text-muted">Ta operacja nie może być cofnięta.</small>';
+    
+    const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+    modal.show();
+    
+    // Update confirm button
+    const confirmBtn = document.getElementById('confirmBulkDelete');
+    confirmBtn.onclick = async function() {
         try {
             const response = await fetch(`/api/schedules/${id}`, {
                 method: 'DELETE'
@@ -352,7 +360,8 @@ async function deleteSchedule(id) {
         } catch (error) {
             window.toastManager.error('Błąd podczas usuwania: ' + error.message);
         }
-    }
+        modal.hide();
+    };
 }
 
 // Bulk delete functionality

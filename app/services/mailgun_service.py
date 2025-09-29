@@ -155,6 +155,10 @@ class EnhancedNotificationProcessor:
                     text_template = Template(template.text_content)
                     text_content = text_template.render(**context)
                 
+                # Render subject
+                subject_template = Template(template.subject)
+                subject = subject_template.render(**context)
+                
                 # Enrich template with unsubscribe/delete links if needed (fallback)
                 if email_template_enricher.should_add_links(template_name):
                     enriched = email_template_enricher.enrich_template_content(
@@ -191,7 +195,7 @@ class EnhancedNotificationProcessor:
                 
                 email_id = email_service.add_to_queue(
                     to_email=to_email,
-                    subject=template.subject,
+                    subject=subject,
                     html_content=html_content,
                     text_content=text_content,
                     template_id=template.id,
@@ -211,7 +215,7 @@ class EnhancedNotificationProcessor:
                 # Send directly (old behavior)
                 success, message = self.mailgun_service.send_email(
                     to_email=to_email,
-                    subject=template.subject,
+                    subject=subject,
                     html_content=html_content,
                     text_content=text_content,
                     template_id=template.id,

@@ -85,6 +85,7 @@ class EmailQueue(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('email_campaigns.id'), nullable=True)
     template_id = db.Column(db.Integer, db.ForeignKey('email_templates.id'), nullable=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=True)  # Event ID for event-related emails
     recipient_email = db.Column(db.String(120), nullable=False)  # Changed from to_email
     recipient_name = db.Column(db.String(120))  # Changed from to_name
     template_name = db.Column(db.String(100))  # Template name for new system

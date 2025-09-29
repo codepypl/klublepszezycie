@@ -721,7 +721,15 @@ function restartEmailQueueAutoRefresh() {
 
 // Clear all emails from queue (except sent ones)
 function clearAllQueue() {
-    if (confirm('⚠️ UWAGA: Czy na pewno chcesz wyczyścić całą kolejkę emaili?\n\nTo usunie wszystkie oczekujące, nieudane i przetwarzane emaile.\nWysłane emaile zostaną zachowane jako historia.\n\nTa operacja jest nieodwracalna!')) {
+    // Use modal confirmation instead of confirm()
+    document.getElementById('bulkDeleteMessage').innerHTML = '⚠️ UWAGA: Czy na pewno chcesz wyczyścić całą kolejkę emaili?<br><br>To usunie wszystkie oczekujące, nieudane i przetwarzane emaile.<br>Wysłane emaile zostaną zachowane jako historia.<br><br><strong class="text-danger">Ta operacja jest nieodwracalna!</strong>';
+    
+    const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+    modal.show();
+    
+    // Update confirm button
+    const confirmBtn = document.getElementById('confirmBulkDelete');
+    confirmBtn.onclick = function() {
         fetch('/api/email/queue/clear', {
             method: 'POST',
             headers: {
@@ -743,7 +751,8 @@ function clearAllQueue() {
             console.error('Error clearing queue:', error);
             toastManager.error('Błąd czyszczenia kolejki');
         });
-    }
+        modal.hide();
+    };
 }
 
 // Override retryFailed to track processing state

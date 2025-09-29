@@ -433,9 +433,15 @@ function displayTasks(data) {
 
 // Anulowanie zadania
 function cancelTask(taskId) {
-    if (!confirm('Czy na pewno chcesz anulować to zadanie?')) {
-        return;
-    }
+    // Use modal confirmation instead of confirm()
+    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz anulować to zadanie?<br><small class="text-muted">Ta operacja nie może być cofnięta.</small>';
+    
+    const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+    modal.show();
+    
+    // Update confirm button
+    const confirmBtn = document.getElementById('confirmBulkDelete');
+    confirmBtn.onclick = function() {
     
     fetch(`/admin/api/celery/tasks/${taskId}/cancel`, {
         method: 'POST',
@@ -446,16 +452,18 @@ function cancelTask(taskId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Zadanie zostało anulowane');
+            window.toastManager.success('Zadanie zostało anulowane');
             refreshData();
         } else {
-            alert('Błąd anulowania zadania: ' + data.error);
+            window.toastManager.error('Błąd anulowania zadania: ' + data.error);
         }
     })
     .catch(error => {
         console.error('Błąd anulowania zadania:', error);
-        alert('Błąd anulowania zadania');
+        window.toastManager.error('Błąd anulowania zadania');
     });
+    modal.hide();
+    };
 }
 
 // Wyświetlanie szczegółów zadania

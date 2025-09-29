@@ -149,7 +149,15 @@
 
     // Delete Registration
     function deleteRegistration(id, name) {
-        if (confirm(`Czy na pewno chcesz usunąć rejestrację użytkownika "${name}"?`)) {
+        // Use modal confirmation instead of confirm()
+        document.getElementById('bulkDeleteMessage').innerHTML = `Czy na pewno chcesz usunąć rejestrację użytkownika "${name}"?<br><small class="text-muted">Ta operacja nie może być cofnięta.</small>`;
+        
+        const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+        modal.show();
+        
+        // Update confirm button
+        const confirmBtn = document.getElementById('confirmBulkDelete');
+        confirmBtn.onclick = function() {
             fetch(`/api/registrations/${id}`, {
                 method: 'DELETE'
             })
@@ -166,7 +174,8 @@
                 console.error('Error:', error);
                 window.toastManager.error('Wystąpił błąd podczas usuwania rejestracji');
             });
-        }
+            modal.hide();
+        };
     }
 
     // Event listeners for buttons
