@@ -156,6 +156,12 @@ class EventsManager {
         // Set minimum dates for date inputs (only for non-archived events)
         if (!isArchived) {
             this.setMinDates();
+        } else {
+            // Clear min dates for archived events - they can have any dates!
+            const dateInputs = document.querySelectorAll('input[type="date"]');
+            dateInputs.forEach(input => {
+                input.removeAttribute('min');
+            });
         }
     }
 
