@@ -243,13 +243,15 @@ class EventsManager {
             is_published: formData.get('is_published') === 'on',
             is_archived: this.currentEventData?.is_archived || false
         };
-        
 
-        // Validate dates
-        const validationErrors = this.validateEventDates(eventData);
-        if (validationErrors.length > 0) {
-            window.toastManager.error(validationErrors.join('<br>'));
-            return;
+        // NO VALIDATION FOR ARCHIVED EVENTS - they can have any dates!
+        if (eventData.is_archived !== true) {
+            // Only validate dates for non-archived events
+            const validationErrors = this.validateEventDates(eventData);
+            if (validationErrors.length > 0) {
+                window.toastManager.error(validationErrors.join('<br>'));
+                return;
+            }
         }
 
         // Remove null/empty values, but keep required fields
