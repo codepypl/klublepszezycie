@@ -1,19 +1,20 @@
-"""
-Add reminders_scheduled column to event_schedule table
+"""Add reminders_scheduled column to event_schedule
 
-Revision ID: add_reminders_scheduled
-Revises: 
-Create Date: 2025-09-29 11:07:10.225
+Revision ID: 1741a81db96b
+Revises: 4eb519cd831c
+Create Date: 2025-09-29 11:54:52.377898
 
 """
 from alembic import op
 import sqlalchemy as sa
 
+
 # revision identifiers, used by Alembic.
-revision = 'add_reminders_scheduled'
-down_revision = None
+revision = '1741a81db96b'
+down_revision = '4eb519cd831c'
 branch_labels = None
 depends_on = None
+
 
 def upgrade():
     # Add reminders_scheduled column to event_schedule table
@@ -24,6 +25,7 @@ def upgrade():
     
     # Make column NOT NULL after setting default values
     op.alter_column('event_schedule', 'reminders_scheduled', nullable=False, default=False)
+
 
 def downgrade():
     # Remove reminders_scheduled column
