@@ -155,7 +155,9 @@ class CeleryCleanupService:
         event_related_tasks = [
             'app.tasks.email_tasks.send_event_reminder_task',
             'app.tasks.email_tasks.schedule_event_reminders_task',
-            'app.tasks.event_tasks.process_event_reminders_task'
+            'app.tasks.event_tasks.process_event_reminders_task',
+            'app.tasks.event_tasks.archive_ended_events_task',
+            'app.tasks.event_tasks.cleanup_old_reminders_task'
         ]
         
         return task_name in event_related_tasks
