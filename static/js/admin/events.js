@@ -675,7 +675,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (publishedFilter) {
         publishedFilter.addEventListener('change', applyFilters);
     }
+    
 });
+
 
 function deleteEvent(eventId) {
     if (window.eventsManager) {
