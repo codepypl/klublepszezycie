@@ -57,10 +57,10 @@ def process_event_reminders_task(self):
                 try:
                     # Pobierz użytkowników zapisanych na wydarzenie
                     from app.models.user_model import User
-                    from app.models.user_groups_model import UserGroupMember
                     
-                    users = User.query.join(UserGroupMember).filter(
-                        UserGroupMember.group_id == event.target_group_id
+                    users = User.query.filter_by(
+                        event_id=event.id,
+                        account_type='event_registration'
                     ).all()
                     
                     for user in users:
@@ -71,8 +71,8 @@ def process_event_reminders_task(self):
                             context={
                                 'event_title': event.title,
                                 'event_date': event.event_date.strftime('%d.%m.%Y'),
-                                'event_time': event.event_time.strftime('%H:%M'),
-                                'event_location': event.location,
+                                'event_time': event.event_date.strftime('%H:%M'),
+                                'event_location': event.location or 'Online',
                                 'user_name': user.first_name,
                                 'event_id': event.id,
                                 'user_id': user.id
@@ -95,10 +95,10 @@ def process_event_reminders_task(self):
                 try:
                     # Pobierz użytkowników zapisanych na wydarzenie
                     from app.models.user_model import User
-                    from app.models.user_groups_model import UserGroupMember
                     
-                    users = User.query.join(UserGroupMember).filter(
-                        UserGroupMember.group_id == event.target_group_id
+                    users = User.query.filter_by(
+                        event_id=event.id,
+                        account_type='event_registration'
                     ).all()
                     
                     for user in users:
@@ -109,8 +109,8 @@ def process_event_reminders_task(self):
                             context={
                                 'event_title': event.title,
                                 'event_date': event.event_date.strftime('%d.%m.%Y'),
-                                'event_time': event.event_time.strftime('%H:%M'),
-                                'event_location': event.location,
+                                'event_time': event.event_date.strftime('%H:%M'),
+                                'event_location': event.location or 'Online',
                                 'user_name': user.first_name,
                                 'event_id': event.id,
                                 'user_id': user.id
