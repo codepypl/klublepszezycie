@@ -177,6 +177,13 @@ def api_event_schedule():
             for event_id in event_ids:
                 event = EventSchedule.query.get(event_id)
                 if event:
+                    # Check if event is archived - prevent deletion
+                    if event.is_archived:
+                        return jsonify({
+                            'success': False, 
+                            'message': f'Nie można usunąć zarchiwizowanego wydarzenia: {event.title}'
+                        }), 400
+                    
                     # Clean up related groups and cancel Celery tasks before deleting event
                     from app.services.group_manager import GroupManager
                     from app.services.celery_cleanup import CeleryCleanupService
@@ -287,6 +294,13 @@ def api_event(event_id):
             })
         
         elif request.method == 'DELETE':
+            # Check if event is archived - prevent deletion
+            if event.is_archived:
+                return jsonify({
+                    'success': False, 
+                    'message': f'Nie można usunąć zarchiwizowanego wydarzenia: {event.title}'
+                }), 400
+            
             # Clean up related groups and cancel Celery tasks before deleting event
             from app.services.group_manager import GroupManager
             from app.services.celery_cleanup import CeleryCleanupService
@@ -603,6 +617,13 @@ def api_bulk_delete_events():
         for event_id in event_ids:
             event = EventSchedule.query.get(event_id)
             if event:
+                # Check if event is archived - prevent deletion
+                if event.is_archived:
+                    return jsonify({
+                        'success': False, 
+                        'message': f'Nie można usunąć zarchiwizowanego wydarzenia: {event.title}'
+                    }), 400
+                
                 # Clean up related groups and cancel Celery tasks before deleting event
                 from app.services.group_manager import GroupManager
                 from app.services.celery_cleanup import CeleryCleanupService

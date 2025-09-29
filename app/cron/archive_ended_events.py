@@ -145,83 +145,27 @@ def archive_ended_events():
         return False
 
 def cleanup_orphaned_groups():
-    """Czyści osierocone grupy z zarchiwizowanych wydarzeń"""
+    """Czyści osierocone grupy z zarchiwizowanych wydarzeń i grup bez istniejących wydarzeń"""
     try:
-        from app import create_app, db
-        from app.models import EventSchedule, UserGroup, UserGroupMember
-        import json
+        from app import create_app
+        from app.services.group_manager import GroupManager
         
         print(f"🧹 [{datetime.now()}] === CZYSZCZENIE OSIEROCONYCH GRUP ===")
         
         # Utwórz kontekst aplikacji
         app = create_app()
         with app.app_context():
-            # Find all archived events
-            archived_events = EventSchedule.query.filter_by(is_archived=True).all()
-            archived_event_ids = [event.id for event in archived_events]
+            group_manager = GroupManager()
             
-            print(f"🔍 Znaleziono {len(archived_event_ids)} zarchiwizowanych wydarzeń")
+            # Użyj rozszerzonej funkcji z GroupManager
+            success, message = group_manager.cleanup_orphaned_groups()
             
-            # Find groups for archived events
-            orphaned_groups = []
-            
-            # Search by criteria field
-            all_event_groups = UserGroup.query.filter_by(group_type='event_based').all()
-            for group in all_event_groups:
-                if group.criteria:
-                    try:
-                        criteria = json.loads(group.criteria)
-                        event_id = criteria.get('event_id')
-                        if event_id in archived_event_ids:
-                            orphaned_groups.append(group)
-                    except json.JSONDecodeError:
-                        pass
-            
-            # Search by event_id field
-            for event_id in archived_event_ids:
-                groups_by_id = UserGroup.query.filter_by(
-                    event_id=event_id,
-                    group_type='event_based'
-                ).all()
-                for group in groups_by_id:
-                    if group not in orphaned_groups:
-                        orphaned_groups.append(group)
-            
-            print(f"🔍 Znaleziono {len(orphaned_groups)} osieroconych grup")
-            
-            # Clean up orphaned groups
-            total_members_removed = 0
-            total_groups_deleted = 0
-            
-            for group in orphaned_groups:
-                print(f"🗑️ Czyszczę osieroconą grupę: {group.name} (ID: {group.id})")
-                
-                # Remove members
-                members_count = UserGroupMember.query.filter_by(
-                    group_id=group.id,
-                    is_active=True
-                ).count()
-                
-                if members_count > 0:
-                    UserGroupMember.query.filter_by(
-                        group_id=group.id,
-                        is_active=True
-                    ).delete(synchronize_session=False)
-                    total_members_removed += members_count
-                    print(f"  👥 Usunięto {members_count} członków")
-                
-                # Delete group
-                db.session.delete(group)
-                total_groups_deleted += 1
-                print(f"  ✅ Grupa usunięta")
-            
-            if total_groups_deleted > 0:
-                db.session.commit()
-                print(f"✅ Usunięto {total_groups_deleted} osieroconych grup i {total_members_removed} członków")
+            if success:
+                print(f"✅ {message}")
+                return True
             else:
-                print("ℹ️ Brak osieroconych grup do usunięcia")
-                
-            return True
+                print(f"❌ {message}")
+                return False
                 
     except Exception as e:
         print(f"❌ Błąd czyszczenia osieroconych grup: {str(e)}")

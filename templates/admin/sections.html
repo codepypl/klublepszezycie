@@ -25,7 +25,7 @@
         <div class="admin-card-body">
             {% if sections %}
                 <div class="table-responsive">
-                    <table id="sectionsTable" class="table admin-table sections-table bulk-delete-table" data-delete-endpoint="/api/bulk-delete/sections">
+                    <table id="sectionsTable" class="table admin-table sections-table bulk-delete-table resizable-table" data-delete-endpoint="/api/bulk-delete/sections">
                         <thead>
                             <tr>
                                 <th>
@@ -84,7 +84,7 @@
                                             <i class="fas fa-layer-group"></i>
                                         </button>
                                         {% endif %}
-                                        <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteSection({{ section.id }})" title="Usuń sekcję">
+                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteSection({{ section.id }})" title="Usuń sekcję">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>

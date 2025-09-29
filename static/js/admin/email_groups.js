@@ -9,6 +9,11 @@ let currentGroupId = null;
 document.addEventListener('DOMContentLoaded', function() {
     loadGroups();
     
+    // Initialize table resizer
+    if (window.tableResizer) {
+        window.tableResizer.init('#groupsTable');
+    }
+    
     // Check for viewMembers parameter
     const urlParams = new URLSearchParams(window.location.search);
     const viewMembersId = urlParams.get('viewMembers');
@@ -76,6 +81,8 @@ function loadGroups() {
             if (data.success) {
                 displayGroups(data.groups);
                 if (data.pagination) {
+                    // Update currentPerPage from server response
+                    currentPerPage = data.pagination.per_page;
                     updatePagination(data.pagination);
                 }
             } else {
@@ -166,7 +173,7 @@ function displayGroups(groups) {
             '<div class="btn-group" role="group">' +
                 '<button class="btn btn-sm admin-btn-outline" onclick="editGroup(' + group.id + ')" title="Edytuj grupę"><i class="fas fa-edit"></i></button>' +
                 '<button class="btn btn-sm admin-btn-info" onclick="viewGroupMembers(' + group.id + ')" title="Zarządzaj członkami"><i class="fas fa-users"></i></button>' +
-                '<button class="btn btn-sm admin-btn-danger-outline" onclick="deleteGroup(' + group.id + ')" title="Usuń grupę"><i class="fas fa-trash"></i></button>' +
+                '<button class="btn btn-sm admin-btn-danger" onclick="deleteGroup(' + group.id + ')" title="Usuń grupę"><i class="fas fa-trash"></i></button>' +
             '</div>';
         
         row.innerHTML = `
@@ -636,10 +643,16 @@ function addGroupMember(userId) {
 
 // Remove group member
 function removeGroupMember(memberId) {
+    if (!currentGroupId) {
+        console.error('No current group ID available');
+        toastManager.error('Błąd: Brak ID grupy');
+        return;
+    }
+    
     window.deleteConfirmation.showSingleDelete(
         'członka z grupy',
         () => {
-            fetch(`/api/user-groups/members/${memberId}`, {
+            fetch(`/api/user-groups/${currentGroupId}/members/${memberId}`, {
                 method: 'DELETE'
             })
             .then(response => response.json())

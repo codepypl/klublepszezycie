@@ -7,6 +7,12 @@ class BlogCommentsManager {
 
     init() {
         // Bulk delete is now handled by the BulkDeleteManager in the template
+        
+        // Initialize table resizer
+        if (window.tableResizer) {
+            window.tableResizer.init('#commentsTable');
+        }
+        
         // Bind events
         this.bindEvents();
     }

@@ -1,6 +1,10 @@
 {% extends "admin/base.html" %}
 
-{% block title %}Monitor Celery - Panel Administracyjny{% endblock %}
+{% block title %}Monitor Celery - Panel Admin{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-tasks me-2"></i>Monitor Celery
+{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -63,13 +67,6 @@
     margin-top: 5px;
 }
 
-.filter-section {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-}
-
 .loading-spinner {
     display: none;
     text-align: center;
@@ -78,13 +75,6 @@
 
 .loading-spinner.show {
     display: block;
-}
-
-.refresh-btn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
 }
 
 .stats-grid {
@@ -116,23 +106,6 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1><i class="fas fa-tasks me-2"></i>Monitor Celery</h1>
-                <div>
-                    <button class="btn btn-outline-primary" onclick="refreshData()">
-                        <i class="fas fa-sync-alt me-2"></i>Odśwież
-                    </button>
-                    <button class="btn btn-success" onclick="startAutoRefresh()">
-                        <i class="fas fa-play me-2"></i>Auto-odświeżanie
-                    </button>
-                    <button class="btn btn-secondary" onclick="stopAutoRefresh()">
-                        <i class="fas fa-stop me-2"></i>Stop
-                    </button>
-                </div>
-            </div>
 
             <!-- Status Celery -->
             <div class="celery-status-card" id="celeryStatus">
@@ -173,50 +146,61 @@
             </div>
 
             <!-- Filtry -->
-            <div class="filter-section">
-                <h5><i class="fas fa-filter me-2"></i>Filtry</h5>
-                <div class="row">
-                    <div class="col-md-3">
-                        <label for="taskTypeFilter" class="form-label">Typ zadań</label>
-                        <select class="form-select" id="taskTypeFilter" onchange="applyFilters()">
-                            <option value="all">Wszystkie</option>
-                            <option value="scheduled">Zaplanowane</option>
-                            <option value="active">Aktywne</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="eventIdFilter" class="form-label">ID Wydarzenia</label>
-                        <input type="number" class="form-control" id="eventIdFilter" placeholder="Wprowadź ID wydarzenia" onchange="applyFilters()">
-                    </div>
-                    <div class="col-md-3">
-                        <label for="limitFilter" class="form-label">Limit wyników</label>
-                        <select class="form-select" id="limitFilter" onchange="applyFilters()">
-                            <option value="25">25</option>
-                            <option value="50" selected>50</option>
-                            <option value="100">100</option>
-                            <option value="200">200</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">&nbsp;</label>
-                        <div>
-                            <button class="btn btn-primary" onclick="applyFilters()">
-                                <i class="fas fa-search me-2"></i>Filtruj
-                            </button>
-                            <button class="btn btn-outline-secondary" onclick="clearFilters()">
-                                <i class="fas fa-times me-2"></i>Wyczyść
-                            </button>
+            <div class="admin-card mb-4">
+                <div class="admin-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>Filtry
+                        <button class="btn btn-sm admin-btn-outline ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse" aria-expanded="false" aria-controls="filtersCollapse">
+                            <i class="fas fa-chevron-down" id="filtersIcon"></i>
+                        </button>
+                    </h5>
+                </div>
+                <div class="collapse" id="filtersCollapse">
+                    <div class="admin-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label for="taskTypeFilter" class="form-label">Typ zadań</label>
+                                <select class="form-select" id="taskTypeFilter" onchange="applyFilters()">
+                                    <option value="all">Wszystkie</option>
+                                    <option value="scheduled">Zaplanowane</option>
+                                    <option value="active">Aktywne</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="eventIdFilter" class="form-label">ID Wydarzenia</label>
+                                <input type="number" class="form-control" id="eventIdFilter" placeholder="Wprowadź ID wydarzenia" onchange="applyFilters()">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="limitFilter" class="form-label">Limit wyników</label>
+                                <select class="form-select" id="limitFilter" onchange="applyFilters()">
+                                    <option value="25">25</option>
+                                    <option value="50" selected>50</option>
+                                    <option value="100">100</option>
+                                    <option value="200">200</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-flex gap-2">
+                                    <button class="btn admin-btn" onclick="applyFilters()">
+                                        <i class="fas fa-search me-2"></i>Filtruj
+                                    </button>
+                                    <button class="btn admin-btn-outline" onclick="clearFilters()">
+                                        <i class="fas fa-times me-2"></i>Wyczyść
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Lista zadań -->
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-list me-2"></i>Zadania Celery</h5>
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Zadania Celery</h5>
                 </div>
-                <div class="card-body">
+                <div class="admin-card-body">
                     <div class="loading-spinner" id="loadingSpinner">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Ładowanie...</span>
@@ -229,20 +213,18 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Floating refresh button -->
-<button class="btn btn-primary btn-lg refresh-btn" onclick="refreshData()" title="Odśwież dane">
-    <i class="fas fa-sync-alt"></i>
-</button>
 
 <script>
-let autoRefreshInterval = null;
+// Function to refresh celery data (for CRUD refresh manager)
+function refreshCeleryData() {
+    refreshData();
+}
 
 // Ładowanie danych przy starcie
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize global CRUD refresh manager for this page
+    window.crudRefreshManager.init(refreshCeleryData);
+    
     refreshData();
 });
 
@@ -485,23 +467,6 @@ function clearFilters() {
     loadTasks();
 }
 
-// Auto-odświeżanie
-function startAutoRefresh() {
-    if (autoRefreshInterval) {
-        clearInterval(autoRefreshInterval);
-    }
-    
-    autoRefreshInterval = setInterval(refreshData, 60000); // Co 60 sekund
-    alert('Auto-odświeżanie włączone (co 60 sekund)');
-}
-
-function stopAutoRefresh() {
-    if (autoRefreshInterval) {
-        clearInterval(autoRefreshInterval);
-        autoRefreshInterval = null;
-        alert('Auto-odświeżanie wyłączone');
-    }
-}
 
 // Pokazywanie/ukrywanie spinnera
 function showLoading() {

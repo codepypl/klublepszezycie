@@ -16,6 +16,11 @@ document.addEventListener('DOMContentLoaded', function() {
     loadStats();
     loadQueue('pending');
     
+    // Initialize table resizer
+    if (window.tableResizer) {
+        window.tableResizer.init('#queueTable');
+    }
+    
     // BulkDelete will auto-initialize due to bulk-delete-table class
     console.log('🔍 BulkDelete should auto-initialize for queueTable');
     
@@ -161,6 +166,9 @@ function loadQueue(filter) {
                 displayQueue(data.emails);
                 if (data.pagination) {
                     console.log('📄 Pagination data:', data.pagination);
+                    // Update currentPerPage from server response
+                    currentPerPage = data.pagination.per_page;
+                    
                     // Initialize or update pagination
                     const paginationElement = document.getElementById('pagination');
                     if (paginationElement) {

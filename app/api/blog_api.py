@@ -273,7 +273,7 @@ def api_blog_admin_posts():
             
             return jsonify({
                 'success': True,
-                'message': 'Blog post created successfully',
+                'message': 'Artykuł został dodany pomyślnie',
                 'post': {
                     'id': post.id,
                     'title': post.title,
@@ -437,7 +437,7 @@ def api_blog_admin_post(post_id):
             
             return jsonify({
                 'success': True,
-                'message': 'Blog post updated successfully'
+                'message': 'Artykuł został zaktualizowany pomyślnie'
             })
         
         elif request.method == 'DELETE':
@@ -453,7 +453,7 @@ def api_blog_admin_post(post_id):
             
             return jsonify({
                 'success': True,
-                'message': 'Blog post deleted successfully',
+                'message': 'Artykuł został usunięty pomyślnie',
                 'files_cleaned': cleanup_result
             })
     
@@ -566,7 +566,7 @@ def api_blog_admin_categories():
             
             return jsonify({
                 'success': True,
-                'message': 'Blog category created successfully',
+                'message': 'Kategoria została dodana pomyślnie',
                 'category': {
                     'id': category.id,
                     'title': category.title,
@@ -620,7 +620,7 @@ def api_blog_admin_category(category_id):
             
             return jsonify({
                 'success': True,
-                'message': 'Blog category updated successfully'
+                'message': 'Kategoria została zaktualizowana pomyślnie'
             })
         
         elif request.method == 'DELETE':
@@ -629,7 +629,7 @@ def api_blog_admin_category(category_id):
             
             return jsonify({
                 'success': True,
-                'message': 'Blog category deleted successfully'
+                'message': 'Kategoria została usunięta pomyślnie'
             })
     
     except Exception as e:
@@ -727,7 +727,8 @@ def api_blog_tags():
             tag = BlogTag(
                 name=data['name'],
                 slug=data.get('slug', ''),
-                description=data.get('description', '')
+                description=data.get('description', ''),
+                is_active=data.get('is_active', True)
             )
             
             db.session.add(tag)
@@ -735,7 +736,7 @@ def api_blog_tags():
             
             return jsonify({
                 'success': True,
-                'message': 'Blog tag created successfully',
+                'message': 'Tag został dodany pomyślnie',
                 'tag': {
                     'id': tag.id,
                     'name': tag.name,
@@ -781,7 +782,7 @@ def api_blog_tag(tag_id):
             
             return jsonify({
                 'success': True,
-                'message': 'Blog tag updated successfully'
+                'message': 'Tag został zaktualizowany pomyślnie'
             })
         
         elif request.method == 'DELETE':
@@ -790,7 +791,7 @@ def api_blog_tag(tag_id):
             
             return jsonify({
                 'success': True,
-                'message': 'Blog tag deleted successfully'
+                'message': 'Tag został usunięty pomyślnie'
             })
     
     except Exception as e:
@@ -986,7 +987,7 @@ def api_blog_comment(comment_id):
             
             return jsonify({
                 'success': True,
-                'message': 'Blog comment updated successfully'
+                'message': 'Komentarz został zaktualizowany pomyślnie'
             })
         
         elif request.method == 'DELETE':
@@ -995,7 +996,7 @@ def api_blog_comment(comment_id):
             
             return jsonify({
                 'success': True,
-                'message': 'Blog comment deleted successfully'
+                'message': 'Komentarz został usunięty pomyślnie'
             })
     
     except Exception as e:
@@ -1280,7 +1281,7 @@ def api_blog_post_image(post_id, image_id):
             
             return jsonify({
                 'success': True,
-                'message': 'Image updated successfully',
+                'message': 'Obraz został zaktualizowany pomyślnie',
                 'image': {
                     'id': image.id,
                     'image_url': image.image_url,

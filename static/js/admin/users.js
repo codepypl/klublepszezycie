@@ -9,6 +9,11 @@ function refreshUsersData() {
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize global CRUD refresh manager for this page
     window.crudRefreshManager.init(refreshUsersData);
+    
+    // Initialize table resizer
+    if (window.tableResizer) {
+        window.tableResizer.init('#usersTable');
+    }
     // Obsługa filtrów
     const filtersCollapse = document.getElementById('filtersCollapse');
     const filtersIcon = document.getElementById('filtersIcon');

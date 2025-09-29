@@ -58,6 +58,9 @@ def index():
         # Get next event for registration form
         next_event = upcoming_events[0] if upcoming_events else None
         
+        # Get events for timeline (all events except the next one)
+        timeline_events = upcoming_events[1:] if len(upcoming_events) > 1 else []
+        
         # Determine event status
         event_status = 'upcoming'
         if next_event:
@@ -84,6 +87,7 @@ def index():
         
         return render_template('index.html', 
                              events=upcoming_events, 
+                             timeline_events=timeline_events,
                              next_event=next_event, 
                              event_status=event_status,
                              generate_blog_link=generate_blog_link,
@@ -119,6 +123,7 @@ def index():
         
         return render_template('index.html', 
                              events=[], 
+                             timeline_events=[],
                              next_event=None, 
                              event_status='upcoming',
                              generate_blog_link=generate_blog_link,

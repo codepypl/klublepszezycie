@@ -15,7 +15,7 @@
         </div>
         <div class="d-flex gap-2">
             <button class="btn admin-btn-danger" onclick="clearAllQueue()">
-                <i class="fas fa-trash-alt me-2"></i>Wyczyść kolejkę
+                <i class="fas fa-trash me-2"></i>Wyczyść kolejkę
             </button>
             <button class="btn admin-btn-warning" onclick="processQueue()">
                 <i class="fas fa-play me-2"></i>Przetwórz kolejkę
@@ -126,7 +126,7 @@
                     </div>
                     
                     <div class="table-responsive">
-                        <table class="table admin-table bulk-delete-table" id="queueTable" data-delete-endpoint="/api/bulk-delete/email-queue">
+                        <table class="table admin-table bulk-delete-table resizable-table" id="queueTable" data-delete-endpoint="/api/bulk-delete/email-queue">
                             <thead>
                                 <tr>
                                     <th>

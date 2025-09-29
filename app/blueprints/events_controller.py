@@ -213,6 +213,13 @@ class EventsController:
                     'error': 'Wydarzenie nie zostało znalezione'
                 }
             
+            # Check if event is archived - prevent deletion
+            if event.is_archived:
+                return {
+                    'success': False,
+                    'error': f'Nie można usunąć zarchiwizowanego wydarzenia: {event.title}'
+                }
+            
             # Check if there are registrations
             registrations_count = User.query.filter_by(
                 event_id=event_id,

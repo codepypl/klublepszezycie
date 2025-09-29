@@ -11,6 +11,11 @@ class BlogCategoriesManager {
         // Initialize pagination if needed
         this.initPagination();
 
+        // Initialize table resizer
+        if (window.tableResizer) {
+            window.tableResizer.init('#categoriesTable');
+        }
+
         // Bind events
         this.bindEvents();
     }
@@ -58,7 +63,9 @@ class BlogCategoriesManager {
 
     async loadCategories(page = 1, perPage = 10) {
         try {
-            const response = await fetch(`/api/blog/admin/categories?page=${page}&per_page=${perPage}`);
+            const response = await fetch(`/api/blog/admin/categories?page=${page}&per_page=${perPage}`, {
+                credentials: 'include'
+            });
             const data = await response.json();
             
             if (data.success) {
@@ -168,7 +175,7 @@ class BlogCategoriesManager {
                         <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.blogCategoriesManager.editCategory(${category.id})">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="window.blogCategoriesManager.deleteCategory(${category.id})">
+                        <button type="button" class="btn btn-sm admin-btn-danger" onclick="window.blogCategoriesManager.deleteCategory(${category.id})">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -192,6 +199,7 @@ class BlogCategoriesManager {
         try {
             const response = await fetch('/api/blog/admin/categories', {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -236,6 +244,7 @@ class BlogCategoriesManager {
         try {
             const response = await fetch(`/api/blog/admin/categories/${categoryId}`, {
                 method: 'PUT',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -266,7 +275,17 @@ class BlogCategoriesManager {
 
     async editCategory(categoryId) {
         try {
-            const response = await fetch(`/api/blog/admin/categories/${categoryId}`);
+            const response = await fetch(`/api/blog/admin/categories/${categoryId}`, {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const result = await response.json();
             
             if (result.success) {
@@ -310,7 +329,8 @@ class BlogCategoriesManager {
     async performDeleteCategory(categoryId) {
         try {
             const response = await fetch(`/api/blog/admin/categories/${categoryId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                credentials: 'include'
             });
 
             const result = await response.json();

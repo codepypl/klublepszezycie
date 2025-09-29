@@ -673,10 +673,54 @@ def email_sync_default_templates():
 def email_campaigns():
     """Pobiera listę kampanii emailowych"""
     try:
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 10, type=int)
+        from app.config.config import get_config
+        config = get_config()
         
-        pagination = EmailCampaign.query.order_by(EmailCampaign.created_at.desc()).paginate(
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', config.PAGINATE_BY, type=int)
+        
+        # Get filters
+        name_filter = request.args.get('name', '').strip()
+        subject_filter = request.args.get('subject', '').strip()
+        status_filter = request.args.get('status', '').strip()
+        date_from_filter = request.args.get('date_from', '').strip()
+        date_to_filter = request.args.get('date_to', '').strip()
+        
+        # Build query with filters
+        query = EmailCampaign.query
+        
+        if name_filter:
+            query = query.filter(EmailCampaign.name.ilike(f'%{name_filter}%'))
+        
+        if subject_filter:
+            query = query.filter(EmailCampaign.subject.ilike(f'%{subject_filter}%'))
+        
+        if status_filter:
+            if status_filter == 'not_completed':
+                query = query.filter(EmailCampaign.status != 'completed')
+            else:
+                query = query.filter(EmailCampaign.status == status_filter)
+        
+        if date_from_filter:
+            from datetime import datetime
+            try:
+                date_from = datetime.strptime(date_from_filter, '%Y-%m-%d')
+                query = query.filter(EmailCampaign.created_at >= date_from)
+            except ValueError:
+                pass
+        
+        if date_to_filter:
+            from datetime import datetime
+            try:
+                date_to = datetime.strptime(date_to_filter, '%Y-%m-%d')
+                # Add one day to include the entire day
+                from datetime import timedelta
+                date_to = date_to + timedelta(days=1)
+                query = query.filter(EmailCampaign.created_at < date_to)
+            except ValueError:
+                pass
+        
+        pagination = query.order_by(EmailCampaign.created_at.desc()).paginate(
             page=page, per_page=per_page, error_out=False
         )
         

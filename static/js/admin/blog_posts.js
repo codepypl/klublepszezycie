@@ -13,6 +13,11 @@ class BlogPostsManager {
         this.bindEvents();
         this.setupSlugGeneration();
         this.setupImageHandlers();
+        
+        // Initialize table resizer
+        if (window.tableResizer) {
+            window.tableResizer.init('#postsTable');
+        }
     }
 
     async loadCategories() {
@@ -685,7 +690,7 @@ class BlogPostsManager {
                         <button type="button" class="btn btn-sm admin-btn-outline" onclick="window.blogPostsManager.showEditImageModal(${image.id}, ${JSON.stringify(image).replace(/"/g, '&quot;')})">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button type="button" class="btn btn-sm admin-btn-danger-outline" onclick="window.blogPostsManager.deleteImage(${image.id}, ${postId})">
+                        <button type="button" class="btn btn-sm admin-btn-danger" onclick="window.blogPostsManager.deleteImage(${image.id}, ${postId})">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>

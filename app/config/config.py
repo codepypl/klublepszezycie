@@ -153,6 +153,9 @@ class Config:
     # Rate Limiting
     RATELIMIT_STORAGE_URL = os.getenv('RATELIMIT_STORAGE_URL', 'memory://')
     
+    # Pagination Settings
+    PAGINATE_BY = int(os.getenv('PAGINATE_BY', 10))  # Default items per page for admin tables
+    
     @classmethod
     def validate_config(cls):
         """Validate configuration and return status"""

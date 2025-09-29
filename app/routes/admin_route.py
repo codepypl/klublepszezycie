@@ -39,7 +39,9 @@ def email_templates():
 @login_required
 def email_campaigns():
     """Kampanie emaili"""
-    return render_template('admin/email_campaigns.html')
+    from app.config.config import get_config
+    config = get_config()
+    return render_template('admin/email_campaigns.html', config=config)
 
 @admin_bp.route('/email-groups')
 @login_required

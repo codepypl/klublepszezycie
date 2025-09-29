@@ -166,6 +166,20 @@ class EventsManager {
     }
 
     deleteEvent(eventId) {
+        // Find the event data to check if it's archived
+        const eventRow = document.querySelector(`tr[data-event-id="${eventId}"]`);
+        if (!eventRow) {
+            console.error('Event row not found');
+            return;
+        }
+        
+        // Check if event is archived by looking for the archive badge
+        const archiveBadge = eventRow.querySelector('.admin-badge-secondary i.fa-archive');
+        if (archiveBadge) {
+            window.toastManager.error('Nie można usunąć zarchiwizowanego wydarzenia');
+            return;
+        }
+        
         this.currentEventId = eventId;
         const modal = new bootstrap.Modal(document.getElementById('deleteEventModal'));
         modal.show();
@@ -523,9 +537,15 @@ class EventsManager {
                         <button class="btn btn-sm admin-btn-outline" onclick="eventsManager.editEvent(${event.id})">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm admin-btn-danger-outline" onclick="eventsManager.deleteEvent(${event.id})">
+                        ${!event.is_archived ? `
+                        <button class="btn btn-sm admin-btn-danger" onclick="eventsManager.deleteEvent(${event.id})">
                             <i class="fas fa-trash"></i>
                         </button>
+                        ` : `
+                        <button class="btn btn-sm admin-btn-secondary" disabled title="Nie można usunąć zarchiwizowanego wydarzenia">
+                            <i class="fas fa-archive"></i>
+                        </button>
+                        `}
                     </div>
                 </td>
             </tr>

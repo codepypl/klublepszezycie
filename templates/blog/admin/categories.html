@@ -12,7 +12,7 @@
             <i class="fas fa-plus me-2"></i>
             Dodaj Kategorię
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
@@ -25,7 +25,7 @@
         <div class="admin-card-body">
             {% if categories.items %}
                 <div class="table-responsive">
-                    <table id="categoriesTable" class="table admin-table bulk-delete-table" data-delete-endpoint="/api/blog/admin/categories/bulk-delete">
+                    <table id="categoriesTable" class="table admin-table bulk-delete-table resizable-table" data-delete-endpoint="/api/blog/admin/categories/bulk-delete">
                         <thead>
                             <tr>
                                 <th>
@@ -81,7 +81,7 @@
                                         <button class="btn btn-sm admin-btn-outline" onclick="editCategory({{ category.id }})" title="Edytuj">
                                             <i class="fas fa-pen"></i>
                                         </button>
-                                        <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteCategory({{ category.id }})" title="Usuń">
+                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteCategory({{ category.id }})" title="Usuń">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>

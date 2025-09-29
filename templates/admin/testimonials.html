@@ -25,7 +25,7 @@
         <div class="admin-card-body">
             {% if testimonials %}
                 <div class="table-responsive">
-                    <table id="testimonialsTable" class="table admin-table testimonials-table bulk-delete-table" data-delete-endpoint="/api/bulk-delete/testimonials">
+                    <table id="testimonialsTable" class="table admin-table testimonials-table bulk-delete-table resizable-table" data-delete-endpoint="/api/bulk-delete/testimonials">
                         <thead>
                             <tr>
                                 <th>
@@ -87,7 +87,7 @@
                                         <button class="btn btn-sm admin-btn-outline" onclick="editTestimonial({{ testimonial.id }})">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteTestimonial({{ testimonial.id }})">
+                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteTestimonial({{ testimonial.id }})">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>

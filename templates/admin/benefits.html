@@ -25,7 +25,7 @@
         <div class="admin-card-body">
             {% if benefits %}
                 <div class="table-responsive">
-                    <table id="benefitsTable" class="table admin-table bulk-delete-table" data-delete-endpoint="/api/bulk-delete/benefits">
+                    <table id="benefitsTable" class="table admin-table bulk-delete-table resizable-table" data-delete-endpoint="/api/bulk-delete/benefits">
                         <thead>
                             <tr>
                                 <th>
@@ -81,7 +81,7 @@
                                         <button class="btn btn-sm admin-btn-outline" onclick="editBenefit({{ benefit.id }})" title="Edytuj korzyść">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteBenefit({{ benefit.id }})" title="Usuń korzyść">
+                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteBenefit({{ benefit.id }})" title="Usuń korzyść">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>

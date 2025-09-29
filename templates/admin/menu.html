@@ -25,7 +25,7 @@
         <div class="admin-card-body">
             {% if menu_items %}
                 <div class="table-responsive">
-                    <table id="menuTable" class="table admin-table bulk-delete-table" data-delete-endpoint="/api/bulk-delete/menu">
+                    <table id="menuTable" class="table admin-table bulk-delete-table resizable-table" data-delete-endpoint="/api/bulk-delete/menu">
                         <thead>
                             <tr>
                                 <th>
@@ -82,7 +82,7 @@
                                         <button class="btn btn-sm admin-btn-outline" onclick="editMenuItem({{ item.id }})">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteMenuItem({{ item.id }})">
+                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteMenuItem({{ item.id }})">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>

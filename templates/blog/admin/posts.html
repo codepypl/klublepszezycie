@@ -12,7 +12,7 @@
             <i class="fas fa-plus me-2"></i>
             Dodaj Artykuł
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
@@ -25,7 +25,7 @@
         <div class="admin-card-body">
             {% if posts.items %}
                 <div class="table-responsive">
-                    <table id="postsTable" class="table admin-table bulk-delete-table" data-delete-endpoint="/api/blog/admin/posts/bulk-delete">
+                    <table id="postsTable" class="table admin-table bulk-delete-table resizable-table" data-delete-endpoint="/api/blog/admin/posts/bulk-delete">
                         <thead>
                             <tr>
                                 <th>
@@ -53,7 +53,7 @@
                                 <td>
                                     <div class="d-flex align-items-center">
                                         {% if post.featured_image %}
-                                            <img src="{{ post.featured_image }}" alt="{{ post.title }}" class="img-thumbnail me-2">
+                                            <img src="{{ post.featured_image }}" alt="{{ post.title }}" class="img-thumbnail me-2" style="max-width: 50px; max-height: 50px; object-fit: cover;">
                                         {% endif %}
                                         <div>
                                             <strong>{{ post.title }}</strong>
@@ -90,7 +90,7 @@
                                         <button class="btn btn-sm admin-btn-outline" onclick="editPost({{ post.id if post.id else 0 }})" title="Edytuj">
                                             <i class="fas fa-pen"></i>
                                         </button>
-                                        <button class="btn btn-sm admin-btn-danger-outline" onclick="deletePost({{ post.id if post.id else 0 }})" title="Usuń">
+                                        <button class="btn btn-sm admin-btn-danger" onclick="deletePost({{ post.id if post.id else 0 }})" title="Usuń">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -258,7 +258,7 @@
                                     <div id="currentFeaturedImage" class="mt-2">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <small class="text-muted">Aktualne zdjęcie:</small>
-                                            <button type="button" class="btn btn-sm admin-btn-danger-outline" onclick="window.blogPostsManager.deleteFeaturedImage()" title="Usuń zdjęcie główne">
+                                            <button type="button" class="btn btn-sm admin-btn-danger" onclick="window.blogPostsManager.deleteFeaturedImage()" title="Usuń zdjęcie główne">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>

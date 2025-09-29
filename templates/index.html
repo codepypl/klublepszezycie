@@ -38,7 +38,11 @@
                 </h1>
                 <div class="lead text-white mb-4" id="event-description">
                     {% if next_event %}
-                    {{ next_event.description|safe or 'Dołącz do naszego ekskluzywnego wydarzenia!' }}
+                        {% if next_event.description and next_event.description.strip() and next_event.description.strip() not in ['<p></p>', '<p><br/></p>', '<p><br></p>', '<p>&nbsp;</p>'] %}
+                            {{ next_event.description|safe }}
+                        {% else %}
+                            Dołącz do naszego ekskluzywnego wydarzenia!
+                        {% endif %}
                     {% else %}
                         Dołącz do Klubu Lepsze Życie i odkryj sekrety sukcesu w finansach, zdrowiu i relacjach.
                     {% endif %}
@@ -357,6 +361,89 @@
                                 </div>
                             </div>
                             {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% if section.content %}
+                <div class="row mt-5">
+                    <div class="col-12">
+                        {{ section.content|safe }}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+        {% elif section.name == 'timeline' %}
+    <!-- Timeline Section -->
+    <section id="timeline" class="py-5 bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-12 text-center mb-5" data-aos="fade-up">
+                    {% if section.title %}
+                        <h2 class="display-5 fw-bold text-primary mb-3">
+                            {{ section.title }}
+                        </h2>
+                    {% endif %}
+                    {% if section.subtitle %}
+                        <p class="lead text-muted">{{ section.subtitle }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% if timeline_events %}
+                <div class="timeline">
+                    {% for event in timeline_events %}
+                    <div class="timeline-item" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
+                        <div class="timeline-marker">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-header">
+                                <div class="timeline-title-section">
+                                    <h4 class="timeline-event-title">{{ event.title }}</h4>
+                                </div>
+                                <div class="timeline-meta">
+                                    <span class="badge bg-primary">{{ event.event_date.strftime('%d.%m.%Y') }}</span>
+                                    <span class="badge bg-secondary">{{ event.event_date.strftime('%H:%M') }}</span>
+                                    {% if event.location %}
+                                        <span class="badge bg-info">{{ event.location }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="timeline-body">
+                                {% if event.description and event.description.strip() and event.description.strip() not in ['<p></p>', '<p><br/></p>', '<p><br></p>', '<p>&nbsp;</p>'] %}
+                                    {{ event.description|safe }}
+                                {% endif %}
+                                {% if event.max_participants %}
+                                    <p class="text-muted small">
+                                        <i class="fas fa-users me-1"></i>
+                                        Maksymalnie {{ event.max_participants }} uczestników
+                                    </p>
+                                {% endif %}
+                            </div>
+                            <div class="timeline-actions">
+                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#eventRegistrationModal"
+                                        data-event-id="{{ event.id }}" data-event-title="{{ event.title }}">
+                                    <i class="fas fa-user-plus me-1"></i>
+                                    Zarejestruj się
+                                </button>
+                                {% if event.registration_link %}
+                                    <a href="{{ event.registration_link }}" class="btn btn-outline-primary btn-sm" target="_blank">
+                                        <i class="fas fa-external-link-alt me-1"></i>
+                                        Więcej informacji
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Brak nadchodzących wydarzeń. Sprawdź ponownie wkrótce!
                         </div>
                     </div>
                 </div>

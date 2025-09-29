@@ -201,37 +201,76 @@ class GroupManager:
             event_groups = UserGroup.query.filter_by(group_type='event_based').all()
             orphaned_groups = []
             
+            print(f"🔍 Sprawdzam {len(event_groups)} grup wydarzeń pod kątem osieroconych grup...")
+            
             for group in event_groups:
-                try:
-                    # Sprawdź czy criteria zawiera event_id
-                    criteria = json.loads(group.criteria) if group.criteria else {}
-                    event_id = criteria.get('event_id')
-                    
-                    if event_id:
-                        # Sprawdź czy wydarzenie nadal istnieje
-                        event = EventSchedule.query.get(event_id)
-                        if not event:
-                            orphaned_groups.append(group)
-                except (json.JSONDecodeError, TypeError):
-                    # Jeśli criteria jest nieprawidłowe, usuń grupę
-                    orphaned_groups.append(group)
+                is_orphaned = False
+                orphan_reason = ""
+                
+                # Sprawdź 1: Czy grupa ma event_id w kolumnie event_id
+                if group.event_id:
+                    event = EventSchedule.query.get(group.event_id)
+                    if not event:
+                        is_orphaned = True
+                        orphan_reason = f"event_id={group.event_id} nie istnieje"
+                        print(f"  🚨 Grupa '{group.name}' (ID: {group.id}) - wydarzenie {group.event_id} nie istnieje")
+                    else:
+                        print(f"  ✅ Grupa '{group.name}' (ID: {group.id}) - wydarzenie {group.event_id} istnieje")
+                
+                # Sprawdź 2: Czy criteria zawiera event_id (jeśli nie ma event_id w kolumnie)
+                if not is_orphaned and group.criteria:
+                    try:
+                        criteria = json.loads(group.criteria)
+                        event_id = criteria.get('event_id')
+                        
+                        if event_id:
+                            event = EventSchedule.query.get(event_id)
+                            if not event:
+                                is_orphaned = True
+                                orphan_reason = f"criteria.event_id={event_id} nie istnieje"
+                                print(f"  🚨 Grupa '{group.name}' (ID: {group.id}) - wydarzenie {event_id} z criteria nie istnieje")
+                            else:
+                                print(f"  ✅ Grupa '{group.name}' (ID: {group.id}) - wydarzenie {event_id} z criteria istnieje")
+                    except (json.JSONDecodeError, TypeError):
+                        # Jeśli criteria jest nieprawidłowe, usuń grupę
+                        is_orphaned = True
+                        orphan_reason = "nieprawidłowe criteria JSON"
+                        print(f"  🚨 Grupa '{group.name}' (ID: {group.id}) - nieprawidłowe criteria JSON")
+                
+                if is_orphaned:
+                    orphaned_groups.append((group, orphan_reason))
+            
+            print(f"🔍 Znaleziono {len(orphaned_groups)} osieroconych grup")
             
             # Usuń nieużywane grupy
             deleted_count = 0
-            for group in orphaned_groups:
-                # Usuń wszystkich członków
-                UserGroupMember.query.filter_by(group_id=group.id).delete()
+            total_members_removed = 0
+            
+            for group, reason in orphaned_groups:
+                print(f"🗑️ Usuwam osieroconą grupę: {group.name} (ID: {group.id}) - {reason}")
+                
+                # Policz członków przed usunięciem
+                members_count = UserGroupMember.query.filter_by(
+                    group_id=group.id,
+                    is_active=True
+                ).count()
+                
+                if members_count > 0:
+                    # Usuń wszystkich członków
+                    UserGroupMember.query.filter_by(group_id=group.id).delete()
+                    total_members_removed += members_count
+                    print(f"  👥 Usunięto {members_count} członków z grupy")
                 
                 # Usuń grupę
                 db.session.delete(group)
                 deleted_count += 1
-                print(f"🗑️ Usunięto nieużywaną grupę: {group.name}")
+                print(f"  ✅ Grupa usunięta")
             
             if deleted_count > 0:
                 db.session.commit()
-                return True, f"Usunięto {deleted_count} nieużywanych grup"
+                return True, f"Usunięto {deleted_count} osieroconych grup i {total_members_removed} członków"
             else:
-                return True, "Brak nieużywanych grup do usunięcia"
+                return True, "Brak osieroconych grup do usunięcia"
                 
         except Exception as e:
             db.session.rollback()

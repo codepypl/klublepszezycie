@@ -2,7 +2,7 @@
 
 // Global variables
 let currentPage = 1;
-let currentPerPage = 10;
+let currentPerPage = 10; // Will be updated from server response
 let availableTemplates = [];
 let availableGroups = [];
 
@@ -14,6 +14,32 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCampaigns();
     loadTemplates();
     loadGroups();
+    initializeFilters();
+    
+    // Apply default filter after loading
+    applyFilters();
+    
+    // Initialize table resizer
+    if (window.tableResizer) {
+        window.tableResizer.init('#campaignsTable');
+    }
+    
+    // Reset modal to default state when closed
+    const bulkDeleteModal = document.getElementById('bulkDeleteModal');
+    if (bulkDeleteModal) {
+        bulkDeleteModal.addEventListener('hidden.bs.modal', function() {
+            // Reset modal to default delete state
+            const modalTitle = this.querySelector('.modal-title');
+            const modalMessage = document.getElementById('bulkDeleteMessage');
+            const confirmBtn = document.getElementById('confirmBulkDelete');
+            
+            modalTitle.innerHTML = '<i class="fas fa-exclamation-triangle me-2 text-warning"></i>Potwierdź usunięcie';
+            modalMessage.innerHTML = 'Czy na pewno chcesz usunąć zaznaczone elementy?';
+            confirmBtn.innerHTML = 'Usuń';
+            confirmBtn.className = 'btn btn-danger';
+        });
+    }
+    
     
     // Set up pagination handlers for auto-initialization
     window.paginationHandlers = {
@@ -37,12 +63,29 @@ function loadCampaigns() {
         per_page: currentPerPage
     });
     
+    // Add filters to params
+    const filters = {
+        name: document.getElementById('filterName')?.value || '',
+        subject: document.getElementById('filterSubject')?.value || '',
+        status: document.getElementById('filterStatus')?.value || '',
+        date_from: document.getElementById('filterDateFrom')?.value || '',
+        date_to: document.getElementById('filterDateTo')?.value || ''
+    };
+    
+    Object.keys(filters).forEach(key => {
+        if (filters[key]) {
+            params.append(key, filters[key]);
+        }
+    });
+    
     fetch(`/api/email/campaigns?${params}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 displayCampaigns(data.campaigns);
                 if (data.pagination) {
+                    // Update currentPerPage from server response
+                    currentPerPage = data.pagination.per_page;
                     updatePagination(data.pagination);
                 }
             } else {
@@ -144,17 +187,17 @@ function displayCampaigns(campaigns) {
             <td>${new Date(campaign.created_at).toLocaleDateString('pl-PL', {hour12: false})}</td>
             <td>
                 <div class="btn-group" role="group">
+                    ${campaign.status === 'draft' ? `<button class="btn btn-lg admin-btn-success" onclick="activateCampaign(${campaign.id})" title="Aktywuj kampanię">
+                        <i class="fas fa-play"></i>
+                    </button>` : ''}
+                    ${campaign.status === 'ready' ? `<button class="btn btn-lg admin-btn-info" onclick="sendCampaign(${campaign.id})" title="Wyślij kampanię">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>` : ''}
                     ${campaign.status !== 'completed' && campaign.status !== 'sent' && campaign.status !== 'sending' ? `
                         <button class="btn btn-sm admin-btn-outline" onclick="editCampaign(${campaign.id})" title="Edytuj kampanię">
                             <i class="fas fa-edit"></i>
                         </button>
                     ` : ''}
-                    ${campaign.status === 'draft' ? `<button class="btn btn-sm admin-btn-success" onclick="activateCampaign(${campaign.id})" title="Aktywuj kampanię">
-                        <i class="fas fa-play"></i>
-                    </button>` : ''}
-                    ${campaign.status === 'ready' ? `<button class="btn btn-sm admin-btn-info" onclick="sendCampaign(${campaign.id})" title="Wyślij kampanię">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>` : ''}
                     ${campaign.status !== 'sending' && campaign.status !== 'sent' && campaign.status !== 'completed' ? `<button class="btn btn-sm admin-btn-danger" onclick="deleteCampaign(${campaign.id})" title="Usuń kampanię">
                         <i class="fas fa-trash"></i>
                     </button>` : ''}
@@ -446,13 +489,21 @@ function editCampaign(campaignId) {
 // Activate campaign
 function activateCampaign(campaignId) {
     // Use modal confirmation instead of confirm()
-    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz aktywować tę kampanię?<br><small class="text-muted">Po aktywacji będzie można ją wysłać.</small>';
+    const modalElement = document.getElementById('bulkDeleteModal');
+    const modalTitle = modalElement.querySelector('.modal-title');
+    const modalMessage = document.getElementById('bulkDeleteMessage');
+    const confirmBtn = document.getElementById('confirmBulkDelete');
     
-    const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+    // Update modal title and content
+    modalTitle.innerHTML = '<i class="fas fa-play me-2 text-success"></i>Aktywuj kampanię';
+    modalMessage.innerHTML = 'Czy na pewno chcesz aktywować tę kampanię?<br><small class="text-muted">Po aktywacji będzie można ją wysłać.</small>';
+    
+    const modal = new bootstrap.Modal(modalElement);
     modal.show();
     
     // Update confirm button
-    const confirmBtn = document.getElementById('confirmBulkDelete');
+    confirmBtn.innerHTML = '<i class="fas fa-play me-2"></i>Aktywuj kampanię';
+    confirmBtn.className = 'btn btn-success';
     confirmBtn.onclick = function() {
         fetch(`/api/email/campaigns/${campaignId}/activate`, {
             method: 'POST'
@@ -478,13 +529,21 @@ function activateCampaign(campaignId) {
 // Send campaign
 function sendCampaign(campaignId) {
     // Use modal confirmation instead of confirm()
-    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz wysłać tę kampanię?<br><small class="text-muted">Ta operacja nie może być cofnięta.</small>';
+    const modalElement = document.getElementById('bulkDeleteModal');
+    const modalTitle = modalElement.querySelector('.modal-title');
+    const modalMessage = document.getElementById('bulkDeleteMessage');
+    const confirmBtn = document.getElementById('confirmBulkDelete');
     
-    const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+    // Update modal title and content
+    modalTitle.innerHTML = '<i class="fas fa-paper-plane me-2 text-primary"></i>Wyślij kampanię';
+    modalMessage.innerHTML = 'Czy na pewno chcesz wysłać tę kampanię?<br><small class="text-muted">Ta operacja nie może być cofnięta.</small>';
+    
+    const modal = new bootstrap.Modal(modalElement);
     modal.show();
     
     // Update confirm button
-    const confirmBtn = document.getElementById('confirmBulkDelete');
+    confirmBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Wyślij kampanię';
+    confirmBtn.className = 'btn btn-primary';
     confirmBtn.onclick = function() {
         fetch(`/api/email/campaigns/${campaignId}/send`, {
             method: 'POST'
@@ -778,6 +837,156 @@ window.deleteCampaign = deleteCampaign;
 window.handleTemplateChange = handleTemplateChange;
 window.updateEmailPreview = updateEmailPreview;
 window.toggleScheduling = toggleScheduling;
+
+// Initialize filters
+function initializeFilters() {
+    const applyFiltersBtn = document.getElementById('applyFilters');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    const filtersCollapse = document.getElementById('filtersCollapse');
+    const filtersButton = document.querySelector('[data-bs-target="#filtersCollapse"]');
+    const filtersIcon = document.getElementById('filtersIcon');
+    
+    if (applyFiltersBtn) {
+        applyFiltersBtn.addEventListener('click', applyFilters);
+    }
+    
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', clearFilters);
+    }
+    
+    // Setup filters state management
+    if (filtersCollapse && filtersButton && filtersIcon) {
+        // Check if filters should be expanded based on URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasFilters = urlParams.has('filterName') || urlParams.has('filterSubject') || 
+                          urlParams.has('filterStatus') || urlParams.has('filterDateFrom') ||
+                          urlParams.has('filterDateTo');
+        
+        // Restore state from localStorage if no URL filters
+        const savedState = localStorage.getItem('campaignsFiltersExpanded');
+        const shouldExpand = hasFilters || savedState === 'true';
+        
+        if (shouldExpand) {
+            filtersCollapse.classList.add('show');
+            filtersButton.setAttribute('aria-expanded', 'true');
+            filtersIcon.classList.remove('fa-chevron-down');
+            filtersIcon.classList.add('fa-chevron-up');
+        }
+        
+        // Save state when filters are toggled
+        filtersCollapse.addEventListener('shown.bs.collapse', function() {
+            filtersButton.setAttribute('aria-expanded', 'true');
+            filtersIcon.classList.remove('fa-chevron-down');
+            filtersIcon.classList.add('fa-chevron-up');
+            localStorage.setItem('campaignsFiltersExpanded', 'true');
+        });
+        
+        filtersCollapse.addEventListener('hidden.bs.collapse', function() {
+            filtersButton.setAttribute('aria-expanded', 'false');
+            filtersIcon.classList.remove('fa-chevron-up');
+            filtersIcon.classList.add('fa-chevron-down');
+            localStorage.setItem('campaignsFiltersExpanded', 'false');
+        });
+    }
+    
+    // Load filters from URL on page load
+    loadFiltersFromURL();
+}
+
+// Apply filters
+function applyFilters() {
+    const filters = {
+        name: document.getElementById('filterName').value,
+        subject: document.getElementById('filterSubject').value,
+        status: document.getElementById('filterStatus').value,
+        date_from: document.getElementById('filterDateFrom').value,
+        date_to: document.getElementById('filterDateTo').value
+    };
+    
+    // Update URL with filters
+    const url = new URL(window.location);
+    Object.keys(filters).forEach(key => {
+        if (filters[key]) {
+            url.searchParams.set(`filter${key.charAt(0).toUpperCase() + key.slice(1)}`, filters[key]);
+        } else {
+            url.searchParams.delete(`filter${key.charAt(0).toUpperCase() + key.slice(1)}`);
+        }
+    });
+    
+    // Update active filters count
+    const activeCount = Object.values(filters).filter(value => value).length;
+    const activeFiltersCount = document.getElementById('activeFiltersCount');
+    if (activeCount > 0) {
+        activeFiltersCount.textContent = `${activeCount} aktywny`;
+        activeFiltersCount.style.display = 'inline';
+    } else {
+        activeFiltersCount.style.display = 'none';
+    }
+    
+    // Reload campaigns with filters
+    loadCampaigns();
+}
+
+// Clear filters
+function clearFilters() {
+    document.getElementById('filterName').value = '';
+    document.getElementById('filterSubject').value = '';
+    document.getElementById('filterStatus').value = 'not_completed'; // Keep default filter
+    document.getElementById('filterDateFrom').value = '';
+    document.getElementById('filterDateTo').value = '';
+    
+    // Clear URL parameters
+    const url = new URL(window.location);
+    url.searchParams.delete('filterName');
+    url.searchParams.delete('filterSubject');
+    url.searchParams.delete('filterDateFrom');
+    url.searchParams.delete('filterDateTo');
+    // Keep status filter in URL for default behavior
+    url.searchParams.set('filterStatus', 'not_completed');
+    
+    // Update active filters count
+    document.getElementById('activeFiltersCount').textContent = '1 aktywny';
+    document.getElementById('activeFiltersCount').style.display = 'inline';
+    
+    // Reload campaigns with default filter
+    loadCampaigns();
+}
+
+// Load filters from URL
+function loadFiltersFromURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    if (urlParams.has('filterName')) {
+        document.getElementById('filterName').value = urlParams.get('filterName');
+    }
+    if (urlParams.has('filterSubject')) {
+        document.getElementById('filterSubject').value = urlParams.get('filterSubject');
+    }
+    if (urlParams.has('filterStatus')) {
+        document.getElementById('filterStatus').value = urlParams.get('filterStatus');
+    } else {
+        // Set default filter to exclude 'completed' status
+        document.getElementById('filterStatus').value = 'not_completed';
+    }
+    if (urlParams.has('filterDateFrom')) {
+        document.getElementById('filterDateFrom').value = urlParams.get('filterDateFrom');
+    }
+    if (urlParams.has('filterDateTo')) {
+        document.getElementById('filterDateTo').value = urlParams.get('filterDateTo');
+    }
+    
+    // Update active filters count
+    const activeCount = Array.from(urlParams.keys()).filter(key => key.startsWith('filter')).length;
+    const activeFiltersCount = document.getElementById('activeFiltersCount');
+    if (activeCount > 0) {
+        activeFiltersCount.textContent = `${activeCount} aktywny`;
+        activeFiltersCount.style.display = 'inline';
+    } else {
+        // Show count for default filter
+        activeFiltersCount.textContent = '1 aktywny';
+        activeFiltersCount.style.display = 'inline';
+    }
+}
 
 // Ensure functions are available even if called before DOM is ready
 console.log('Email campaigns functions loaded:', {

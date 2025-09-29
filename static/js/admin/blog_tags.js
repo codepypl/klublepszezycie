@@ -12,6 +12,11 @@ class BlogTagsManager {
         // Initialize pagination if needed
         this.initPagination();
 
+        // Initialize table resizer
+        if (window.tableResizer) {
+            window.tableResizer.init('#tagsTable');
+        }
+
         // Bind events
         this.bindEvents();
     }
@@ -29,26 +34,11 @@ class BlogTagsManager {
             editForm.addEventListener('submit', (e) => this.handleEditTag(e));
         }
 
-        // Auto-generate slug from name
-        const nameInput = document.getElementById('tagName');
-        const slugInput = document.getElementById('tagSlug');
-        if (nameInput && slugInput) {
-            nameInput.addEventListener('input', () => {
-                if (!slugInput.value) {
-                    slugInput.value = this.slugify(nameInput.value);
-                }
-            });
-        }
-
-        const editNameInput = document.getElementById('editTagName');
-        const editSlugInput = document.getElementById('editTagSlug');
-        if (editNameInput && editSlugInput) {
-            editNameInput.addEventListener('input', () => {
-                if (!editSlugInput.value) {
-                    editSlugInput.value = this.slugify(editNameInput.value);
-                }
-            });
-        }
+        // Use centralized slug generator - always generate slug
+        SlugGenerator.setupMultipleAutoSlug([
+            { titleSelector: '#tagName', slugSelector: '#tagSlug', alwaysGenerate: true },
+            { titleSelector: '#editTagName', slugSelector: '#editTagSlug', alwaysGenerate: true }
+        ]);
     }
 
     initPagination() {
@@ -138,21 +128,26 @@ class BlogTagsManager {
         tags.forEach(tag => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${tag.id}</td>
+                <td>
+                    <input type="checkbox" name="itemIds" value="${tag.id}">
+                </td>
+                <td>
+                    <span class="badge admin-badge admin-badge-primary">${tag.id}</span>
+                </td>
                 <td>${tag.name}</td>
-                <td>${tag.slug}</td>
                 <td>${tag.posts_count || 0}</td>
                 <td>
                     <span class="badge ${tag.is_active ? 'bg-success' : 'bg-secondary'}">
                         ${tag.is_active ? 'Aktywny' : 'Nieaktywny'}
                     </span>
                 </td>
+                <td>${tag.created_at ? new Date(tag.created_at).toLocaleDateString('pl-PL') : '-'}</td>
                 <td>
                     <div class="btn-group" role="group">
-                        <button class="btn btn-sm btn-outline-primary" onclick="blogTagsManager.editTag(${tag.id})">
+                        <button class="btn btn-sm admin-btn-outline" onclick="editTag(${tag.id})" title="Edytuj">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="blogTagsManager.deleteTag(${tag.id})">
+                        <button class="btn btn-sm admin-btn-danger" onclick="deleteTag(${tag.id})" title="Usuń">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -322,16 +317,6 @@ class BlogTagsManager {
         }
     }
 
-    slugify(text) {
-        return text
-            .toString()
-            .toLowerCase()
-            .replace(/\s+/g, '-')
-            .replace(/[^\w\-]+/g, '')
-            .replace(/\-\-+/g, '-')
-            .replace(/^-+/, '')
-            .replace(/-+$/, '');
-    }
 }
 
 // Global functions for onclick handlers

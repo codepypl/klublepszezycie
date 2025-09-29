@@ -11,19 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadLogsStats();
     loadLogs();
     
-    // Set up pagination handlers for auto-initialization
-    window.paginationHandlers = {
-        onPageChange: (page) => {
-            currentPage = page;
-            loadLogs();
-        },
-        onPerPageChange: (newPage, perPage) => {
-            console.log('Per page changed:', { newPage, perPage, currentPerPage }); // Debug log
-            currentPerPage = perPage;
-            currentPage = newPage; // Use the page passed by pagination
-            loadLogs();
-        }
-    };
+    // Pagination handlers are now set up in updatePagination function
     
     // Initialize CRUD Refresh Manager for email logs
     if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
@@ -32,6 +20,11 @@ document.addEventListener('DOMContentLoaded', function() {
             loadLogs();
         });
         console.log('CRUD Refresh Manager initialized for email logs');
+    }
+    
+    // Initialize table resizer
+    if (window.tableResizer) {
+        window.tableResizer.init('#logsTable');
     }
     
     // Setup auto-refresh for email logs
@@ -99,6 +92,8 @@ function loadLogs() {
                 displayLogs(data.logs);
                 if (data.pagination) {
                     console.log('Pagination data:', data.pagination); // Debug log
+                    // Update currentPerPage from server response
+                    currentPerPage = data.pagination.per_page;
                     updatePagination(data.pagination);
                 }
             } else {
@@ -380,6 +375,21 @@ function updatePagination(pagination) {
             
             const paginationInstance = new SimplePagination('pagination', options);
             paginationElement.paginationInstance = paginationInstance;
+            
+            // Set up callbacks
+            paginationInstance.setPageChangeCallback((page) => {
+                console.log('Page change callback:', page);
+                currentPage = page;
+                loadLogs();
+            });
+            
+            paginationInstance.setPerPageChangeCallback((page, perPage) => {
+                console.log('Per page change callback:', page, perPage);
+                currentPerPage = perPage;
+                currentPage = page;
+                loadLogs();
+            });
+            
             paginationInstance.setData(pagination);
         }
     }

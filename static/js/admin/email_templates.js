@@ -16,6 +16,11 @@ document.addEventListener('DOMContentLoaded', function() {
     loadTemplates();
     initializeModalListeners();
     
+    // Initialize table resizer
+    if (window.tableResizer) {
+        window.tableResizer.init('#templatesTable');
+    }
+    
     // Check for edit parameter in URL
     const urlParams = new URLSearchParams(window.location.search);
     const editTemplateId = urlParams.get('edit');
@@ -322,6 +327,8 @@ function loadTemplates() {
                 displayTemplates(data.templates);
                 if (data.pagination) {
                     console.log('🔍 Calling updatePagination with:', data.pagination);
+                    // Update currentPerPage from server response
+                    currentPerPage = data.pagination.per_page;
                     updatePagination(data.pagination);
                 } else {
                     console.log('🔍 No pagination data in response');
@@ -410,7 +417,7 @@ function displayTemplates(templates) {
         
         const deleteButtonHtml = template.is_default ? 
             '<button class="btn btn-sm admin-btn-outline" disabled title="Nie można usuwać szablonów domyślnych"><i class="fas fa-lock"></i></button>' :
-            '<button class="btn btn-sm admin-btn-danger-outline" onclick="deleteTemplate(' + template.id + ')" title="Usuń szablon"><i class="fas fa-trash"></i></button>';
+            '<button class="btn btn-sm admin-btn-danger" onclick="deleteTemplate(' + template.id + ')" title="Usuń szablon"><i class="fas fa-trash"></i></button>';
         
         row.innerHTML = `
             <td>${checkboxHtml}</td>
@@ -1066,68 +1073,12 @@ function performResetTemplates() {
     });
 }
 
-// Save current templates as defaults
-function saveTemplatesAsDefaults() {
-    // Set up modal for confirmation
-    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz zapisać obecne szablony jako domyślne wzory?<br><small class="text-muted">Ta operacja zastąpi wszystkie istniejące domyślne wzory obecnymi szablonami. Tej operacji nie można cofnąć.</small>';
-    
-    const modalElement = document.getElementById('bulkDeleteModal');
-    const modal = new bootstrap.Modal(modalElement);
-    modal.show();
-    
-    // Update confirm button
-    const confirmBtn = document.getElementById('confirmBulkDelete');
-    const newConfirmBtn = confirmBtn.cloneNode(true);
-    newConfirmBtn.innerHTML = '<i class="fas fa-save me-1"></i>Zapisz jako wzory';
-    
-    // Check if parent node exists before replacing
-    if (confirmBtn.parentNode) {
-        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-    } else {
-        console.warn('Confirm button parent node not found');
-    }
-    
-    newConfirmBtn.onclick = function() {
-        // Hide modal using Bootstrap method
-        const modal = bootstrap.Modal.getInstance(modalElement);
-        if (modal) {
-            modal.hide();
-        }
-        
-        // Then perform save
-        performSaveTemplatesAsDefaults();
-    };
-}
-
-// Perform actual save as defaults operation
-function performSaveTemplatesAsDefaults() {
-    fetch('/api/email/templates/save-as-defaults', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            window.toastManager.success(data.message);
-            loadTemplates();
-        } else {
-            window.toastManager.error('Błąd zapisywania: ' + data.error);
-        }
-    })
-    .catch(error => {
-        console.error('Error saving templates as defaults:', error);
-        window.toastManager.error('Błąd zapisywania szablonów jako wzory');
-    });
-}
 
 // Make functions globally available
 window.resetTemplates = resetTemplates;
 window.deleteTemplate = deleteTemplate;
 window.saveTemplate = saveTemplate;
 window.showTemplateModal = showTemplateModal;
-window.saveTemplatesAsDefaults = saveTemplatesAsDefaults;
 window.editTemplate = editTemplate;
 window.insertVariable = insertVariable;
 window.addVariable = addVariable;

@@ -144,7 +144,8 @@ class PublicController:
             now = get_local_now()
             upcoming_events = EventSchedule.query.filter(
                 EventSchedule.event_date > now,
-                EventSchedule.status == 'active'
+                EventSchedule.is_active == True,
+                EventSchedule.is_published == True
             ).order_by(EventSchedule.event_date.asc()).limit(3).all()
             
             # Get recent blog posts

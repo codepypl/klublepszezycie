@@ -237,7 +237,7 @@
             
             {% if users %}
                 <div class="table-responsive">
-                    <table id="usersTable" class="table admin-table bulk-delete-table" data-delete-endpoint="/api/bulk-delete/users">
+                    <table id="usersTable" class="table admin-table bulk-delete-table resizable-table" data-delete-endpoint="/api/bulk-delete/users">
                         <thead>
                             <tr>
                                 <th>
@@ -331,7 +331,7 @@
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         {% if not user.is_admin %}
-                                        <button type="button" class="btn btn-sm admin-btn-danger-outline" 
+                                        <button type="button" class="btn btn-sm admin-btn-danger" 
                                                 onclick="deleteUser({{ user.id }})" 
                                                 title="Usuń użytkownika">
                                             <i class="fas fa-trash"></i>

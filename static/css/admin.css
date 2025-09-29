@@ -1092,6 +1092,82 @@ small {
     min-width: 800px; /* Minimum width to prevent too much compression */
 }
 
+/* Resizable table styles */
+.resizable-table {
+    position: relative;
+}
+
+.resizable-table.resizing {
+    user-select: none;
+}
+
+.resizable-table.resizing * {
+    user-select: none;
+}
+
+/* Column resize handle */
+.column-resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    background: transparent;
+    cursor: col-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #000;
+    user-select: none;
+    z-index: 10;
+    transition: all 0.2s ease;
+}
+
+.column-resize-handle::before {
+    content: '';
+    position: absolute;
+    right: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid #000;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+}
+
+.column-resize-handle::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid #000;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+}
+
+.column-resize-handle:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.column-resize-handle:hover::before,
+.column-resize-handle:hover::after {
+    border-left-color: #000;
+}
+
+.column-resize-handle:active {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Make headers relative for resize handles */
+.resizable-table thead th {
+    position: relative;
+}
+
 .admin-table th,
 .admin-table td {
     vertical-align: middle;

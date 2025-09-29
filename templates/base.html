@@ -35,6 +35,9 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     
+    <!-- Timeline CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/user/timeline.css') }}">
+    
     <!-- Additional CSS -->
     {% block extra_css %}{% endblock %}
     
@@ -181,9 +184,39 @@
     <!-- Additional JavaScript -->
     {% block extra_js %}{% endblock %}
     
+    <!-- CRUD Refresh Manager -->
+    <script src="{{ url_for('static', filename='js/admin/crud-refresh-manager.js') }}"></script>
+    
     <!-- Modal Manager Script -->
     
     <!-- Global Refresh System -->
+    <script>
+        // Global Auto-Refresh System for Admin Pages
+        document.addEventListener('DOMContentLoaded', function() {
+            // Only activate on admin pages
+            if (window.location.pathname.startsWith('/admin/')) {
+                console.log('🔄 Initializing global auto-refresh for admin page');
+                
+                // Auto-refresh every 30 seconds
+                setInterval(function() {
+                    // Check if any modal is open
+                    const openModals = document.querySelectorAll('.modal.show');
+                    if (openModals.length > 0) {
+                        console.log('⏸️ Skipping auto-refresh - modal is open');
+                        return;
+                    }
+                    
+                    // Check if CRUD refresh manager is available and initialized
+                    if (window.crudRefreshManager && window.crudRefreshManager.isInitialized) {
+                        console.log('🔄 Auto-refresh triggered');
+                        window.crudRefreshManager.executeRefresh();
+                    }
+                }, 30000); // 30 seconds
+                
+                console.log('✅ Global auto-refresh initialized');
+            }
+        });
+    </script>
 </body>
 </html>
 

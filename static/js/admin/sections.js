@@ -526,7 +526,7 @@ async function createPillarElement(pillar, index) {
     div.innerHTML = `
         <div class="card-header d-flex justify-content-between align-items-center">
             <h6 class="mb-0">Filar ${index + 1}</h6>
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePillar(${index})">
+            <button type="button" class="btn btn-sm admin-btn-danger" onclick="removePillar(${index})">
                 <i class="fas fa-trash"></i>
             </button>
         </div>
@@ -576,7 +576,7 @@ async function createFloatingCardElement(card, index) {
     div.innerHTML = `
         <div class="card-header d-flex justify-content-between align-items-center">
             <h6 class="mb-0">Karta ${index + 1}</h6>
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFloatingCard(${index})">
+            <button type="button" class="btn btn-sm admin-btn-danger" onclick="removeFloatingCard(${index})">
                 <i class="fas fa-trash"></i>
             </button>
         </div>

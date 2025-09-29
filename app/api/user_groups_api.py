@@ -142,7 +142,7 @@ def get_user_group(group_id):
         
         # Get members
         members = []
-        for member in group.members:
+        for member in group.members.all():  # .all() bo members to dynamic query
             member_data = {
                 'id': member.id,
                 'member_type': member.member_type,
@@ -251,7 +251,7 @@ def get_group_members(group_id):
             return jsonify({'success': False, 'error': 'Grupa nie istnieje'}), 404
         
         members = []
-        for member in group.members:
+        for member in group.members.all():  # .all() bo members to dynamic query
             member_data = {
                 'id': member.id,
                 'member_type': member.member_type,

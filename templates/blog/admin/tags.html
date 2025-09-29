@@ -12,7 +12,7 @@
             <i class="fas fa-plus me-2"></i>
             Dodaj Tag
         </button>
-        <button class="btn admin-btn-danger" id="bulkDeleteBtn">
+        <button class="btn admin-btn-danger" id="bulkDeleteBtn" style="display: none;">
             <i class="fas fa-trash me-2"></i>
             Usuń Zaznaczone
         </button>
@@ -25,7 +25,7 @@
         <div class="admin-card-body">
             {% if tags %}
                 <div class="table-responsive">
-                    <table id="tagsTable" class="table admin-table bulk-delete-table" data-delete-endpoint="/api/blog/admin/tags/bulk-delete">
+                    <table id="tagsTable" class="table admin-table bulk-delete-table resizable-table" data-delete-endpoint="/api/blog/admin/tags/bulk-delete">
                         <thead>
                             <tr>
                                 <th>
@@ -83,7 +83,7 @@
                                         <button class="btn btn-sm admin-btn-outline" onclick="editTag({{ tag.id }})" title="Edytuj">
                                             <i class="fas fa-pen"></i>
                                         </button>
-                                        <button class="btn btn-sm admin-btn-danger-outline" onclick="deleteTag({{ tag.id }})" title="Usuń">
+                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteTag({{ tag.id }})" title="Usuń">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -136,11 +136,11 @@
                                 </label>
                             </div>
                         </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                            <button type="submit" class="btn admin-btn">Zapisz</button>
+                        </div>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                    <button type="button" class="btn admin-btn" onclick="saveTag()">Zapisz</button>
                 </div>
             </div>
         </div>
@@ -178,11 +178,11 @@
                                 </label>
                             </div>
                         </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                            <button type="submit" class="btn admin-btn">Zapisz</button>
+                        </div>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                    <button type="button" class="btn admin-btn" onclick="saveTag()">Zapisz</button>
                 </div>
             </div>
         </div>

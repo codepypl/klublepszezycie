@@ -137,7 +137,7 @@
     <div class="admin-card">
         <div class="admin-card-body">
             <div class="table-responsive">
-                <table id="logsTable" class="table admin-table">
+                <table id="logsTable" class="table admin-table resizable-table">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -185,6 +185,27 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Zamknij</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Delete Confirmation Modal -->
+    <div class="modal fade" id="bulkDeleteModal" tabindex="-1" aria-labelledby="bulkDeleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bulkDeleteModalLabel">Potwierdzenie czyszczenia</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="bulkDeleteMessage">
+                        <!-- Message will be set dynamically -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="button" class="btn admin-btn-danger" id="confirmBulkDelete">Potwierdź</button>
                 </div>
             </div>
         </div>
