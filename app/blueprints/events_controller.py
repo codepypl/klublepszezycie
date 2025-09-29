@@ -96,8 +96,9 @@ class EventsController:
             db.session.commit()
             
             # Automatycznie utwórz grupę dla wydarzenia
-            from app.api.email_api import create_event_group
-            create_event_group(event.id, event.title)
+            from app.services.group_manager import GroupManager
+            group_manager = GroupManager()
+            group_manager.create_event_group(event.id, event.title)
             
             # Automatycznie zaplanuj przypomnienia o wydarzeniu
             from app.services.email_automation import EmailAutomation

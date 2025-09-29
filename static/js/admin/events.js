@@ -676,6 +676,16 @@ document.addEventListener('DOMContentLoaded', function() {
         publishedFilter.addEventListener('change', applyFilters);
     }
     
+    // Auto-refresh events table every 30 seconds
+    setInterval(() => {
+        if (window.location.pathname.includes('/admin/events')) {
+            console.log('🔄 Auto-refreshing events table...');
+            if (window.eventsManager && window.eventsManager.crudRefresh) {
+                window.eventsManager.crudRefresh();
+            }
+        }
+    }, 30000); // 30 seconds
+    
 });
 
 

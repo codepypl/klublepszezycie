@@ -125,8 +125,9 @@ def api_event_schedule():
             db.session.commit()
             
             # Automatycznie utwórz grupę dla wydarzenia
-            from app.api.email_api import create_event_group
-            create_event_group(event.id, event.title)
+            from app.services.group_manager import GroupManager
+            group_manager = GroupManager()
+            group_manager.create_event_group(event.id, event.title)
             
             # Automatycznie zaplanuj przypomnienia o wydarzeniu
             from app.services.email_automation import EmailAutomation
@@ -269,8 +270,9 @@ def api_event(event_id):
             
             # Aktualizuj grupę wydarzenia jeśli nazwa się zmieniła
             if 'title' in data:
-                from app.api.email_api import create_event_group
-                create_event_group(event.id, event.title)
+                from app.services.group_manager import GroupManager
+                group_manager = GroupManager()
+                group_manager.create_event_group(event.id, event.title)
             
             return jsonify({
                 'success': True,
@@ -334,6 +336,7 @@ def api_schedules():
                 'schedules': [{
                     'id': schedule.id,
                     'title': schedule.title,
+                    'event_type': schedule.event_type,
                     'event_date': schedule.event_date.isoformat() if schedule.event_date else None,
                     'end_date': schedule.end_date.isoformat() if schedule.end_date else None,
                     'location': schedule.location,
@@ -351,6 +354,7 @@ def api_schedules():
             schedule = EventSchedule(
                 title=data['title'],
                 description=data.get('description', ''),
+                event_type=data.get('event_type', ''),
                 event_date=data.get('event_date'),
                 end_date=data.get('end_date'),
                 location=data.get('location', ''),
@@ -362,8 +366,9 @@ def api_schedules():
             db.session.commit()
             
             # Automatycznie utwórz grupę dla wydarzenia
-            from app.api.email_api import create_event_group
-            create_event_group(schedule.id, schedule.title)
+            from app.services.group_manager import GroupManager
+            group_manager = GroupManager()
+            group_manager.create_event_group(schedule.id, schedule.title)
             
             return jsonify({
                 'success': True,
@@ -371,6 +376,7 @@ def api_schedules():
                 'schedule': {
                     'id': schedule.id,
                     'title': schedule.title,
+                    'event_type': schedule.event_type,
                     'event_date': schedule.event_date.isoformat() if schedule.event_date else None,
                     'end_date': schedule.end_date.isoformat() if schedule.end_date else None,
                     'location': schedule.location,
@@ -396,6 +402,7 @@ def api_schedule(schedule_id):
                     'id': schedule.id,
                     'title': schedule.title,
                     'description': schedule.description,
+                    'event_type': schedule.event_type,
                     'event_date': schedule.event_date.isoformat() if schedule.event_date else None,
                     'end_date': schedule.end_date.isoformat() if schedule.end_date else None,
                     'location': schedule.location,
@@ -415,6 +422,8 @@ def api_schedule(schedule_id):
                 schedule.title = data['title']
             if 'description' in data:
                 schedule.description = data['description']
+            if 'event_type' in data:
+                schedule.event_type = data['event_type']
             if 'event_date' in data:
                 schedule.event_date = data['event_date']
             if 'end_date' in data:
