@@ -81,9 +81,6 @@ class EventsManager {
         // Store current event data for validation
         this.currentEventData = event;
         
-        console.log('🔍 Populating edit form for event:', event.title);
-        console.log('🔍 Event is_archived:', event.is_archived);
-        console.log('🔍 Full event data:', event);
         
         document.getElementById('editEventId').value = event.id;
         document.getElementById('editEventTitle').value = event.title || '';
@@ -91,26 +88,15 @@ class EventsManager {
         // Set event type
         const eventTypeSelect = document.getElementById('editEventType');
         if (eventTypeSelect) {
-            console.log('🔍 Setting event_type:', event.event_type, 'for event:', event.title);
-            console.log('🔍 Full event data:', event);
-            
             // Handle null/undefined event_type
             const eventType = event.event_type || '';
             eventTypeSelect.value = eventType;
-            console.log('🔍 Event type select value set to:', eventTypeSelect.value);
-            
-            // If event_type is null/undefined, set to empty string
-            if (!event.event_type) {
-                console.log('⚠️ Event type is null/undefined, setting to empty string');
-            }
         } else {
             console.error('❌ editEventType element not found!');
         }
         
         // For archived events, make date fields optional
         const isArchived = event.is_archived === true;
-        console.log('🔍 Event is archived:', isArchived, 'for event:', event.title);
-        
         const eventDateInput = document.getElementById('editEventDate');
         const eventTimeInput = document.getElementById('editEventTime');
         
@@ -118,26 +104,22 @@ class EventsManager {
             // Remove required attribute for archived events
             eventDateInput.removeAttribute('required');
             eventTimeInput.removeAttribute('required');
-            console.log('🔍 Removed required attributes for archived event');
             
             // Update labels to remove asterisk
             const eventDateLabel = document.querySelector('label[for="editEventDate"]');
             const eventTimeLabel = document.querySelector('label[for="editEventTime"]');
             if (eventDateLabel) eventDateLabel.textContent = 'Data Wydarzenia';
             if (eventTimeLabel) eventTimeLabel.textContent = 'Godzina';
-            console.log('🔍 Updated labels for archived event');
         } else {
             // Add required attribute for non-archived events
             eventDateInput.setAttribute('required', 'required');
             eventTimeInput.setAttribute('required', 'required');
-            console.log('🔍 Added required attributes for non-archived event');
             
             // Update labels to add asterisk
             const eventDateLabel = document.querySelector('label[for="editEventDate"]');
             const eventTimeLabel = document.querySelector('label[for="editEventTime"]');
             if (eventDateLabel) eventDateLabel.textContent = 'Data Wydarzenia *';
             if (eventTimeLabel) eventTimeLabel.textContent = 'Godzina *';
-            console.log('🔍 Updated labels for non-archived event');
         }
         
         // Format dates - handle both ISO strings and Date objects
@@ -262,9 +244,6 @@ class EventsManager {
             is_archived: this.currentEventData?.is_archived || false
         };
         
-        console.log('🔍 Event data for validation:', eventData);
-        console.log('🔍 Current event data:', this.currentEventData);
-        console.log('🔍 Is archived:', eventData.is_archived);
 
         // Validate dates
         const validationErrors = this.validateEventDates(eventData);
@@ -578,14 +557,8 @@ class EventsManager {
         const now = new Date();
         const errors = [];
         
-        console.log('🔍 Validating dates for event:', eventData.title);
-        console.log('🔍 Is archived:', eventData.is_archived);
-        console.log('🔍 Event date:', eventData.event_date);
-        console.log('🔍 End date:', eventData.end_date);
-        
-        // Skip validation for archived events
+        // Skip validation for archived events - FIRST CHECK!
         if (eventData.is_archived === true) {
-            console.log('✅ Skipping validation for archived event');
             return errors;
         }
         
