@@ -4,6 +4,7 @@
 class EventsManager {
     constructor() {
         this.currentEventId = null;
+        this.currentEventData = null;
         this.currentPage = 1;
         this.currentPerPage = 10;
         this.initializeEventListeners();
@@ -76,6 +77,9 @@ class EventsManager {
     }
 
     populateEditForm(event) {
+        // Store current event data for validation
+        this.currentEventData = event;
+        
         document.getElementById('editEventId').value = event.id;
         document.getElementById('editEventTitle').value = event.title || '';
         
@@ -85,6 +89,33 @@ class EventsManager {
             eventTypeSelect.value = event.event_type || '';
         } else {
             console.error('❌ editEventType element not found!');
+        }
+        
+        // For archived events, make date fields optional
+        const isArchived = event.is_archived === true;
+        const eventDateInput = document.getElementById('editEventDate');
+        const eventTimeInput = document.getElementById('editEventTime');
+        
+        if (isArchived) {
+            // Remove required attribute for archived events
+            eventDateInput.removeAttribute('required');
+            eventTimeInput.removeAttribute('required');
+            
+            // Update labels to remove asterisk
+            const eventDateLabel = document.querySelector('label[for="editEventDate"]');
+            const eventTimeLabel = document.querySelector('label[for="editEventTime"]');
+            if (eventDateLabel) eventDateLabel.textContent = 'Data Wydarzenia';
+            if (eventTimeLabel) eventTimeLabel.textContent = 'Godzina';
+        } else {
+            // Add required attribute for non-archived events
+            eventDateInput.setAttribute('required', 'required');
+            eventTimeInput.setAttribute('required', 'required');
+            
+            // Update labels to add asterisk
+            const eventDateLabel = document.querySelector('label[for="editEventDate"]');
+            const eventTimeLabel = document.querySelector('label[for="editEventTime"]');
+            if (eventDateLabel) eventDateLabel.textContent = 'Data Wydarzenia *';
+            if (eventTimeLabel) eventTimeLabel.textContent = 'Godzina *';
         }
         
         // Format dates - handle both ISO strings and Date objects
@@ -118,8 +149,10 @@ class EventsManager {
         document.getElementById('editEventActive').checked = event.is_active === true;
         document.getElementById('editEventPublished').checked = event.is_published === true;
         
-        // Set minimum dates for date inputs
-        this.setMinDates();
+        // Set minimum dates for date inputs (only for non-archived events)
+        if (!isArchived) {
+            this.setMinDates();
+        }
     }
 
     deleteEvent(eventId) {
@@ -203,7 +236,8 @@ class EventsManager {
             hero_background_type: formData.get('hero_background_type'),
             description: formData.get('description'),
             is_active: formData.get('is_active') === 'on',
-            is_published: formData.get('is_published') === 'on'
+            is_published: formData.get('is_published') === 'on',
+            is_archived: this.currentEventData?.is_archived || false
         };
 
         // Validate dates
@@ -285,9 +319,10 @@ class EventsManager {
         
         if (archivedFilter === 'true') {
             params.append('show_archived', 'true');
-        } else if (archivedFilter === 'all') {
-            params.append('show_archived', 'true'); // Show all means show archived too
+        } else if (archivedFilter === 'false') {
+            params.append('show_archived', 'false');
         }
+        // For 'all' - don't add show_archived parameter, backend will show all
         
         if (publishedFilter !== 'all') {
             params.append('show_published', publishedFilter);
@@ -516,6 +551,11 @@ class EventsManager {
     validateEventDates(eventData) {
         const now = new Date();
         const errors = [];
+        
+        // Skip validation for archived events
+        if (eventData.is_archived === true) {
+            return errors;
+        }
         
         // Validate event date
         if (eventData.event_date) {

@@ -40,7 +40,7 @@ def api_event_schedule():
     if request.method == 'GET':
         try:
             # Get query parameters for filtering
-            show_archived = request.args.get('show_archived', 'false').lower() == 'true'
+            show_archived_param = request.args.get('show_archived')
             show_published = request.args.get('show_published', 'all')  # 'all', 'true', 'false'
             search = request.args.get('search', '').strip()
             
@@ -52,8 +52,13 @@ def api_event_schedule():
             query = EventSchedule.query
             
             # Filter by archived status
-            if not show_archived:
-                query = query.filter(EventSchedule.is_archived == False)
+            if show_archived_param is not None:
+                # Only filter if show_archived parameter is explicitly provided
+                show_archived = show_archived_param.lower() == 'true'
+                if not show_archived:
+                    query = query.filter(EventSchedule.is_archived == False)
+                else:
+                    query = query.filter(EventSchedule.is_archived == True)
             
             # Filter by published status
             if show_published == 'true':
