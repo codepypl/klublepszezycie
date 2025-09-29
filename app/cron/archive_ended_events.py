@@ -54,32 +54,48 @@ def archive_ended_events():
             for event in ended_events:
                 print(f"🏁 Archiwizuję: {event.title} (ID: {event.id})")
                 
-                # Find event groups
+                # Find event groups - check all groups for this event
                 event_groups = UserGroup.query.filter_by(
                     event_id=event.id,
                     group_type='event_based'
                 ).all()
                 
+                print(f"  🔍 Znaleziono {len(event_groups)} grup dla wydarzenia {event.id}")
+                
+                # Debug: check all groups for this event (any type)
+                all_groups_for_event = UserGroup.query.filter_by(event_id=event.id).all()
+                print(f"  🔍 Wszystkich grup dla wydarzenia {event.id}: {len(all_groups_for_event)}")
+                for group in all_groups_for_event:
+                    print(f"    - Grupa: {group.name} (ID: {group.id}, type: {group.group_type})")
+                
                 # Remove members from groups
                 for group in event_groups:
+                    print(f"  📦 Przetwarzam grupę: {group.name} (ID: {group.id})")
+                    
                     members_count = UserGroupMember.query.filter_by(
                         group_id=group.id,
                         is_active=True
                     ).count()
                     
-                    UserGroupMember.query.filter_by(
-                        group_id=group.id,
-                        is_active=True
-                    ).delete(synchronize_session=False)
+                    print(f"    👥 Członków w grupie: {members_count}")
                     
-                    total_members_removed += members_count
-                    print(f"  👥 Usunięto {members_count} członków z grupy '{group.name}'")
+                    if members_count > 0:
+                        UserGroupMember.query.filter_by(
+                            group_id=group.id,
+                            is_active=True
+                        ).delete(synchronize_session=False)
+                        
+                        total_members_removed += members_count
+                        print(f"    ✅ Usunięto {members_count} członków z grupy '{group.name}'")
+                    else:
+                        print(f"    ℹ️ Grupa '{group.name}' nie ma członków")
                 
                 # Delete groups
                 for group in event_groups:
+                    print(f"  🗑️ Usuwam grupę: {group.name} (ID: {group.id})")
                     db.session.delete(group)
                     total_groups_deleted += 1
-                    print(f"  🗑️ Usunięto grupę '{group.name}'")
+                    print(f"    ✅ Grupa '{group.name}' usunięta")
                 
                 # Archive event - set flags as requested
                 event.is_published = False

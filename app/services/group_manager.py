@@ -26,6 +26,7 @@ class GroupManager:
                 name=f"Wydarzenie: {event_title}",
                 description=f"Grupa uczestników wydarzenia: {event_title}",
                 group_type='event_based',
+                event_id=event_id,
                 criteria=json.dumps({'event_id': event_id})
             )
             
@@ -516,6 +517,7 @@ class GroupManager:
                     name=group_name,
                     description=f"Grupa uczestników wydarzenia: {event.title}",
                     group_type='event_based',
+                    event_id=event_id,
                     criteria=json.dumps({'event_id': event_id})
                 )
                 db.session.add(group)
