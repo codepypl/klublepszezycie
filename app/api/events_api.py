@@ -243,6 +243,7 @@ def api_event(event_id):
                     'max_participants': event.max_participants,
                     'is_active': event.is_active,
                     'is_published': event.is_published,
+                    'is_archived': event.is_archived,
                     'created_at': event.created_at.isoformat() if event.created_at else None
                 }
             })

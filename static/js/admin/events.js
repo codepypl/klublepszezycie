@@ -10,6 +10,7 @@ class EventsManager {
         this.initializeEventListeners();
         this.loadEvents();
         this.setMinDates();
+        this.initializeEditFormDefaults();
     }
 
     initializeEventListeners() {
@@ -86,13 +87,26 @@ class EventsManager {
         // Set event type
         const eventTypeSelect = document.getElementById('editEventType');
         if (eventTypeSelect) {
-            eventTypeSelect.value = event.event_type || '';
+            console.log('🔍 Setting event_type:', event.event_type, 'for event:', event.title);
+            console.log('🔍 Full event data:', event);
+            
+            // Handle null/undefined event_type
+            const eventType = event.event_type || '';
+            eventTypeSelect.value = eventType;
+            console.log('🔍 Event type select value set to:', eventTypeSelect.value);
+            
+            // If event_type is null/undefined, set to empty string
+            if (!event.event_type) {
+                console.log('⚠️ Event type is null/undefined, setting to empty string');
+            }
         } else {
             console.error('❌ editEventType element not found!');
         }
         
         // For archived events, make date fields optional
         const isArchived = event.is_archived === true;
+        console.log('🔍 Event is archived:', isArchived, 'for event:', event.title);
+        
         const eventDateInput = document.getElementById('editEventDate');
         const eventTimeInput = document.getElementById('editEventTime');
         
@@ -100,22 +114,26 @@ class EventsManager {
             // Remove required attribute for archived events
             eventDateInput.removeAttribute('required');
             eventTimeInput.removeAttribute('required');
+            console.log('🔍 Removed required attributes for archived event');
             
             // Update labels to remove asterisk
             const eventDateLabel = document.querySelector('label[for="editEventDate"]');
             const eventTimeLabel = document.querySelector('label[for="editEventTime"]');
             if (eventDateLabel) eventDateLabel.textContent = 'Data Wydarzenia';
             if (eventTimeLabel) eventTimeLabel.textContent = 'Godzina';
+            console.log('🔍 Updated labels for archived event');
         } else {
             // Add required attribute for non-archived events
             eventDateInput.setAttribute('required', 'required');
             eventTimeInput.setAttribute('required', 'required');
+            console.log('🔍 Added required attributes for non-archived event');
             
             // Update labels to add asterisk
             const eventDateLabel = document.querySelector('label[for="editEventDate"]');
             const eventTimeLabel = document.querySelector('label[for="editEventTime"]');
             if (eventDateLabel) eventDateLabel.textContent = 'Data Wydarzenia *';
             if (eventTimeLabel) eventTimeLabel.textContent = 'Godzina *';
+            console.log('🔍 Updated labels for non-archived event');
         }
         
         // Format dates - handle both ISO strings and Date objects
@@ -619,6 +637,19 @@ class EventsManager {
                 }
             }
         });
+    }
+    
+    initializeEditFormDefaults() {
+        // Set default required attributes for edit form (will be overridden by populateEditForm)
+        const eventDateInput = document.getElementById('editEventDate');
+        const eventTimeInput = document.getElementById('editEventTime');
+        
+        if (eventDateInput) {
+            eventDateInput.setAttribute('required', 'required');
+        }
+        if (eventTimeInput) {
+            eventTimeInput.setAttribute('required', 'required');
+        }
     }
 }
 
