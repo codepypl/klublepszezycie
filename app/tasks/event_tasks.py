@@ -1,13 +1,14 @@
 """
 Event tasks for Celery
 """
-import logging
+from celery import current_task
+from celery.exceptions import Retry
 from datetime import datetime, timedelta
+import logging
 
 from celery_app import celery
 from app import create_app
-from app.models import EventSchedule, EmailReminder, UserGroup, UserGroupMember
-from app.services.email_automation import EmailAutomation
+from app.models.events_model import EventSchedule
 
 # Konfiguracja logowania
 logging.basicConfig(level=logging.INFO)
@@ -18,56 +19,220 @@ def get_app_context():
     app = create_app()
     return app.app_context()
 
-@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+@celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.event_tasks.process_event_reminders_task')
 def process_event_reminders_task(self):
     """
-    Przetwarza przypomnienia o wydarzeniach (wywoływane przez beat scheduler)
+    Przetwarza przypomnienia o wydarzeniach
     """
     with get_app_context():
         try:
-            logger.info("📅 Przetwarzam przypomnienia o wydarzeniach")
+            logger.info("🔄 Rozpoczynam przetwarzanie przypomnień o wydarzeniach")
             
-            email_automation = EmailAutomation()
-            success, message = email_automation.process_event_reminders()
+            from app.services.mailgun_service import EnhancedNotificationProcessor
+            email_processor = EnhancedNotificationProcessor()
             
-            if success:
-                logger.info(f"✅ {message}")
-                return {'success': True, 'message': message}
-            else:
-                logger.error(f"❌ {message}")
-                return {'success': False, 'message': message}
-                
+            # Pobierz wydarzenia, które wymagają przypomnień
+            now = datetime.now()
+            tomorrow = now + timedelta(days=1)
+            in_one_hour = now + timedelta(hours=1)
+            
+            # Wydarzenia za 24h
+            events_24h = EventSchedule.query.filter(
+                EventSchedule.event_date >= now,
+                EventSchedule.event_date <= tomorrow,
+                EventSchedule.is_active == True
+            ).all()
+            
+            # Wydarzenia za 1h
+            events_1h = EventSchedule.query.filter(
+                EventSchedule.event_date >= now,
+                EventSchedule.event_date <= in_one_hour,
+                EventSchedule.is_active == True
+            ).all()
+            
+            stats = {'processed': 0, 'success': 0, 'failed': 0}
+            
+            # Przetwórz wydarzenia za 24h
+            for event in events_24h:
+                try:
+                    # Pobierz użytkowników zapisanych na wydarzenie
+                    from app.models.user_model import User
+                    from app.models.user_groups_model import UserGroupMember
+                    
+                    users = User.query.join(UserGroupMember).filter(
+                        UserGroupMember.group_id == event.target_group_id
+                    ).all()
+                    
+                    for user in users:
+                        success, message = email_processor.send_template_email(
+                            template_name='event_reminder_24h',
+                            to_email=user.email,
+                            to_name=user.first_name,
+                            context={
+                                'event_title': event.title,
+                                'event_date': event.event_date.strftime('%d.%m.%Y'),
+                                'event_time': event.event_time.strftime('%H:%M'),
+                                'event_location': event.location,
+                                'user_name': user.first_name,
+                                'event_id': event.id,
+                                'user_id': user.id
+                            },
+                            use_queue=True
+                        )
+                        
+                        stats['processed'] += 1
+                        if success:
+                            stats['success'] += 1
+                        else:
+                            stats['failed'] += 1
+                            
+                except Exception as exc:
+                    logger.error(f"❌ Błąd przetwarzania wydarzenia {event.id}: {exc}")
+                    stats['failed'] += 1
+            
+            # Przetwórz wydarzenia za 1h
+            for event in events_1h:
+                try:
+                    # Pobierz użytkowników zapisanych na wydarzenie
+                    from app.models.user_model import User
+                    from app.models.user_groups_model import UserGroupMember
+                    
+                    users = User.query.join(UserGroupMember).filter(
+                        UserGroupMember.group_id == event.target_group_id
+                    ).all()
+                    
+                    for user in users:
+                        success, message = email_processor.send_template_email(
+                            template_name='event_reminder_1h',
+                            to_email=user.email,
+                            to_name=user.first_name,
+                            context={
+                                'event_title': event.title,
+                                'event_date': event.event_date.strftime('%d.%m.%Y'),
+                                'event_time': event.event_time.strftime('%H:%M'),
+                                'event_location': event.location,
+                                'user_name': user.first_name,
+                                'event_id': event.id,
+                                'user_id': user.id
+                            },
+                            use_queue=True
+                        )
+                        
+                        stats['processed'] += 1
+                        if success:
+                            stats['success'] += 1
+                        else:
+                            stats['failed'] += 1
+                            
+                except Exception as exc:
+                    logger.error(f"❌ Błąd przetwarzania wydarzenia {event.id}: {exc}")
+                    stats['failed'] += 1
+            
+            logger.info(f"✅ Przetworzono {stats['processed']} przypomnień: {stats['success']} sukces, {stats['failed']} błąd")
+            
+            return {
+                'success': True,
+                'processed': stats['processed'],
+                'success_count': stats['success'],
+                'failed_count': stats['failed']
+            }
+            
         except Exception as exc:
             logger.error(f"❌ Błąd przetwarzania przypomnień: {exc}")
             raise self.retry(exc=exc, countdown=60)
 
-@celery.task(bind=True, max_retries=2, default_retry_delay=30)
-def cleanup_old_reminders_task(self, days_old=7):
+@celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.event_tasks.archive_ended_events_task')
+def archive_ended_events_task(self):
     """
-    Czyści stare przypomnienia z bazy danych
+    Archiwizuje zakończone wydarzenia
     """
     with get_app_context():
         try:
+            logger.info("🔄 Rozpoczynam archiwizację zakończonych wydarzeń")
+            
             from app import db
             
-            cutoff_date = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() - timedelta(days=days_old)
+            # Znajdź wydarzenia zakończone więcej niż 24h temu
+            cutoff_time = datetime.now() - timedelta(hours=24)
             
-            # Usuń stare przypomnienia
-            old_reminders = EmailReminder.query.filter(
-                EmailReminder.created_at < cutoff_date
+            ended_events = EventSchedule.query.filter(
+                EventSchedule.event_date < cutoff_time,
+                EventSchedule.is_active == True
             ).all()
             
-            count = len(old_reminders)
-            for reminder in old_reminders:
-                db.session.delete(reminder)
+            stats = {'processed': 0, 'archived': 0, 'failed': 0}
             
+            for event in ended_events:
+                try:
+                    # Oznacz jako nieaktywne
+                    event.is_active = False
+                    stats['processed'] += 1
+                    stats['archived'] += 1
+                    
+                except Exception as exc:
+                    logger.error(f"❌ Błąd archiwizacji wydarzenia {event.id}: {exc}")
+                    stats['failed'] += 1
+            
+            # Zapisz zmiany
             db.session.commit()
             
-            logger.info(f"🧹 Usunięto {count} starych przypomnień")
-            return {'success': True, 'cleaned': count}
+            logger.info(f"✅ Zarchiwizowano {stats['archived']} wydarzeń: {stats['processed']} przetworzonych, {stats['failed']} błędów")
+            
+            return {
+                'success': True,
+                'processed': stats['processed'],
+                'archived': stats['archived'],
+                'failed': stats['failed']
+            }
             
         except Exception as exc:
-            logger.error(f"❌ Błąd czyszczenia przypomnień: {exc}")
-            return {'success': False, 'error': str(exc)}
+            logger.error(f"❌ Błąd archiwizacji wydarzeń: {exc}")
+            raise self.retry(exc=exc, countdown=60)
 
-# Archive task moved to Cron - see app/utils/archive_ended_events.py
+@celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.event_tasks.cleanup_old_reminders_task')
+def cleanup_old_reminders_task(self):
+    """
+    Czyści stare przypomnienia
+    """
+    with get_app_context():
+        try:
+            logger.info("🔄 Rozpoczynam czyszczenie starych przypomnień")
+            
+            from app.models.email_model import EmailQueue
+            from app import db
+            
+            # Usuń e-maile starsze niż 30 dni
+            cutoff_time = datetime.now() - timedelta(days=30)
+            
+            old_emails = EmailQueue.query.filter(
+                EmailQueue.created_at < cutoff_time,
+                EmailQueue.status.in_(['sent', 'failed'])
+            ).all()
+            
+            stats = {'processed': 0, 'deleted': 0, 'failed': 0}
+            
+            for email in old_emails:
+                try:
+                    db.session.delete(email)
+                    stats['processed'] += 1
+                    stats['deleted'] += 1
+                    
+                except Exception as exc:
+                    logger.error(f"❌ Błąd usuwania e-maila {email.id}: {exc}")
+                    stats['failed'] += 1
+            
+            # Zapisz zmiany
+            db.session.commit()
+            
+            logger.info(f"✅ Usunięto {stats['deleted']} starych e-maili: {stats['processed']} przetworzonych, {stats['failed']} błędów")
+            
+            return {
+                'success': True,
+                'processed': stats['processed'],
+                'deleted': stats['deleted'],
+                'failed': stats['failed']
+            }
+            
+        except Exception as exc:
+            logger.error(f"❌ Błąd czyszczenia starych przypomnień: {exc}")
+            raise self.retry(exc=exc, countdown=60)

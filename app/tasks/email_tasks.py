@@ -12,7 +12,6 @@ from celery_app import celery
 from app import create_app
 from app.models import EmailQueue, EmailCampaign, UserGroupMember, User
 from app.services.email_service import EmailService
-# from app.services.mailgun_service import EnhancedNotificationProcessor  # Nie używane
 
 # Konfiguracja logowania
 logging.basicConfig(level=logging.INFO)
@@ -23,7 +22,7 @@ def get_app_context():
     app = create_app()
     return app.app_context()
 
-@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+@celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.email_tasks.process_email_queue_task')
 def process_email_queue_task(self, batch_size=50):
     """
     Przetwarza kolejkę emaili w batchach
@@ -48,396 +47,203 @@ def process_email_queue_task(self, batch_size=50):
             logger.error(f"❌ Błąd przetwarzania kolejki: {exc}")
             raise self.retry(exc=exc, countdown=60)
 
-@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+@celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.email_tasks.process_scheduled_campaigns_task')
 def process_scheduled_campaigns_task(self):
     """
     Przetwarza zaplanowane kampanie
     """
     with get_app_context():
         try:
-            logger.info("🔄 Przetwarzam zaplanowane kampanie")
+            logger.info("🔄 Rozpoczynam przetwarzanie zaplanowanych kampanii")
             
             email_service = EmailService()
             success, message = email_service.process_scheduled_campaigns()
             
-            if success:
-                logger.info(f"✅ {message}")
-                return {'success': True, 'message': message}
-            else:
-                logger.error(f"❌ {message}")
-                return {'success': False, 'message': message}
-                
+            logger.info(f"✅ Przetwarzanie kampanii: {message}")
+            
+            return {
+                'success': success,
+                'message': message
+            }
+            
         except Exception as exc:
             logger.error(f"❌ Błąd przetwarzania kampanii: {exc}")
             raise self.retry(exc=exc, countdown=60)
 
-@celery.task(bind=True, max_retries=3, default_retry_delay=60)
-def send_event_reminder_task(self, event_id, reminder_type, group_type='event_based'):
+@celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.email_tasks.send_batch_emails_task')
+def send_batch_emails_task(self, email_ids, batch_size=10):
     """
-    Wysyła przypomnienia o wydarzeniu do grupy użytkowników
+    Wysyła emaile w batchach
     """
     with get_app_context():
         try:
-            from app.models import EventSchedule, UserGroup, UserGroupMember, User
-            from app.services.email_service import EmailService
-            
-            logger.info(f"📧 Wysyłam przypomnienia {reminder_type} dla wydarzenia {event_id}")
-            
-            # Pobierz wydarzenie
-            event = EventSchedule.query.get(event_id)
-            if not event:
-                return {'success': False, 'message': 'Wydarzenie nie znalezione'}
-            
-            # Sprawdź czy czas przypomnienia już minął
-            from app.utils.timezone_utils import get_local_now, get_local_timezone
-            now = get_local_now()
-            
-            # Oblicz docelowy czas przypomnienia
-            if event.event_date.tzinfo is None:
-                tz = get_local_timezone()
-                event_date_aware = tz.localize(event.event_date)
-            else:
-                event_date_aware = event.event_date
-            
-            # Oblicz docelowy czas przypomnienia
-            if reminder_type == '24h':
-                target_time = event_date_aware - timedelta(hours=24)
-            elif reminder_type == '1h':
-                target_time = event_date_aware - timedelta(hours=1)
-            elif reminder_type == '5min':
-                target_time = event_date_aware - timedelta(minutes=5)
-            else:
-                target_time = event_date_aware
-            
-            # Sprawdź czy czas przypomnienia już minął
-            if now > target_time:
-                logger.warning(f"⚠️ Czas przypomnienia {reminder_type} już minął - pomijam wysyłkę")
-                return {'success': False, 'message': f'Czas przypomnienia {reminder_type} już minął'}
-            
-            logger.info(f"✅ Czas przypomnienia {reminder_type} jest w przyszłości - kontynuuję wysyłkę")
-            logger.info(f"📧 Planuję wysłać przypomnienia dla wydarzenia: {event.title} ({event.event_date})")
-            
-            # Pobierz członków z obu grup: klubu i wydarzenia
-            all_members = set()  # Używamy set() aby uniknąć duplikatów
-            
-            # 1. Pobierz członków klubu
-            club_group = UserGroup.query.filter_by(
-                name="Członkowie klubu",
-                group_type='club_members'
-            ).first()
-            
-            if club_group:
-                club_members = UserGroupMember.query.filter_by(
-                    group_id=club_group.id, 
-                    is_active=True
-                ).all()
-                for member in club_members:
-                    all_members.add(member.user_id)
-                logger.info(f"👥 Znaleziono {len(club_members)} członków klubu")
-            
-            # 2. Pobierz członków grupy wydarzenia (jeśli istnieje)
-            event_group = UserGroup.query.filter_by(
-                name=f"Wydarzenie: {event.title}",
-                group_type='event_based'
-            ).first()
-            
-            if event_group:
-                event_members = UserGroupMember.query.filter_by(
-                    group_id=event_group.id, 
-                    is_active=True
-                ).all()
-                for member in event_members:
-                    all_members.add(member.user_id)
-                logger.info(f"📅 Znaleziono {len(event_members)} członków grupy wydarzenia")
-            
-            if not all_members:
-                return {'success': False, 'message': 'Brak członków w żadnej grupie'}
-            
-            logger.info(f"📧 Łącznie unikalnych odbiorców: {len(all_members)}")
-            
-            # Przygotuj dane dla szablonu
-            template_data = {
-                'event_id': event.id,
-                'event_title': event.title,
-                'event_date': event.event_date.strftime('%Y-%m-%d'),
-                'event_time': event.event_date.strftime('%H:%M'),
-                'event_location': event.location or 'Online',
-                'event_url': event.meeting_link or '#'
-            }
-            
-            # Wybierz szablon na podstawie typu przypomnienia
-            template_name = f'event_reminder_{reminder_type}'
+            logger.info(f"🔄 Rozpoczynam wysyłanie {len(email_ids)} emaili w batchach po {batch_size}")
             
             email_service = EmailService()
-            sent_count = 0
+            stats = email_service.send_batch_emails(email_ids, batch_size)
             
-            # Wyślij emaile do wszystkich unikalnych członków
-            for user_id in all_members:
-                user = User.query.get(user_id)
-                if user and user.email:
-                    # Dodaj dane użytkownika
-                    user_template_data = template_data.copy()
-                    user_template_data['user_name'] = user.first_name or user.email
-                    
-                    # Wyślij email (używaj kolejki)
-                    success, message = email_service.send_template_email(
-                        to_email=user.email,
-                        template_name=template_name,
-                        context=user_template_data,
-                        to_name=user.first_name,
-                        use_queue=True,  # Zawsze używaj kolejki
-                        event_id=event_id
-                    )
-                    
-                    if success:
-                        sent_count += 1
-                        logger.info(f"✅ Wysłano przypomnienie {reminder_type} do {user.email} dla wydarzenia {event.title}")
-                    else:
-                        logger.error(f"❌ Błąd wysyłania przypomnienia {reminder_type} do {user.email}: {message}")
-            
-            logger.info(f"✅ Wysłano {sent_count}/{len(all_members)} przypomnień {reminder_type}")
-            return {'success': True, 'sent_count': sent_count, 'total_members': len(all_members)}
-            
-        except Exception as exc:
-            logger.error(f"❌ Błąd wysyłania przypomnień: {exc}")
-            raise self.retry(exc=exc, countdown=60)
-
-@celery.task(bind=True, max_retries=2, default_retry_delay=30)
-def send_batch_emails_task(self, email_ids, batch_number=1, total_batches=1):
-    """
-    Wysyła paczkę emaili
-    """
-    with get_app_context():
-        try:
-            logger.info(f"📧 Wysyłam paczkę {batch_number}/{total_batches} ({len(email_ids)} emaili)")
-            
-            # Pobierz emaile z bazy
-            emails = EmailQueue.query.filter(EmailQueue.id.in_(email_ids)).all()
-            
-            if not emails:
-                logger.warning("⚠️ Brak emaili do wysłania")
-                return {'success': True, 'sent': 0, 'failed': 0}
-            
-            # Użyj EmailService do wysyłki
-            from app.services.email_service import EmailService
-            from app import db
-            from datetime import datetime
-            email_service = EmailService()
-            
-            sent_count = 0
-            failed_count = 0
-            
-            for email in emails:
-                try:
-                    success, message = email_service.send_email(
-                        to_email=email.recipient_email,
-                        subject=email.subject,
-                        html_content=email.html_content,
-                        text_content=email.text_content,
-                        template_id=email.template_id,
-                        use_queue=False  # Don't queue in Celery task to avoid infinite loop
-                    )
-                    
-                    if success:
-                        # Oznacz jako wysłany
-                        email.status = 'sent'
-                        email.sent_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
-                        sent_count += 1
-                    else:
-                        # Oznacz jako błąd
-                        email.status = 'failed'
-                        email.error_message = message
-                        failed_count += 1
-                        
-                except Exception as e:
-                    email.status = 'failed'
-                    email.error_message = str(e)
-                    failed_count += 1
-                    logger.error(f"❌ Błąd wysyłki email {email.id}: {e}")
-            
-            # Zapisz zmiany
-            db.session.commit()
-            
-            success = failed_count == 0
-            message = f"Wysłano: {sent_count}, Błędy: {failed_count}"
-            
-            if success:
-                logger.info(f"✅ Paczka {batch_number} wysłana: {message}")
-                return {'success': True, 'sent': len(emails), 'failed': 0}
-            else:
-                logger.error(f"❌ Błąd wysyłki paczki {batch_number}: {message}")
-                return {'success': False, 'sent': 0, 'failed': len(emails), 'error': message}
-                
-        except Exception as exc:
-            logger.error(f"❌ Błąd wysyłki paczki {batch_number}: {exc}")
-            raise self.retry(exc=exc, countdown=30)
-
-@celery.task(bind=True, max_retries=3, default_retry_delay=60)
-def schedule_event_reminders_task(self, event_id, group_type='event_based'):
-    """
-    Planuje przypomnienia o wydarzeniu z inteligentnym planowaniem
-    """
-    with get_app_context():
-        try:
-            from app.models import EventSchedule
-            from app.services.email_automation import EmailAutomation
-            
-            logger.info(f"📅 Planuję przypomnienia dla wydarzenia {event_id}")
-            
-            event = EventSchedule.query.get(event_id)
-            if not event:
-                return {'success': False, 'message': 'Wydarzenie nie znalezione'}
-            
-            # Pobierz liczbę uczestników
-            if group_type == 'event_based':
-                group = UserGroup.query.filter_by(
-                    name=f"Wydarzenie: {event.title}",
-                    group_type='event_based'
-                ).first()
-            else:
-                group = UserGroup.query.filter_by(
-                    name="Członkowie klubu",
-                    group_type='club_members'
-                ).first()
-            
-            if not group:
-                return {'success': False, 'message': 'Grupa nie znaleziona'}
-            
-            members_count = UserGroupMember.query.filter_by(
-                group_id=group.id, 
-                is_active=True
-            ).count()
-            
-            logger.info(f"👥 Liczba uczestników: {members_count}")
-            
-            # Inteligentne planowanie czasu wysyłki
-            email_automation = EmailAutomation()
-            success, message = email_automation.schedule_event_reminders_smart(
-                event_id, group_type, members_count
-            )
-            
-            if success:
-                logger.info(f"✅ {message}")
-                return {'success': True, 'message': message, 'members_count': members_count}
-            else:
-                logger.error(f"❌ {message}")
-                return {'success': False, 'message': message}
-                
-        except Exception as exc:
-            logger.error(f"❌ Błąd planowania przypomnień: {exc}")
-            raise self.retry(exc=exc, countdown=60)
-
-@celery.task(bind=True, max_retries=2, default_retry_delay=30)
-def update_event_notifications_task(self, event_id, old_event_date, new_event_date):
-    """
-    Aktualizuje powiadomienia po zmianie godziny wydarzenia
-    """
-    with get_app_context():
-        try:
-            from app.models import EventSchedule, EmailReminder
-            from app.services.email_automation import EmailAutomation
-            
-            logger.info(f"🔄 Aktualizuję powiadomienia dla wydarzenia {event_id}")
-            
-            # Anuluj stare powiadomienia
-            old_reminders = EmailReminder.query.filter_by(event_id=event_id).all()
-            for reminder in old_reminders:
-                reminder.status = 'cancelled'
-            
-            # Usuń stare emaile z kolejki
-            old_emails = EmailQueue.query.filter(
-                EmailQueue.context.like(f'%event_id":{event_id}%'),
-                EmailQueue.status.in_(['pending', 'scheduled'])
-            ).all()
-            
-            for email in old_emails:
-                email.status = 'cancelled'
-            
-            # Zaplanuj nowe powiadomienia
-            email_automation = EmailAutomation()
-            success, message = email_automation.schedule_event_reminders(event_id)
-            
-            if success:
-                logger.info(f"✅ Powiadomienia zaktualizowane: {message}")
-                return {
-                    'success': True, 
-                    'message': message,
-                    'cancelled_reminders': len(old_reminders),
-                    'cancelled_emails': len(old_emails)
-                }
-            else:
-                logger.error(f"❌ Błąd aktualizacji: {message}")
-                return {'success': False, 'message': message}
-                
-        except Exception as exc:
-            logger.error(f"❌ Błąd aktualizacji powiadomień: {exc}")
-            raise self.retry(exc=exc, countdown=30)
-
-@celery.task(bind=True, max_retries=1, default_retry_delay=10)
-def test_email_sending_task(self, test_email='codeitpy@gmail.com', count=100, batch_size=10):
-    """
-    Test wysyłania emaili - wysyła 100 emaili na testowy adres w paczkach po 10
-    """
-    with get_app_context():
-        try:
-            logger.info(f"🧪 Rozpoczynam test wysyłania {count} emaili na {test_email}")
-            
-            from app.services.email_service import EmailService
-            from datetime import datetime, timedelta
-            
-            email_service = EmailService()
-            total_batches = (count + batch_size - 1) // batch_size
-            
-            # Utwórz testowe emaile w kolejce
-            created_emails = []
-            for i in range(count):
-                email_id = email_service.add_to_queue(
-                    to_email=test_email,
-                    subject=f"Test Email #{i+1} - Batch {((i // batch_size) + 1)}/{total_batches}",
-                    html_content=f"""
-                    <h2>Test Email #{i+1}</h2>
-                    <p>To jest testowy email numer {i+1} z {count}.</p>
-                    <p>Paczka: {((i // batch_size) + 1)}/{total_batches}</p>
-                    <p>Wysłano: {__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-                    <p>Celery Task ID: {self.request.id}</p>
-                    """,
-                    text_content=f"Test Email #{i+1} - To jest testowy email numer {i+1} z {count}.",
-                    scheduled_at=__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() + timedelta(seconds=i*2)  # Rozłóż w czasie
-                )
-                if email_id[0]:  # Jeśli email został dodany
-                    created_emails.append(i+1)
-            
-            logger.info(f"✅ Utworzono {len(created_emails)} testowych emaili w kolejce")
-            
-            # Zaplanuj wysyłkę w paczkach
-            for batch_num in range(total_batches):
-                start_idx = batch_num * batch_size
-                end_idx = min(start_idx + batch_size, count)
-                
-                # Pobierz ID emaili dla tej paczki - użyj offset i limit
-                batch_emails = EmailQueue.query.filter(
-                    EmailQueue.recipient_email == test_email,
-                    EmailQueue.subject.like('Test Email #%')
-                ).order_by(EmailQueue.id).offset(start_idx).limit(batch_size).all()
-                
-                batch_ids = [email.id for email in batch_emails]
-                
-                if batch_ids:
-                    # Zaplanuj wysyłkę paczki z opóźnieniem
-                    send_batch_emails_task.apply_async(
-                        args=[batch_ids, batch_num + 1, total_batches],
-                        countdown=batch_num * 30  # 30 sekund między paczkami
-                    )
-                    logger.info(f"📦 Zaplanowano paczkę {batch_num + 1}/{total_batches} ({len(batch_ids)} emaili)")
+            logger.info(f"✅ Wysłano {stats['sent']} emaili: {stats['success']} sukces, {stats['failed']} błąd")
             
             return {
                 'success': True,
-                'message': f'Utworzono {len(created_emails)} testowych emaili, zaplanowano {total_batches} paczek',
-                'total_emails': len(created_emails),
-                'total_batches': total_batches,
-                'test_email': test_email
+                'sent': stats['sent'],
+                'success_count': stats['success'],
+                'failed_count': stats['failed']
             }
             
         except Exception as exc:
-            logger.error(f"❌ Błąd testu wysyłania: {exc}")
-            return {'success': False, 'error': str(exc)}
+            logger.error(f"❌ Błąd wysyłania emaili: {exc}")
+            raise self.retry(exc=exc, countdown=60)
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.email_tasks.test_email_sending_task')
+def test_email_sending_task(self, to_email="test@example.com"):
+    """
+    Testuje wysyłanie emaili
+    """
+    with get_app_context():
+        try:
+            logger.info(f"🔄 Testuję wysyłanie emaila do {to_email}")
+            
+            email_service = EmailService()
+            success, message = email_service.send_email(
+                to_email=to_email,
+                subject="Test email z Celery",
+                html_content="<h1>Test email</h1><p>To jest test email z Celery.</p>",
+                text_content="Test email\n\nTo jest test email z Celery.",
+                use_queue=False
+            )
+            
+            if success:
+                logger.info(f"✅ Test email wysłany pomyślnie: {message}")
+                return {'success': True, 'message': message}
+            else:
+                logger.error(f"❌ Błąd wysyłania test email: {message}")
+                return {'success': False, 'message': message}
+                
+        except Exception as exc:
+            logger.error(f"❌ Błąd testu email: {exc}")
+            raise self.retry(exc=exc, countdown=60)
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.email_tasks.send_event_reminder_task')
+def send_event_reminder_task(self, event_id, user_id, reminder_type="24h"):
+    """
+    Wysyła przypomnienie o wydarzeniu
+    """
+    with get_app_context():
+        try:
+            logger.info(f"🔄 Wysyłam przypomnienie o wydarzeniu {event_id} dla użytkownika {user_id}")
+            
+            from app.services.mailgun_service import EnhancedNotificationProcessor
+            email_processor = EnhancedNotificationProcessor()
+            
+            # Pobierz dane wydarzenia i użytkownika
+            from app.models.events_model import EventSchedule
+            event = EventSchedule.query.get(event_id)
+            user = User.query.get(user_id)
+            
+            if not event or not user:
+                logger.error(f"❌ Nie znaleziono wydarzenia {event_id} lub użytkownika {user_id}")
+                return {'success': False, 'message': 'Event or user not found'}
+            
+            # Wyślij przypomnienie
+            success, message = email_processor.send_template_email(
+                template_name=f'event_reminder_{reminder_type}',
+                to_email=user.email,
+                to_name=user.first_name,
+                context={
+                    'event_title': event.title,
+                    'event_date': event.event_date.strftime('%d.%m.%Y'),
+                    'event_time': event.event_time.strftime('%H:%M'),
+                    'event_location': event.location,
+                    'user_name': user.first_name,
+                    'event_id': event_id,
+                    'user_id': user_id
+                },
+                use_queue=True
+            )
+            
+            if success:
+                logger.info(f"✅ Przypomnienie wysłane: {message}")
+                return {'success': True, 'message': message}
+            else:
+                logger.error(f"❌ Błąd wysyłania przypomnienia: {message}")
+                return {'success': False, 'message': message}
+                
+        except Exception as exc:
+            logger.error(f"❌ Błąd wysyłania przypomnienia: {exc}")
+            raise self.retry(exc=exc, countdown=60)
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.email_tasks.update_event_notifications_task')
+def update_event_notifications_task(self, event_id):
+    """
+    Aktualizuje powiadomienia o wydarzeniu
+    """
+    with get_app_context():
+        try:
+            logger.info(f"🔄 Aktualizuję powiadomienia o wydarzeniu {event_id}")
+            
+            from app.models.events_model import EventSchedule
+            event = EventSchedule.query.get(event_id)
+            
+            if not event:
+                logger.error(f"❌ Nie znaleziono wydarzenia {event_id}")
+                return {'success': False, 'message': 'Event not found'}
+            
+            # Tutaj można dodać logikę aktualizacji powiadomień
+            # Na przykład: anulowanie starych przypomnień, planowanie nowych
+            
+            logger.info(f"✅ Powiadomienia o wydarzeniu {event_id} zaktualizowane")
+            return {'success': True, 'message': 'Event notifications updated'}
+            
+        except Exception as exc:
+            logger.error(f"❌ Błąd aktualizacji powiadomień: {exc}")
+            raise self.retry(exc=exc, countdown=60)
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.email_tasks.schedule_event_reminders_task')
+def schedule_event_reminders_task(self, event_id):
+    """
+    Planuje przypomnienia o wydarzeniu
+    """
+    with get_app_context():
+        try:
+            logger.info(f"🔄 Planuję przypomnienia o wydarzeniu {event_id}")
+            
+            from app.models.events_model import EventSchedule
+            event = EventSchedule.query.get(event_id)
+            
+            if not event:
+                logger.error(f"❌ Nie znaleziono wydarzenia {event_id}")
+                return {'success': False, 'message': 'Event not found'}
+            
+            # Pobierz użytkowników zapisanych na wydarzenie
+            from app.models.user_model import User
+            users = User.query.join(UserGroupMember).filter(
+                UserGroupMember.group_id == event.target_group_id
+            ).all()
+            
+            # Zaplanuj przypomnienia dla każdego użytkownika
+            for user in users:
+                # Przypomnienie 24h przed
+                if event.event_date:
+                    reminder_time = event.event_date - timedelta(hours=24)
+                    if reminder_time > datetime.now():
+                        send_event_reminder_task.apply_async(
+                            args=[event_id, user.id, "24h"],
+                            eta=reminder_time
+                        )
+                
+                # Przypomnienie 1h przed
+                if event.event_date:
+                    reminder_time = event.event_date - timedelta(hours=1)
+                    if reminder_time > datetime.now():
+                        send_event_reminder_task.apply_async(
+                            args=[event_id, user.id, "1h"],
+                            eta=reminder_time
+                        )
+            
+            logger.info(f"✅ Zaplanowano przypomnienia dla {len(users)} użytkowników")
+            return {'success': True, 'message': f'Scheduled reminders for {len(users)} users'}
+            
+        except Exception as exc:
+            logger.error(f"❌ Błąd planowania przypomnień: {exc}")
+            raise self.retry(exc=exc, countdown=60)

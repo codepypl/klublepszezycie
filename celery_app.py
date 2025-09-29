@@ -106,6 +106,24 @@ def make_celery(app=None):
             'task': 'app.tasks.event_tasks.process_event_reminders_task',
             'schedule': 300.0,  # Co 5 minut
         },
+        'archive-ended-events': {
+            'task': 'app.tasks.event_tasks.archive_ended_events_task',
+            'schedule': 3600.0,  # Co godzinę
+        },
+        'cleanup-old-reminders': {
+            'task': 'app.tasks.event_tasks.cleanup_old_reminders_task',
+            'schedule': 86400.0,  # Co 24 godziny
+        },
+    }
+    
+    # Włącz planowanie zadań
+    celery.conf.timezone = 'Europe/Warsaw'
+    celery.conf.enable_utc = True
+    
+    # Routing zadań do kolejek
+    celery.conf.task_routes = {
+        'app.tasks.email_tasks.*': {'queue': 'email_queue'},
+        'app.tasks.event_tasks.*': {'queue': 'event_queue'},
     }
     
     return celery
