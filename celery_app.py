@@ -105,14 +105,17 @@ def make_celery(app=None):
         'process-event-reminders': {
             'task': 'app.tasks.event_tasks.process_event_reminders_task',
             'schedule': 300.0,  # Co 5 minut
+            'options': {'queue': 'event_queue'},
         },
         'archive-ended-events': {
             'task': 'app.tasks.event_tasks.archive_ended_events_task',
             'schedule': 3600.0,  # Co godzinę
+            'options': {'queue': 'event_queue'},
         },
         'cleanup-old-reminders': {
             'task': 'app.tasks.event_tasks.cleanup_old_reminders_task',
             'schedule': 86400.0,  # Co 24 godziny
+            'options': {'queue': 'event_queue'},
         },
     }
     
