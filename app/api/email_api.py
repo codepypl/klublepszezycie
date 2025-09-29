@@ -3,7 +3,7 @@ Email API routes
 """
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
-from app.models import db, EmailTemplate, , EmailCampaign, EmailQueue, UserGroupMember
+from app.models import db, EmailTemplate, EmailCampaign, EmailQueue, UserGroupMember
 from app.utils.timezone_utils import get_local_now
 from sqlalchemy import desc
 from datetime import datetime
