@@ -381,9 +381,18 @@ function deleteCategory(categoryId) {
     }
 }
 
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
+// Initialize when DOM is loaded and SimplePagination is available
+function initializeBlogCategories() {
+    if (typeof SimplePagination === 'undefined') {
+        // Wait for SimplePagination to load
+        setTimeout(initializeBlogCategories, 100);
+        return;
+    }
+    
     window.blogCategoriesManager = new BlogCategoriesManager();
+    
+    // Load categories on page load
+    window.blogCategoriesManager.loadCategories();
     
     // Initialize CRUD Refresh Manager for blog categories
     if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
@@ -402,7 +411,9 @@ document.addEventListener('DOMContentLoaded', function() {
             editCategory(parseInt(editCategoryId));
         }, 1000); // Wait for categories to load
     }
-});
+}
+
+document.addEventListener('DOMContentLoaded', initializeBlogCategories);
 
 // Export functions to global scope
 window.editCategory = editCategory;

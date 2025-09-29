@@ -65,8 +65,8 @@ def process_event_reminders_task(self):
                 try:
                     from app.models.user_model import User
                     
-                    # Pobierz wszystkich członków klubu (account_type='member') + osoby zapisane na wydarzenie
-                    club_members = User.query.filter_by(account_type='member').all()
+                    # Pobierz wszystkich członków klubu (club_member=True) + osoby zapisane na wydarzenie
+                    club_members = User.query.filter_by(club_member=True, is_active=True).all()
                     event_registrations = User.query.filter_by(
                         event_id=event.id,
                         account_type='event_registration'
@@ -112,8 +112,8 @@ def process_event_reminders_task(self):
                 try:
                     from app.models.user_model import User
                     
-                    # Pobierz wszystkich członków klubu (account_type='member') + osoby zapisane na wydarzenie
-                    club_members = User.query.filter_by(account_type='member').all()
+                    # Pobierz wszystkich członków klubu (club_member=True) + osoby zapisane na wydarzenie
+                    club_members = User.query.filter_by(club_member=True, is_active=True).all()
                     event_registrations = User.query.filter_by(
                         event_id=event.id,
                         account_type='event_registration'
@@ -159,8 +159,8 @@ def process_event_reminders_task(self):
                 try:
                     from app.models.user_model import User
                     
-                    # Pobierz wszystkich członków klubu (account_type='member') + osoby zapisane na wydarzenie
-                    club_members = User.query.filter_by(account_type='member').all()
+                    # Pobierz wszystkich członków klubu (club_member=True) + osoby zapisane na wydarzenie
+                    club_members = User.query.filter_by(club_member=True, is_active=True).all()
                     event_registrations = User.query.filter_by(
                         event_id=event.id,
                         account_type='event_registration'

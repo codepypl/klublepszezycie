@@ -215,9 +215,9 @@ def schedule_event_reminders_task(self, event_id):
                 logger.error(f"❌ Nie znaleziono wydarzenia {event_id}")
                 return {'success': False, 'message': 'Event not found'}
             
-            # Pobierz wszystkich członków klubu (account_type='member') + osoby zapisane na wydarzenie
+            # Pobierz wszystkich członków klubu (club_member=True) + osoby zapisane na wydarzenie
             from app.models.user_model import User
-            club_members = User.query.filter_by(account_type='member').all()
+            club_members = User.query.filter_by(club_member=True, is_active=True).all()
             event_registrations = User.query.filter_by(
                 event_id=event_id,
                 account_type='event_registration'
