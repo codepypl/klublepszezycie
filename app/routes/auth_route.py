@@ -92,14 +92,20 @@ def forgot_password():
             
             reset_url = url_for('auth.reset_password', token=result['token'], _external=True)
             
+            # Generate unsubscribe and delete account URLs
+            from app.services.unsubscribe_manager import unsubscribe_manager
+            
             success, message = email_manager.send_template_email(
                 to_email=result['user'].email,
                 template_name='password_reset',
                 context={
                     'reset_url': reset_url,
-                    'user_name': result['user'].first_name or 'Użytkowniku'
-                },
-                to_name=result['user'].first_name
+                    'reset_code': result['token'][:8].upper(),  # First 8 characters as code
+                    'user_name': result['user'].first_name or 'Użytkowniku',
+                    'user_email': result['user'].email,
+                    'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(result['user'].email),
+                    'delete_account_url': unsubscribe_manager.get_delete_account_url(result['user'].email)
+                }
             )
             
             if not success:
@@ -122,6 +128,9 @@ def reset_password(token):
         result = AuthController.reset_password(token, new_password, confirm_password)
         
         if result['success']:
+            # Logout user if they are logged in
+            if current_user.is_authenticated:
+                logout_user()
             flash(result['message'], 'success')
             return redirect(url_for('auth.login'))
         else:

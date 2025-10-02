@@ -222,7 +222,7 @@ class AuthController:
             
             # Generate reset token
             token = secrets.token_urlsafe(32)
-            expires_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() + timedelta(hours=1)
+            expires_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() + timedelta(minutes=5)
             
             # Delete existing tokens for this user
             PasswordResetToken.query.filter_by(user_id=user.id).delete()

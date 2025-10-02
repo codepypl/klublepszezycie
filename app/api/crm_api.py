@@ -7,7 +7,6 @@ from functools import wraps
 from app.models import User, db
 from app.models.crm_model import Contact, Call, ImportFile, ImportRecord
 from app.services.crm_queue_manager import QueueManager
-from app.services.crm_event_integration import EventIntegrationService
 from app.services.crm_import_service import ImportService
 from app.services.crm_file_import_service import FileImportService
 from app.utils.crm_file_utils import generate_import_file_path

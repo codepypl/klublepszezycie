@@ -893,6 +893,9 @@ def email_create_campaign():
         if not data.get('recipient_groups') or len(data.get('recipient_groups', [])) == 0:
             return jsonify({'success': False, 'error': 'Musisz wybrać co najmniej jedną grupę odbiorców'}), 400
         
+        if not data.get('template_id') or data.get('template_id') == '' or data.get('template_id') == 'null':
+            return jsonify({'success': False, 'error': 'Musisz wybrać szablon emaila'}), 400
+        
         # Handle scheduling - POPRAWIONA LOGIKA
         send_type = data.get('send_type', 'immediate')
         scheduled_at = None
@@ -909,9 +912,11 @@ def email_create_campaign():
             # Parse date from frontend (może być bez timezone)
             date_str = data['scheduled_at']
             if 'T' in date_str and '+' not in date_str and 'Z' not in date_str:
-                # Format: "2025-09-28T15:30" (bez timezone) - dodaj lokalną strefę czasową
-                scheduled_at = datetime.fromisoformat(date_str)
-                scheduled_at = scheduled_at.replace(tzinfo=get_local_timezone())
+                # Format: "2025-09-28T15:30" (bez timezone) - interpretuj jako czas lokalny
+                naive_time = datetime.fromisoformat(date_str)
+                # Użyj localize() zamiast replace() dla poprawnej obsługi stref czasowych
+                local_tz = get_local_timezone()
+                scheduled_at = local_tz.localize(naive_time)
             else:
                 # Format z timezone: "2025-09-28T15:30Z" lub "2025-09-28T15:30+02:00"
                 scheduled_at = datetime.fromisoformat(date_str.replace('Z', '+00:00'))

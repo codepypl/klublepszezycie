@@ -187,13 +187,29 @@ class EmailScheduler:
                     
                     # Przygotuj kontekst
                     context = {
-                        'user_name': participant.first_name,
+                        'user_name': participant.first_name or 'Użytkowniku',
                         'event_title': event.title,
                         'event_date': event.event_date.strftime('%d.%m.%Y'),
                         'event_time': event.event_date.strftime('%H:%M'),
                         'event_location': event.location or 'Online',
-                        'event_url': f"https://klublepszezycie.pl/events/{event.id}"
+                        'event_url': f"https://klublepszezycie.pl/events/{event.id}",
+                        'event_datetime': event.event_date.strftime('%d.%m.%Y %H:%M'),
+                        'event_description': event.description or ''
                     }
+                    
+                    # Dodaj linki do wypisania i usunięcia konta
+                    try:
+                        from app.services.unsubscribe_manager import unsubscribe_manager
+                        context.update({
+                            'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(participant.email),
+                            'delete_account_url': unsubscribe_manager.get_delete_account_url(participant.email)
+                        })
+                    except Exception as e:
+                        self.logger.warning(f"⚠️ Błąd generowania linków unsubscribe dla {participant.email}: {e}")
+                        context.update({
+                            'unsubscribe_url': 'mailto:kontakt@klublepszezycie.pl',
+                            'delete_account_url': 'mailto:kontakt@klublepszezycie.pl'
+                        })
                     
                     # Renderuj szablon
                     html_content = self._render_template(template.html_content, context)

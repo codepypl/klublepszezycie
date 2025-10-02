@@ -169,20 +169,39 @@ def send_event_reminder_task(self, event_id, user_id, reminder_type="24h"):
                 logger.error(f"❌ Nie znaleziono wydarzenia {event_id} lub użytkownika {user_id}")
                 return {'success': False, 'message': 'Event or user not found'}
             
+            # Przygotuj kontekst z wszystkimi wymaganymi zmiennymi
+            context = {
+                'user_name': user.first_name or 'Użytkowniku',
+                'event_title': event.title,
+                'event_date': event.event_date.strftime('%d.%m.%Y'),
+                'event_time': event.event_date.strftime('%H:%M'),
+                'event_location': event.location or 'Online',
+                'event_id': event_id,
+                'user_id': user_id,
+                'event_url': f"https://klublepszezycie.pl/events/{event.id}",
+                'event_datetime': event.event_date.strftime('%d.%m.%Y %H:%M'),
+                'event_description': event.description or ''
+            }
+            
+            # Dodaj linki do wypisania i usunięcia konta
+            try:
+                from app.services.unsubscribe_manager import unsubscribe_manager
+                context.update({
+                    'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(user.email),
+                    'delete_account_url': unsubscribe_manager.get_delete_account_url(user.email)
+                })
+            except Exception as e:
+                logger.warning(f"⚠️ Błąd generowania linków unsubscribe dla {user.email}: {e}")
+                context.update({
+                    'unsubscribe_url': 'mailto:kontakt@klublepszezycie.pl',
+                    'delete_account_url': 'mailto:kontakt@klublepszezycie.pl'
+                })
+            
             # Wyślij przypomnienie
             success, message = email_manager.send_template_email(
                 template_name=f'event_reminder_{reminder_type}',
                 to_email=user.email,
-                context={
-                    'user_name': user.first_name,
-                    'event_title': event.title,
-                    'event_date': event.event_date.strftime('%d.%m.%Y'),
-                    'event_time': event.event_date.strftime('%H:%M'),
-                    'event_location': event.location or 'Online',
-                    'user_name': user.first_name,
-                    'event_id': event_id,
-                    'user_id': user_id
-                },
+                context=context,
                 use_queue=True
             )
             
@@ -340,15 +359,34 @@ def send_campaign_task(self, campaign_id):
                     # Przygotuj kontekst dla odbiorcy
                     recipient_context = context.copy()
                     recipient_context.update({
-                        'user_name': recipient.first_name,
+                        'user_name': recipient.first_name or 'Użytkowniku',
                         'user_email': recipient.email,
-                        'campaign_name': campaign.name
+                        'campaign_name': campaign.name,
+                        'message_subject': campaign.subject,
+                        'message_content': campaign.html_content or campaign.text_content or 'Brak treści wiadomości',
+                        'admin_message': campaign.html_content or campaign.text_content or 'Brak treści wiadomości',
+                        'additional_info': '',
+                        'contact_url': 'mailto:kontakt@klublepszezycie.pl'
                     })
                     
-                    # Wyślij email
+                    # Dodaj linki do wypisania i usunięcia konta
+                    try:
+                        from app.services.unsubscribe_manager import unsubscribe_manager
+                        recipient_context.update({
+                            'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(recipient.email),
+                            'delete_account_url': unsubscribe_manager.get_delete_account_url(recipient.email)
+                        })
+                    except Exception as e:
+                        logger.warning(f"⚠️ Błąd generowania linków unsubscribe dla {recipient.email}: {e}")
+                        recipient_context.update({
+                            'unsubscribe_url': 'mailto:kontakt@klublepszezycie.pl',
+                            'delete_account_url': 'mailto:kontakt@klublepszezycie.pl'
+                        })
+                    
+                    # Wyślij email (zawsze używaj szablonu)
                     success, message = email_manager.send_template_email(
                         to_email=recipient.email,
-                        template_name=campaign.template.name if campaign.template else None,
+                        template_name=campaign.template.name,
                         context=recipient_context,
                         priority=2,
                         campaign_id=campaign_id

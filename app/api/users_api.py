@@ -237,16 +237,13 @@ def api_user(user_id):
                     # Przygotuj kontekst emaila
                     base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
                     login_url = f"{base_url}/login"
-                    unsubscribe_url = f"{base_url}/unsubscribe"
-                    delete_account_url = f"{base_url}/delete-account"
-                    
                     context = {
                         'user_name': user.first_name or 'Użytkowniku',
                         'user_email': user.email,
                         'new_password': new_password,
                         'login_url': login_url,
-                        'unsubscribe_url': unsubscribe_url,
-                        'delete_account_url': delete_account_url
+                        'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(user.email),
+                        'delete_account_url': unsubscribe_manager.get_delete_account_url(user.email)
                     }
                     
                     # Wyślij email
