@@ -4,7 +4,7 @@ Routes package - organized by functionality
 from .public_route import public_bp
 from .admin_route import admin_bp
 from .auth_route import auth_bp
-from .blog_route import blog_bp
+from .blog_route import blog_bp, blog_admin_bp
 from .seo_route import seo_bp
 from .social_route import social_bp
 from .events_route import events_bp
@@ -18,6 +18,7 @@ __all__ = [
     'admin_bp',
     'auth_bp',
     'blog_bp',
+    'blog_admin_bp',
     'seo_bp',
     'social_bp',
     'events_bp',

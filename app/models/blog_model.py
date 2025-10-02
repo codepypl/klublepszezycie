@@ -38,6 +38,13 @@ class BlogCategory(db.Model):
             path.insert(0, current.title)
             current = current.parent
         return ' > '.join(path)
+    
+    @property
+    def url(self):
+        """Get category URL with hierarchy"""
+        if self.parent:
+            return f"/blog/category/{self.parent.slug}/{self.slug}"
+        return f"/blog/category/{self.slug}"
 
 class BlogTag(db.Model):
     """Blog tags"""
@@ -97,6 +104,17 @@ class BlogPost(db.Model):
         words_per_minute = 200
         word_count = len(self.content.split())
         return max(1, word_count // words_per_minute)
+    
+    @property
+    def url(self):
+        """Get post URL with category hierarchy"""
+        if self.categories:
+            primary_category = self.categories[0]
+            if primary_category.parent:
+                return f"/blog/{primary_category.parent.slug}/{primary_category.slug}/{self.slug}/"
+            else:
+                return f"/blog/{primary_category.slug}/{self.slug}/"
+        return f"/blog/{self.slug}"
     
     def __repr__(self):
         return f'<BlogPost {self.title}>'

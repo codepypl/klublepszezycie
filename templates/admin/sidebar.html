@@ -144,33 +144,33 @@
         <!-- Grupa: Blog - Tylko dla administratorów -->
         {% if current_user.is_admin_role() %}
         <li class="nav-item">
-            <a href="#blogSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['blog.admin_index', 'blog.admin_categories', 'blog.admin_tags', 'blog.admin_comments'] %}true{% else %}false{% endif %}">
+            <a href="#blogSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['blog_admin.admin_index', 'blog_admin.admin_categories', 'blog_admin.admin_tags', 'blog_admin.admin_comments'] %}true{% else %}false{% endif %}">
                 <i class="fas fa-blog me-2"></i>
                 <span class="nav-link-text">Blog</span>
                 <i class="fas fa-chevron-down ms-auto"></i>
             </a>
-            <div class="collapse{% if request.endpoint in ['blog.admin_index', 'blog.admin_categories', 'blog.admin_tags', 'blog.admin_comments'] %} show{% endif %}" id="blogSubmenu">
+            <div class="collapse{% if request.endpoint in ['blog_admin.admin_index', 'blog_admin.admin_categories', 'blog_admin.admin_tags', 'blog_admin.admin_comments'] %} show{% endif %}" id="blogSubmenu">
                 <ul class="nav flex-column ms-3">
                     <li class="nav-item">
-                        <a href="{{ url_for('blog.admin_index') }}" class="nav-link {% if request.endpoint == 'blog.admin_index' %}active{% endif %}">
+                        <a href="{{ url_for('blog_admin.admin_index') }}" class="nav-link {% if request.endpoint == 'blog_admin.admin_index' %}active{% endif %}">
                             <i class="fas fa-newspaper"></i>
                             <span class="nav-link-text">Artykuły</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ url_for('blog.admin_categories') }}" class="nav-link {% if request.endpoint == 'blog.admin_categories' %}active{% endif %}">
+                        <a href="{{ url_for('blog_admin.admin_categories') }}" class="nav-link {% if request.endpoint == 'blog_admin.admin_categories' %}active{% endif %}">
                             <i class="fas fa-folder"></i>
                             <span class="nav-link-text">Kategorie</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ url_for('blog.admin_tags') }}" class="nav-link {% if request.endpoint == 'blog.admin_tags' %}active{% endif %}">
+                        <a href="{{ url_for('blog_admin.admin_tags') }}" class="nav-link {% if request.endpoint == 'blog_admin.admin_tags' %}active{% endif %}">
                             <i class="fas fa-tags"></i>
                             <span class="nav-link-text">Tagi</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ url_for('blog.admin_comments') }}" class="nav-link {% if request.endpoint == 'blog.admin_comments' %}active{% endif %}">
+                        <a href="{{ url_for('blog_admin.admin_comments') }}" class="nav-link {% if request.endpoint == 'blog_admin.admin_comments' %}active{% endif %}">
                             <i class="fas fa-comments"></i>
                             <span class="nav-link-text">Komentarze</span>
                         </a>

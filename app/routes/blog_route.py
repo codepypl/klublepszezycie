@@ -5,7 +5,11 @@ from flask import Blueprint, render_template, request, jsonify, flash, redirect,
 from flask_login import login_required, current_user
 from app.blueprints.blog_controller import BlogController
 
+# Public blog routes
 blog_bp = Blueprint('blog', __name__, url_prefix='/blog')
+
+# Admin blog routes
+blog_admin_bp = Blueprint('blog_admin', __name__, url_prefix='/admin/blog')
 
 @blog_bp.route('/')
 def index():
@@ -79,9 +83,9 @@ def post_detail(slug):
                          popular_tags=popular_tags,
                          **db_data)
 
-@blog_bp.route('/category/<category_slug>/<post_slug>')
+@blog_bp.route('/<category_slug>/<post_slug>/')
 def post_detail_with_category(category_slug, post_slug):
-    """Blog post detail page with category in URL"""
+    """Blog post detail page with main category in URL"""
     data = BlogController.get_blog_post(post_slug)
     
     if not data['success']:
@@ -125,6 +129,61 @@ def post_detail_with_category(category_slug, post_slug):
                          categories=categories,
                          popular_tags=popular_tags,
                          primary_category=category,
+                         **db_data)
+
+@blog_bp.route('/<parent_category_slug>/<child_category_slug>/<post_slug>/')
+def post_detail_with_hierarchy(parent_category_slug, child_category_slug, post_slug):
+    """Blog post detail page with category hierarchy in URL"""
+    data = BlogController.get_blog_post(post_slug)
+    
+    if not data['success']:
+        flash(data['error'], 'error')
+        return redirect(url_for('blog.index'))
+    
+    # Verify the category hierarchy matches
+    child_category = next((cat for cat in data['post'].categories if cat.slug == child_category_slug), None)
+    if not child_category or not child_category.parent or child_category.parent.slug != parent_category_slug:
+        # If hierarchy doesn't match, redirect to correct category
+        if data['post'].categories:
+            primary_category = data['post'].categories[0]
+            if primary_category.parent:
+                return redirect(url_for('blog.post_detail_with_hierarchy', 
+                                      parent_category_slug=primary_category.parent.slug,
+                                      child_category_slug=primary_category.slug, 
+                                      post_slug=post_slug), code=301)
+            else:
+                return redirect(url_for('blog.post_detail_with_category', 
+                                      category_slug=primary_category.slug, 
+                                      post_slug=post_slug), code=301)
+        else:
+            return redirect(url_for('blog.post_detail', slug=post_slug), code=301)
+    
+    post = data['post']
+    related_posts = data['related_posts']
+    
+    # Get comments for this post
+    comments_data = BlogController.get_post_comments(post.id, approved_only=True)
+    comments = comments_data['comments'] if comments_data['success'] else []
+    
+    # Get categories and tags for sidebar
+    categories_data = BlogController.get_categories()
+    tags_data = BlogController.get_tags()
+    
+    categories = categories_data['categories'] if categories_data['success'] else []
+    popular_tags = tags_data['tags'] if tags_data['success'] else []
+    
+    # Get all database data dynamically
+    from app.blueprints.public_controller import PublicController
+    db_data = PublicController.get_database_data()
+    
+    return render_template('blog/post_detail.html',
+                         post=post,
+                         comments=comments,
+                         related_posts=related_posts,
+                         categories=categories,
+                         popular_tags=popular_tags,
+                         primary_category=child_category,
+                         parent_category=child_category.parent,
                          **db_data)
 
 @blog_bp.route('/category/<slug>')
@@ -323,7 +382,7 @@ def add_comment():
             return redirect(request.referrer or url_for('blog.index'))
 
 # Admin routes for blog management
-@blog_bp.route('/admin')
+@blog_admin_bp.route('/articles')
 @login_required
 def admin_index():
     """Blog admin dashboard"""
@@ -340,7 +399,7 @@ def admin_index():
     
     return render_template('blog/admin/posts.html', posts=data['posts'], edit_post_id=edit_post_id)
 
-@blog_bp.route('/admin/create', methods=['GET', 'POST'])
+@blog_admin_bp.route('/articles/create', methods=['GET', 'POST'])
 @login_required
 def admin_create():
     """Create new blog post"""
@@ -362,7 +421,7 @@ def admin_create():
             
             if result['success']:
                 flash(result['message'], 'success')
-                return redirect(url_for('blog.admin_index'))
+                return redirect(url_for('blog_admin.admin_index'))
             else:
                 flash(f'Błąd: {result["error"]}', 'error')
     
@@ -375,7 +434,7 @@ def admin_create():
     
     return render_template('blog/admin/posts.html', categories=categories, tags=tags)
 
-@blog_bp.route('/admin/edit/<int:post_id>', methods=['GET', 'POST'])
+@blog_admin_bp.route('/articles/edit/<int:post_id>', methods=['GET', 'POST'])
 @login_required
 def admin_edit(post_id):
     """Edit blog post"""
@@ -400,7 +459,7 @@ def admin_edit(post_id):
             
             if result['success']:
                 flash(result['message'], 'success')
-                return redirect(url_for('blog.admin_index'))
+                return redirect(url_for('blog_admin.admin_index'))
             else:
                 flash(f'Błąd: {result["error"]}', 'error')
     
@@ -413,7 +472,7 @@ def admin_edit(post_id):
     
     return render_template('blog/admin/posts.html', post=post, categories=categories, tags=tags)
 
-@blog_bp.route('/admin/delete/<int:post_id>', methods=['POST'])
+@blog_admin_bp.route('/articles/delete/<int:post_id>', methods=['POST'])
 @login_required
 def admin_delete(post_id):
     """Delete blog post"""
@@ -424,9 +483,9 @@ def admin_delete(post_id):
     else:
         flash(f'Błąd: {result["error"]}', 'error')
     
-    return redirect(url_for('blog.admin_index'))
+    return redirect(url_for('blog_admin.admin_index'))
 
-@blog_bp.route('/admin/categories')
+@blog_admin_bp.route('/categories')
 @login_required
 def admin_categories():
     """Blog categories management page"""
@@ -437,11 +496,11 @@ def admin_categories():
     
     if not data['success']:
         flash(f'Błąd: {data["error"]}', 'error')
-        return redirect(url_for('blog.admin_index'))
+        return redirect(url_for('blog_admin.admin_index'))
     
     return render_template('blog/admin/categories.html', categories=data['categories'])
 
-@blog_bp.route('/admin/tags')
+@blog_admin_bp.route('/tags')
 @login_required
 def admin_tags():
     """Blog tags management page"""
@@ -449,11 +508,11 @@ def admin_tags():
     
     if not data['success']:
         flash(f'Błąd: {data["error"]}', 'error')
-        return redirect(url_for('blog.admin_index'))
+        return redirect(url_for('blog_admin.admin_index'))
     
     return render_template('blog/admin/tags.html', tags=data['tags'])
 
-@blog_bp.route('/admin/comments')
+@blog_admin_bp.route('/comments')
 @login_required
 def admin_comments():
     """Blog comments management page"""
