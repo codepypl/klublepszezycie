@@ -537,9 +537,9 @@ class BlogController:
         if post.categories:
             primary_category = post.categories[0]
             if primary_category.parent:
-                return f"/blog/{primary_category.parent.slug}/{primary_category.slug}/{post.slug}/"
+                return f"/blog/category/{primary_category.parent.slug}/{primary_category.slug}/{post.slug}"
             else:
-                return f"/blog/{primary_category.slug}/{post.slug}/"
+                return f"/blog/category/{primary_category.slug}/{post.slug}"
         return f"/blog/{post.slug}"
     
     @staticmethod

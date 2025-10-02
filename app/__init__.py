@@ -67,7 +67,7 @@ def create_app():
     
     # Register blueprints
     logger.info("🛣️ Registering routes...")
-    from app.routes import public_bp, admin_bp, auth_bp, blog_bp, blog_admin_bp, seo_bp, social_bp, events_bp, users_bp, footer_bp, crm_bp, ankieter_bp
+    from app.routes import public_bp, admin_bp, auth_bp, blog_bp, seo_bp, social_bp, events_bp, users_bp, footer_bp, crm_bp, ankieter_bp
     from app.routes.unsubscribe_routes import unsubscribe_bp
     from app.routes.user_groups_route import user_groups_bp
     from app.api import email_bp, users_api_bp, testimonials_api_bp, sections_api_bp, menu_api_bp, faq_api_bp, benefits_api_bp, events_api_bp, blog_api_bp, seo_api_bp, social_api_bp, crm_api_bp, agent_api_bp, stats_api_bp
@@ -94,7 +94,6 @@ def create_app():
     app.register_blueprint(social_api_bp, url_prefix='/api')
     app.register_blueprint(auth_bp)
     app.register_blueprint(blog_bp)
-    app.register_blueprint(blog_admin_bp)
     app.register_blueprint(seo_bp, url_prefix='/admin')
     app.register_blueprint(social_bp, url_prefix='/admin')
     app.register_blueprint(events_bp, url_prefix='/admin')
