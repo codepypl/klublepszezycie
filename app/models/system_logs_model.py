@@ -92,17 +92,4 @@ class SystemLog(db.Model):
         db.session.add(log)
         return log
     
-    @classmethod
-    def log_cron_execution(cls, operation_type, success, message, details=None, execution_time=None):
-        """Log general cron execution"""
-        log = cls(
-            operation_type=f'cron_{operation_type}',
-            operation_name=f'Cron: {operation_type}',
-            status='success' if success else 'error',
-            message=message,
-            details=details,
-            execution_time=execution_time
-        )
-        db.session.add(log)
-        return log
 

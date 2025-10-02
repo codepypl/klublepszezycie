@@ -248,7 +248,7 @@ def create_app():
         logger.info("✅ Celery initialized successfully!")
     except Exception as e:
         logger.warning(f"⚠️ Celery initialization failed: {e}")
-        logger.info("📧 Email processing will use cron job as backup")
+        logger.info("📧 Email processing will use fallback methods")
     
     logger.info("✅ Flask application initialized successfully!")
     return app
