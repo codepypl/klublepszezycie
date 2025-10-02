@@ -18,7 +18,6 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), default='user', index=True)  # admin, user, ankieter
     account_type = db.Column(db.String(30), default='user', index=True)  # admin, user, ankieter, event_registration
     event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=True)  # ID of event for event registrations (backward compatibility)
-    event_ids = db.Column(db.Text, nullable=True)  # JSON list of event IDs for event registrations
     group_id = db.Column(db.Integer, db.ForeignKey('user_groups.id'), nullable=True)  # ID of group user belongs to
     is_temporary_password = db.Column(db.Boolean, default=True)  # Whether user needs to change password
     created_at = db.Column(db.DateTime, default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
@@ -66,59 +65,14 @@ class User(UserMixin, db.Model):
         """Check if user is ankieter account type"""
         return self.account_type == 'ankieter'
     
-    def get_event_ids(self):
-        """Get list of event IDs user is registered for"""
-        if not self.event_ids:
-            return []
-        try:
-            import json
-            return json.loads(self.event_ids)
-        except (json.JSONDecodeError, TypeError):
-            return []
-    
-    def set_event_ids(self, event_ids):
-        """Set list of event IDs user is registered for"""
-        import json
-        self.event_ids = json.dumps(event_ids) if event_ids else None
-        # Synchronize with event_id for backward compatibility
-        self.event_id = event_ids[0] if event_ids else None
-    
-    def add_event_id(self, event_id):
-        """Add event ID to user's registrations"""
-        current_ids = self.get_event_ids()
-        if event_id not in current_ids:
-            current_ids.append(event_id)
-            self.set_event_ids(current_ids)
-            return True
-        return False
-    
-    def remove_event_id(self, event_id):
-        """Remove event ID from user's registrations"""
-        current_ids = self.get_event_ids()
-        if event_id in current_ids:
-            current_ids.remove(event_id)
-            self.set_event_ids(current_ids)
-            return True
-        return False
-    
     def is_registered_for_event(self, event_id):
-        """Check if user is registered for specific event"""
-        return event_id in self.get_event_ids()
-    
-    # Backward-compatible property for legacy code
-    @property
-    def event_id(self):
-        """Backward compatibility - returns first event ID or None"""
-        event_ids = self.get_event_ids()
-        return event_ids[0] if event_ids else None
-    
-    @event_id.setter
-    def event_id(self, value):
-        """Backward compatibility - sets single event ID"""
-        if value:
-            self.set_event_ids([value])
-        else:
-            self.set_event_ids([])
+        """Check if user is registered for specific event using EventRegistration table"""
+        from .event_registration_model import EventRegistration
+        return EventRegistration.query.filter_by(
+            user_id=self.id,
+            event_id=event_id,
+            is_active=True
+        ).first() is not None
 
     # Backward-compatible property for legacy code that used a boolean column
     @property
