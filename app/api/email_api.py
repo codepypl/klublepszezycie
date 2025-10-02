@@ -17,9 +17,11 @@ email_bp = Blueprint('email_api', __name__)
 def email_retry_failed():
     """Ponawia nieudane emaile"""
     try:
-        from app.services.mailgun_service import EnhancedNotificationProcessor
-        email_processor = EnhancedNotificationProcessor()
-        stats = email_processor.retry_failed_emails()
+        from app.services.email_v2 import EmailManager
+        from app.services.email_v2.queue.processor import EmailQueueProcessor
+        
+        processor = EmailQueueProcessor()
+        stats = processor.retry_failed_emails()
         
         return jsonify({
             'success': True, 
@@ -36,14 +38,14 @@ def email_retry_failed():
 def email_retry_single(email_id):
     """Ponawia pojedynczy email"""
     try:
-        from app.services.mailgun_service import EnhancedNotificationProcessor
+        from app.services.email_v2 import EmailManager
         
         email = EmailQueue.query.get(email_id)
         if not email:
             return jsonify({'success': False, 'error': 'Email nie istnieje'}), 404
-        email_processor = EnhancedNotificationProcessor()
+        email_manager = EmailManager()
         
-        success, message = email_processor.send_immediate_email(
+        success, message = email_manager.send_immediate_email(
             email.to_email,
             email.subject,
             email.html_content,
@@ -133,21 +135,19 @@ def email_queue_list():
 def email_process_queue():
     """Process email queue - start sending pending emails"""
     try:
-        from app.services.mailgun_service import EnhancedNotificationProcessor
-        import asyncio
+        from app.services.email_v2 import EmailManager
         
-        processor = EnhancedNotificationProcessor()
+        email_manager = EmailManager()
         
-        # Process email queue asynchronously
-        success, message = asyncio.run(processor.process_email_queue())
+        # Process email queue
+        batch_size = request.json.get('batch_size', 50) if request.json else 50
+        stats = email_manager.process_queue(batch_size)
         
-        if success:
-            return jsonify({
-                'success': True,
-                'message': message
-            })
-        else:
-            return jsonify({'success': False, 'message': message}), 500
+        return jsonify({
+            'success': True,
+            'message': f"Przetworzono {stats.get('processed', 0)} e-maili",
+            'stats': stats
+        })
             
     except Exception as e:
         logging.error(f"Error processing email queue: {str(e)}")
@@ -612,6 +612,118 @@ def email_queue_stats():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@email_bp.route('/email/monitor/stats', methods=['GET'])
+@login_required
+def get_email_monitor_stats():
+    """Pobiera szczegółowe statystyki wysyłania e-maili"""
+    try:
+        from app.utils.email_monitor import EmailMonitor
+        
+        hours = request.args.get('hours', 24, type=int)
+        monitor = EmailMonitor()
+        
+        stats = monitor.get_sending_stats(hours)
+        rate_limits = monitor.get_rate_limit_status()
+        
+        return jsonify({
+            'success': True,
+            'sending_stats': stats,
+            'rate_limits': rate_limits
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@email_bp.route('/email/monitor/failed', methods=['GET'])
+@login_required
+def get_failed_emails():
+    """Pobiera listę nieudanych e-maili"""
+    try:
+        from app.utils.email_monitor import EmailMonitor
+        
+        limit = request.args.get('limit', 50, type=int)
+        monitor = EmailMonitor()
+        
+        failed_emails = monitor.get_failed_emails(limit)
+        
+        return jsonify({
+            'success': True,
+            'failed_emails': failed_emails,
+            'count': len(failed_emails)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@email_bp.route('/email/monitor/retry-failed', methods=['POST'])
+@login_required
+def retry_failed_emails():
+    """Ponawia wysyłanie nieudanych e-maili"""
+    try:
+        from app.utils.email_monitor import EmailMonitor
+        
+        data = request.get_json() or {}
+        limit = data.get('limit', 10)
+        
+        monitor = EmailMonitor()
+        result = monitor.retry_failed_emails(limit)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@email_bp.route('/email/monitor/campaign/<int:campaign_id>/stats', methods=['GET'])
+@login_required
+def get_campaign_stats(campaign_id):
+    """Pobiera statystyki kampanii"""
+    try:
+        from app.utils.email_monitor import EmailMonitor
+        
+        monitor = EmailMonitor()
+        stats = monitor.get_campaign_stats(campaign_id)
+        
+        return jsonify({
+            'success': True,
+            'campaign_stats': stats
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@email_bp.route('/email/monitor/cleanup', methods=['POST'])
+@login_required
+def cleanup_old_emails():
+    """Czyści stare e-maile z kolejki"""
+    try:
+        from app.utils.email_monitor import EmailMonitor
+        
+        data = request.get_json() or {}
+        days = data.get('days', 30)
+        
+        monitor = EmailMonitor()
+        result = monitor.cleanup_old_emails(days)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 
 @email_bp.route('/email/templates/load-fixtures', methods=['POST'])
 @login_required
@@ -1064,7 +1176,7 @@ def email_delete_campaign(campaign_id):
 def email_send_campaign(campaign_id):
     """Wysyła kampanię emailową"""
     try:
-        from app.services.mailgun_service import EnhancedNotificationProcessor
+        from app.services.email_v2 import EmailManager
         import json
         
         # Pobierz kampanię
@@ -1105,37 +1217,27 @@ def email_send_campaign(campaign_id):
         if not group_ids:
             return jsonify({'success': False, 'error': 'Kampania nie ma przypisanych grup odbiorców'}), 400
         
-        # Użyj systemu kolejki EmailService zamiast bezpośredniego wysyłania
-        from app.services.email_service import EmailService
-        email_service = EmailService()
+        # Użyj nowego systemu v2 z zadaniami Celery
+        from app.tasks.email_tasks import send_campaign_task, schedule_campaign_task
         
-        # Dodaj kampanię do kolejki
-        success, message = email_service._add_campaign_to_queue(campaign)
-        
-        if success:
-            # Aktualizuj status kampanii
-            campaign.status = 'sending'
-            campaign.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
-            db.session.commit()
-            
-            # Przygotuj komunikat w zależności od daty
-            if campaign.scheduled_at:
-                # Upewnij się, że oba datetimes mają strefy czasowe
-                if now.tzinfo is None:
-                    now = now.replace(tzinfo=get_local_timezone())
-                if campaign.scheduled_at.tzinfo is None:
-                    campaign.scheduled_at = campaign.scheduled_at.replace(tzinfo=get_local_timezone())
-                
-                if campaign.scheduled_at > now:
-                    message_text = f'Kampania dodana do kolejki dla {campaign.total_recipients} odbiorców. Zostanie wysłana {campaign.scheduled_at.strftime("%Y-%m-%d o %H:%M")}'
-                else:
-                    message_text = f'Kampania dodana do kolejki dla {campaign.total_recipients} odbiorców i zostanie wysłana natychmiast'
-            else:
-                message_text = f'Kampania dodana do kolejki dla {campaign.total_recipients} odbiorców i zostanie wysłana natychmiast'
-            
-            return jsonify({'success': True, 'message': message_text})
+        # Sprawdź tryb wysyłania
+        if campaign.send_type == 'immediate':
+            # Wyślij natychmiast
+            task = send_campaign_task.delay(campaign_id)
+            message = f"Kampania zaplanowana do wysłania (Task ID: {task.id})"
+        elif campaign.send_type == 'scheduled' and campaign.scheduled_at:
+            # Zaplanuj wysłanie
+            task = schedule_campaign_task.delay(campaign_id)
+            message = f"Kampania zaplanowana na {campaign.scheduled_at} (Task ID: {task.id})"
         else:
-            return jsonify({'success': False, 'error': f'Błąd dodawania kampanii do kolejki: {message}'}), 500
+            return jsonify({'success': False, 'error': 'Nieprawidłowy tryb wysyłania lub brak czasu wysłania'}), 400
+        
+        # Aktualizuj status kampanii
+        campaign.status = 'sending'
+        campaign.updated_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': message})
             
     except Exception as e:
         db.session.rollback()
@@ -1154,10 +1256,25 @@ def email_send_campaign(campaign_id):
 def update_campaign_stats(campaign_id):
     """Aktualizuje statystyki kampanii"""
     try:
-        from app.services.mailgun_service import EnhancedNotificationProcessor
-        email_processor = EnhancedNotificationProcessor()
+        from app.services.email_v2 import EmailManager
+        email_manager = EmailManager()
         
-        success = email_processor.update_campaign_stats(campaign_id)
+        # Update campaign stats from EmailQueue
+        from app.models import EmailQueue, EmailCampaign
+        
+        campaign = EmailCampaign.query.get(campaign_id)
+        if not campaign:
+            return jsonify({'success': False, 'error': 'Kampania nie znaleziona'}), 404
+        
+        # Count sent and failed
+        sent_count = EmailQueue.query.filter_by(campaign_id=campaign_id, status='sent').count()
+        failed_count = EmailQueue.query.filter_by(campaign_id=campaign_id, status='failed').count()
+        
+        campaign.sent_count = sent_count
+        campaign.failed_count = failed_count
+        db.session.commit()
+        
+        success = True
         
         if success:
             return jsonify({'success': True, 'message': 'Statystyki kampanii zaktualizowane'})
@@ -1243,10 +1360,10 @@ def bulk_delete_templates():
 def get_queue_stats():
     """Zwraca statystyki kolejki emaili"""
     try:
-        from app.services.mailgun_service import EnhancedNotificationProcessor
+        from app.services.email_v2 import EmailManager
         
-        processor = EnhancedNotificationProcessor()
-        stats = processor.get_queue_stats()
+        processor = EmailManager()
+        stats = processor.get_stats()
         
         if stats:
             return jsonify({
@@ -1369,30 +1486,5 @@ def email_activate_campaign(campaign_id):
         print(f"❌ Traceback: {traceback.format_exc()}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@email_bp.route('/email/test-sending', methods=['POST'])
-def email_test_sending():
-    """Test wysyłania emaili - wysyła 100 emaili na testowy adres"""
-    try:
-        from app.tasks.email_tasks import test_email_sending_task
-        
-        data = request.get_json() or {}
-        test_email = data.get('test_email', 'codeitpy@gmail.com')
-        count = data.get('count', 100)
-        batch_size = data.get('batch_size', 10)
-        
-        # Uruchom zadanie Celery
-        task = test_email_sending_task.delay(test_email, count, batch_size)
-        
-        return jsonify({
-            'success': True, 
-            'message': f'Test wysyłania {count} emaili uruchomiony',
-            'task_id': task.id,
-            'test_email': test_email,
-            'count': count,
-            'batch_size': batch_size
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
 
 

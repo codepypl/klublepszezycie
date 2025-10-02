@@ -11,14 +11,18 @@ class GroupManager:
     
     def create_event_group(self, event_id, event_title):
         """Tworzy grupę dla wydarzenia"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         try:
-            # Sprawdź czy grupa już istnieje
+            # Sprawdź czy grupa już istnieje dla tego event_id
             existing_group = UserGroup.query.filter_by(
-                name=f"Wydarzenie: {event_title}",
+                event_id=event_id,
                 group_type='event_based'
             ).first()
             
             if existing_group:
+                logger.info(f"✅ Grupa już istnieje dla wydarzenia {event_id}: {existing_group.name}")
                 return existing_group.id
             
             # Utwórz nową grupę
@@ -33,10 +37,13 @@ class GroupManager:
             db.session.add(group)
             db.session.commit()
             
+            logger.info(f"✅ Utworzono grupę {group.id} dla wydarzenia {event_id}: {event_title}")
             return group.id
             
         except Exception as e:
-            print(f"Błąd tworzenia grupy wydarzenia: {str(e)}")
+            logger.error(f"❌ Błąd tworzenia grupy wydarzenia {event_id}: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def add_user_to_event_group(self, user_id, event_id):
@@ -436,10 +443,16 @@ class GroupManager:
                     print(f"✅ Utworzono nową grupę: {group_name}")
                 
                 # Pobierz wszystkich zarejestrowanych na wydarzenie
-                registrations = User.query.filter_by(
+                # Użyj tabeli event_registrations
+                from app.models import EventRegistration
+                registrations = EventRegistration.query.filter_by(
                     event_id=event.id,
-                    account_type='event_registration'
+                    is_active=True
                 ).all()
+                
+                # Pobierz użytkowników z rejestracji
+                user_ids = [reg.user_id for reg in registrations]
+                registrations = User.query.filter(User.id.in_(user_ids)).all()
                 
                 # Pobierz obecnych członków grupy (tylko aktywnych)
                 current_members = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).all()
@@ -617,6 +630,23 @@ class GroupManager:
             group.member_count = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).count()
             
             db.session.commit()
+            
+            # Jeśli dodano nowych członków, zaplanuj dla nich przypomnienia
+            if new_members:
+                print(f"🔄 Planowanie przypomnień dla {len(new_members)} nowych członków grupy wydarzenia")
+                try:
+                    from app.services.email_v2 import EmailManager
+                    email_manager = EmailManager()
+                    
+                    # Zaplanuj przypomnienia dla nowych członków
+                    success, message = email_manager.send_event_reminders_for_new_members(event_id)
+                    if success:
+                        print(f"✅ Zaplanowano przypomnienia dla nowych członków: {message}")
+                    else:
+                        print(f"⚠️ Błąd planowania przypomnień dla nowych członków: {message}")
+                except Exception as e:
+                    print(f"❌ Błąd planowania przypomnień dla nowych członków: {e}")
+            
             return True, f"Zsynchronizowano grupę wydarzenia {group_name}"
             
         except Exception as e:

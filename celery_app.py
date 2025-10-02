@@ -22,7 +22,8 @@ def make_celery(app=None):
         backend=backend_url,
         include=[
             'app.tasks.email_tasks',
-            'app.tasks.event_tasks'
+            'app.tasks.event_tasks',
+            'app.tasks.monitor_tasks'
         ]
     )
     
@@ -92,11 +93,21 @@ def make_celery(app=None):
         
         celery.Task = ContextTask
     
-    # Zaplanowane zadania
+    # Zaplanowane zadania - MONITOROWANIE PRZED PRZETWARZANIEM
     celery.conf.beat_schedule = {
+        'monitor-event-changes': {
+            'task': 'monitor_event_changes',
+            'schedule': 30.0,  # Co 30 sekund - aktualizacja wydarzeń
+            'options': {'queue': 'event_queue'},
+        },
+        'monitor-member-changes': {
+            'task': 'monitor_member_changes',
+            'schedule': 60.0,  # Co minutę
+            'options': {'queue': 'event_queue'},
+        },
         'process-email-queue': {
             'task': 'app.tasks.email_tasks.process_email_queue_task',
-            'schedule': 30.0,  # Co 30 sekund
+            'schedule': 60.0,  # Co 1 minutę - obsługa kolejki
         },
         'process-scheduled-campaigns': {
             'task': 'app.tasks.email_tasks.process_scheduled_campaigns_task',
@@ -117,6 +128,11 @@ def make_celery(app=None):
             'schedule': 86400.0,  # Co 24 godziny
             'options': {'queue': 'event_queue'},
         },
+        'full-system-monitor': {
+            'task': 'full_system_monitor',
+            'schedule': 300.0,  # Co 5 minut
+            'options': {'queue': 'event_queue'},
+        },
     }
     
     # Włącz planowanie zadań
@@ -127,7 +143,11 @@ def make_celery(app=None):
     celery.conf.task_routes = {
         'app.tasks.email_tasks.*': {'queue': 'email_queue'},
         'app.tasks.event_tasks.*': {'queue': 'event_queue'},
+        'app.tasks.monitor_tasks.*': {'queue': 'event_queue'},
     }
+    
+    # Ręczne importy zadań - wymagane dla prawidłowej rejestracji
+    from app.tasks import email_tasks, event_tasks, monitor_tasks
     
     return celery
 

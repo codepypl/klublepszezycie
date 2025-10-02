@@ -26,16 +26,16 @@ class EventSchedule(db.Model):
     is_archived = db.Column(db.Boolean, default=False)
     reminders_scheduled = db.Column(db.Boolean, default=False)  # Flaga zabezpieczająca przed duplikatami
     
-    # Relationships - now using User model for registrations
-    registered_users = db.relationship('User', backref='registered_event', lazy=True, foreign_keys='User.event_id')
+    # Relationships - using EventRegistration model for registrations
+    # registered_users = db.relationship('User', backref='registered_event', lazy=True, foreign_keys='User.event_id')
     
     @property
     def current_participants(self):
         """Get current number of participants"""
-        from .user_model import User
-        return User.query.filter_by(
+        from .event_registration_model import EventRegistration
+        return EventRegistration.query.filter_by(
             event_id=self.id,
-            account_type='event_registration'
+            is_active=True
         ).count()
     
     @property

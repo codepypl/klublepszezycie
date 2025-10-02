@@ -132,6 +132,58 @@ def api_cancel_event_tasks(event_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@admin_bp.route('/api/celery/queue-stats')
+@login_required
+def api_celery_queue_stats():
+    """API: Statystyki kolejki emaili"""
+    try:
+        from app.services.celery_monitor import CeleryMonitorService
+        monitor = CeleryMonitorService()
+        stats = monitor.get_queue_stats()
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@admin_bp.route('/api/celery/beat-schedule')
+@login_required
+def api_celery_beat_schedule():
+    """API: Harmonogram beat"""
+    try:
+        from app.services.celery_monitor import CeleryMonitorService
+        monitor = CeleryMonitorService()
+        schedule = monitor.get_beat_schedule()
+        return jsonify(schedule)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@admin_bp.route('/api/celery/restart-worker', methods=['POST'])
+@login_required
+def api_celery_restart_worker():
+    """API: Restart worker Celery"""
+    try:
+        from app.services.celery_monitor import CeleryMonitorService
+        monitor = CeleryMonitorService()
+        result = monitor.restart_worker()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@admin_bp.route('/api/celery/worker-logs')
+@login_required
+def api_celery_worker_logs():
+    """API: Logi workerów"""
+    try:
+        from app.services.celery_monitor import CeleryMonitorService
+        monitor = CeleryMonitorService()
+        
+        worker_name = request.args.get('worker')
+        lines = int(request.args.get('lines', 100))
+        
+        logs = monitor.get_worker_logs(worker_name, lines)
+        return jsonify(logs)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # Content Management Routes
 @admin_bp.route('/menu')
 @login_required
@@ -245,3 +297,4 @@ def crm_analysis():
                          contacts=data['contacts'], 
                          contact_analyses=data['contact_analyses'],
                          search=data['search'])
+

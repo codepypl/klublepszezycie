@@ -4,7 +4,7 @@ Public routes
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, send_from_directory
 from app.blueprints.public_controller import PublicController
 # add_user_to_event_group moved to GroupManager
-from app.services.mailgun_service import EnhancedNotificationProcessor
+from app.services.email_v2 import EmailManager
 from app.utils.timezone_utils import get_local_now, convert_to_local
 from app.utils.blog_utils import generate_blog_link
 from app.utils.validation_utils import validate_email, validate_phone
@@ -245,7 +245,7 @@ def register():
         # Send welcome email with temporary password (only for new users)
         if not existing_user:
             try:
-                email_processor = EnhancedNotificationProcessor()
+                email_manager = EmailManager()
                 
                 # Generate unsubscribe and delete account URLs - nowy system v2
                 from app.services.unsubscribe_manager import unsubscribe_manager
@@ -259,7 +259,7 @@ def register():
                     'delete_account_url': unsubscribe_manager.get_delete_account_url(user.email)
                 }
                 
-                success, message = email_processor.send_template_email(
+                success, message = email_manager.send_template_email(
                     to_email=user.email,
                     template_name='welcome',  # Use existing welcome template
                     context=context
@@ -285,8 +285,8 @@ def register():
                 'registration_source': 'Formularz CTA (sekcja Dołącz do klubu)'
             }
             
-            email_processor = EnhancedNotificationProcessor()
-            success, message = email_processor.send_template_email(
+            email_manager = EmailManager()
+            success, message = email_manager.send_template_email(
                 to_email=admin_email,
                 template_name='admin_notification',
                 context=admin_context,
@@ -570,7 +570,7 @@ def register_event(event_id):
                 print(f"❌ Event group synchronization error: {message}")
             
             # Send confirmation email
-            email_processor = EnhancedNotificationProcessor()
+            email_manager = EmailManager()
             
             # Generate unsubscribe and delete account URLs using new UnsubscribeManager
             from app.services.unsubscribe_manager import unsubscribe_manager
@@ -586,7 +586,7 @@ def register_event(event_id):
                 'delete_account_url': unsubscribe_manager.get_delete_account_url(created_user.email)
             }
             
-            success, message = email_processor.send_template_email(
+            success, message = email_manager.send_template_email(
                 to_email=created_user.email,
                 template_name='event_registration',
                 context=context
@@ -718,7 +718,17 @@ def register_for_event(user, event_id):
         
         # Update user to register for event
         user.account_type = 'event_registration'
-        user.event_id = event_id
+        
+        # Register user for event using EventRegistration table
+        from app.models import EventRegistration
+        registration, message = EventRegistration.register_user(
+            user_id=user.id,
+            event_id=event_id,
+            registration_source='website'
+        )
+        
+        if not registration:
+            return jsonify({'success': False, 'message': message}), 400
         
         # Log the registration in UserHistory (event participation history)
         UserHistory.log_event_registration(
@@ -781,7 +791,7 @@ def register_for_event(user, event_id):
         
         # Send confirmation email to user
         try:
-            email_processor = EnhancedNotificationProcessor()
+            email_manager = EmailManager()
             
             # Generate unsubscribe URL using new UnsubscribeManager
             from app.services.unsubscribe_manager import unsubscribe_manager
@@ -796,7 +806,7 @@ def register_for_event(user, event_id):
                 'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(user.email)
             }
             
-            success, message = email_processor.send_template_email(
+            success, message = email_manager.send_template_email(
                 to_email=user.email,
                 template_name='event_registration',
                 context=context
@@ -823,8 +833,8 @@ def register_for_event(user, event_id):
                 'registration_source': f'Rejestracja na wydarzenie - {event.title}'
             }
             
-            email_processor = EnhancedNotificationProcessor()
-            success, message = email_processor.send_template_email(
+            email_manager = EmailManager()
+            success, message = email_manager.send_template_email(
                 to_email=admin_email,
                 template_name='admin_notification',
                 context=admin_context,

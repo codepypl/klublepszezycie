@@ -12,7 +12,8 @@ class LogService:
     @staticmethod
     def log_email(to_email: str, subject: str, status: str, 
                   template_id: int = None, campaign_id: int = None, 
-                  event_id: int = None, context: dict = None, error_message: str = None):
+                  event_id: int = None, context: dict = None, error_message: str = None,
+                  message_id: str = None):
         """
         Loguje email w bazie danych
         
@@ -44,6 +45,7 @@ class LogService:
                 event_id=event_id,
                 recipient_data=context_str,
                 error_message=error_message,
+                message_id=message_id,
                 sent_at=datetime.now() if status == 'sent' else None
             )
             

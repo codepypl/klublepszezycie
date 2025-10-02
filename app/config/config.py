@@ -110,9 +110,9 @@ class Config:
     MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER')
     MAIL_DEFAULT_SENDER_NAME = os.getenv('MAIL_DEFAULT_SENDER_NAME', 'Lepsze Życie Club')
     
-    # Email Settings
-    EMAIL_BATCH_SIZE = int(os.getenv('EMAIL_BATCH_SIZE', 50))
-    EMAIL_DELAY = int(os.getenv('EMAIL_DELAY', 1))
+    # Email Settings (legacy - używaj EMAIL_QUEUE_BATCH_SIZE)
+    EMAIL_BATCH_SIZE = int(os.getenv('EMAIL_BATCH_SIZE', os.getenv('EMAIL_QUEUE_BATCH_SIZE', 50)))
+    EMAIL_DELAY = int(os.getenv('EMAIL_DELAY', os.getenv('EMAIL_QUEUE_DELAY', 1)))
     
     # Admin Settings
     ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')

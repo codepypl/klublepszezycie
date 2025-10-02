@@ -5,13 +5,13 @@ import logging
 import os
 from datetime import datetime
 from flask import request
-from app.services.mailgun_service import EnhancedNotificationProcessor
+from app.services.email_v2 import EmailManager
 
 class SecurityMonitor:
     """Monitor security events and send alerts"""
     
     def __init__(self):
-        self.email_processor = EnhancedNotificationProcessor()
+        self.email_manager = EmailManager()
     
     def log_security_event(self, event_type, details, severity='WARNING'):
         """Log security event and send alert if necessary"""
@@ -59,7 +59,7 @@ class SecurityMonitor:
             }
             
             # Send alert email using template from database
-            success, message = self.email_processor.send_template_email(
+            success, message = self.email_manager.send_template_email(
                 to_email=admin_email,
                 template_name='security_alert',
                 context=context,

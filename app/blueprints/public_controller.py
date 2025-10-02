@@ -3,7 +3,7 @@ Public business logic controller
 """
 from flask import request, jsonify, flash, redirect, url_for
 from app.models import db, EventSchedule, User, Section, MenuItem, FAQ, BenefitItem, Testimonial, SocialLink, FooterSettings, Stats, UserLogs, UserHistory
-from app.services.mailgun_service import EnhancedNotificationProcessor
+from app.services.email_v2 import EmailManager
 # add_user_to_event_group moved to GroupManager
 import os
 import hmac
@@ -543,8 +543,8 @@ class PublicController:
                 }
             
             # Send email
-            email_processor = EnhancedNotificationProcessor()
-            success, message_result = email_processor.send_template_email(
+            email_manager = EmailManager()
+            success, message_result = email_manager.send_template_email(
                 to_email='kontakt@klublepszezycie.pl',
                 template_name='admin_message',
                 context={

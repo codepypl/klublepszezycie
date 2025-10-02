@@ -1020,28 +1020,31 @@ function performDeleteTemplate(templateId) {
 // Reset templates to default
 function resetTemplates() {
     // Set up modal for reset
-    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz zresetować wszystkie szablony do stanu domyślnego?<br><small class="text-muted">Ta operacja usunie wszystkie istniejące szablony i zastąpi je domyślnymi. Tej operacji nie można cofnąć.</small>';
+    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy chcesz zaimportować domyślne szablony email?<br><small class="text-muted">Ta operacja zastąpi wszystkie istniejące szablony domyślnymi szablonami systemu. Tej operacji nie można cofnąć.</small>';
     
     const modalElement = document.getElementById('bulkDeleteModal');
     const modal = new bootstrap.Modal(modalElement);
     modal.show();
     
-    // Update confirm button
+    // Update confirm button text and behavior
     const confirmBtn = document.getElementById('confirmBulkDelete');
-    const newConfirmBtn = confirmBtn.cloneNode(true);
-    // Check if parent node exists before replacing
-    if (confirmBtn.parentNode) {
-        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-    } else {
-        console.warn('Confirm button parent node not found');
-    }
+    const originalText = confirmBtn.innerHTML;
+    const originalClass = confirmBtn.className;
     
-    newConfirmBtn.onclick = function() {
+    // Change button appearance for import action
+    confirmBtn.innerHTML = '<i class="fas fa-download me-2"></i>Zaimportuj';
+    confirmBtn.className = 'btn btn-secondary';
+    
+    confirmBtn.onclick = function() {
         // Hide modal using Bootstrap method
         const modal = bootstrap.Modal.getInstance(modalElement);
         if (modal) {
             modal.hide();
         }
+        
+        // Restore original button state
+        confirmBtn.innerHTML = originalText;
+        confirmBtn.className = originalClass;
         
         // Then perform reset
         performResetTemplates();
@@ -1061,7 +1064,7 @@ function performResetTemplates() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            window.toastManager.success('Szablony zostały zresetowane do stanu domyślnego!');
+            window.toastManager.success('Domyślne szablony zostały zaimportowane!');
             loadTemplates();
         } else {
             window.toastManager.error('Błąd resetowania: ' + data.error);

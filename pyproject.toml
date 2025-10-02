@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "aiohttp>=3.12.15",
     "celery>=5.5.3",
+    "croniter>=6.0.0",
     "cryptography==41.0.7",
     "flask>=3.1.2",
     "flask-login>=0.6.3",
@@ -14,6 +15,8 @@ dependencies = [
     "flask-sqlalchemy>=3.1.1",
     "flower>=2.0.1",
     "gunicorn>=23.0.0",
+    "jinja2>=3.1.0",
+    "mailgun",
     "numpy>=2.3.3",
     "openpyxl>=3.1.5",
     "pandas>=2.3.2",

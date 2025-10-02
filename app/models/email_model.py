@@ -240,6 +240,7 @@ class EmailQueue(db.Model):
     def __repr__(self):
         return f'<EmailQueue {self.to_email} - {self.status}>'
 
+
 class EmailReminder(db.Model):
     """Email reminders tracking"""
     __tablename__ = 'email_reminders'
@@ -270,6 +271,7 @@ class EmailLog(db.Model):
     subject = db.Column(db.String(200), nullable=False)
     status = db.Column(db.String(20), nullable=False)  # sent, failed, bounced, opened, clicked
     error_message = db.Column(db.Text)
+    message_id = db.Column(db.String(255), nullable=True)  # Mailgun message ID for webhook tracking
     sent_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     campaign_id = db.Column(db.Integer, db.ForeignKey('email_campaigns.id'), nullable=True)
     event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=True)

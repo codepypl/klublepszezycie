@@ -559,14 +559,14 @@ function refreshEmailQueueData() {
         console.log('📊 Stats data received:', statsData);
         console.log('📋 Queue data received:', queueData);
         
-        if (statsData.success) {
+        if (statsData && statsData.success) {
             console.log('✅ Updating stats:', statsData.stats);
             updateEmailQueueStats(statsData.stats);
         } else {
-            console.error('❌ Stats API error:', statsData.error);
+            console.error('❌ Stats API error:', statsData ? statsData.error : 'No data received');
         }
         
-        if (queueData.success) {
+        if (queueData && queueData.success) {
             console.log('✅ Updating queue display with', queueData.emails.length, 'emails');
             displayQueue(queueData.emails);
             // Update pagination if it exists
@@ -596,11 +596,14 @@ function refreshEmailQueueData() {
                 clearInterval(emailQueueRefreshInterval);
                 emailQueueRefreshInterval = null;
             }
-            
-            // Pokaż powiadomienie użytkownikowi
-            if (window.toastManager) {
-                window.toastManager.warning('Sesja wygasła - zaloguj się ponownie aby kontynuować automatyczne odświeżanie');
-            }
+        } else {
+            // Inne błędy - pokaż komunikat użytkownikowi
+            console.warn('⚠️ Błąd odświeżania danych - spróbuj ponownie');
+        }
+        
+        // Pokaż powiadomienie użytkownikowi
+        if (window.toastManager) {
+            window.toastManager.warning('Sesja wygasła - zaloguj się ponownie aby kontynuować automatyczne odświeżanie');
         }
     });
 }

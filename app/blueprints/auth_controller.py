@@ -149,13 +149,13 @@ class AuthController:
             # Send password change notification email
             print("📧 Próba wysłania emaila z powiadomieniem...")
             try:
-                from app.services.mailgun_service import EnhancedNotificationProcessor
+                from app.services.email_v2 import EmailManager
                 from app.blueprints.public_controller import generate_unsubscribe_token
                 from app.utils.crypto_utils import encrypt_email
                 import os
                 from datetime import datetime
                 
-                email_processor = EnhancedNotificationProcessor()
+                email_manager = EmailManager()
                 base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
                 
                 # Generate tokens for email - nowy system v2
@@ -172,7 +172,7 @@ class AuthController:
                 
                 print("📧 Wysyłanie emaila przez ulepszoną usługę...")
                 # Send password change notification using enhanced service
-                success, message = email_processor.send_template_email(
+                success, message = email_manager.send_template_email(
                     to_email=user.email,
                     template_name='password_changed',
                     context=context,

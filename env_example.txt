@@ -18,12 +18,52 @@ MAIL_USE_TLS=true
 MAIL_USE_SSL=false
 MAIL_USERNAME=noreply@lepszezycie.pl
 MAIL_PASSWORD=your-zoho-mail-password-here
+
+# Email Test Mode (set to 'true' to use test provider instead of real emails)
+EMAIL_TEST_MODE=false
 MAIL_DEFAULT_SENDER=noreply@lepszezycie.pl
 MAIL_DEFAULT_SENDER_NAME=Lepsze Życie Club
 
 # Email Settings
 EMAIL_BATCH_SIZE=50
 EMAIL_DELAY=1
+
+# Mailgun Configuration (for paid plan)
+MAILGUN_API_KEY=your-mailgun-api-key-here
+MAILGUN_DOMAIN=klublepszezycie.pl
+MAILGUN_RATE_LIMIT_PER_MINUTE=600
+MAILGUN_RATE_LIMIT_PER_HOUR=10000
+MAILGUN_BATCH_SIZE=50
+MAILGUN_DELAY_BETWEEN_BATCHES=1
+
+# Email System v2 Configuration
+EMAIL_DAILY_LIMIT=1000
+EMAIL_BATCH_SIZE=50
+EMAIL_RATE_DELAY=0.1
+EMAIL_MAX_RETRIES=3
+EMAIL_RETRY_DELAY=300
+
+# Mailgun v2 Settings
+MAILGUN_RATE_DELAY=0.1
+MAILGUN_MAX_PER_MINUTE=600
+MAILGUN_MAX_PER_HOUR=10000
+MAILGUN_BATCH_DELAY=1.0
+MAILGUN_FROM_EMAIL=noreply@klublepszezycie.pl
+MAILGUN_FROM_NAME=Klub Lepszego Życia
+
+# SMTP Fallback Settings
+SMTP_HOST=smtp.zoho.eu
+SMTP_PORT=587
+SMTP_USERNAME=noreply@lepszezycie.pl
+SMTP_PASSWORD=your-smtp-password-here
+SMTP_USE_TLS=true
+SMTP_FROM_EMAIL=noreply@lepszezycie.pl
+SMTP_FROM_NAME=Klub Lepszego Życia
+SMTP_RATE_DELAY=1.0
+SMTP_MAX_PER_MINUTE=60
+SMTP_MAX_PER_HOUR=1000
+SMTP_BATCH_SIZE=10
+SMTP_BATCH_DELAY=5.0
 
 # Timezone Configuration
 TIMEZONE=Europe/Warsaw
@@ -34,4 +74,44 @@ AUTO_GROUP_SYNC=false
 
 # Base URL for the application
 BASE_URL=https://klublepszezycie.pl
+
+# File Upload Settings
+UPLOAD_FOLDER=static/uploads
+MAX_CONTENT_LENGTH=16777216
+
+# Celery Configuration
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
+
+# Email Queue Settings
+EMAIL_QUEUE_BATCH_SIZE=100
+EMAIL_QUEUE_DELAY=2
+
+# Logging Configuration
+LOG_LEVEL=INFO
+LOG_FILE=app/logs/app.log
+
+# Security Settings
+SESSION_COOKIE_SECURE=false
+SESSION_COOKIE_HTTPONLY=true
+SESSION_COOKIE_SAMESITE=Lax
+
+# Rate Limiting
+RATELIMIT_STORAGE_URL=memory://
+
+# Pagination Settings
+PAGINATE_BY=10
+
+# Development Database Connection (for scripts)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=betterlife
+DB_USER=shadi
+DB_PASSWORD=your-db-password-here
+
+# SQLAlchemy Settings
+SQLALCHEMY_ECHO=false
+
+# Flask Environment
+FLASK_ENV=development
 

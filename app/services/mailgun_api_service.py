@@ -5,6 +5,7 @@ import os
 import requests
 import json
 import logging
+import time
 from datetime import datetime
 from typing import List, Dict, Any, Tuple, Optional
 from app import db
@@ -24,12 +25,49 @@ class MailgunAPIService:
         # Setup logging
         self.logger = logging.getLogger(__name__)
         
+        # Rate limiting settings - OPTIMIZED FOR PAID PLAN
+        self.rate_limit_delay = 0.1  # 100ms between emails (10 emails per second)
+        self.max_emails_per_minute = 600  # Max 600 emails per minute (10 per second)
+        self.max_emails_per_hour = 10000  # Max 10000 emails per hour
+        self.last_email_time = 0
+        self.emails_sent_this_minute = 0
+        self.minute_start_time = time.time()
+        
         # Check if API key is available
         if not self.api_key:
             self.logger.warning("MAILGUN_API_KEY not set, falling back to SMTP")
             self.use_api = False
         else:
             self.use_api = True
+    
+    def _apply_rate_limiting(self):
+        """Apply rate limiting to prevent Mailgun API limits"""
+        current_time = time.time()
+        
+        # Reset counter if a new minute has started
+        if current_time - self.minute_start_time >= 60:
+            self.emails_sent_this_minute = 0
+            self.minute_start_time = current_time
+        
+        # Check if we've exceeded the rate limit
+        if self.emails_sent_this_minute >= self.max_emails_per_minute:
+            wait_time = 60 - (current_time - self.minute_start_time)
+            if wait_time > 0:
+                self.logger.warning(f"⚠️ Rate limit exceeded, waiting {wait_time:.1f} seconds...")
+                time.sleep(wait_time)
+                self.emails_sent_this_minute = 0
+                self.minute_start_time = time.time()
+        
+        # Apply delay between emails
+        time_since_last_email = current_time - self.last_email_time
+        if time_since_last_email < self.rate_limit_delay:
+            sleep_time = self.rate_limit_delay - time_since_last_email
+            self.logger.debug(f"⏳ Rate limiting: waiting {sleep_time:.2f} seconds...")
+            time.sleep(sleep_time)
+        
+        # Update counters
+        self.last_email_time = time.time()
+        self.emails_sent_this_minute += 1
     
     def send_email(self, to_email: str, subject: str, html_content: str, 
                    text_content: str = None, template_id: int = None, 
@@ -126,12 +164,13 @@ class MailgunAPIService:
             # Try SMTP fallback
             return self._fallback_to_smtp(to_email, subject, html_content, text_content, template_id)
     
-    def send_batch(self, emails: List[EmailQueue]) -> Tuple[bool, str]:
+    def send_batch(self, emails: List[EmailQueue], batch_size: int = 50) -> Tuple[bool, str]:
         """
-        Send batch of emails via Mailgun API
+        Send batch of emails via Mailgun API with intelligent batching
         
         Args:
             emails: List of EmailQueue objects
+            batch_size: Number of emails to process in each sub-batch
             
         Returns:
             Tuple[bool, str]: (success, message)
@@ -139,11 +178,40 @@ class MailgunAPIService:
         if not emails:
             return True, "No emails to send"
         
-        self.logger.info(f"📧 Sending batch of {len(emails)} emails via Mailgun API")
+        self.logger.info(f"📧 Sending batch of {len(emails)} emails via Mailgun API (batch_size: {batch_size})")
         
         if not self.use_api:
             return self._fallback_batch_to_smtp(emails)
         
+        # Split emails into smaller batches to respect rate limits
+        total_sent = 0
+        total_failed = 0
+        all_errors = []
+        
+        for i in range(0, len(emails), batch_size):
+            batch = emails[i:i + batch_size]
+            self.logger.info(f"📦 Processing sub-batch {i//batch_size + 1}: {len(batch)} emails")
+            
+            sent_count, failed_count, errors = self._process_email_batch(batch)
+            
+            total_sent += sent_count
+            total_failed += failed_count
+            all_errors.extend(errors)
+            
+            # Add delay between batches to respect rate limits
+            if i + batch_size < len(emails):
+                time.sleep(1)  # 1 second between batches
+        
+        if total_sent > 0:
+            message = f"Sent {total_sent} emails via Mailgun API"
+            if total_failed > 0:
+                message += f", {total_failed} failed"
+            return True, message
+        else:
+            return False, f"Failed to send any emails: {'; '.join(all_errors)}"
+    
+    def _process_email_batch(self, emails: List[EmailQueue]) -> Tuple[int, int, List[str]]:
+        """Process a single batch of emails"""
         sent_count = 0
         failed_count = 0
         errors = []
@@ -350,7 +418,8 @@ class MailgunAPIService:
                 template_id=template_id,
                 event_id=event_id,
                 context=context,
-                error_message=error_message
+                error_message=error_message,
+                message_id=message_id
             )
             
             if not success:

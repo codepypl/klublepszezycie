@@ -129,20 +129,22 @@ def api_event_schedule():
             db.session.add(event)
             db.session.commit()
             
-            # Automatycznie utwórz grupę dla wydarzenia
+            # Automatycznie utwórz pustą grupę dla wydarzenia
+            # Grupa będzie wypełniana automatycznie gdy ktoś się zarejestruje na wydarzenie
             from app.services.group_manager import GroupManager
             group_manager = GroupManager()
-            group_manager.create_event_group(event.id, event.title)
+            group_id = group_manager.create_event_group(event.id, event.title)
             
-            # Automatycznie zaplanuj przypomnienia o wydarzeniu
-            print(f"🔄 PRÓBA PLANOWANIA PRZYPOMNIEŃ DLA WYDARZENIA {event.id}: {event.title}")
-            from app.services.email_automation import EmailAutomation
-            email_automation = EmailAutomation()
-            success, message = email_automation.schedule_event_reminders(event.id, 'event_based')
-            if success:
-                print(f"✅ Zaplanowano przypomnienia dla wydarzenia: {event.title}")
-            else:
-                print(f"⚠️ Błąd planowania przypomnień: {message}")
+            if group_id:
+                print(f"✅ Utworzono pustą grupę {group_id} dla wydarzenia (będzie wypełniana przy rejestracji)")
+            
+            # Automatycznie zaplanuj przypomnienia o wydarzeniu przez Celery
+            print(f"🔄 Planowanie przypomnień dla wydarzenia {event.id}: {event.title}")
+            from app.tasks.email_tasks import schedule_event_reminders_task
+            
+            # Wywołaj zadanie Celery asynchronicznie
+            task = schedule_event_reminders_task.delay(event.id)
+            print(f"✅ Zadanie Celery zaplanowane (ID: {task.id}) dla wydarzenia: {event.title}")
             
             return jsonify({
                 'success': True,
@@ -282,11 +284,80 @@ def api_event(event_id):
             
             db.session.commit()
             
-            # Aktualizuj grupę wydarzenia jeśli nazwa się zmieniła
+            # Aktualizuj nazwę grupy wydarzenia jeśli tytuł się zmienił
             if 'title' in data:
                 from app.services.group_manager import GroupManager
                 group_manager = GroupManager()
-                group_manager.create_event_group(event.id, event.title)
+                # Tylko zaktualizuj nazwę grupy, nie dodawaj automatycznie członków
+                group_id = group_manager.create_event_group(event.id, event.title)
+                
+                if group_id:
+                    print(f"✅ Zaktualizowano grupę {group_id} wydarzenia")
+            
+            # Jeśli zmieniono datę wydarzenia, zaktualizuj kolejkę przypomnień
+            if 'event_date' in data:
+                from app.models import EmailQueue
+                from datetime import timedelta
+                
+                # Znajdź wszystkie przypomnienia dla tego wydarzenia
+                reminders = EmailQueue.query.filter_by(
+                    event_id=event.id,
+                    status='pending'
+                ).all()
+                
+                if reminders:
+                    print(f"🔄 Aktualizacja {len(reminders)} przypomnień dla wydarzenia {event.id}")
+                    
+                    for reminder in reminders:
+                        # Określ typ przypomnienia na podstawie template_name
+                        if 'event_reminder_24h' in (reminder.template_name or ''):
+                            new_scheduled_at = event.event_date - timedelta(hours=24)
+                        elif 'event_reminder_1h' in (reminder.template_name or ''):
+                            new_scheduled_at = event.event_date - timedelta(hours=1)
+                        elif 'event_reminder_5min' in (reminder.template_name or ''):
+                            new_scheduled_at = event.event_date - timedelta(minutes=5)
+                        else:
+                            continue
+                        
+                        # Sprawdź czy nowy termin nie jest w przeszłości
+                        from app.utils.timezone_utils import get_local_now
+                        now = get_local_now()
+                        if now.tzinfo is not None:
+                            now = now.replace(tzinfo=None)
+                        if new_scheduled_at.tzinfo is not None:
+                            new_scheduled_at_check = new_scheduled_at.replace(tzinfo=None)
+                        else:
+                            new_scheduled_at_check = new_scheduled_at
+                        
+                        if new_scheduled_at_check <= now:
+                            # Usuń przypomnienie jeśli jest za późno
+                            db.session.delete(reminder)
+                            print(f"   ❌ Usunięto przypomnienie {reminder.id} (za późno)")
+                        else:
+                            # Zaktualizuj termin
+                            reminder.scheduled_at = new_scheduled_at
+                            print(f"   ✅ Zaktualizowano przypomnienie {reminder.id} -> {new_scheduled_at}")
+                    
+                    db.session.commit()
+                    print(f"✅ Zaktualizowano kolejkę przypomnień dla wydarzenia")
+                
+                # Resetuj flagę reminders_scheduled aby można było zaplanować nowe przypomnienia
+                event.reminders_scheduled = False
+                db.session.commit()
+                
+                # Zaplanuj nowe przypomnienia dla wszystkich uczestników
+                print(f"🔄 Planowanie nowych przypomnień po zmianie daty wydarzenia")
+                try:
+                    from app.services.email_v2 import EmailManager
+                    email_manager = EmailManager()
+                    
+                    success, message = email_manager.send_event_reminders(event_id)
+                    if success:
+                        print(f"✅ Zaplanowano nowe przypomnienia: {message}")
+                    else:
+                        print(f"⚠️ Błąd planowania nowych przypomnień: {message}")
+                except Exception as e:
+                    print(f"❌ Błąd planowania nowych przypomnień: {e}")
             
             return jsonify({
                 'success': True,
@@ -326,7 +397,14 @@ def api_event(event_id):
             else:
                 print(f"❌ Błąd usuwania grup: {message}")
             
-            # 4. Delete the event
+            # 4. Delete email queue items for this event
+            from app.models import EmailQueue
+            email_queue_items = EmailQueue.query.filter_by(event_id=event_id).all()
+            for queue_item in email_queue_items:
+                db.session.delete(queue_item)
+            print(f"📧 Usunięto {len(email_queue_items)} e-maili z kolejki dla wydarzenia {event_id}")
+            
+            # 5. Delete the event
             db.session.delete(event)
             db.session.commit()
             
@@ -393,9 +471,9 @@ def api_schedules():
             
             # Automatycznie zaplanuj przypomnienia o wydarzeniu
             print(f"🔄 PRÓBA PLANOWANIA PRZYPOMNIEŃ DLA WYDARZENIA {schedule.id}: {schedule.title}")
-            from app.services.email_automation import EmailAutomation
-            email_automation = EmailAutomation()
-            success, message = email_automation.schedule_event_reminders(schedule.id, 'event_based')
+            from app.services.email_v2 import EmailManager
+            email_manager = EmailManager()
+            success, message = email_manager.send_event_reminders(schedule.id)
             if success:
                 print(f"✅ Zaplanowano przypomnienia dla wydarzenia: {schedule.title}")
             else:
@@ -504,17 +582,7 @@ def api_schedule(schedule_id):
                 
                 if old_event_date != new_event_date:
                     print(f"🕐 Godzina wydarzenia zmieniła się z {old_event_date} na {new_event_date}")
-                    
-                    from app.services.email_automation import EmailAutomation
-                    email_automation = EmailAutomation()
-                    success, message = email_automation.update_event_notifications(
-                        schedule.id, old_event_date, new_event_date
-                    )
-                    
-                    if success:
-                        print(f"✅ {message}")
-                    else:
-                        print(f"❌ Błąd aktualizacji powiadomień: {message}")
+                    print(f"✅ Kolejka przypomnień zostanie automatycznie zaktualizowana przy aktualizacji event_date w głównym endpoincie")
             
             return jsonify({
                 'success': True,
@@ -650,7 +718,14 @@ def api_bulk_delete_events():
                 else:
                     print(f"❌ Błąd usuwania grup: {message}")
                 
-                # 4. Delete the event
+                # 4. Delete email queue items for this event
+                from app.models import EmailQueue
+                email_queue_items = EmailQueue.query.filter_by(event_id=event_id).all()
+                for queue_item in email_queue_items:
+                    db.session.delete(queue_item)
+                print(f"📧 Usunięto {len(email_queue_items)} e-maili z kolejki dla wydarzenia {event_id}")
+                
+                # 5. Delete the event
                 db.session.delete(event)
                 deleted_count += 1
         

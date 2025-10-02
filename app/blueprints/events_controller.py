@@ -100,14 +100,12 @@ class EventsController:
             group_manager = GroupManager()
             group_manager.create_event_group(event.id, event.title)
             
-            # Automatycznie zaplanuj przypomnienia o wydarzeniu
-            from app.services.email_automation import EmailAutomation
-            email_automation = EmailAutomation()
-            success, message = email_automation.schedule_event_reminders(event.id, 'event_based')
-            if success:
-                print(f"✅ Zaplanowano przypomnienia dla wydarzenia: {event.title}")
-            else:
-                print(f"⚠️ Błąd planowania przypomnień: {message}")
+            # Automatycznie zaplanuj przypomnienia o wydarzeniu przez Celery
+            from app.tasks.email_tasks import schedule_event_reminders_task
+            
+            # Wywołaj zadanie Celery asynchronicznie
+            task = schedule_event_reminders_task.delay(event.id)
+            print(f"✅ Zadanie Celery zaplanowane (ID: {task.id}) dla wydarzenia: {event.title}")
             
             return {
                 'success': True,
@@ -181,14 +179,14 @@ class EventsController:
             else:
                 print(f"❌ Błąd synchronizacji grupy wydarzenia: {message}")
             
-            # Ponownie zaplanuj przypomnienia po aktualizacji wydarzenia
-            from app.services.email_automation import EmailAutomation
-            email_automation = EmailAutomation()
-            success, message = email_automation.schedule_event_reminders(event_id, 'event_based')
+            # Ponownie zaplanuj przypomnienia po aktualizacji wydarzenia - NOWY SYSTEM v2
+            from app.services.email_v2 import EmailManager
+            email_manager = EmailManager()
+            success, message = email_manager.send_event_reminders(event_id)
             if success:
-                print(f"✅ Ponownie zaplanowano przypomnienia dla wydarzenia: {title}")
+                print(f"✅ Ponownie zaplanowano przypomnienia v2 dla wydarzenia: {title}")
             else:
-                print(f"⚠️ Błąd ponownego planowania przypomnień: {message}")
+                print(f"⚠️ Błąd ponownego planowania przypomnień v2: {message}")
             
             return {
                 'success': True,

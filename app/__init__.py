@@ -72,12 +72,15 @@ def create_app():
     from app.routes.user_groups_route import user_groups_bp
     from app.api import email_bp, users_api_bp, testimonials_api_bp, sections_api_bp, menu_api_bp, faq_api_bp, benefits_api_bp, events_api_bp, blog_api_bp, seo_api_bp, social_api_bp, crm_api_bp, agent_api_bp, stats_api_bp
     from app.api.user_groups_api import user_groups_bp as user_groups_api_bp
+    from app.api.email_v2_api import email_v2_bp
+    from app.api.mailgun_webhook_api import mailgun_webhook_bp
     
     app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(user_groups_bp)
     # Main API blueprint removed - individual API modules are registered separately
     app.register_blueprint(email_bp, url_prefix='/api')
+    app.register_blueprint(email_v2_bp, url_prefix='/api')  # Nowy system mailingu v2
     app.register_blueprint(user_groups_api_bp, url_prefix='/api')
     app.register_blueprint(users_api_bp, url_prefix='/api')
     app.register_blueprint(testimonials_api_bp, url_prefix='/api')
@@ -101,6 +104,7 @@ def create_app():
     app.register_blueprint(crm_api_bp, url_prefix='/api/crm')
     app.register_blueprint(agent_api_bp, url_prefix='/api/crm/agent')
     app.register_blueprint(stats_api_bp, url_prefix='/api')
+    app.register_blueprint(mailgun_webhook_bp, url_prefix='/api')  # Webhook endpoints
     app.register_blueprint(unsubscribe_bp)
     
     # Log blueprints
@@ -134,6 +138,34 @@ def create_app():
             return json.loads(value)
         except (json.JSONDecodeError, TypeError):
             return None
+    
+    @app.template_filter('get_status_color')
+    def get_status_color_filter(status):
+        """Get Bootstrap color class for email status"""
+        status_colors = {
+            'sent': 'primary',
+            'delivered': 'success',
+            'opened': 'info',
+            'clicked': 'warning',
+            'bounced': 'danger',
+            'failed': 'secondary',
+            'sent_test': 'info'
+        }
+        return status_colors.get(status, 'secondary')
+    
+    @app.template_filter('get_status_label')
+    def get_status_label_filter(status):
+        """Get human-readable label for email status"""
+        status_labels = {
+            'sent': 'Wysłany',
+            'delivered': 'Dostarczony',
+            'opened': 'Otwarty',
+            'clicked': 'Kliknięty',
+            'bounced': 'Odrzucony',
+            'failed': 'Błąd',
+            'sent_test': 'Test Wysłany'
+        }
+        return status_labels.get(status, status.title())
     
     # Add SEO context processor
     logger.info("🔍 Adding SEO context processor...")

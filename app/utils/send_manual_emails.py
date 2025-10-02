@@ -11,7 +11,7 @@ from app import create_app, db
 from app.models.email_model import EmailTemplate
 from app.models.events_model import EventSchedule
 from app.models.user_model import User
-from app.services.mailgun_service import EnhancedNotificationProcessor
+from app.services.email_v2 import EmailManager
 
 def send_manual_emails(template_id, user_ids, event_id=None):
     """
@@ -60,7 +60,7 @@ def send_manual_emails(template_id, user_ids, event_id=None):
             print(f'⚠️  Nie znaleziono użytkowników o ID: {missing_ids}')
         
         # Wyślij emaile
-        email_processor = EnhancedNotificationProcessor()
+        email_manager = EmailManager()
         sent_count = 0
         failed_count = 0
         
@@ -76,7 +76,7 @@ def send_manual_emails(template_id, user_ids, event_id=None):
                 user_context['user_name'] = user.first_name or user.email
                 
                 # Wyślij email
-                success, message = email_processor.send_template_email(
+                success, message = email_manager.send_template_email(
                     to_email=user.email,
                     template_name=template.name,
                     context=user_context,

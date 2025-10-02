@@ -45,12 +45,8 @@
     border-left: 4px solid #28a745;
 }
 
-.task-completed {
-    border-left: 4px solid #6c757d;
-}
-
-.task-failed {
-    border-left: 4px solid #dc3545;
+.task-reserved {
+    border-left: 4px solid #17a2b8;
 }
 
 .task-eta {
@@ -102,307 +98,319 @@
     color: #666;
     margin-top: 5px;
 }
+
+.queue-stats {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.worker-info {
+    background: #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.refresh-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
 </style>
 {% endblock %}
 
 {% block content %}
+<div class="container-fluid">
+    <!-- Status Celery -->
+    <div class="celery-status-card" id="celeryStatus">
+        <div class="row">
+            <div class="col-md-8">
+                <h3><i class="fas fa-server me-2"></i>Status Celery</h3>
+                <p class="mb-0" id="statusMessage">Sprawdzanie połączenia...</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="stats-grid">
+                    <div>
+                        <div class="stat-number" id="workersCount">-</div>
+                        <div class="stat-label">Workers</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            <!-- Status Celery -->
-            <div class="celery-status-card" id="celeryStatus">
+    <!-- Statystyki -->
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+            <div class="stat-number" id="scheduledCount">-</div>
+            <div class="stat-label">Zaplanowane</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="activeCount">-</div>
+            <div class="stat-label">Aktywne</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="reservedCount">-</div>
+            <div class="stat-label">Zarezerwowane</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="totalCount">-</div>
+            <div class="stat-label">Łącznie</div>
+        </div>
+    </div>
+
+    <!-- Statystyki kolejki -->
+    <div class="queue-stats">
+        <h5><i class="fas fa-envelope me-2"></i>Statystyki kolejki emaili</h5>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="queuePending">-</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="queueSent">-</div>
+                    <div class="stat-label">Wysłane</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="queueFailed">-</div>
+                    <div class="stat-label">Błędy</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="queueProcessing">-</div>
+                    <div class="stat-label">Przetwarzane</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtry -->
+    <div class="admin-card mb-4">
+        <div class="admin-card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-filter me-2"></i>Filtry
+                <button class="btn btn-sm admin-btn-outline ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse" aria-expanded="false" aria-controls="filtersCollapse">
+                    <i class="fas fa-chevron-down" id="filtersIcon"></i>
+                </button>
+            </h5>
+        </div>
+        <div class="collapse" id="filtersCollapse">
+            <div class="admin-card-body">
                 <div class="row">
-                    <div class="col-md-8">
-                        <h3><i class="fas fa-server me-2"></i>Status Celery</h3>
-                        <p class="mb-0">Sprawdzanie połączenia...</p>
+                    <div class="col-md-4">
+                        <label for="taskTypeFilter" class="form-label">Typ zadania</label>
+                        <select class="form-select" id="taskTypeFilter">
+                            <option value="all">Wszystkie</option>
+                            <option value="scheduled">Zaplanowane</option>
+                            <option value="active">Aktywne</option>
+                            <option value="reserved">Zarezerwowane</option>
+                        </select>
                     </div>
-                    <div class="col-md-4 text-end">
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-number" id="workersCount">-</div>
-                                <div class="stat-label">Workers</div>
-                            </div>
-                        </div>
+                    <div class="col-md-4">
+                        <label for="eventIdFilter" class="form-label">ID Wydarzenia</label>
+                        <input type="number" class="form-control" id="eventIdFilter" placeholder="Opcjonalne">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="limitFilter" class="form-label">Limit wyników</label>
+                        <select class="form-select" id="limitFilter">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                        </select>
                     </div>
                 </div>
-            </div>
-
-            <!-- Statystyki -->
-            <div class="stats-grid" id="statsGrid">
-                <div class="stat-card">
-                    <div class="stat-number" id="scheduledCount">-</div>
-                    <div class="stat-label">Zaplanowane</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="activeCount">-</div>
-                    <div class="stat-label">Aktywne</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="reservedCount">-</div>
-                    <div class="stat-label">Zarezerwowane</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="totalCount">-</div>
-                    <div class="stat-label">Łącznie</div>
-                </div>
-            </div>
-
-            <!-- Filtry -->
-            <div class="admin-card mb-4">
-                <div class="admin-card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-filter me-2"></i>Filtry
-                        <button class="btn btn-sm admin-btn-outline ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse" aria-expanded="false" aria-controls="filtersCollapse">
-                            <i class="fas fa-chevron-down" id="filtersIcon"></i>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button class="btn admin-btn-primary" onclick="loadTasks()">
+                            <i class="fas fa-search me-2"></i>Filtruj
                         </button>
-                    </h5>
-                </div>
-                <div class="collapse" id="filtersCollapse">
-                    <div class="admin-card-body">
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <label for="taskTypeFilter" class="form-label">Typ zadań</label>
-                                <select class="form-select" id="taskTypeFilter" onchange="applyFilters()">
-                                    <option value="all">Wszystkie</option>
-                                    <option value="scheduled">Zaplanowane</option>
-                                    <option value="active">Aktywne</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="eventIdFilter" class="form-label">ID Wydarzenia</label>
-                                <input type="number" class="form-control" id="eventIdFilter" placeholder="Wprowadź ID wydarzenia" onchange="applyFilters()">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="limitFilter" class="form-label">Limit wyników</label>
-                                <select class="form-select" id="limitFilter" onchange="applyFilters()">
-                                    <option value="25">25</option>
-                                    <option value="50" selected>50</option>
-                                    <option value="100">100</option>
-                                    <option value="200">200</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">&nbsp;</label>
-                                <div class="d-flex gap-2">
-                                    <button class="btn admin-btn" onclick="applyFilters()">
-                                        <i class="fas fa-search me-2"></i>Filtruj
-                                    </button>
-                                    <button class="btn admin-btn-outline" onclick="clearFilters()">
-                                        <i class="fas fa-times me-2"></i>Wyczyść
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <button class="btn admin-btn-outline ms-2" onclick="clearFilters()">
+                            <i class="fas fa-times me-2"></i>Wyczyść
+                        </button>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Lista zadań -->
-            <div class="admin-card">
-                <div class="admin-card-header">
-                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Zadania Celery</h5>
-                </div>
-                <div class="admin-card-body">
-                    <div class="loading-spinner" id="loadingSpinner">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Ładowanie...</span>
-                        </div>
-                        <p class="mt-2">Ładowanie zadań...</p>
-                    </div>
-                    
-                    <div id="tasksList">
-                        <!-- Zadania będą ładowane tutaj -->
-                    </div>
+    <!-- Lista zadań -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Zadania Celery
+                <button class="btn btn-sm admin-btn-outline ms-2" onclick="loadTasks()">
+                    <i class="fas fa-sync-alt me-1"></i>Odśwież
+                </button>
+            </h5>
+        </div>
+        <div class="admin-card-body">
+            <div class="loading-spinner" id="loadingSpinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Ładowanie...</span>
                 </div>
             </div>
+            <div id="tasksList">
+                <!-- Zadania będą ładowane tutaj -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Harmonogram Beat -->
+    <div class="admin-card mt-4">
+        <div class="admin-card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-clock me-2"></i>Harmonogram Beat
+                <button class="btn btn-sm admin-btn-outline ms-2" onclick="loadBeatSchedule()">
+                    <i class="fas fa-sync-alt me-1"></i>Odśwież
+                </button>
+            </h5>
+        </div>
+        <div class="admin-card-body">
+            <div id="beatScheduleList">
+                <!-- Harmonogram będzie ładowany tutaj -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Przycisk odświeżania -->
+<button class="btn btn-primary refresh-btn" onclick="refreshAll()" title="Odśwież wszystko">
+    <i class="fas fa-sync-alt"></i>
+</button>
 
 <script>
-// Function to refresh celery data (for CRUD refresh manager)
-function refreshCeleryData() {
-    refreshData();
-}
+let refreshInterval;
 
-// Ładowanie danych przy starcie
+// Inicjalizacja
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize global CRUD refresh manager for this page
-    window.crudRefreshManager.init(refreshCeleryData);
+    loadStatus();
+    loadTasks();
+    loadQueueStats();
+    loadBeatSchedule();
     
-    refreshData();
+    // Auto-refresh co 30 sekund
+    refreshInterval = setInterval(refreshAll, 30000);
 });
 
-// Odświeżanie danych z retry
-function refreshData() {
-    showLoading();
-    
-    // Pobierz status Celery z retry
-    fetchWithRetry('/admin/api/celery/status')
+// Ładowanie statusu
+function loadStatus() {
+    fetch('/admin/api/celery/status')
+        .then(response => response.json())
         .then(data => {
-            updateCeleryStatus(data);
-        })
-        .catch(error => {
-            console.error('Błąd pobierania statusu Celery:', error);
-            updateCeleryStatus({success: false, error: 'Błąd połączenia'});
-        });
-    
-    // Pobierz zadania z retry
-    loadTasksWithRetry();
-}
-
-// Fetch z retry
-function fetchWithRetry(url, maxRetries = 3) {
-    return fetch(url)
-        .then(response => {
-            if (!response.ok) throw new Error('Network error');
-            return response.json();
-        })
-        .catch(error => {
-            if (maxRetries > 0) {
-                console.log(`Retry ${4-maxRetries} for ${url}`);
-                return new Promise(resolve => 
-                    setTimeout(() => resolve(fetchWithRetry(url, maxRetries - 1)), 1000)
-                );
+            if (data.success) {
+                updateStatusDisplay(data);
+            } else {
+                showError('Błąd ładowania statusu: ' + data.error);
             }
-            throw error;
+        })
+        .catch(error => {
+            console.error('Error loading status:', error);
+            showError('Błąd połączenia z serwerem');
         });
 }
 
-// Aktualizacja statusu Celery
-function updateCeleryStatus(data) {
+// Aktualizacja wyświetlania statusu
+function updateStatusDisplay(data) {
     const statusCard = document.getElementById('celeryStatus');
+    const statusMessage = document.getElementById('statusMessage');
     const workersCount = document.getElementById('workersCount');
-    const scheduledCount = document.getElementById('scheduledCount');
-    const activeCount = document.getElementById('activeCount');
-    const reservedCount = document.getElementById('reservedCount');
-    const totalCount = document.getElementById('totalCount');
     
-    if (data.success && data.is_healthy) {
+    if (data.is_healthy) {
         statusCard.className = 'celery-status-card healthy';
-        statusCard.innerHTML = `
-            <div class="row">
-                <div class="col-md-8">
-                    <h3><i class="fas fa-check-circle me-2"></i>Celery działa poprawnie</h3>
-                    <p class="mb-0">Ostatnie sprawdzenie: ${new Date(data.last_check).toLocaleString()}</p>
-                </div>
-                <div class="col-md-4 text-end">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-number">${data.workers_count}</div>
-                            <div class="stat-label">Workers</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        workersCount.textContent = data.workers_count;
-        scheduledCount.textContent = data.total_scheduled;
-        activeCount.textContent = data.total_active;
-        reservedCount.textContent = data.total_reserved;
-        totalCount.textContent = data.total_scheduled + data.total_active + data.total_reserved;
+        statusMessage.textContent = 'Celery działa poprawnie';
     } else {
         statusCard.className = 'celery-status-card unhealthy';
-        statusCard.innerHTML = `
-            <div class="row">
-                <div class="col-md-8">
-                    <h3><i class="fas fa-exclamation-triangle me-2"></i>Problem z Celery</h3>
-                    <p class="mb-0">${data.error || 'Nie można połączyć się z Celery'}</p>
-                </div>
-                <div class="col-md-4 text-end">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-number">0</div>
-                            <div class="stat-label">Workers</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        workersCount.textContent = '0';
-        scheduledCount.textContent = '0';
-        activeCount.textContent = '0';
-        reservedCount.textContent = '0';
-        totalCount.textContent = '0';
+        statusMessage.textContent = 'Celery nie działa';
     }
+    
+    workersCount.textContent = data.workers_count;
+    
+    // Aktualizuj statystyki
+    document.getElementById('scheduledCount').textContent = data.total_scheduled;
+    document.getElementById('activeCount').textContent = data.total_active;
+    document.getElementById('reservedCount').textContent = data.total_reserved;
+    document.getElementById('totalCount').textContent = data.total_tasks;
 }
 
-// Ładowanie zadań z retry
-function loadTasksWithRetry() {
+// Ładowanie zadań
+function loadTasks() {
     const taskType = document.getElementById('taskTypeFilter').value;
     const eventId = document.getElementById('eventIdFilter').value;
     const limit = document.getElementById('limitFilter').value;
+    
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const tasksList = document.getElementById('tasksList');
+    
+    loadingSpinner.classList.add('show');
+    tasksList.innerHTML = '';
     
     let url = `/admin/api/celery/tasks?type=${taskType}&limit=${limit}`;
     if (eventId) {
         url += `&event_id=${eventId}`;
     }
     
-    fetchWithRetry(url)
+    fetch(url)
+        .then(response => response.json())
         .then(data => {
-            displayTasks(data);
-            hideLoading();
+            loadingSpinner.classList.remove('show');
+            
+            if (data.success) {
+                displayTasks(data.tasks);
+            } else {
+                showError('Błąd ładowania zadań: ' + data.error);
+            }
         })
         .catch(error => {
-            console.error('Błąd pobierania zadań:', error);
-            displayTasks({success: false, error: 'Błąd połączenia', tasks: []});
-            hideLoading();
+            loadingSpinner.classList.remove('show');
+            console.error('Error loading tasks:', error);
+            showError('Błąd połączenia z serwerem');
         });
 }
 
-// Ładowanie zadań (bez retry dla kompatybilności)
-function loadTasks() {
-    loadTasksWithRetry();
-}
-
 // Wyświetlanie zadań
-function displayTasks(data) {
+function displayTasks(tasks) {
     const tasksList = document.getElementById('tasksList');
     
-    if (!data.success) {
-        tasksList.innerHTML = `
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                Błąd: ${data.error}
-            </div>
-        `;
-        return;
-    }
-    
-    if (data.tasks.length === 0) {
-        tasksList.innerHTML = `
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                Brak zadań spełniających kryteria filtrowania.
-            </div>
-        `;
+    if (tasks.length === 0) {
+        tasksList.innerHTML = '<p class="text-muted text-center">Brak zadań do wyświetlenia</p>';
         return;
     }
     
     let html = '';
-    data.tasks.forEach(task => {
+    tasks.forEach(task => {
         const taskClass = `task-${task.status}`;
-        const etaText = task.eta ? new Date(task.eta).toLocaleString() : 'Brak';
-        const argsText = JSON.stringify(task.args);
+        const eta = task.eta ? new Date(task.eta).toLocaleString() : 'Brak';
+        const timeStart = task.time_start ? new Date(task.time_start).toLocaleString() : 'Brak';
         
         html += `
             <div class="task-card ${taskClass}">
                 <div class="row">
-                    <div class="col-md-6">
-                        <h6><i class="fas fa-tasks me-2"></i>${task.name}</h6>
+                    <div class="col-md-8">
+                        <h6 class="mb-1">${task.name}</h6>
                         <p class="mb-1"><strong>ID:</strong> ${task.id}</p>
                         <p class="mb-1"><strong>Status:</strong> ${task.status}</p>
                         <p class="mb-1"><strong>Worker:</strong> ${task.worker}</p>
+                        <p class="mb-1"><strong>ETA:</strong> ${eta}</p>
+                        <p class="mb-1"><strong>Start:</strong> ${timeStart}</p>
+                        ${task.args && task.args.length > 0 ? `
+                            <div class="task-args">
+                                <strong>Args:</strong> ${JSON.stringify(task.args)}
+                            </div>
+                        ` : ''}
                     </div>
-                    <div class="col-md-6">
-                        <p class="mb-1"><strong>ETA:</strong> <span class="task-eta">${etaText}</span></p>
-                        <div class="task-args"><strong>Args:</strong> ${argsText}</div>
-                    </div>
-                </div>
-                <div class="row mt-2">
-                    <div class="col-12">
+                    <div class="col-md-4 text-end">
                         <button class="btn btn-sm btn-outline-danger" onclick="cancelTask('${task.id}')">
                             <i class="fas fa-times me-1"></i>Anuluj
-                        </button>
-                        <button class="btn btn-sm btn-outline-info" onclick="showTaskDetails('${task.id}')">
-                            <i class="fas fa-info-circle me-1"></i>Szczegóły
                         </button>
                     </div>
                 </div>
@@ -415,48 +423,84 @@ function displayTasks(data) {
 
 // Anulowanie zadania
 function cancelTask(taskId) {
-    // Use modal confirmation instead of confirm()
-    document.getElementById('bulkDeleteMessage').innerHTML = 'Czy na pewno chcesz anulować to zadanie?<br><small class="text-muted">Ta operacja nie może być cofnięta.</small>';
-    
-    const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
-    modal.show();
-    
-    // Update confirm button
-    const confirmBtn = document.getElementById('confirmBulkDelete');
-    confirmBtn.onclick = function() {
+    if (!confirm('Czy na pewno chcesz anulować to zadanie?')) {
+        return;
+    }
     
     fetch(`/admin/api/celery/tasks/${taskId}/cancel`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
+        method: 'POST'
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            window.toastManager.success('Zadanie zostało anulowane');
-            refreshData();
+            showSuccess('Zadanie zostało anulowane');
+            loadTasks();
         } else {
-            window.toastManager.error('Błąd anulowania zadania: ' + data.error);
+            showError('Błąd anulowania zadania: ' + data.error);
         }
     })
     .catch(error => {
-        console.error('Błąd anulowania zadania:', error);
-        window.toastManager.error('Błąd anulowania zadania');
+        console.error('Error canceling task:', error);
+        showError('Błąd połączenia z serwerem');
     });
-    modal.hide();
-    };
 }
 
-// Wyświetlanie szczegółów zadania
-function showTaskDetails(taskId) {
-    // TODO: Implementować modal ze szczegółami zadania
-    alert('Szczegóły zadania: ' + taskId);
+// Ładowanie statystyk kolejki
+function loadQueueStats() {
+    fetch('/admin/api/celery/queue-stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('queuePending').textContent = data.queue.pending;
+                document.getElementById('queueSent').textContent = data.queue.sent;
+                document.getElementById('queueFailed').textContent = data.queue.failed;
+                document.getElementById('queueProcessing').textContent = data.queue.processing;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading queue stats:', error);
+        });
 }
 
-// Stosowanie filtrów
-function applyFilters() {
-    loadTasks();
+// Ładowanie harmonogramu beat
+function loadBeatSchedule() {
+    fetch('/admin/api/celery/beat-schedule')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayBeatSchedule(data.schedule);
+            } else {
+                showError('Błąd ładowania harmonogramu: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading beat schedule:', error);
+            showError('Błąd połączenia z serwerem');
+        });
+}
+
+// Wyświetlanie harmonogramu beat
+function displayBeatSchedule(schedule) {
+    const beatScheduleList = document.getElementById('beatScheduleList');
+    
+    if (schedule.length === 0) {
+        beatScheduleList.innerHTML = '<p class="text-muted text-center">Brak harmonogramu beat</p>';
+        return;
+    }
+    
+    let html = '';
+    schedule.forEach(task => {
+        html += `
+            <div class="worker-info">
+                <h6 class="mb-1">${task.name}</h6>
+                <p class="mb-1"><strong>Zadanie:</strong> ${task.task}</p>
+                <p class="mb-1"><strong>Harmonogram:</strong> ${task.schedule}</p>
+                <p class="mb-0"><strong>Opcje:</strong> ${JSON.stringify(task.options)}</p>
+            </div>
+        `;
+    });
+    
+    beatScheduleList.innerHTML = html;
 }
 
 // Czyszczenie filtrów
@@ -467,14 +511,38 @@ function clearFilters() {
     loadTasks();
 }
 
-
-// Pokazywanie/ukrywanie spinnera
-function showLoading() {
-    document.getElementById('loadingSpinner').classList.add('show');
+// Odświeżanie wszystkiego
+function refreshAll() {
+    loadStatus();
+    loadTasks();
+    loadQueueStats();
+    loadBeatSchedule();
 }
 
-function hideLoading() {
-    document.getElementById('loadingSpinner').classList.remove('show');
+// Funkcje pomocnicze
+function showSuccess(message) {
+    // Użyj toastManager jeśli dostępny
+    if (typeof toastManager !== 'undefined') {
+        toastManager.success(message);
+    } else {
+        alert(message);
+    }
 }
+
+function showError(message) {
+    // Użyj toastManager jeśli dostępny
+    if (typeof toastManager !== 'undefined') {
+        toastManager.error(message);
+    } else {
+        alert(message);
+    }
+}
+
+// Cleanup przy opuszczaniu strony
+window.addEventListener('beforeunload', function() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+});
 </script>
 {% endblock %}

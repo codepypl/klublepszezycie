@@ -228,11 +228,11 @@ def api_user(user_id):
             # Wyślij email z nowym hasłem jeśli zostało ustawione
             if new_password:
                 try:
-                    from app.services.mailgun_service import EnhancedNotificationProcessor
+                    from app.services.email_v2 import EmailManager
                     from app.utils.timezone_utils import get_local_now
                     import os
                     
-                    email_processor = EnhancedNotificationProcessor()
+                    email_manager = EmailManager()
                     
                     # Przygotuj kontekst emaila
                     base_url = os.getenv('BASE_URL', 'https://klublepszezycie.pl')
@@ -242,6 +242,7 @@ def api_user(user_id):
                     
                     context = {
                         'user_name': user.first_name or 'Użytkowniku',
+                        'user_email': user.email,
                         'new_password': new_password,
                         'login_url': login_url,
                         'unsubscribe_url': unsubscribe_url,
@@ -249,11 +250,10 @@ def api_user(user_id):
                     }
                     
                     # Wyślij email
-                    success, message = email_processor.send_template_email(
+                    success, message = email_manager.send_template_email(
                         to_email=user.email,
                         template_name='admin_password_set',
-                        context=context,
-                        to_name=user.first_name or 'Użytkowniku'
+                        context=context
                     )
                     
                     if not success:
@@ -300,6 +300,21 @@ def api_user(user_id):
                             
             except Exception as group_error:
                 print(f"❌ Błąd usuwania użytkownika z grup: {str(group_error)}")
+            
+            # Delete email queue items for this user
+            try:
+                from app.models import EmailQueue
+                email_queue_items = EmailQueue.query.filter_by(
+                    recipient_email=user_email,
+                    status='pending'
+                ).all()
+                
+                for queue_item in email_queue_items:
+                    db.session.delete(queue_item)
+                
+                print(f"📧 Usunięto {len(email_queue_items)} e-maili z kolejki dla użytkownika {user_email}")
+            except Exception as email_error:
+                print(f"❌ Błąd usuwania e-maili z kolejki: {str(email_error)}")
             
             # Delete user from database
             db.session.delete(user)
@@ -483,6 +498,21 @@ def api_bulk_delete_users():
                                 
                 except Exception as group_error:
                     print(f"❌ Bulk delete: Błąd usuwania użytkownika {user.email} z grup: {str(group_error)}")
+                
+                # Delete email queue items for this user
+                try:
+                    from app.models import EmailQueue
+                    email_queue_items = EmailQueue.query.filter_by(
+                        recipient_email=user.email,
+                        status='pending'
+                    ).all()
+                    
+                    for queue_item in email_queue_items:
+                        db.session.delete(queue_item)
+                    
+                    print(f"📧 Bulk delete: Usunięto {len(email_queue_items)} e-maili z kolejki dla {user.email}")
+                except Exception as email_error:
+                    print(f"❌ Bulk delete: Błąd usuwania e-maili: {str(email_error)}")
                 
                 db.session.delete(user)
                 deleted_count += 1
