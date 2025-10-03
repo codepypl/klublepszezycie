@@ -154,6 +154,8 @@ def api_celery_beat_schedule():
         schedule = monitor.get_beat_schedule()
         return jsonify(schedule)
     except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"❌ Błąd w api_celery_beat_schedule: {e}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @admin_bp.route('/api/celery/restart-worker', methods=['POST'])

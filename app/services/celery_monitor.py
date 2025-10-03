@@ -5,7 +5,7 @@ import logging
 import redis
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
-from celery_app import celery
+from celery import current_app as celery
 from app import create_app
 
 logger = logging.getLogger(__name__)
