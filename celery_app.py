@@ -136,7 +136,7 @@ def make_celery(app=None):
         },
         'monthly-stats-summary': {
             'task': 'app.tasks.stats_tasks.monthly_stats_summary',
-            'schedule': crontab(day=1, hour=4, minute=0),  # 1. dnia każdego miesiąca o 4:00
+            'schedule': crontab(day_of_month=1, hour=4, minute=0),  # 1. dnia każdego miesiąca o 4:00
             'options': {'queue': 'default'},
         },
         'cleanup-old-reminders': {

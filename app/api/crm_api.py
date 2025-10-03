@@ -1097,10 +1097,15 @@ def get_blacklist():
         # Build query
         query = BlacklistEntry.query
         
-        if campaign_filter:
-            query = query.filter(BlacklistEntry.campaign_id == campaign_filter)
-        elif campaign_filter == 0:  # Global blacklist (campaign_id is None)
-            query = query.filter(BlacklistEntry.campaign_id.is_(None))
+        # Safe campaign filter - only apply if campaign_id column exists
+        try:
+            if campaign_filter:
+                query = query.filter(BlacklistEntry.campaign_id == campaign_filter)
+            elif campaign_filter == 0:  # Global blacklist (campaign_id is None)
+                query = query.filter(BlacklistEntry.campaign_id.is_(None))
+        except Exception:
+            # If campaign_id column doesn't exist, ignore campaign filter
+            pass
         
         if phone_filter:
             query = query.filter(BlacklistEntry.phone.contains(phone_filter))

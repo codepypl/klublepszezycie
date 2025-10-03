@@ -22,6 +22,7 @@ from .user_logs_model import UserLogs
 from .user_history_model import UserHistory
 from .stats_model import Stats
 from .system_logs_model import SystemLog
+from .crm_model import Campaign, Contact, Call, BlacklistEntry, ImportFile, ImportRecord
 
 # Association tables
 from .associations_model import blog_post_categories, blog_post_tags
@@ -58,6 +59,12 @@ __all__ = [
     'UserHistory',
     'Stats',
     'SystemLog',
+    'Campaign',
+    'Contact',
+    'Call',
+    'BlacklistEntry',
+    'ImportFile',
+    'ImportRecord',
     'blog_post_categories',
     'blog_post_tags'
 ]
