@@ -27,6 +27,7 @@ dependencies = [
     "pyyaml>=6.0.3",
     "redis>=6.4.0",
     "requests==2.31.0",
+    "twilio>=9.8.3",
     "unidecode>=1.4.0",
     "user-agents==2.2.0",
     "werkzeug>=3.1.3",

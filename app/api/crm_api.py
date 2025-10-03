@@ -521,6 +521,47 @@ def get_import_history():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@crm_api_bp.route('/imports/<int:import_id>/errors', methods=['GET'])
+@login_required
+@ankieter_required
+def get_import_errors(import_id):
+    """Get detailed errors for specific import"""
+    try:
+        # Check if import belongs to current user
+        import_file = ImportFile.query.filter_by(
+            id=import_id,
+            imported_by=current_user.id
+        ).first()
+        
+        if not import_file:
+            return jsonify({'success': False, 'error': 'Import not found'}), 404
+        
+        # Get failed records with error messages
+        failed_records = ImportRecord.query.filter_by(
+            import_file_id=import_id,
+            processed=True
+        ).filter(ImportRecord.error_message.isnot(None)).all()
+        
+        errors_list = []
+        for record in failed_records:
+            errors_list.append({
+                'row_number': record.row_number,
+                'error_message': record.error_message,
+                'raw_data': record.get_raw_data()
+            })
+        
+        return jsonify({
+            'success': True,
+            'import_filename': import_file.filename,
+            'total_records': import_file.total_rows,
+            'processed_records': import_file.processed_rows,
+            'failed_records': len(errors_list),
+            'errors': errors_list
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @crm_api_bp.route('/analyze-file', methods=['POST'])
 @login_required
 @ankieter_required

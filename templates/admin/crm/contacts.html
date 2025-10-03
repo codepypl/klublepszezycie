@@ -602,7 +602,12 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteImport({{ import_file.id }})" title="Usuń import">
+                                        {% if import_file.total_rows - import_file.processed_rows > 0 %}
+                                        <button class="btn btn-sm btn-warning me-1" onclick="showImportErrors({{ import_file.id }})" title="Pokaż błędy">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                        </button>
+                                        {% endif %}
+                                        <button class="btn btn-sm btn-danger" onclick="deleteImport({{ import_file.id }})" title="Usuń import">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </td>
@@ -618,9 +623,117 @@
     {% endif %}
 </div>
 
+<!-- Modal for Import Errors -->
+<div class="modal fade" id="importErrorsModal" tabindex="-1" aria-labelledby="importErrorsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importErrorsModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Szczegóły błędów importu
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="importErrorsContent">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin"></i> Ładowanie błędów...
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- External JavaScript -->
 <script src="{{ url_for('static', filename='js/utils/fetch-helper.js') }}"></script>
 <script src="{{ url_for('static', filename='js/crm/import.js') }}"></script>
+
+<script>
+// Function to show import errors
+function showImportErrors(importId) {
+    const modal = new bootstrap.Modal(document.getElementById('importErrorsModal'));
+    const content = document.getElementById('importErrorsContent');
+    
+    // Show loading
+    content.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Ładowanie błędów...</div>';
+    modal.show();
+    
+    // Fetch errors
+    fetch(`/api/crm/imports/${importId}/errors`, {
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayImportErrors(data);
+        } else {
+            content.innerHTML = `<div class="alert alert-danger">Błąd ładowania błędów: ${data.error}</div>`;
+        }
+    })
+    .catch(error => {
+        console.error('Error loading import errors:', error);
+        content.innerHTML = `<div class="alert alert-danger">Błąd połączenia z serwerem</div>`;
+    });
+}
+
+// Function to display import errors
+function displayImportErrors(data) {
+    const content = document.getElementById('importErrorsContent');
+    
+    if (data.errors.length === 0) {
+        content.innerHTML = '<div class="alert alert-success">Brak błędów w imporcie!</div>';
+        return;
+    }
+    
+    let html = `
+        <div class="mb-3">
+            <h6>Import: <strong>${data.import_filename}</strong></h6>
+            <p class="text-muted mb-0">
+                Łącznie rekordów: <strong>${data.total_records}</strong> | 
+                Zaimportowane: <strong>${data.processed_records}</strong> | 
+                Błędy: <strong>${data.failed_records}</strong>
+            </p>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Wiersz</th>
+                        <th>Błąd</th>
+                        <th>Dane</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    data.errors.forEach(error => {
+        const rawData = error.raw_data || {};
+        const dataPreview = Object.entries(rawData)
+            .map(([key, value]) => `<strong>${key}:</strong> ${value || 'Brak'}`)
+            .join('<br>');
+        
+        html += `
+            <tr>
+                <td><span class="badge bg-secondary">${error.row_number}</span></td>
+                <td><span class="text-danger">${error.error_message}</span></td>
+                <td><small>${dataPreview}</small></td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    content.innerHTML = html;
+}
+</script>
 
 <script>
 // Global variables

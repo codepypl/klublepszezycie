@@ -74,6 +74,7 @@ def create_app():
     from app.api.user_groups_api import user_groups_bp as user_groups_api_bp
     from app.api.email_v2_api import email_v2_bp
     from app.api.mailgun_webhook_api import mailgun_webhook_bp
+    from app.api.voip_api import voip_api_bp
     
     app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -105,6 +106,7 @@ def create_app():
     app.register_blueprint(agent_api_bp, url_prefix='/api/crm/agent')
     app.register_blueprint(stats_api_bp, url_prefix='/api')
     app.register_blueprint(mailgun_webhook_bp, url_prefix='/api')  # Webhook endpoints
+    app.register_blueprint(voip_api_bp)  # VoIP/Twilio endpoints
     app.register_blueprint(unsubscribe_bp)
     
     # Log blueprints

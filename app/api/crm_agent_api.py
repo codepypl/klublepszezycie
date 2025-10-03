@@ -1,12 +1,16 @@
 """
 Agent Work API Endpoints
 """
+import logging
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from functools import wraps
 from app.models import User, db
 from app.models.crm_model import Contact, Call, ImportFile, BlacklistEntry
 from datetime import datetime
+from app.services.twilio_service import twilio_service
+
+logger = logging.getLogger(__name__)
 
 # Create Agent API blueprint
 agent_api_bp = Blueprint('agent_api', __name__, url_prefix='/api/crm/agent')
@@ -41,6 +45,18 @@ def start_work():
 def stop_work():
     """Stop agent work session"""
     try:
+        # Check if agent has any active calls
+        active_call = Call.query.filter_by(
+            agent_id=current_user.id,
+            status__in=['ringing', 'answered', 'in_progress']
+        ).first()
+        
+        if active_call:
+            return jsonify({
+                'success': False,
+                'error': 'Nie można zatrzymać pracy podczas aktywnego połączenia. Zakończ połączenie lub zapisz wynik.'
+            }), 400
+        
         return jsonify({
             'success': True,
             'message': 'Praca zatrzymana'
@@ -236,8 +252,32 @@ def start_call():
         return jsonify({
             'success': True,
             'call_id': call.id,
-            'start_time': now.isoformat()
+            'start_time': now.isoformat(),
+            'webrtc_enabled': True
         })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@agent_api_bp.route('/ice-candidate', methods=['POST'])
+@login_required
+@ankieter_required
+def handle_ice_candidate():
+    """Handle ICE candidate from WebRTC"""
+    try:
+        data = request.get_json()
+        call_id = data.get('call_id')
+        candidate = data.get('candidate')
+        
+        if not call_id or not candidate:
+            return jsonify({'success': False, 'error': 'Call ID and candidate required'}), 400
+        
+        # Log ICE candidate (for future VoIP gateway integration)
+        logger.info(f"ICE candidate for call {call_id}: {candidate}")
+        
+        # TODO: Send to VoIP gateway when integrated
+        
+        return jsonify({'success': True})
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -413,6 +453,11 @@ def queue_status():
         busy_today = today_calls.filter(Call.status == 'busy').count()
         wrong_number_today = today_calls.filter(Call.status == 'wrong_number').count()
         
+        # Count all completed calls today (regardless of status)
+        completed_calls_today = today_calls.filter(
+            Call.status.in_(['lead', 'rejection', 'callback', 'no_answer', 'busy', 'wrong_number', 'blacklist'])
+        ).count()
+        
         # Calculate total call time today
         total_call_time = db.session.query(db.func.sum(Call.duration_seconds)).filter(
             Call.ankieter_id == current_user.id,
@@ -460,6 +505,12 @@ def queue_status():
         total_wrong_number = Call.query.filter(
             Call.ankieter_id == current_user.id,
             Call.status == 'wrong_number'
+        ).count()
+        
+        # Count all completed calls total (regardless of status)
+        completed_calls_total = Call.query.filter(
+            Call.ankieter_id == current_user.id,
+            Call.status.in_(['lead', 'rejection', 'callback', 'no_answer', 'busy', 'wrong_number', 'blacklist'])
         ).count()
         
         # Get next callback time
@@ -562,6 +613,7 @@ def queue_status():
                 'no_answer': no_answer_today,
                 'busy': busy_today,
                 'wrong_number': wrong_number_today,
+                'completed_calls': completed_calls_today,  # All completed calls today
                 'total_call_time_seconds': int(total_call_time),
                 'total_call_time_minutes': int(total_call_time / 60),
                 'avg_call_time_seconds': int(avg_call_time),
@@ -578,7 +630,8 @@ def queue_status():
                 'callbacks': total_callbacks,
                 'no_answer': total_no_answer,
                 'busy': total_busy,
-                'wrong_number': total_wrong_number
+                'wrong_number': total_wrong_number,
+                'completed_calls': completed_calls_total  # All completed calls total
             }
         })
         
@@ -771,4 +824,77 @@ def get_daily_work_time():
             'work_time_seconds': 0
         })
     except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@agent_api_bp.route('/sync-twilio-stats', methods=['POST'])
+@login_required
+@ankieter_required
+def sync_twilio_stats():
+    """Synchronize call statistics with Twilio"""
+    try:
+        data = request.get_json()
+        date_str = data.get('date')  # Format: YYYY-MM-DD
+        
+        if not date_str:
+            # Default to today
+            date = datetime.now().date()
+        else:
+            date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        
+        # Get Twilio statistics for the date
+        twilio_stats = twilio_service.get_daily_call_stats(date)
+        
+        if not twilio_stats['success']:
+            return jsonify({
+                'success': False,
+                'error': f'Błąd pobierania danych z Twilio: {twilio_stats["error"]}'
+            }), 500
+        
+        # Get our database statistics for the same date
+        today_start = datetime.combine(date, datetime.min.time())
+        today_end = datetime.combine(date, datetime.max.time())
+        
+        db_calls = Call.query.filter(
+            Call.ankieter_id == current_user.id,
+            Call.created_at >= today_start,
+            Call.created_at <= today_end,
+            Call.twilio_sid.isnot(None)  # Only calls made through Twilio
+        ).all()
+        
+        # Compare statistics
+        twilio_completed = twilio_stats['completed_calls']
+        db_completed = len([c for c in db_calls if c.status in ['lead', 'rejection', 'callback', 'no_answer', 'busy', 'wrong_number']])
+        
+        twilio_total_duration = twilio_stats['total_duration_seconds']
+        db_total_duration = sum(c.duration_seconds for c in db_calls if c.duration_seconds)
+        
+        # Find missing calls (in Twilio but not in our DB)
+        twilio_sids = {call['sid'] for call in twilio_stats['calls']}
+        db_sids = {c.twilio_sid for c in db_calls if c.twilio_sid}
+        missing_sids = twilio_sids - db_sids
+        
+        return jsonify({
+            'success': True,
+            'date': date_str or date.strftime('%Y-%m-%d'),
+            'comparison': {
+                'twilio': {
+                    'total_calls': twilio_stats['total_calls'],
+                    'completed_calls': twilio_completed,
+                    'total_duration_seconds': twilio_total_duration,
+                    'longest_call_seconds': twilio_stats['longest_call_seconds']
+                },
+                'database': {
+                    'total_calls': len(db_calls),
+                    'completed_calls': db_completed,
+                    'total_duration_seconds': db_total_duration,
+                    'longest_call_seconds': max([c.duration_seconds for c in db_calls if c.duration_seconds], default=0)
+                },
+                'missing_calls': len(missing_sids),
+                'missing_sids': list(missing_sids)
+            },
+            'twilio_raw_data': twilio_stats
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error syncing Twilio stats: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500

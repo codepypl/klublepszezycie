@@ -116,6 +116,9 @@ class Call(db.Model):
     next_call_date = db.Column(db.DateTime)  # For callback scheduling
     duration_minutes = db.Column(db.Integer)  # Call duration in minutes
     duration_seconds = db.Column(db.Integer)  # Call duration in seconds for precise tracking
+    duration = db.Column(db.Integer)  # Call duration in seconds (from Twilio)
+    phone_number = db.Column(db.String(20))  # Phone number called
+    twilio_sid = db.Column(db.String(100))  # Twilio Call SID for VoIP calls
     event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'))  # Event for lead registration
     is_lead_registered = db.Column(db.Boolean, default=False)  # Whether lead was registered for event
     
@@ -193,6 +196,45 @@ class BlacklistEntry(db.Model):
     @staticmethod
     def is_blacklisted(phone, campaign_id=None):
         """Check if phone number is blacklisted globally or for specific campaign"""
+        try:
+            # Check global blacklist first
+            global_blacklist = BlacklistEntry.query.filter_by(
+                phone=phone, 
+                campaign_id=None, 
+                is_active=True
+            ).first()
+            
+            if global_blacklist:
+                return True, global_blacklist
+            
+            # If campaign_id provided, check campaign-specific blacklist
+            if campaign_id:
+                campaign_blacklist = BlacklistEntry.query.filter_by(
+                    phone=phone,
+                    campaign_id=campaign_id,
+                    is_active=True
+                ).first()
+                
+                if campaign_blacklist:
+                    return True, campaign_blacklist
+            
+            return False, None
+            
+        except Exception as e:
+            # Fallback if campaign_id column doesn't exist
+            try:
+                fallback_blacklist = BlacklistEntry.query.filter_by(
+                    phone=phone,
+                    is_active=True
+                ).first()
+                
+                if fallback_blacklist:
+                    return True, fallback_blacklist
+                    
+                return False, None
+            except Exception:
+                return False, None
+
 # Import Log removed - functionality moved to ImportFile
 
 class ImportFile(db.Model):

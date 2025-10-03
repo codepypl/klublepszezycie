@@ -2,6 +2,7 @@
 let agentStatus = 'inactive';
 let currentContact = null;
 let currentCallId = null;
+let currentTwilioSid = null;  // Twilio Call SID for VoIP calls
 let callStartTime = null;
 let recordStartTime = null;  // Time when record handling started
 let callTimer = null;
@@ -159,6 +160,18 @@ function startWork() {
 }
 
 function stopWork() {
+    // Check if there's an active call
+    if (isCallActive && currentCallId) {
+        showError('Nie można zatrzymać pracy podczas aktywnego połączenia. Zakończ połączenie lub zapisz wynik.');
+        return;
+    }
+    
+    // Check if WebRTC call is active
+    if (window.webrtcCall && window.webrtcCall.isCallActive) {
+        showError('Nie można zatrzymać pracy podczas aktywnego połączenia. Zakończ połączenie lub zapisz wynik.');
+        return;
+    }
+    
     fetch('/api/crm/agent/stop-work', {
         method: 'POST',
         headers: {
@@ -423,51 +436,139 @@ function getStatusText(status) {
     return texts[status] || status;
 }
 
-function makeCall() {
+async function makeCall() {
     if (!currentContact) {
         showWarning('Brak kontaktu do dzwonienia');
         return;
     }
     
-    // Disable call button
-    const callBtn = document.getElementById('makeCallBtn');
-    callBtn.disabled = true;
-    callBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Dzwonienie...';
-    
-    // Start call via API
-    fetch('/api/crm/agent/start-call', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-            contact_id: currentContact.id
-        })
-    })
-    .then(response => safeJsonParse(response))
-    .then(data => {
-        if (data.success) {
-            currentCallId = data.call_id;
-            callStartTime = new Date(data.start_time);
-            isCallActive = true;
-            console.log('✅ Call started with ID:', currentCallId);
-            startCallTimer();
-            showCallDuration();
-            showOutcomePanel();
-            hideCallButton();
-            disableClassifierButtons(); // Disable classifiers during call
-            showEndCallButton();
-        } else {
-            showError('Błąd podczas inicjowania połączenia: ' + data.error);
+    // Check if Twilio is available (preferred) or WebRTC
+    if (currentContact.phone) {
+        console.log('📞 Using Twilio VoIP for call');
+        
+        // Disable call button
+        const callBtn = document.getElementById('makeCallBtn');
+        callBtn.disabled = true;
+        callBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Dzwonienie...';
+        
+        try {
+            // Make Twilio call
+            const response = await fetch('/api/voip/twilio/make-call', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    contact_id: currentContact.id,
+                    phone_number: currentContact.phone
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                currentCallId = data.call_id;
+                currentTwilioSid = data.twilio_sid;
+                callStartTime = new Date(data.start_time);
+                isCallActive = true;
+                
+                console.log('✅ Twilio call started with ID:', currentCallId, 'SID:', currentTwilioSid);
+                startCallTimer();
+                showCallDuration();
+                showOutcomePanel();
+                hideCallButton();
+                disableClassifierButtons();
+                showEndCallButton();
+                showSuccess('Połączenie Twilio rozpoczęte');
+            } else {
+                throw new Error(data.error || 'Błąd połączenia Twilio');
+            }
+            
+        } catch (error) {
+            console.error('❌ Twilio call error:', error);
+            showError('Błąd połączenia Twilio: ' + error.message);
             resetCallButton();
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showError('Wystąpił błąd podczas inicjowania połączenia');
-        resetCallButton();
-    });
+        
+    } else if (window.webrtcCall && currentContact.phone) {
+        console.log('🎯 Using WebRTC for call');
+        
+        // Disable call button
+        const callBtn = document.getElementById('makeCallBtn');
+        callBtn.disabled = true;
+        callBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Dzwonienie...';
+        
+        try {
+            // Make WebRTC call
+            const success = await window.webrtcCall.makeCall(currentContact.phone, currentContact.id);
+            
+            if (success) {
+                currentCallId = window.webrtcCall.callId;
+                callStartTime = window.webrtcCall.callStartTime;
+                isCallActive = true;
+                
+                console.log('✅ WebRTC call started with ID:', currentCallId);
+                startCallTimer();
+                showCallDuration();
+                showOutcomePanel();
+                hideCallButton();
+                disableClassifierButtons(); // Disable classifiers during call
+                showEndCallButton();
+                showSuccess('Połączenie WebRTC rozpoczęte');
+            } else {
+                throw new Error('Błąd połączenia WebRTC');
+            }
+            
+        } catch (error) {
+            console.error('❌ WebRTC call error:', error);
+            showError('Błąd połączenia WebRTC: ' + error.message);
+            resetCallButton();
+        }
+        
+    } else {
+        console.log('📞 Using fallback API call (no WebRTC or phone number)');
+        
+        // Disable call button
+        const callBtn = document.getElementById('makeCallBtn');
+        callBtn.disabled = true;
+        callBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Dzwonienie...';
+        
+        // Start call via API (fallback)
+        fetch('/api/crm/agent/start-call', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                contact_id: currentContact.id
+            })
+        })
+        .then(response => safeJsonParse(response))
+        .then(data => {
+            if (data.success) {
+                currentCallId = data.call_id;
+                callStartTime = new Date(data.start_time);
+                isCallActive = true;
+                console.log('✅ Call started with ID:', currentCallId);
+                startCallTimer();
+                showCallDuration();
+                showOutcomePanel();
+                hideCallButton();
+                disableClassifierButtons(); // Disable classifiers during call
+                showEndCallButton();
+            } else {
+                showError('Błąd podczas inicjowania połączenia: ' + data.error);
+                resetCallButton();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Wystąpił błąd podczas inicjowania połączenia');
+            resetCallButton();
+        });
+    }
 }
 
 function resetCallButton() {
@@ -932,10 +1033,52 @@ function hideEndCallButton() {
     document.getElementById('endCallBtn').style.display = 'none';
 }
 
-function endCall() {
+async function endCall() {
     if (!currentCallId) {
         showWarning('Brak aktywnego połączenia');
         return;
+    }
+    
+    // Check if Twilio call is active
+    if (currentTwilioSid) {
+        console.log('📞 Ending Twilio call');
+        
+        try {
+            // End Twilio call
+            const response = await fetch('/api/voip/twilio/end-call', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    call_id: currentCallId,
+                    twilio_sid: currentTwilioSid
+                })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                console.log('✅ Twilio call ended');
+            } else {
+                console.error('❌ Error ending Twilio call:', data.error);
+            }
+        } catch (error) {
+            console.error('❌ Error ending Twilio call:', error);
+        }
+    }
+    
+    // Check if WebRTC call is active
+    if (window.webrtcCall && window.webrtcCall.isCallActive) {
+        console.log('🎯 Ending WebRTC call');
+        
+        try {
+            // End WebRTC call
+            await window.webrtcCall.endCall();
+            console.log('✅ WebRTC call ended');
+        } catch (error) {
+            console.error('❌ Error ending WebRTC call:', error);
+        }
     }
     
     // Stop call timer (but keep record timer running)

@@ -7,7 +7,10 @@
 {% endblock %}
 
 {% block page_actions %}
-    <!-- Przycisk odśwież usunięty - statystyki odświeżają się automatycznie co 1 sekundę -->
+    <!-- Przycisk synchronizacji z Twilio -->
+    <button class="btn btn-info me-2" onclick="syncWithTwilio()" title="Synchronizuj statystyki z Twilio">
+        <i class="fas fa-sync-alt me-1"></i>Sync z Twilio
+    </button>
 {% endblock %}
 
 {% block content %}
@@ -147,12 +150,12 @@ async function loadDashboardStats() {
         if (data.success) {
             // Today's statistics
             document.getElementById('leadsToday').textContent = data.today_stats.leads || 0;
-            document.getElementById('answeredToday').textContent = (data.today_stats.leads || 0) + (data.today_stats.rejections || 0) + (data.today_stats.callbacks || 0) + (data.today_stats.no_answer || 0) + (data.today_stats.busy || 0) + (data.today_stats.wrong_number || 0);
+            document.getElementById('answeredToday').textContent = data.today_stats.completed_calls || 0;
             document.getElementById('callbacksToday').textContent = data.today_stats.callbacks || 0;
             document.getElementById('longestCallToday').textContent = formatDuration(data.today_stats.longest_call_seconds || 0);
             
             // Total statistics
-            document.getElementById('totalAnswered').textContent = (data.total_stats.leads || 0) + (data.total_stats.rejections || 0) + (data.total_stats.callbacks || 0) + (data.total_stats.no_answer || 0) + (data.total_stats.busy || 0) + (data.total_stats.wrong_number || 0);
+            document.getElementById('totalAnswered').textContent = data.total_stats.completed_calls || 0;
             document.getElementById('totalCallbacks').textContent = data.total_stats.callbacks || 0;
             
             // Time statistics - new ones
@@ -237,5 +240,124 @@ window.addEventListener('beforeunload', function() {
         clearInterval(dashboardRefreshInterval);
     }
 });
+
+// Synchronizacja statystyk z Twilio
+async function syncWithTwilio() {
+    try {
+        const response = await fetch('/api/crm/agent/sync-twilio-stats', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                date: new Date().toISOString().split('T')[0] // Today's date
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show comparison modal
+            showTwilioComparison(data);
+        } else {
+            showError('Błąd synchronizacji z Twilio: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error syncing with Twilio:', error);
+        showError('Błąd podczas synchronizacji z Twilio');
+    }
+}
+
+// Show Twilio comparison modal
+function showTwilioComparison(data) {
+    const comparison = data.comparison;
+    const modalHtml = `
+        <div class="modal fade" id="twilioComparisonModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-sync-alt me-2"></i>Porównanie statystyk z Twilio
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-database me-2"></i>Nasza baza danych</h6>
+                                <ul class="list-unstyled">
+                                    <li><strong>Łączne połączenia:</strong> ${comparison.database.total_calls}</li>
+                                    <li><strong>Wykonane połączenia:</strong> ${comparison.database.completed_calls}</li>
+                                    <li><strong>Łączny czas:</strong> ${formatTimeDuration(comparison.database.total_duration_seconds)}</li>
+                                    <li><strong>Najdłuższa rozmowa:</strong> ${formatTimeDuration(comparison.database.longest_call_seconds)}</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fab fa-twilio me-2"></i>Twilio</h6>
+                                <ul class="list-unstyled">
+                                    <li><strong>Łączne połączenia:</strong> ${comparison.twilio.total_calls}</li>
+                                    <li><strong>Wykonane połączenia:</strong> ${comparison.twilio.completed_calls}</li>
+                                    <li><strong>Łączny czas:</strong> ${formatTimeDuration(comparison.twilio.total_duration_seconds)}</li>
+                                    <li><strong>Najdłuższa rozmowa:</strong> ${formatTimeDuration(comparison.twilio.longest_call_seconds)}</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        ${comparison.missing_calls > 0 ? `
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Znaleziono ${comparison.missing_calls} połączeń w Twilio, których nie ma w naszej bazie danych.</strong>
+                            <br>
+                            <small>Call SIDs: ${comparison.missing_sids.join(', ')}</small>
+                        </div>
+                        ` : `
+                        <div class="alert alert-success mt-3">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Statystyki są zsynchronizowane!</strong>
+                        </div>
+                        `}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                        ${comparison.missing_calls > 0 ? `
+                        <button type="button" class="btn btn-warning" onclick="importMissingCalls('${data.date}')">
+                            <i class="fas fa-download me-1"></i>Importuj brakujące połączenia
+                        </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('twilioComparisonModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('twilioComparisonModal'));
+    modal.show();
+}
+
+// Import missing calls from Twilio
+async function importMissingCalls(date) {
+    try {
+        showInfo('Importowanie brakujących połączeń z Twilio...');
+        
+        // This would be a separate endpoint to import missing calls
+        // For now, just show a message
+        showInfo('Funkcja importu brakujących połączeń będzie dostępna wkrótce.');
+        
+    } catch (error) {
+        console.error('Error importing missing calls:', error);
+        showError('Błąd podczas importu brakujących połączeń');
+    }
+}
 </script>
 {% endblock %}
