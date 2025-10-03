@@ -47,7 +47,7 @@ def stop_work():
     try:
         # Check if agent has any active calls
         active_call = Call.query.filter_by(
-            agent_id=current_user.id,
+            ankieter_id=current_user.id,
             status__in=['ringing', 'answered', 'in_progress']
         ).first()
         
