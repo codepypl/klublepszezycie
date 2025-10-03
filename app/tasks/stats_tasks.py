@@ -9,9 +9,7 @@ from app.models.user_logs_model import UserLogs
 import logging
 
 # Get Celery instance
-from app import create_app
-app = create_app()
-celery = app.extensions.get('celery')
+from celery import current_app as celery
 
 @celery.task
 def cleanup_old_stats():

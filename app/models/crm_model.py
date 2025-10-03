@@ -193,47 +193,6 @@ class BlacklistEntry(db.Model):
     @staticmethod
     def is_blacklisted(phone, campaign_id=None):
         """Check if phone number is blacklisted globally or for specific campaign"""
-        try:
-            # Check global blacklist first
-            global_blacklist = BlacklistEntry.query.filter_by(
-                phone=phone, 
-                campaign_id=None, 
-                is_active=True
-            ).first()
-            
-            if global_blacklist:
-                return True, global_blacklist
-            
-            # If campaign_id provided, check campaign-specific blacklist
-            if campaign_id:
-                campaign_blacklist = BlacklistEntry.query.filter_by(
-                    phone=phone,
-                    campaign_id=campaign_id,
-                    is_active=True
-                ).first()
-                
-                if campaign_blacklist:
-                    return True, campaign_blacklist
-            
-            return False, None
-            
-        except Exception as e:
-            # If campaign_id column doesn't exist (migration not applied), 
-            # fall back to old behavior - check only phone number
-            try:
-                fallback_blacklist = BlacklistEntry.query.filter_by(
-                    phone=phone,
-                    is_active=True
-                ).first()
-                
-                if fallback_blacklist:
-                    return True, fallback_blacklist
-                    
-                return False, None
-            except Exception:
-                # If even basic query fails, return False
-                return False, None
-
 # Import Log removed - functionality moved to ImportFile
 
 class ImportFile(db.Model):
