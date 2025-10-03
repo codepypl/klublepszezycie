@@ -33,9 +33,11 @@ def process_event_reminders_task(self):
             
             # Pobierz wszystkie aktywne wydarzenia, które nie mają zaplanowanych przypomnień
             events = EventSchedule.query.filter(
-                EventSchedule.is_active == True,
-                EventSchedule.reminders_scheduled == False
+                EventSchedule.is_active == True
             ).all()
+            
+            # Filter out events that already have reminders scheduled
+            events = [event for event in events if not event.get_reminders_scheduled()]
             
             processed_count = 0
             success_count = 0
