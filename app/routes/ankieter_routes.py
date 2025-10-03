@@ -13,8 +13,6 @@ ankieter_bp = Blueprint('ankieter', __name__)
 # Import CRM controller functions
 from app.blueprints.crm_controller import (
     dashboard as crm_dashboard_func,
-    calls as crm_calls_func,
-    contacts as crm_contacts_func,
     work as crm_work_func
 )
 
@@ -26,21 +24,8 @@ def dashboard():
     """Ankieter Dashboard"""
     return crm_dashboard_func()
 
-# Calls management
-@ankieter_bp.route('/calls')
-@login_required
-@ankieter_required
-def calls():
-    """Calls management page"""
-    return crm_calls_func()
-
-# Contacts management
-@ankieter_bp.route('/contacts')
-@login_required
-@ankieter_required
-def contacts():
-    """Contacts management page"""
-    return crm_contacts_func()
+# Calls and contacts are only for administrators
+# Ankieter doesn't need these routes
 
 # Work page
 @ankieter_bp.route('/work')

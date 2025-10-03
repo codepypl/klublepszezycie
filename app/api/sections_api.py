@@ -16,7 +16,13 @@ def api_sections():
     """Sections API"""
     if request.method == 'GET':
         try:
-            sections = Section.query.order_by(Section.order.asc()).all()
+            page = request.args.get('page', 1, type=int)
+            per_page = request.args.get('per_page', 10, type=int)
+            
+            pagination = Section.query.order_by(Section.order.asc()).paginate(
+                page=page, per_page=per_page, error_out=False
+            )
+            
             return jsonify({
                 'success': True,
                 'sections': [{
@@ -36,7 +42,13 @@ def api_sections():
                     'floating_cards_data': section.floating_cards_data,
                     'final_text': section.final_text,
                     'created_at': section.created_at.isoformat() if section.created_at else None
-                } for section in sections]
+                } for section in pagination.items],
+                'pagination': {
+                    'page': pagination.page,
+                    'pages': pagination.pages,
+                    'total': pagination.total,
+                    'per_page': pagination.per_page
+                }
             })
         except Exception as e:
             logging.error(f"Error getting sections: {str(e)}")

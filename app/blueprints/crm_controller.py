@@ -24,7 +24,7 @@ def dashboard():
         if current_user.is_admin_role():
             return render_template('admin/crm/dashboard.html')
         else:
-            return render_template('ankieter/dashboard.html')
+            return render_template('crm/dashboard.html')
         
     except Exception as e:
         flash(f'Błąd podczas ładowania dashboardu: {str(e)}', 'error')
@@ -70,8 +70,17 @@ def contacts():
         page = request.args.get('page', 1, type=int)
         per_page = 20
         
-        # Get search parameter
+        # Get search and filter parameters
         search = request.args.get('search', '', type=str)
+        campaign_filter = request.args.get('campaign_filter', '', type=str)
+        call_attempts_filter = request.args.get('call_attempts_filter', '', type=str)
+        last_status_filter = request.args.get('last_status_filter', '', type=str)
+        company_filter = request.args.get('company_filter', '', type=str)
+        last_call_date_from = request.args.get('last_call_date_from', '', type=str)
+        last_call_date_to = request.args.get('last_call_date_to', '', type=str)
+        callback_date_from = request.args.get('callback_date_from', '', type=str)
+        callback_date_to = request.args.get('callback_date_to', '', type=str)
+        notes_filter = request.args.get('notes_filter', '', type=str)
         
         # Build query
         # Admin can see all contacts, ankieter only their assigned contacts
@@ -80,14 +89,25 @@ def contacts():
         else:
             query = Contact.query.filter_by(assigned_ankieter_id=current_user.id)
         
+        # Apply filters
         if search:
             query = query.filter(
                 Contact.name.ilike(f'%{search}%') |
                 Contact.phone.ilike(f'%{search}%') |
-                Contact.email.ilike(f'%{search}%')
+                Contact.email.ilike(f'%{search}%') |
+                Contact.company.ilike(f'%{search}%')
             )
         
-        # Get contacts with pagination
+        if campaign_filter:
+            query = query.filter(Contact.campaign_id == campaign_filter)
+        
+        if company_filter:
+            query = query.filter(Contact.company.ilike(f'%{company_filter}%'))
+        
+        if notes_filter:
+            query = query.filter(Contact.notes.ilike(f'%{notes_filter}%'))
+        
+        # Get contacts with pagination first (before complex filters)
         contacts = query.order_by(Contact.created_at.desc()).paginate(
             page=page, per_page=per_page, error_out=False
         )
@@ -102,10 +122,72 @@ def contacts():
             # Get last call status
             last_call = Call.query.filter_by(contact_id=contact.id).order_by(Call.call_date.desc()).first()
             
+            # Get call count
+            call_count = Call.query.filter_by(contact_id=contact.id).count()
+            
             contact.last_status = last_call.status if last_call else None
             contact.last_call_date = last_call.call_date if last_call else None
+            contact.call_count = call_count
             
-            contact_analyses.append(contact)
+            # Apply complex filters after analysis
+            include_contact = True
+            
+            # Filter by call attempts
+            if call_attempts_filter:
+                try:
+                    filter_attempts = int(call_attempts_filter)
+                    if call_count != filter_attempts:
+                        include_contact = False
+                except ValueError:
+                    pass
+            
+            # Filter by last status
+            if last_status_filter and last_status_filter != 'new':
+                if contact.last_status != last_status_filter:
+                    include_contact = False
+            elif last_status_filter == 'new' and contact.last_status is not None:
+                include_contact = False
+            
+            # Filter by last call date
+            if last_call_date_from and contact.last_call_date:
+                from datetime import datetime
+                try:
+                    filter_date = datetime.strptime(last_call_date_from, '%Y-%m-%d').date()
+                    if contact.last_call_date.date() < filter_date:
+                        include_contact = False
+                except ValueError:
+                    pass
+            
+            if last_call_date_to and contact.last_call_date:
+                from datetime import datetime
+                try:
+                    filter_date = datetime.strptime(last_call_date_to, '%Y-%m-%d').date()
+                    if contact.last_call_date.date() > filter_date:
+                        include_contact = False
+                except ValueError:
+                    pass
+            
+            # Filter by callback date (next_call_date)
+            if callback_date_from and contact.next_call_date:
+                from datetime import datetime
+                try:
+                    filter_date = datetime.strptime(callback_date_from, '%Y-%m-%d').date()
+                    if contact.next_call_date.date() < filter_date:
+                        include_contact = False
+                except ValueError:
+                    pass
+            
+            if callback_date_to and contact.next_call_date:
+                from datetime import datetime
+                try:
+                    filter_date = datetime.strptime(callback_date_to, '%Y-%m-%d').date()
+                    if contact.next_call_date.date() > filter_date:
+                        include_contact = False
+                except ValueError:
+                    pass
+            
+            if include_contact:
+                contact_analyses.append(contact)
         
         # Get import history
         import_history = ImportService.get_import_history(current_user.id)
@@ -125,7 +207,7 @@ def contacts():
 def work():
     """Agent work screen"""
     try:
-        return render_template('ankieter/work.html')
+        return render_template('crm/work.html')
         
     except Exception as e:
         flash(f'Błąd podczas ładowania ekranu pracy: {str(e)}', 'error')

@@ -313,6 +313,14 @@ if (cancelButton.parentNode) {
             }
         });
     }
+
+    // Load menu items data from paginated API response
+    loadMenuItemsData(menuItems) {
+        console.log('🔍 loadMenuItemsData called with:', menuItems);
+        // This method can be used to update the menu items display
+        // The existing menu.js already handles menu management
+        // We just need to ensure the data is available for the pagination system
+    }
 }
 
 // Global functions for backward compatibility

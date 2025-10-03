@@ -66,6 +66,7 @@ class ImportService:
                         company=contact_data.get('company'),
                         notes=contact_data.get('notes'),
                         source_file=filename,
+                        import_file_id=import_file.id,
                         assigned_ankieter_id=ankieter_id,
                         max_call_attempts=DEFAULT_MAX_CALL_ATTEMPTS
                     )

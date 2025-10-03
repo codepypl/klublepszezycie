@@ -15,7 +15,13 @@ def api_testimonials():
     """Testimonials API"""
     if request.method == 'GET':
         try:
-            testimonials = Testimonial.query.order_by(Testimonial.order.asc()).all()
+            page = request.args.get('page', 1, type=int)
+            per_page = request.args.get('per_page', 10, type=int)
+            
+            pagination = Testimonial.query.order_by(Testimonial.order.asc()).paginate(
+                page=page, per_page=per_page, error_out=False
+            )
+            
             return jsonify({
                 'success': True,
                 'testimonials': [{
@@ -26,7 +32,13 @@ def api_testimonials():
                     'order': testimonial.order,
                     'is_active': testimonial.is_active,
                     'created_at': testimonial.created_at.isoformat() if testimonial.created_at else None
-                } for testimonial in testimonials]
+                } for testimonial in pagination.items],
+                'pagination': {
+                    'page': pagination.page,
+                    'pages': pagination.pages,
+                    'total': pagination.total,
+                    'per_page': pagination.per_page
+                }
             })
         except Exception as e:
             logging.error(f"Error getting testimonials: {str(e)}")

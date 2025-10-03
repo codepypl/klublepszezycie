@@ -37,7 +37,7 @@ class User(UserMixin, db.Model):
     
     def is_ankieter_role(self):
         """Check if user has ankieter role"""
-        return self.role == 'ankieter'
+        return self.account_type == 'ankieter'
     
     def is_user_role(self):
         """Check if user has basic user role"""
@@ -47,7 +47,9 @@ class User(UserMixin, db.Model):
         """Check if user has specific role"""
         if role_name == 'admin':
             return self.is_admin_role()
-        return self.role == role_name
+        elif role_name == 'ankieter':
+            return self.is_ankieter_role()
+        return self.account_type == role_name
 
     def is_event_registration(self):
         """Check if user is from event registration"""

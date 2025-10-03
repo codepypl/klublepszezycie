@@ -1,10 +1,11 @@
 /**
- * Enhanced Import contacts functionality with 4-step process:
+ * Enhanced Import contacts functionality with 5-step process:
  * 1. File upload with drag & drop
  * 1a. File analysis with lightbox
  * 2. Column mapping
  * 3. Preview mapping results
- * 4. Import to database
+ * 4. Campaign selection
+ * 5. Import to database
  */
 
 let fileData = null;
@@ -35,7 +36,10 @@ function initializeImport() {
     // Step 3: Preview Mapping
     setupPreviewMapping();
     
-    // Step 4: Import Process
+    // Step 4: Campaign Selection
+    setupCampaignSelection();
+    
+    // Step 5: Import Process
     setupImportProcess();
     
     // Show step 1 by default
@@ -456,14 +460,82 @@ function displayPreviewData(previewData) {
     previewContent.innerHTML = html;
 }
 
-// ===== STEP 4: IMPORT PROCESS =====
+// ===== STEP 4: CAMPAIGN SELECTION =====
+
+function setupCampaignSelection() {
+    const backToStep3 = document.getElementById('backToStep3');
+    const proceedToImport = document.getElementById('proceedToImport');
+    
+    if (backToStep3) {
+        backToStep3.addEventListener('click', function() {
+            showStep3();
+        });
+    }
+    
+    if (proceedToImport) {
+        proceedToImport.addEventListener('click', function() {
+            if (validateCampaignSelection()) {
+                performImport();
+            }
+        });
+    }
+    
+    // Note: loadCampaignsForImport() will be called in showStep4()
+}
+
+function loadCampaignsForImport() {
+    fetch('/api/crm/campaigns')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populateCampaignSelect(data.campaigns);
+            } else {
+                window.toastManager.show('Błąd podczas ładowania kampanii: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading campaigns:', error);
+            window.toastManager.show('Błąd podczas ładowania kampanii', 'error');
+        });
+}
+
+function populateCampaignSelect(campaigns) {
+    const select = document.getElementById('campaignSelect');
+    if (!select) return;
+    
+    // Clear existing options
+    select.innerHTML = '<option value="">Wybierz kampanię</option>';
+    
+    // Add all campaigns with status indicator
+    campaigns.forEach(campaign => {
+        const option = document.createElement('option');
+        option.value = campaign.id;
+        option.textContent = campaign.name + (campaign.is_active ? '' : ' (nieaktywna)');
+        select.appendChild(option);
+    });
+}
+
+function validateCampaignSelection() {
+    const campaignSelect = document.getElementById('campaignSelect');
+    const campaignId = campaignSelect.value;
+    
+    if (!campaignId) {
+        window.toastManager.show('Proszę wybrać kampanię', 'warning');
+        campaignSelect.focus();
+        return false;
+    }
+    
+    return true;
+}
+
+// ===== STEP 5: IMPORT PROCESS =====
 
 function setupImportProcess() {
     const startImport = document.getElementById('startImport');
     
     if (startImport) {
         startImport.addEventListener('click', function() {
-            performImport();
+            showStep4(); // Show campaign selection first
         });
     }
 }
@@ -474,8 +546,17 @@ async function performImport() {
         return;
     }
     
-    showImportLightbox();
-    updateImportLightbox(0, 'Rozpoczynanie importu...');
+    // Get selected campaign
+    const campaignSelect = document.getElementById('campaignSelect');
+    const campaignId = campaignSelect.value;
+    
+    if (!campaignId) {
+        window.toastManager.show('Proszę wybrać kampanię', 'warning');
+        return;
+    }
+    
+    showStep5(); // Show import progress
+    updateImportStatus(0, 'Rozpoczynanie importu...');
     
     try {
         // Step 1: Extract file to database (if not already done)
@@ -512,7 +593,8 @@ async function performImport() {
             credentials: 'include',
             body: JSON.stringify({
                 import_file_id: currentImportFileId,
-                mapping: currentMapping
+                mapping: currentMapping,
+                campaign_id: parseInt(campaignId)
             })
         });
         
@@ -587,14 +669,23 @@ function showStep4() {
     const step4 = document.getElementById('importStep4');
     if (step4) step4.style.display = 'block';
     
-    // Start auto-refresh in step 4
+    // Load campaigns for selection
+    loadCampaignsForImport();
+}
+
+function showStep5() {
+    hideAllSteps();
+    const step5 = document.getElementById('importStep5');
+    if (step5) step5.style.display = 'block';
+    
+    // Start auto-refresh in step 5
     if (typeof setupContactsAutoRefresh === 'function') {
         setupContactsAutoRefresh();
     }
 }
 
 function hideAllSteps() {
-    const steps = ['importStep1', 'importStep2', 'importStep3', 'importStep4'];
+    const steps = ['importStep1', 'importStep2', 'importStep3', 'importStep4', 'importStep5'];
     steps.forEach(stepId => {
         const step = document.getElementById(stepId);
         if (step) step.style.display = 'none';
@@ -649,4 +740,34 @@ function disableAllAutoRefresh() {
 function enableAllAutoRefresh() {
     // Enable global refresh system
     // Auto-refresh is now handled by refreshAfterCRUD() system
+}
+
+// ===== IMPORT STATUS FUNCTIONS =====
+
+function showImportLightbox() {
+    // Show step 5 (import progress) instead of lightbox
+    showStep5();
+}
+
+function updateImportLightbox(progress, message) {
+    updateImportStatus(progress, message);
+}
+
+function updateImportStatus(progress, message) {
+    const statusElement = document.getElementById('importStatus');
+    const messageElement = document.getElementById('importMessage');
+    
+    if (statusElement) {
+        statusElement.textContent = message;
+    }
+    
+    if (messageElement) {
+        messageElement.textContent = `Postęp: ${progress}%`;
+    }
+}
+
+function hideImportLightbox() {
+    // Hide step 5 and reset to step 1
+    hideAllSteps();
+    showStep1();
 }

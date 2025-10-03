@@ -304,6 +304,14 @@ class SectionsManager {
             window.toastManager.error('Wystąpił błąd podczas aktualizacji sekcji');
         });
     }
+
+    // Load sections data from paginated API response
+    loadSectionsData(sections) {
+        console.log('🔍 loadSectionsData called with:', sections);
+        // This method can be used to update the sections display
+        // The existing sections.js already handles section management
+        // We just need to ensure the data is available for the pagination system
+    }
 }
 
 // Helper function to get blog link options for dropdown

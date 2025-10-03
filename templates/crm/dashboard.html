@@ -1,187 +1,241 @@
-{% extends "base.html" %}
+{% extends "admin/base.html" %}
 
-{% block title %}Panel Ankietera - {{ config.get('SITE_NAME', 'Klub Lepsze Życie') }}{% endblock %}
+{% block title %}Dashboard Ankietera - {{ super() }}{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-chart-bar me-2"></i>Dashboard Ankietera
+{% endblock %}
+
+{% block page_actions %}
+    <!-- Przycisk odśwież usunięty - statystyki odświeżają się automatycznie co 1 sekundę -->
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <!-- Sidebar dla ankietera -->
-        <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
-            <div class="position-sticky pt-3">
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{{ url_for('ankieter.dashboard') }}">
-                            <i class="fas fa-chart-bar me-2"></i>
-                            Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('ankieter.work') }}">
-                            <i class="fas fa-headset me-2"></i>
-                            Praca
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('ankieter.calls') }}">
-                            <i class="fas fa-phone me-2"></i>
-                            Połączenia
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('ankieter.contacts') }}">
-                            <i class="fas fa-address-book me-2"></i>
-                            Kontakty
-                        </a>
-                    </li>
-                    <li class="nav-item mt-3">
-                        <a class="nav-link text-danger" href="{{ url_for('auth.logout') }}">
-                            <i class="fas fa-sign-out-alt me-2"></i>
-                            Wyloguj
-                        </a>
-                    </li>
-                </ul>
+    <!-- Stats Cards - Dzienne (zerowanie każdego dnia) -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-star"></i>
+                <h3 id="leadsToday">0</h3>
+                <p>Leady (dzisiaj)</p>
             </div>
-        </nav>
-
-        <!-- Główna zawartość -->
-        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 class="h2">Panel Ankietera</h1>
-                <div class="btn-toolbar mb-2 mb-md-0">
-                    <div class="btn-group me-2">
-                        <button type="button" class="btn btn-sm btn-outline-secondary">Eksport</button>
-                    </div>
-                </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-phone"></i>
+                <h3 id="answeredToday">0</h3>
+                <p>Wykonane (dzisiaj)</p>
             </div>
-
-            <!-- Statystyki -->
-            <div class="row mb-4">
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-primary shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                        Dzisiejsze połączenia</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="today-calls">-</div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-phone fa-2x text-gray-300"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-success shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                        Pozyskane leady</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="today-leads">-</div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-user-plus fa-2x text-gray-300"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-info shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                        W kolejce</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="queue-count">-</div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-list fa-2x text-gray-300"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-warning shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                        Wskaźnik sukcesu</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="success-rate">-</div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-percentage fa-2x text-gray-300"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-calendar-plus"></i>
+                <h3 id="callbacksToday">0</h3>
+                <p>Przełożenia (dzisiaj)</p>
             </div>
-
-            <!-- Szybkie akcje -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5><i class="fas fa-bolt me-2"></i>Szybkie akcje</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-3 mb-3">
-                                    <a href="{{ url_for('ankieter.work') }}" class="btn btn-primary w-100">
-                                        <i class="fas fa-play me-2"></i>Rozpocznij pracę
-                                    </a>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <a href="{{ url_for('ankieter.calls') }}" class="btn btn-success w-100">
-                                        <i class="fas fa-phone me-2"></i>Następne połączenie
-                                    </a>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <a href="{{ url_for('ankieter.contacts') }}" class="btn btn-info w-100">
-                                        <i class="fas fa-address-book me-2"></i>Przeglądaj kontakty
-                                    </a>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <button class="btn btn-warning w-100" onclick="refreshStats()">
-                                        <i class="fas fa-sync me-2"></i>Odśwież statystyki
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-clock"></i>
+                <h3 id="longestCallToday">0:00</h3>
+                <p>Najdłuższa rozmowa (dzisiaj)</p>
             </div>
-
-            <!-- Ostatnie aktywności -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5><i class="fas fa-history me-2"></i>Ostatnie aktywności</h5>
-                        </div>
-                        <div class="card-body">
-                            <div id="recent-activities">
-                                <div class="text-center">
-                                    <div class="spinner-border" role="status">
-                                        <span class="visually-hidden">Ładowanie...</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
+        </div>
     </div>
-</div>
 
+    <!-- Stats Cards - Łączne -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-phone-alt"></i>
+                <h3 id="totalAnswered">0</h3>
+                <p>Wykonane łącznie</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-redo"></i>
+                <h3 id="totalCallbacks">0</h3>
+                <p>Łączna liczba recalli</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-user-clock"></i>
+                <h3 id="totalLoginTimeToday">00:00:00</h3>
+                <p>Łączny czas zalogowania (dzisiaj)</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-briefcase"></i>
+                <h3 id="totalWorkTimeToday">00:00:00</h3>
+                <p>Łączny czas pracy (dzisiaj)</p>
+            </div>
+        </div>
+    </div>
 
+    <!-- Stats Cards - Czasowe -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-stopwatch"></i>
+                <h3 id="avgCallTime">0:00</h3>
+                <p>Średnia rozmowa (dzisiaj)</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-coffee"></i>
+                <h3 id="totalBreakTimeToday">00:00:00</h3>
+                <p>Łączny czas przerw (dzisiaj)</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-chart-line"></i>
+                <h3 id="successRate">0%</h3>
+                <p>Wskaźnik sukcesu</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <i class="fas fa-list"></i>
+                <h3 id="queueCount">0</h3>
+                <p>W kolejce</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-bolt me-2"></i>Funkcje Ankietera</h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <a href="{{ url_for('ankieter.work') }}" class="btn admin-btn w-100">
+                                <i class="fas fa-headset me-2"></i>Rozpocznij pracę
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{{ url_for('users.profile') }}" class="btn admin-btn-secondary w-100">
+                                <i class="fas fa-user me-2"></i>Mój profil
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Global variables
+let dashboardRefreshInterval;
+
+// Load statistics from API
+async function loadDashboardStats() {
+    try {
+        const response = await fetch('/api/crm/agent/queue-status');
+        const data = await response.json();
+        
+        if (data.success) {
+            // Today's statistics
+            document.getElementById('leadsToday').textContent = data.today_stats.leads || 0;
+            document.getElementById('answeredToday').textContent = (data.today_stats.leads || 0) + (data.today_stats.rejections || 0) + (data.today_stats.callbacks || 0) + (data.today_stats.no_answer || 0) + (data.today_stats.busy || 0) + (data.today_stats.wrong_number || 0);
+            document.getElementById('callbacksToday').textContent = data.today_stats.callbacks || 0;
+            document.getElementById('longestCallToday').textContent = formatDuration(data.today_stats.longest_call_seconds || 0);
+            
+            // Total statistics
+            document.getElementById('totalAnswered').textContent = (data.total_stats.leads || 0) + (data.total_stats.rejections || 0) + (data.total_stats.callbacks || 0) + (data.total_stats.no_answer || 0) + (data.total_stats.busy || 0) + (data.total_stats.wrong_number || 0);
+            document.getElementById('totalCallbacks').textContent = data.total_stats.callbacks || 0;
+            
+            // Time statistics - new ones
+            document.getElementById('totalLoginTimeToday').textContent = formatTimeDuration(data.today_stats.total_login_time_seconds || 0);
+            document.getElementById('totalWorkTimeToday').textContent = formatTimeDuration(data.today_stats.total_work_time_seconds || 0);
+            document.getElementById('totalBreakTimeToday').textContent = formatTimeDuration(data.today_stats.total_break_time_seconds || 0);
+            
+            // Existing time statistics
+            document.getElementById('avgCallTime').textContent = formatDuration(data.today_stats.avg_call_time_seconds || 0);
+            
+            // Calculate success rate
+            const totalCalls = (data.today_stats.leads || 0) + (data.today_stats.rejections || 0) + 
+                              (data.today_stats.callbacks || 0) + (data.today_stats.no_answer || 0) + 
+                              (data.today_stats.busy || 0) + (data.today_stats.wrong_number || 0);
+            const successRate = totalCalls > 0 ? Math.round((data.today_stats.leads || 0) / totalCalls * 100) : 0;
+            document.getElementById('successRate').textContent = successRate + '%';
+            
+            // Queue count
+            const queueCount = (data.queue.callbacks || 0) + (data.queue.potentials || 0) + (data.queue.new_contacts || 0);
+            document.getElementById('queueCount').textContent = queueCount;
+        } else {
+            console.error('Error loading dashboard stats:', data.error);
+        }
+    } catch (error) {
+        console.error('Error loading dashboard stats:', error);
+    }
+}
+
+function formatDuration(seconds) {
+    if (!seconds || seconds < 0) return '0:00';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    } else {
+        return `${minutes}:${secs.toString().padStart(2, '0')}`;
+    }
+}
+
+function formatTimeDuration(seconds) {
+    if (!seconds || seconds < 0) return '00:00:00';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function refreshDashboard() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    const icon = refreshBtn.querySelector('i');
+    
+    // Show loading state
+    icon.className = 'fas fa-spinner fa-spin me-2';
+    refreshBtn.disabled = true;
+    
+    // Load stats
+    loadDashboardStats().finally(() => {
+        // Reset button state
+        icon.className = 'fas fa-sync me-2';
+        refreshBtn.disabled = false;
+    });
+}
+
+// Load stats on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardStats();
+    
+    // Auto-refresh every 1 second
+    dashboardRefreshInterval = setInterval(loadDashboardStats, 1000);
+    
+    console.log('🔄 Dashboard Ankietera zainicjalizowany');
+});
+
+// Clean up interval on page unload
+window.addEventListener('beforeunload', function() {
+    if (dashboardRefreshInterval) {
+        clearInterval(dashboardRefreshInterval);
+    }
+});
+</script>
 {% endblock %}

@@ -1,0 +1,175 @@
+/* CRM Work Panel Styles */
+
+/* Green Header Styles (New Contacts) */
+.admin-card-header.bg-success {
+    background-color: #198754 !important;
+    color: white !important;
+}
+
+.admin-card-header.bg-success * {
+    color: white !important;
+}
+
+.admin-card-header.bg-success .btn-success {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white !important;
+}
+
+.admin-card-header.bg-success .btn-success:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white !important;
+}
+
+.admin-card-header.bg-success .btn-danger {
+    background-color: rgba(220, 53, 69, 0.8);
+    border-color: rgba(220, 53, 69, 0.9);
+    color: white !important;
+}
+
+.admin-card-header.bg-success .btn-danger:hover {
+    background-color: rgba(220, 53, 69, 1);
+    border-color: rgba(220, 53, 69, 1);
+    color: white !important;
+}
+
+.admin-card-header.bg-success .btn-primary {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white !important;
+}
+
+.admin-card-header.bg-success .btn-primary:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white !important;
+}
+
+/* Yellow Header Styles (Callbacks) */
+.admin-card-header.bg-warning {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.admin-card-header.bg-warning * {
+    color: #000 !important;
+}
+
+.admin-card-header.bg-warning .btn-success {
+    background-color: #000;
+    border-color: #000;
+    color: white !important;
+}
+
+.admin-card-header.bg-warning .btn-success:hover {
+    background-color: #333;
+    border-color: #333;
+    color: white !important;
+}
+
+.admin-card-header.bg-warning .btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white !important;
+}
+
+.admin-card-header.bg-warning .btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+    color: white !important;
+}
+
+.admin-card-header.bg-warning .btn-primary {
+    background-color: #000;
+    border-color: #000;
+    color: white !important;
+}
+
+.admin-card-header.bg-warning .btn-primary:hover {
+    background-color: #333;
+    border-color: #333;
+    color: white !important;
+}
+
+/* Call Duration Display */
+#callDurationDisplay {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+/* Better Button Styling */
+.btn-primary {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+/* Flatpickr Calendar Styling */
+.flatpickr-calendar {
+    font-size: 1.2rem !important;
+    width: 320px !important;
+}
+
+.flatpickr-calendar .flatpickr-day {
+    height: 40px !important;
+    line-height: 40px !important;
+    font-size: 1.1rem !important;
+}
+
+.flatpickr-calendar .flatpickr-weekday {
+    font-size: 1rem !important;
+    font-weight: bold !important;
+    height: 35px !important;
+    line-height: 35px !important;
+}
+
+.flatpickr-calendar .flatpickr-month {
+    font-size: 1.3rem !important;
+    height: 45px !important;
+    line-height: 45px !important;
+}
+
+.flatpickr-calendar .flatpickr-prev-month,
+.flatpickr-calendar .flatpickr-next-month {
+    height: 45px !important;
+    line-height: 45px !important;
+    width: 45px !important;
+}
+
+.flatpickr-calendar .flatpickr-time {
+    font-size: 1.1rem !important;
+    height: 50px !important;
+}
+
+.flatpickr-calendar .flatpickr-time input {
+    font-size: 1.1rem !important;
+    height: 50px !important;
+}
+
+/* Disable Weekends and Holidays */
+.flatpickr-calendar .flatpickr-day.weekend {
+    background: #f8f9fa !important;
+    color: #6c757d !important;
+    cursor: not-allowed !important;
+}
+
+.flatpickr-calendar .flatpickr-day.weekend:hover {
+    background: #f8f9fa !important;
+    color: #6c757d !important;
+}
+
+.flatpickr-calendar .flatpickr-day.holiday {
+    background: #fff3cd !important;
+    color: #856404 !important;
+    cursor: not-allowed !important;
+}
+
+.flatpickr-calendar .flatpickr-day.holiday:hover {
+    background: #fff3cd !important;
+    color: #856404 !important;
+}

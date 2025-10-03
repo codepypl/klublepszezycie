@@ -70,6 +70,19 @@ class UserLogs(db.Model):
         return log
     
     @classmethod
+    def log_logout(cls, user_id, ip_address=None, user_agent=None):
+        """Log user logout"""
+        log = cls(
+            user_id=user_id,
+            action_type='logout',
+            description='Wylogowanie z systemu',
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        db.session.add(log)
+        return log
+    
+    @classmethod
     def log_password_change(cls, user_id, ip_address=None, user_agent=None):
         """Log password change"""
         log = cls(

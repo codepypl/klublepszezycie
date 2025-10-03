@@ -274,6 +274,14 @@ if (cancelButton.parentNode) {
             }
         });
     }
+
+    // Load FAQs data from paginated API response
+    loadFAQsData(faqs) {
+        console.log('🔍 loadFAQsData called with:', faqs);
+        // This method can be used to update the FAQs display
+        // The existing faq.js already handles FAQ management
+        // We just need to ensure the data is available for the pagination system
+    }
 }
 
 // Global functions for backward compatibility

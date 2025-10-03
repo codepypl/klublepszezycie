@@ -9,6 +9,28 @@ from app.models import db
 # Import moved to avoid circular dependency
 from datetime import datetime, timedelta
 
+class Campaign(db.Model):
+    """Campaign model for CRM system"""
+    __tablename__ = 'crm_campaigns'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    script_content = db.Column(db.Text)  # Call script content
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Relationships
+    import_files = db.relationship('ImportFile', backref='campaign', lazy='dynamic')
+    contacts = db.relationship('Contact', backref='campaign', lazy='dynamic')
+    calls = db.relationship('Call', backref='campaign', lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<Campaign {self.name}>'
+
+
 class Contact(db.Model):
     """Contact model for CRM system"""
     __tablename__ = 'crm_contacts'
@@ -19,6 +41,8 @@ class Contact(db.Model):
     email = db.Column(db.String(120))
     company = db.Column(db.String(200))
     source_file = db.Column(db.String(200))  # Name of imported file
+    import_file_id = db.Column(db.Integer, db.ForeignKey('crm_import_files.id', ondelete='SET NULL'))  # Link to import file
+    campaign_id = db.Column(db.Integer, db.ForeignKey('crm_campaigns.id', ondelete='SET NULL'))  # Link to campaign
     notes = db.Column(db.Text)
     tags = db.Column(db.Text)  # JSON string with tags
     is_active = db.Column(db.Boolean, default=True)
@@ -33,6 +57,7 @@ class Contact(db.Model):
     # Relationships
     calls = db.relationship('Call', backref='contact', cascade='all, delete-orphan')
     assigned_ankieter = db.relationship('User', backref='assigned_contacts')
+    import_file = db.relationship('ImportFile', backref='contacts')
     
     def __repr__(self):
         return f'<Contact {self.name} ({self.phone})>'
@@ -81,6 +106,7 @@ class Call(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     contact_id = db.Column(db.Integer, db.ForeignKey('crm_contacts.id'), nullable=False)
     ankieter_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    campaign_id = db.Column(db.Integer, db.ForeignKey('crm_campaigns.id', ondelete='SET NULL'))  # Link to campaign
     call_date = db.Column(db.DateTime, nullable=False)
     call_start_time = db.Column(db.DateTime)  # When call actually started
     call_end_time = db.Column(db.DateTime)  # When call ended
@@ -147,8 +173,9 @@ class BlacklistEntry(db.Model):
     __tablename__ = 'crm_blacklist'
     
     id = db.Column(db.Integer, primary_key=True)
-    phone = db.Column(db.String(20), nullable=False, unique=True)
+    phone = db.Column(db.String(20), nullable=False, index=True)
     reason = db.Column(db.String(200))  # Reason for blacklisting
+    campaign_id = db.Column(db.Integer, db.ForeignKey('crm_campaigns.id', ondelete='SET NULL'), nullable=True)  # NULL = global blacklist
     blacklisted_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     contact_id = db.Column(db.Integer, db.ForeignKey('crm_contacts.id'))  # Original contact
     is_active = db.Column(db.Boolean, default=True)  # Can be reactivated by admin
@@ -156,11 +183,38 @@ class BlacklistEntry(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
+    campaign = db.relationship('Campaign', backref='blacklist_entries')
     blacklister = db.relationship('User', backref='blacklist_entries')
     contact = db.relationship('Contact', backref='blacklist_entry')
     
     def __repr__(self):
         return f'<BlacklistEntry {self.phone} - {self.reason}>'
+    
+    @staticmethod
+    def is_blacklisted(phone, campaign_id=None):
+        """Check if phone number is blacklisted globally or for specific campaign"""
+        # Check global blacklist first
+        global_blacklist = BlacklistEntry.query.filter_by(
+            phone=phone, 
+            campaign_id=None, 
+            is_active=True
+        ).first()
+        
+        if global_blacklist:
+            return True, global_blacklist
+        
+        # If campaign_id provided, check campaign-specific blacklist
+        if campaign_id:
+            campaign_blacklist = BlacklistEntry.query.filter_by(
+                phone=phone,
+                campaign_id=campaign_id,
+                is_active=True
+            ).first()
+            
+            if campaign_blacklist:
+                return True, campaign_blacklist
+        
+        return False, None
 
 # Import Log removed - functionality moved to ImportFile
 
@@ -175,7 +229,9 @@ class ImportFile(db.Model):
     file_type = db.Column(db.String(10), nullable=False)  # xlsx, xls, csv
     csv_separator = db.Column(db.String(5), default=',')  # CSV separator character
     imported_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    campaign_id = db.Column(db.Integer, db.ForeignKey('crm_campaigns.id', ondelete='SET NULL'))  # Link to campaign
     import_status = db.Column(db.String(20), default='uploaded')  # uploaded, processing, completed, failed
+    is_active = db.Column(db.Boolean, default=False)  # Whether this import container is active for ankieter
     total_rows = db.Column(db.Integer, default=0)
     processed_rows = db.Column(db.Integer, default=0)
     error_message = db.Column(db.Text)

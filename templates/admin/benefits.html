@@ -218,45 +218,99 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/utils/simple-paginate.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
 <script src="{{ url_for('static', filename='js/admin/benefits.js') }}"></script>
 <script>
-    // Initialize pagination for benefits
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize SimplePagination for benefits
-        if (typeof SimplePagination !== 'undefined') {
-            const paginationContainer = document.getElementById('pagination');
-            if (paginationContainer) {
-                // For benefits, we'll create a simple pagination with mock data
-                // since they don't have server-side pagination yet
-                const paginationData = {
-                    page: 1,
-                    pages: 1,
-                    total: 0,
-                    per_page: 10
-                };
+// Global variables for pagination
+let currentPage = 1;
+let currentPerPage = 10;
+
+function loadBenefits() {
+    console.log('🔍 loadBenefits called with:', { currentPage, currentPerPage });
+    
+    const params = new URLSearchParams({
+        page: currentPage,
+        per_page: currentPerPage
+    });
+    
+    console.log('🔍 API params:', params.toString());
+    
+    fetch(`/api/benefits?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('🔍 API response:', data);
+            if (data.success) {
+                // Update benefits data (this will be handled by the existing benefits.js)
+                if (window.benefitsManager) {
+                    window.benefitsManager.loadBenefitsData(data.benefits);
+                }
                 
-                const paginationInstance = new SimplePagination('pagination', {
-                    showInfo: true,
-                    showPerPage: true,
-                    perPageOptions: [5, 10, 25, 50, 100],
-                    defaultPerPage: 10,
-                    maxVisiblePages: 5
-                });
-                
-                paginationInstance.setPageChangeCallback((page) => {
-                    console.log('Page changed to:', page);
-                    // TODO: Implement server-side pagination for benefits
-                });
-                
-                paginationInstance.setPerPageChangeCallback((newPage, perPage) => {
-                    console.log('Per page changed to:', perPage);
-                    // TODO: Implement server-side pagination for benefits
-                });
-                
-                paginationInstance.setData(paginationData);
+                if (data.pagination) {
+                    console.log('🔍 Calling updatePagination with:', data.pagination);
+                    // Update currentPerPage from server response
+                    currentPerPage = data.pagination.per_page;
+                    updatePagination(data.pagination);
+                } else {
+                    console.log('🔍 No pagination data in response');
+                }
+            } else {
+                console.error('Error loading benefits:', data.message);
             }
+        })
+        .catch(error => {
+            console.error('Error loading benefits:', error);
+        });
+}
+
+function updatePagination(paginationData) {
+    console.log('🔍 updatePagination called with:', paginationData);
+    
+    const paginationContainer = document.getElementById('pagination');
+    if (paginationContainer) {
+        if (paginationContainer.paginationInstance) {
+            // Update existing pagination
+            paginationContainer.paginationInstance.setData(paginationData);
+        } else {
+            // Check if SimplePagination class is available
+            if (typeof SimplePagination === 'undefined') {
+                console.error('SimplePagination class not available. Make sure simple-paginate.js is loaded.');
+                return;
+            }
+            
+            // Initialize pagination for the first time
+            paginationContainer.paginationInstance = new SimplePagination('pagination', {
+                showInfo: true,
+                showPerPage: true,
+                perPageOptions: [5, 10, 25, 50, 100],
+                defaultPerPage: 10,
+                maxVisiblePages: 5
+            });
+            
+            // Set callbacks
+            paginationContainer.paginationInstance.setPageChangeCallback((page) => {
+                console.log('🔍 onPageChange called with:', page);
+                currentPage = page;
+                loadBenefits();
+            });
+            
+            paginationContainer.paginationInstance.setPerPageChangeCallback((newPage, perPage) => {
+                console.log('🔍 onPerPageChange called with:', { newPage, perPage });
+                currentPage = newPage;
+                currentPerPage = perPage;
+                console.log('🔍 Updated variables:', { currentPage, currentPerPage });
+                loadBenefits();
+            });
+            
+            paginationContainer.paginationInstance.setData(paginationData);
         }
+    } else {
+        console.error('Pagination container not found');
+    }
+}
+
+// Initialize pagination for benefits
+document.addEventListener('DOMContentLoaded', function() {
+        // Load benefits with pagination
+        loadBenefits();
         
         // Initialize CRUD Refresh Manager for benefits
         if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {

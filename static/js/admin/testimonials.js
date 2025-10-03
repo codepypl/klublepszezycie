@@ -196,6 +196,14 @@ class TestimonialsManager {
             window.toastManager.error('Wystąpił błąd podczas aktualizacji opinii');
         });
     }
+
+    // Load testimonials data from paginated API response
+    loadTestimonialsData(testimonials) {
+        console.log('🔍 loadTestimonialsData called with:', testimonials);
+        // This method can be used to update the testimonials display
+        // The existing testimonials.js already handles testimonial management
+        // We just need to ensure the data is available for the pagination system
+    }
 }
 
 // Global functions for template onclick handlers
@@ -221,5 +229,6 @@ function deleteTestimonial(testimonialId) {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    testimonialsManager = new TestimonialsManager();
+    window.testimonialsManager = new TestimonialsManager();
+    testimonialsManager = window.testimonialsManager; // For backward compatibility
 });

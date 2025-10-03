@@ -1,3 +1,5 @@
+
+static/uploads/*
 app/logs/*
 *.pid
 celerybeat-schedule*

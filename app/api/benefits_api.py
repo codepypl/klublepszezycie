@@ -14,7 +14,13 @@ def api_benefits():
     """Benefits API"""
     if request.method == 'GET':
         try:
-            benefits = BenefitItem.query.order_by(BenefitItem.order.asc()).all()
+            page = request.args.get('page', 1, type=int)
+            per_page = request.args.get('per_page', 10, type=int)
+            
+            pagination = BenefitItem.query.order_by(BenefitItem.order.asc()).paginate(
+                page=page, per_page=per_page, error_out=False
+            )
+            
             return jsonify({
                 'success': True,
                 'benefits': [{
@@ -25,7 +31,13 @@ def api_benefits():
                     'order': benefit.order,
                     'is_active': benefit.is_active,
                     'created_at': benefit.created_at.isoformat() if benefit.created_at else None
-                } for benefit in benefits]
+                } for benefit in pagination.items],
+                'pagination': {
+                    'page': pagination.page,
+                    'pages': pagination.pages,
+                    'total': pagination.total,
+                    'per_page': pagination.per_page
+                }
             })
         except Exception as e:
             logging.error(f"Error getting benefits: {str(e)}")

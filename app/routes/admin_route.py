@@ -249,7 +249,7 @@ def crm_settings():
         flash(f'Błąd podczas ładowania ustawień CRM: {data["error"]}', 'error')
         return redirect(url_for('admin.dashboard'))
     
-    return render_template('admin/crm_settings.html', stats=data['stats'])
+    return render_template('admin/crm_settings.html')
 
 # Clear all CRM data
 @admin_bp.route('/crm/clear-all', methods=['POST'])
@@ -264,19 +264,6 @@ def crm_clear_all():
         flash(result['error'], 'error')
     
     return redirect(url_for('admin.crm_settings'))
-
-# CRM Export page
-@admin_bp.route('/crm/export')
-@login_required
-def crm_export():
-    """CRM export page"""
-    data = AdminController.get_crm_export_data()
-    
-    if not data['success']:
-        flash(f'Błąd podczas ładowania strony eksportu CRM: {data["error"]}', 'error')
-        return redirect(url_for('admin.dashboard'))
-    
-    return render_template('admin/crm_export.html', stats=data['stats'], recent_imports=data['recent_imports'])
 
 # CRM Analysis page
 
@@ -297,4 +284,18 @@ def crm_analysis():
                          contacts=data['contacts'], 
                          contact_analyses=data['contact_analyses'],
                          search=data['search'])
+
+# CRM Campaigns page
+@admin_bp.route('/crm/campaigns')
+@login_required
+def crm_campaigns():
+    """CRM campaigns management page"""
+    return render_template('admin/crm/campaigns.html')
+
+# CRM Blacklist page
+@admin_bp.route('/crm/blacklist')
+@login_required
+def crm_blacklist():
+    """CRM blacklist management page"""
+    return render_template('admin/crm/blacklist.html')
 

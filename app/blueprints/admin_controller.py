@@ -62,39 +62,16 @@ class AdminController:
     def get_crm_settings_data():
         """Get CRM settings data"""
         try:
-            # Get CRM statistics from central stats table
-            total_contacts = Stats.get_total_contacts()
-            total_calls = Stats.get_total_calls()
-            total_imports = Stats.get_total_imports()
-            total_blacklist = Stats.get_total_blacklist()
-            daily_calls = Stats.get_daily_calls()
-            daily_leads = Stats.get_daily_leads()
-            
-            stats = {
-                'total_contacts': total_contacts,
-                'total_calls': total_calls,
-                'total_imports': total_imports,
-                'total_blacklist': total_blacklist,
-                'daily_calls': daily_calls,
-                'daily_leads': daily_leads
-            }
-            
+            # No statistics needed anymore
             return {
                 'success': True,
-                'stats': stats
+                'stats': {}
             }
         except Exception as e:
             return {
                 'success': False,
                 'error': str(e),
-                'stats': {
-                    'total_contacts': 0,
-                    'total_calls': 0,
-                    'total_imports': 0,
-                    'total_blacklist': 0,
-                    'daily_calls': 0,
-                    'daily_leads': 0
-                }
+                'stats': {}
             }
     
     @staticmethod
@@ -128,56 +105,7 @@ class AdminController:
                 'success': False,
                 'error': f'Błąd podczas usuwania danych CRM: {str(e)}'
             }
-    
-    @staticmethod
-    def get_crm_export_data():
-        """Get CRM export data"""
-        try:
-            from app.models.crm_model import Contact, Call, ImportFile, ImportRecord, BlacklistEntry
-            
-            # Get counts from central stats table
-            total_contacts = Stats.get_total_contacts()
-            total_calls = Stats.get_total_calls()
-            total_imports = Stats.get_total_imports()
-            total_blacklist = Stats.get_total_blacklist()
-            
-            # Get recent imports
-            recent_imports = ImportFile.query.order_by(ImportFile.created_at.desc()).limit(5).all()
-            
-            # Get call outcomes statistics
-            from sqlalchemy import func
-            call_outcomes = db.session.query(
-                Call.status, 
-                func.count(Call.id).label('count')
-            ).group_by(Call.status).all()
-            
-            stats = {
-                'total_contacts': total_contacts,
-                'total_calls': total_calls,
-                'total_imports': total_imports,
-                'total_blacklist': total_blacklist,
-                'call_outcomes': dict(call_outcomes)
-            }
-            
-            return {
-                'success': True,
-                'stats': stats,
-                'recent_imports': recent_imports
-            }
-        except Exception as e:
-            return {
-                'success': False,
-                'error': str(e),
-                'stats': {
-                    'total_contacts': 0,
-                    'total_calls': 0,
-                    'total_imports': 0,
-                    'total_blacklist': 0,
-                    'call_outcomes': {}
-                },
-                'recent_imports': []
-            }
-    
+
     @staticmethod
     def get_crm_analysis_data(page=1, per_page=20, search=''):
         """Get CRM analysis data"""

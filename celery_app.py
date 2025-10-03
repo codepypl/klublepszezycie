@@ -23,7 +23,8 @@ def make_celery(app=None):
         include=[
             'app.tasks.email_tasks',
             'app.tasks.event_tasks',
-            'app.tasks.monitor_tasks'
+            'app.tasks.monitor_tasks',
+            'app.tasks.stats_tasks'
         ]
     )
     
@@ -122,6 +123,21 @@ def make_celery(app=None):
             'task': 'app.tasks.event_tasks.archive_ended_events_task',
             'schedule': 3600.0,  # Co godzinę
             'options': {'queue': 'event_queue'},
+        },
+        'cleanup-old-stats': {
+            'task': 'app.tasks.stats_tasks.cleanup_old_stats',
+            'schedule': crontab(hour=2, minute=0),  # Codziennie o 2:00
+            'options': {'queue': 'default'},
+        },
+        'cleanup-old-user-logs': {
+            'task': 'app.tasks.stats_tasks.cleanup_old_user_logs',
+            'schedule': crontab(hour=3, minute=0),  # Codziennie o 3:00
+            'options': {'queue': 'default'},
+        },
+        'monthly-stats-summary': {
+            'task': 'app.tasks.stats_tasks.monthly_stats_summary',
+            'schedule': crontab(day=1, hour=4, minute=0),  # 1. dnia każdego miesiąca o 4:00
+            'options': {'queue': 'default'},
         },
         'cleanup-old-reminders': {
             'task': 'app.tasks.event_tasks.cleanup_old_reminders_task',

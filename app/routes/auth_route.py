@@ -4,6 +4,7 @@ Authentication routes
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from app.blueprints.auth_controller import AuthController
+from app.models.user_logs_model import UserLogs
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -18,6 +19,19 @@ def login():
         
         if result['success']:
             login_user(result['user'])
+            
+            # Log login action
+            try:
+                UserLogs.log_login(
+                    user_id=result['user'].id,
+                    ip_address=request.remote_addr,
+                    user_agent=request.headers.get('User-Agent')
+                )
+                from app.models import db
+                db.session.commit()
+            except Exception as e:
+                print(f"Error logging login: {e}")
+            
             next_page = request.args.get('next')
             if next_page:
                 return redirect(next_page)
@@ -142,6 +156,18 @@ def reset_password(token):
 @login_required
 def logout():
     """User logout"""
+    # Log logout action before logging out
+    try:
+        UserLogs.log_logout(
+            user_id=current_user.id,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        from app.models import db
+        db.session.commit()
+    except Exception as e:
+        print(f"Error logging logout: {e}")
+    
     logout_user()
     flash('Zostałeś wylogowany', 'info')
     return redirect(url_for('public.index'))

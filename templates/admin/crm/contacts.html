@@ -184,8 +184,34 @@
                         </div>
                     </div>
 
-                    <!-- Step 4: Import Progress -->
+                    <!-- Step 4: Campaign Selection -->
                     <div id="importStep4" style="display: none;">
+                        <h6 class="mb-3">Przypisanie do kampanii</h6>
+                        <p class="text-muted mb-3">Wybierz kampanię, do której mają być przypisane importowane kontakty</p>
+                        
+                        <div class="mb-3">
+                            <label for="campaignSelect" class="form-label">Kampania *</label>
+                            <select class="form-select" id="campaignSelect" name="campaign_id" required>
+                                <option value="">Wybierz kampanię</option>
+                            </select>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Kontakty będą przypisane do wybranej kampanii i będą dostępne dla ankieterów pracujących z tą kampanią.
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn admin-btn-outline" id="backToStep3">
+                                <i class="fas fa-arrow-left me-2"></i>Wróć do podglądu
+                            </button>
+                            <button type="button" class="btn admin-btn" id="proceedToImport">
+                                <i class="fas fa-upload me-2"></i>Rozpocznij import
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 5: Import Progress -->
+                    <div id="importStep5" style="display: none;">
                         <div class="text-center">
                             <div class="spinner-border text-primary mb-3" role="status">
                                 <span class="visually-hidden">Importowanie...</span>
@@ -202,26 +228,124 @@
         </div>
     </div>
 
-    <!-- Search -->
+    <!-- Advanced Filters -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>Filtry i wyszukiwanie
+                    </h5>
+                    <button type="button" class="btn btn-sm admin-btn-outline" data-bs-toggle="collapse" data-bs-target="#filtersCollapse">
+                        <i class="fas fa-chevron-down me-1"></i>Rozwiń filtry
+                    </button>
+                </div>
                 <div class="admin-card-body">
-                    <form method="GET" class="row g-3">
-                        <div class="col-md-8">
-                            <label for="search" class="form-label">Wyszukaj</label>
-                            <input type="text" class="form-control" id="search" name="search" 
-                                   value="{{ search }}" placeholder="Imię, telefon, email...">
+                    <form method="GET" id="filtersForm">
+                        <!-- Basic Search -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-8">
+                                <label for="search" class="form-label">Wyszukaj</label>
+                                <input type="text" class="form-control" id="search" name="search" 
+                                       value="{{ search }}" placeholder="Imię, telefon, email, firma...">
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="submit" class="btn admin-btn me-2">
+                                    <i class="fas fa-search me-1"></i>Szukaj
+                                </button>
+                                <a href="{{ url_for('crm.contacts') }}" class="btn admin-btn-outline">
+                                    <i class="fas fa-times me-1"></i>Wyczyść
+                                </a>
+                            </div>
                         </div>
-                        <div class="col-md-4 d-flex align-items-end">
-                            <button type="submit" class="btn admin-btn me-2">
-                                <i class="fas fa-search me-1"></i>Szukaj
-                            </button>
-                            {% if search %}
-                            <a href="{{ url_for('crm.contacts') }}" class="btn admin-btn-outline">
-                                <i class="fas fa-times me-1"></i>Wyczyść
-                            </a>
-                            {% endif %}
+                        
+                        <!-- Advanced Filters -->
+                        <div class="collapse" id="filtersCollapse">
+                            <div class="row g-3">
+                                <!-- Campaign Filter -->
+                                <div class="col-md-3">
+                                    <label for="campaign_filter" class="form-label">Kampania</label>
+                                    <select class="form-select" id="campaign_filter" name="campaign_filter">
+                                        <option value="">Wszystkie kampanie</option>
+                                        <!-- Options will be populated by JavaScript -->
+                                    </select>
+                                </div>
+                                
+                                <!-- Call Attempts Filter -->
+                                <div class="col-md-3">
+                                    <label for="call_attempts_filter" class="form-label">Ilość prób</label>
+                                    <input type="number" class="form-control" id="call_attempts_filter" name="call_attempts_filter" 
+                                           value="{{ request.args.get('call_attempts_filter', '') }}" placeholder="Wpisz liczbę..." min="0">
+                                    <div class="form-text">Pozostaw puste aby pokazać wszystkie</div>
+                                </div>
+                                
+                                <!-- Last Status Filter -->
+                                <div class="col-md-3">
+                                    <label for="last_status_filter" class="form-label">Ostatni status</label>
+                                    <select class="form-select" id="last_status_filter" name="last_status_filter">
+                                        <option value="">Wszystkie statusy</option>
+                                        <option value="new" {% if request.args.get('last_status_filter') == 'new' %}selected{% endif %}>Nowy</option>
+                                        <option value="callback" {% if request.args.get('last_status_filter') == 'callback' %}selected{% endif %}>Oddzwonienie</option>
+                                        <option value="potential_lead" {% if request.args.get('last_status_filter') == 'potential_lead' %}selected{% endif %}>Potencjalny lead</option>
+                                        <option value="not_interested" {% if request.args.get('last_status_filter') == 'not_interested' %}selected{% endif %}>Nie zainteresowany</option>
+                                        <option value="wrong_number" {% if request.args.get('last_status_filter') == 'wrong_number' %}selected{% endif %}>Błędny numer</option>
+                                        <option value="no_answer" {% if request.args.get('last_status_filter') == 'no_answer' %}selected{% endif %}>Brak odpowiedzi</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Company Filter -->
+                                <div class="col-md-3">
+                                    <label for="company_filter" class="form-label">Firma</label>
+                                    <input type="text" class="form-control" id="company_filter" name="company_filter" 
+                                           value="{{ request.args.get('company_filter', '') }}" placeholder="Nazwa firmy...">
+                                </div>
+                            </div>
+                            
+                            <div class="row g-3 mt-2">
+                                <!-- Last Call Date -->
+                                <div class="col-md-3">
+                                    <label for="last_call_date_from" class="form-label">Ostatnie dzwonienie od</label>
+                                    <input type="date" class="form-control" id="last_call_date_from" name="last_call_date_from" 
+                                           value="{{ request.args.get('last_call_date_from', '') }}">
+                                </div>
+                                
+                                <div class="col-md-3">
+                                    <label for="last_call_date_to" class="form-label">Ostatnie dzwonienie do</label>
+                                    <input type="date" class="form-control" id="last_call_date_to" name="last_call_date_to" 
+                                           value="{{ request.args.get('last_call_date_to', '') }}">
+                                </div>
+                                
+                                <!-- Callback Date -->
+                                <div class="col-md-3">
+                                    <label for="callback_date_from" class="form-label">Przełożenie od</label>
+                                    <input type="date" class="form-control" id="callback_date_from" name="callback_date_from" 
+                                           value="{{ request.args.get('callback_date_from', '') }}">
+                                </div>
+                                
+                                <div class="col-md-3">
+                                    <label for="callback_date_to" class="form-label">Przełożenie do</label>
+                                    <input type="date" class="form-control" id="callback_date_to" name="callback_date_to" 
+                                           value="{{ request.args.get('callback_date_to', '') }}">
+                                </div>
+                            </div>
+                            
+                            <div class="row g-3 mt-2">
+                                <!-- Notes Filter -->
+                                <div class="col-md-6">
+                                    <label for="notes_filter" class="form-label">Notatki</label>
+                                    <input type="text" class="form-control" id="notes_filter" name="notes_filter" 
+                                           value="{{ request.args.get('notes_filter', '') }}" placeholder="Szukaj w notatkach...">
+                                </div>
+                                
+                                <div class="col-md-6 d-flex align-items-end">
+                                    <button type="submit" class="btn admin-btn me-2">
+                                        <i class="fas fa-filter me-1"></i>Zastosuj filtry
+                                    </button>
+                                    <button type="button" class="btn admin-btn-outline" onclick="clearAllFilters()">
+                                        <i class="fas fa-eraser me-1"></i>Wyczyść wszystkie
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -248,6 +372,7 @@
                                     <th>Telefon</th>
                                     <th>Email</th>
                                     <th>Firma</th>
+                                    <th>Kampania</th>
                                     <th>Ostatni status</th>
                                     <th>Zdrowie rekordu</th>
                                     <th>Próby</th>
@@ -282,6 +407,13 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ contact.company or 'Brak' }}</td>
+                                    <td>
+                                        {% if contact.campaign %}
+                                            <span class="badge bg-primary">{{ contact.campaign.name }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Brak kampanii</span>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         {% if contact.last_status %}
                                             {% if contact.last_status == 'lead' %}
@@ -333,7 +465,7 @@
                         <ul class="pagination justify-content-center">
                             {% if contacts.has_prev %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('ankieter.contacts', page=contacts.prev_num, search=search) }}">
+                                <a class="page-link" href="{{ url_for('crm.contacts', page=contacts.prev_num, search=search) }}">
                                     <i class="fas fa-chevron-left"></i>
                                 </a>
                             </li>
@@ -343,7 +475,7 @@
                                 {% if page_num %}
                                     {% if page_num != contacts.page %}
                                     <li class="page-item">
-                                        <a class="page-link" href="{{ url_for('ankieter.contacts', page=page_num, search=search) }}">{{ page_num }}</a>
+                                        <a class="page-link" href="{{ url_for('crm.contacts', page=page_num, search=search) }}">{{ page_num }}</a>
                                     </li>
                                     {% else %}
                                     <li class="page-item active">
@@ -359,7 +491,7 @@
                             
                             {% if contacts.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('ankieter.contacts', page=contacts.next_num, search=search) }}">
+                                <a class="page-link" href="{{ url_for('crm.contacts', page=contacts.next_num, search=search) }}">
                                     <i class="fas fa-chevron-right"></i>
                                 </a>
                             </li>
@@ -374,6 +506,46 @@
                         <p>Zaimportuj plik XLSX, aby dodać kontakty do systemu.</p>
                     </div>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Containers Management -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card admin-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-boxes me-2"></i>Zarządzanie kontenerami importów
+                    </h5>
+                    <button class="btn btn-sm admin-btn-outline" onclick="loadImportContainers()">
+                        <i class="fas fa-sync me-1"></i>Odśwież
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm" id="containersTable">
+                            <thead>
+                                <tr>
+                                    <th>Nazwa pliku</th>
+                                    <th>Status importu</th>
+                                    <th>Kontakty</th>
+                                    <th>Data utworzenia</th>
+                                    <th>Importujący</th>
+                                    <th>Stan kontenera</th>
+                                    <th>Akcje</th>
+                                </tr>
+                            </thead>
+                            <tbody id="containersTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">
+                                        <i class="fas fa-spinner fa-spin me-2"></i>Ładowanie kontenerów...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -484,8 +656,86 @@ function setupContactsAutoRefresh() {
     }, 30000); // 30 seconds
 }
 
+// Load import containers
+function loadImportContainers() {
+    fetch('/api/crm/admin/import-containers', {
+        credentials: 'include'
+    })
+    .then(response => safeJsonParse(response))
+    .then(data => {
+        if (data.success) {
+            displayImportContainers(data.containers);
+        } else {
+            console.error('Error loading import containers:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading import containers:', error);
+    });
+}
+
+// Display import containers
+function displayImportContainers(containers) {
+    const tbody = document.getElementById('containersTableBody');
+    
+    if (containers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Brak kontenerów importów</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    containers.forEach(container => {
+        const statusClass = container.is_active ? 'success' : 'secondary';
+        const statusText = container.is_active ? 'Aktywny' : 'Nieaktywny';
+        const toggleClass = container.is_active ? 'btn-warning' : 'btn-success';
+        const toggleText = container.is_active ? 'Deaktywuj' : 'Aktywuj';
+        
+        html += `
+            <tr>
+                <td>${container.filename}</td>
+                <td><span class="badge bg-info">${container.import_status}</span></td>
+                <td>${container.contact_count}</td>
+                <td>${new Date(container.created_at).toLocaleDateString('pl-PL')}</td>
+                <td>${container.importer_name}</td>
+                <td><span class="badge bg-${statusClass}">${statusText}</span></td>
+                <td>
+                    <button class="btn btn-sm ${toggleClass}" onclick="toggleContainer(${container.id})">
+                        <i class="fas fa-${container.is_active ? 'pause' : 'play'} me-1"></i>${toggleText}
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+// Toggle container active status
+function toggleContainer(containerId) {
+    fetch(`/api/crm/admin/import-containers/${containerId}/toggle`, {
+        method: 'POST',
+        credentials: 'include'
+    })
+    .then(response => safeJsonParse(response))
+    .then(data => {
+        if (data.success) {
+            showSuccess(data.message);
+            loadImportContainers(); // Reload containers
+        } else {
+            showError('Błąd: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error toggling container:', error);
+        showError('Wystąpił błąd podczas zmiany stanu kontenera');
+    });
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Load import containers
+    loadImportContainers();
+    
     // Only setup auto-refresh if we're in import step 3
     // Auto-refresh is NOT needed for normal contacts page viewing
     setupContactsAutoRefresh();
@@ -567,5 +817,69 @@ function confirmDeleteImport(importId) {
         window.toastManager.show('Błąd usuwania importu', 'error');
     });
 }
+
+// ===== FILTERS FUNCTIONALITY =====
+
+// Load campaigns for filter dropdown
+function loadCampaignsForFilter() {
+    fetch('/api/crm/campaigns')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populateCampaignFilter(data.campaigns);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading campaigns for filter:', error);
+        });
+}
+
+function populateCampaignFilter(campaigns) {
+    const select = document.getElementById('campaign_filter');
+    if (!select) return;
+    
+    // Get current selected value
+    const currentValue = select.value;
+    
+    // Clear existing options except the first one
+    select.innerHTML = '<option value="">Wszystkie kampanie</option>';
+    
+    // Add campaigns
+    campaigns.forEach(campaign => {
+        const option = document.createElement('option');
+        option.value = campaign.id;
+        option.textContent = campaign.name + (campaign.is_active ? '' : ' (nieaktywna)');
+        select.appendChild(option);
+    });
+    
+    // Restore selected value
+    if (currentValue) {
+        select.value = currentValue;
+    }
+}
+
+function clearAllFilters() {
+    // Clear all form inputs
+    document.getElementById('filtersForm').reset();
+    
+    // Clear URL parameters and reload
+    const url = new URL(window.location);
+    url.search = '';
+    window.location.href = url.toString();
+}
+
+// Initialize filters on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadCampaignsForFilter();
+    
+    // Auto-expand filters if any filter is active
+    const hasActiveFilters = Array.from(document.querySelectorAll('#filtersForm input, #filtersForm select')).some(input => input.value);
+    if (hasActiveFilters) {
+        const collapse = document.getElementById('filtersCollapse');
+        if (collapse) {
+            new bootstrap.Collapse(collapse, { show: true });
+        }
+    }
+});
 </script>
 {% endblock %}

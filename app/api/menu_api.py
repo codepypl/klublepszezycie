@@ -14,7 +14,13 @@ def api_menu():
     """Menu API"""
     if request.method == 'GET':
         try:
-            menu_items = MenuItem.query.order_by(MenuItem.order.asc()).all()
+            page = request.args.get('page', 1, type=int)
+            per_page = request.args.get('per_page', 10, type=int)
+            
+            pagination = MenuItem.query.order_by(MenuItem.order.asc()).paginate(
+                page=page, per_page=per_page, error_out=False
+            )
+            
             return jsonify({
                 'success': True,
                 'menu_items': [{
@@ -26,7 +32,13 @@ def api_menu():
                     'order': item.order,
                     'is_active': item.is_active,
                     'created_at': item.created_at.isoformat() if item.created_at else None
-                } for item in menu_items]
+                } for item in pagination.items],
+                'pagination': {
+                    'page': pagination.page,
+                    'pages': pagination.pages,
+                    'total': pagination.total,
+                    'per_page': pagination.per_page
+                }
             })
         except Exception as e:
             logging.error(f"Error getting menu items: {str(e)}")

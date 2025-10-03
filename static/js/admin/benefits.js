@@ -248,6 +248,14 @@ if (cancelButton.parentNode) {
             window.toastManager.error('Wystąpił błąd podczas aktualizacji korzyści');
         });
     }
+
+    // Load benefits data from paginated API response
+    loadBenefitsData(benefits) {
+        console.log('🔍 loadBenefitsData called with:', benefits);
+        // This method can be used to update the benefits display
+        // The existing benefits.js already handles benefit management
+        // We just need to ensure the data is available for the pagination system
+    }
 }
 
 // Global functions for backward compatibility

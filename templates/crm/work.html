@@ -2,19 +2,13 @@
 
 {% block title %}Praca agenta - {{ super() }}{% endblock %}
 
-{% block page_title %}
-    <i class="fas fa-headset me-2"></i>Praca agenta
-    <div id="callbackCountdownHeader">
-        <i class="fas fa-clock me-1"></i>
-        <span id="countdownText">-</span>
-    </div>
-{% endblock %}
+{% block page_title %}<i class="fas fa-headset me-2"></i>Praca agenta{% endblock %}
 
 
 <!-- Callback Countdown Alert -->
-<div class="row mb-3" id="callbackAlert">
+<div class="row mb-3">
     <div class="col-12">
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <div class="alert alert-warning alert-dismissible fade show" role="alert" id="callbackAlert" style="display: none;">
             <i class="fas fa-clock me-2"></i>
             <strong>Zaplanowane oddzwonienie!</strong>
             <span id="callbackInfo">-</span>
@@ -24,13 +18,11 @@
 </div>
 
 {% block content %}
+    <div id="workPanel">
     <!-- Agent Status Panel -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="admin-card">
-                <div class="admin-card-header">
-                    <h5><i class="fas fa-user-tie me-2"></i>Status agenta</h5>
-                </div>
                 <div class="admin-card-body">
                     <div class="row align-items-center">
                         <div class="col-md-6">
@@ -45,9 +37,18 @@
                             </div>
                         </div>
                         <div class="col-md-6 text-end">
-                            <button class="btn btn-lg" id="statusToggleBtn" onclick="toggleAgentStatus()">
-                                <i class="fas fa-play me-2"></i>Rozpocznij pracę
-                            </button>
+                            <div class="d-flex flex-column align-items-end">
+                                <div class="mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-clock me-2 text-primary"></i>
+                                        <span class="text-muted">Czas pracy dzisiaj:</span>
+                                    </div>
+                                    <div class="h5 mb-0 text-primary" id="dailyWorkTime">00:00:00</div>
+                                </div>
+                                <button class="btn btn-lg" id="statusToggleBtn" onclick="toggleAgentStatus()">
+                                    <i class="fas fa-play me-2"></i>Rozpocznij pracę
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -59,26 +60,73 @@
     <div class="row mb-4" id="currentCallPanel">
         <div class="col-12">
             <div class="admin-card">
-                <div class="admin-card-header">
-                    <h5><i class="fas fa-phone me-2"></i>Aktualne połączenie</h5>
+                <div class="admin-card-header d-flex justify-content-between align-items-center" id="callHeader">
+                    <div class="d-flex align-items-center">
+                        <h5><i class="fas fa-phone me-2"></i><span id="headerTitle">Aktualne połączenie</span></h5>
+                        <span id="callbackInfo" class="ms-3 badge bg-warning text-dark" style="display: none;">
+                            <i class="fas fa-clock me-1"></i>Oddzwonienie w terminie
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div id="callDurationDisplay" class="text-muted" style="display: none;">
+                            <div class="d-flex gap-3">
+                                <div>
+                                    <i class="fas fa-phone me-1"></i>
+                                    <span id="callDuration">00:00</span>
+                                    <small class="text-muted ms-1">rozmowa</small>
+                                </div>
+                                <div>
+                                    <i class="fas fa-clock me-1"></i>
+                                    <span id="recordDuration">00:00</span>
+                                    <small class="text-muted ms-1">obsługa</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Call Action Buttons -->
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success btn-sm" onclick="makeCall()" id="makeCallBtn">
+                                <i class="fas fa-phone me-1"></i>Zadzwoń
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="endCall()" id="endCallBtn" style="display: none;">
+                                <i class="fas fa-phone-slash me-1"></i>Zakończ
+                            </button>
+                        </div>
+                        
+                        <button class="btn btn-primary btn-sm" onclick="showAddNoteModal()">
+                            <i class="fas fa-sticky-note me-1"></i>Dodaj notatkę
+                        </button>
+                    </div>
                 </div>
                 <div class="admin-card-body">
                     <!-- Contact Information -->
                     <div class="row mb-4">
-                        <div class="col-md-6">
+                        <div class="col-12">
                             <h6>Dane kontaktu:</h6>
                             <div class="contact-info">
-                                <p><strong>Imię i nazwisko:</strong> <span id="contactName">-</span></p>
-                                <p><strong>Telefon:</strong> <span id="contactPhone">-</span></p>
-                                <p><strong>Firma:</strong> <span id="contactCompany">-</span></p>
-                                <p><strong>Email:</strong> <span id="contactEmail">-</span></p>
-                                <p><strong>Notatki:</strong> <span id="contactNotes">-</span></p>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Historia połączeń:</h6>
-                            <div id="callHistory" class="call-history">
-                                <p class="text-muted">Brak historii połączeń</p>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <p><strong>Imię i nazwisko:</strong><br><span id="contactName">-</span></p>
+                                        <p><strong>Telefon:</strong><br><span id="contactPhone">-</span></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p><strong>Firma:</strong><br><span id="contactCompany">-</span></p>
+                                        <p><strong>Email:</strong><br><span id="contactEmail">-</span></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p><strong>Notatki:</strong><br><span id="contactNotes">-</span></p>
+                                        
+                                        <!-- Call History moved here -->
+                                        <div class="mt-3" id="callHistorySection">
+                                            <h6><i class="fas fa-history me-2"></i>Historia interakcji</h6>
+                                            <div class="call-history" id="callHistory">
+                                                <div class="text-muted text-center py-3">
+                                                    <i class="fas fa-spinner fa-spin me-2"></i>Ładowanie historii...
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -87,24 +135,16 @@
                     <div class="row mb-4">
                         <div class="col-12">
                             <h6>Tekst do przeczytania:</h6>
-                            <div class="call-script">
-                                <p id="callScript">Dzień dobry, dzwonię z Klubu Lepsze Życie. Czy mogę rozmawiać z Panem/Panią <span id="scriptName">[IMIĘ]</span>?</p>
+                            <div class="call-script" id="callScript">
+                                <p>Dzień dobry, dzwonię z Klubu Lepsze Życie. Czy mogę rozmawiać z Panem/Panią <span id="scriptName">[IMIĘ]</span>?</p>
                                 <p>Nazywam się <span id="agentName">[IMIĘ AGENTA]</span> i chciałbym zaprosić Pana/Panią na nasze bezpłatne wydarzenie dotyczące rozwoju osobistego.</p>
                                 <p>Czy byłby Pan/Pani zainteresowany/a udziałem w takim wydarzeniu?</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Call Actions -->
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="d-flex gap-2">
-                                <button class="btn admin-btn" onclick="makeCall()" id="makeCallBtn">
-                                    <i class="fas fa-phone me-2"></i>Zadzwoń
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+
+                    <!-- Call Actions - Removed, moved to header -->
                 </div>
             </div>
         </div>
@@ -122,44 +162,70 @@
                         <div class="col-md-8">
                             <h6>Wybierz wynik rozmowy:</h6>
                             <div class="outcome-buttons">
-                                <button class="btn btn-success btn-lg me-2 mb-2" onclick="saveCallOutcome('lead')">
-                                    <i class="fas fa-star me-2"></i>Lead (Zainteresowany)
+                                <button class="btn btn-success me-2 mb-2" onclick="saveCallOutcome('lead')">
+                                    <i class="fas fa-star me-1"></i>Lead
                                 </button>
-                                <button class="btn btn-warning btn-lg me-2 mb-2" onclick="showCallbackScheduling()">
-                                    <i class="fas fa-calendar-plus me-2"></i>Przełożenie
+                                <button class="btn btn-warning me-2 mb-2" onclick="showCallbackScheduling()">
+                                    <i class="fas fa-calendar-plus me-1"></i>Przełożenie
                                 </button>
-                                <button class="btn btn-danger btn-lg me-2 mb-2" onclick="saveCallOutcome('rejection')">
-                                    <i class="fas fa-times me-2"></i>Odmowa
+                                <button class="btn btn-danger me-2 mb-2" onclick="saveCallOutcome('rejection')">
+                                    <i class="fas fa-times me-1"></i>Odmowa
                                 </button>
-                                <button class="btn btn-secondary btn-lg me-2 mb-2" onclick="saveCallOutcome('no_answer')">
-                                    <i class="fas fa-phone-slash me-2"></i>Nie odebrał
+                                <button class="btn btn-secondary me-2 mb-2" onclick="saveCallOutcome('no_answer')">
+                                    <i class="fas fa-phone-slash me-1"></i>Nie odebrał
                                 </button>
-                                <button class="btn btn-info btn-lg me-2 mb-2" onclick="saveCallOutcome('busy')">
-                                    <i class="fas fa-phone-busy me-2"></i>Zajęte
+                                <button class="btn btn-info me-2 mb-2" onclick="saveCallOutcome('busy')">
+                                    <i class="fas fa-phone-busy me-1"></i>Zajęte
                                 </button>
-                                <button class="btn btn-dark btn-lg me-2 mb-2" onclick="saveCallOutcome('wrong_number')">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>Błędny numer
+                                <button class="btn btn-dark me-2 mb-2" onclick="saveCallOutcome('wrong_number')">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>Błędny numer
+                                </button>
+                                <button class="btn btn-outline-danger me-2 mb-2" onclick="saveCallOutcome('blacklist')">
+                                    <i class="fas fa-ban me-1"></i>Czarna lista
                                 </button>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <h6>Notatki:</h6>
-                            <textarea class="form-control" id="callNotes" rows="4" placeholder="Dodaj notatki z rozmowy..."></textarea>
-                        </div>
                     </div>
 
-                    <!-- Callback Scheduling (for callback outcome) -->
-                    <div class="row mt-3" id="callbackScheduling">
+                    <!-- Callback Scheduling (for callback outcome) - Hidden by default -->
+                    <div class="row mt-3" id="callbackScheduling" style="display: none;">
                         <div class="col-12">
-                            <h6>Zaplanuj oddzwonienie:</h6>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Zaplanuj oddzwonienie</strong> - Oddzwonienia są bardzo ważne dla biznesu!
+                            </div>
                             <div class="row">
                                 <div class="col-md-6">
-                                    <label class="form-label">Data oddzwonienia <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control" id="callbackDate" required>
+                                    <label class="form-label fs-5"><strong>Data oddzwonienia</strong> <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="callbackDate" required style="font-size: 1.3rem; padding: 1rem; height: auto; min-height: 60px;">
+                                    <small class="form-text text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Tylko dni robocze (poniedziałek-piątek)
+                                    </small>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Godzina oddzwonienia <span class="text-danger">*</span></label>
-                                    <input type="time" class="form-control" id="callbackTime" required>
+                                <div class="col-md-3">
+                                    <label class="form-label fs-5"><strong>Godzina oddzwonienia</strong> <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control" id="callbackTime" required style="font-size: 1.3rem; padding: 1rem; height: auto; min-height: 60px;">
+                                    <small class="form-text text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        Godziny: 8:00 - 21:00
+                                    </small>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fs-5"><strong>Strefa czasowa</strong></label>
+                                    <select class="form-control" id="callbackTimezone" required style="font-size: 1.3rem; padding: 1rem; height: auto; min-height: 60px;">
+                                        <option value="Europe/Warsaw">Europe/Warsaw (CET/CEST)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <label for="callbackNotes" class="form-label">Notatka do przełożenia:</label>
+                                    <textarea class="form-control" id="callbackNotes" rows="3" placeholder="Dlaczego przełożono połączenie? (opcjonalnie)"></textarea>
+                                    <small class="form-text text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Dodaj notatkę, aby inni agenci wiedzieli, dlaczego połączenie zostało przełożone
+                                    </small>
                                 </div>
                             </div>
                             <div class="row mt-3">
@@ -179,5 +245,143 @@
         </div>
     </div>
 
+    <!-- Add Note Modal -->
+    <div class="modal fade" id="addNoteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-sticky-note me-2"></i>Dodaj notatkę do kontaktu
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Kontakt:</label>
+                        <p class="form-control-plaintext" id="modalContactName">-</p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="contactNote" class="form-label">Notatka:</label>
+                        <textarea class="form-control" id="contactNote" rows="4" placeholder="Wprowadź notatkę..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="button" class="btn btn-primary" onclick="saveContactNote()">
+                        <i class="fas fa-save me-2"></i>Zapisz notatkę
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Callback Confirmation Modal -->
+    <div class="modal fade" id="callbackConfirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-calendar-check me-2"></i>Potwierdzenie przełożenia połączenia
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="callbackConfirmContent">
+                        <!-- Content will be populated by JavaScript -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Anuluj
+                    </button>
+                    <button type="button" class="btn btn-warning" id="confirmCallbackBtn">
+                        <i class="fas fa-calendar-check me-2"></i>Zapisz przełożenie
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div> <!-- End workPanel -->
+
+    <!-- Campaign Selection Modal -->
+    <div class="modal fade" id="campaignSelectionModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-bullhorn me-2"></i>Wybierz kampanię
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Witaj!</strong> Przed rozpoczęciem pracy musisz wybrać kampanię, z którą będziesz pracować.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="campaignSelect" class="form-label">
+                            <i class="fas fa-tag me-1"></i>Wybierz kampanię:
+                        </label>
+                        <select class="form-select" id="campaignSelect" required>
+                            <option value="">-- Wybierz kampanię --</option>
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                        <div class="form-text">
+                            Wybierz kampanię, z której kontakty będziesz dzwonić.
+                        </div>
+                    </div>
+                    
+                    <div id="selectedCampaignInfo" class="card border-info" style="display: none;">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-info-circle me-2"></i>Informacje o kampanii
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="campaignInfoContent">
+                                <!-- Campaign info will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="startWorkBtn" disabled>
+                        <i class="fas fa-play me-2"></i>Rozpocznij pracę
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block extra_css %}
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- CRM Work Panel CSS -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/crm/work.css') }}">
+<style>
+/* Hide work panel until campaign is selected */
+#workPanel {
+    display: none;
+}
+
+#workPanel.campaign-selected {
+    display: block;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Agent Work JavaScript -->
+<!-- Flatpickr JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pl.js"></script>
+<script>
+    // Set global variables for agent work
+    window.agentName = '{{ current_user.first_name or "Agent" }}';
+</script>
+<script src="{{ url_for('static', filename='js/utils/fetch-helper.js') }}"></script>
+<script src="{{ url_for('static', filename='js/crm/agent_work.js') }}"></script>
 {% endblock %}
 

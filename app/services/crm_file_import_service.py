@@ -9,7 +9,7 @@ import pandas as pd
 import json
 from datetime import datetime
 from app.models import db
-from app.models.crm_model import ImportFile, ImportRecord, Contact
+from app.models.crm_model import ImportFile, ImportRecord, Contact, BlacklistEntry
 from app.config.crm_config import DEFAULT_MAX_CALL_ATTEMPTS
 
 class FileImportService:
@@ -261,7 +261,7 @@ class FileImportService:
             }
     
     @staticmethod
-    def process_records_to_contacts(import_file_id, column_mapping, ankieter_id):
+    def process_records_to_contacts(import_file_id, column_mapping, ankieter_id, campaign_id=None):
         """
         Process raw records into Contact objects based on column mapping
         """
@@ -312,6 +312,22 @@ class FileImportService:
                         skipped_count += 1
                         continue
                     
+                    # Check if phone is on blacklist
+                    is_blacklisted, blacklist_entry = BlacklistEntry.is_blacklisted(
+                        phone=contact_data['phone'],
+                        campaign_id=campaign_id
+                    )
+                    
+                    if is_blacklisted:
+                        # Skip this contact if blacklisted
+                        record.processed = True
+                        if blacklist_entry.campaign_id:
+                            record.error_message = f'Phone blacklisted for campaign: {blacklist_entry.reason or "No reason provided"}'
+                        else:
+                            record.error_message = f'Phone globally blacklisted: {blacklist_entry.reason or "No reason provided"}'
+                        skipped_count += 1
+                        continue
+                    
                     # Create contact
                     contact = Contact(
                         name=contact_data.get('name', 'Brak nazwy'),  # Default name if not provided
@@ -320,6 +336,8 @@ class FileImportService:
                         company=contact_data.get('company'),
                         notes=contact_data.get('notes'),
                         source_file=import_file.filename or f'import_{import_file.id}',  # Use filename or fallback
+                        import_file_id=import_file.id,
+                        campaign_id=campaign_id,
                         assigned_ankieter_id=ankieter_id,
                         max_call_attempts=DEFAULT_MAX_CALL_ATTEMPTS
                     )
