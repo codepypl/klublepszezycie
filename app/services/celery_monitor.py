@@ -388,10 +388,17 @@ class CeleryMonitorService:
                 
                 schedule_info = []
                 for name, config in beat_schedule.items():
+                    # Konwertuj schedule na string dla JSON serialization
+                    schedule_value = config['schedule']
+                    if hasattr(schedule_value, '__str__'):
+                        schedule_str = str(schedule_value)
+                    else:
+                        schedule_str = schedule_value
+                    
                     schedule_info.append({
                         'name': name,
                         'task': config['task'],
-                        'schedule': config['schedule'],
+                        'schedule': schedule_str,
                         'options': config.get('options', {})
                     })
                 
