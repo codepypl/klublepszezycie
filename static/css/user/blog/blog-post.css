@@ -26,20 +26,20 @@
     z-index: 3;
 }
 
-/* Breadcrumb - Larger style in main container */
+/* Breadcrumb - Black style under header */
 .breadcrumb {
     background: transparent;
     padding: 0;
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
 }
 
 .breadcrumb-item a {
-    color: #6c757d;
+    color: #333;
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 500;
     transition: color 0.3s ease;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
 }
 
 .breadcrumb-item a:hover {
@@ -47,16 +47,16 @@
 }
 
 .breadcrumb-item.active {
-    color: #495057;
-    font-weight: 700;
-    font-size: 1.1rem;
+    color: #333;
+    font-weight: 600;
+    font-size: 0.9rem;
 }
 
 .breadcrumb-item + .breadcrumb-item::before {
-    color: #6c757d;
+    color: #666;
     content: "›";
-    font-size: 1.4rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 500;
     margin: 0 0.5rem;
 }
 
@@ -700,3 +700,55 @@
         font-size: 0.8rem;
     }
 }
+
+
+/* Fix for sticky header overlapping content in blog pages */
+.blog-page-container {
+    padding-top: 120px !important; /* Adjust based on your header height */
+}
+
+@media (max-width: 768px) {
+    .blog-page-container {
+        padding-top: 100px !important; /* Smaller padding for mobile */
+    }
+}
+
+.blog-post-content {
+    line-height: 1.8;
+    font-size: 1.1rem;
+}
+
+.blog-post-content h1,
+.blog-post-content h2,
+.blog-post-content h3,
+.blog-post-content h4,
+.blog-post-content h5,
+.blog-post-content h6 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+
+.blog-post-content p {
+    margin-bottom: 1.5rem;
+}
+
+.blog-post-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin: 1.5rem 0;
+}
+
+.blog-post-meta {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+}
+
+.blog-post-meta .author {
+    font-weight: 600;
+    color: #495057;
+}
+

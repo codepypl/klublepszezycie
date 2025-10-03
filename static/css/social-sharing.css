@@ -1,0 +1,227 @@
+/* Social Media Sharing Styles */
+
+.social-sharing-buttons {
+    margin: 1rem 0;
+}
+
+.social-sharing-btn {
+    transition: all 0.3s ease;
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
+}
+
+.social-sharing-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    color: white !important;
+}
+
+.social-sharing-btn:active {
+    transform: translateY(0);
+}
+
+.social-sharing-btn i {
+    font-size: 1.1rem;
+}
+
+/* Compact version */
+.social-sharing-compact {
+    margin: 0.5rem 0;
+}
+
+.social-sharing-btn-compact {
+    transition: all 0.3s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.social-sharing-btn-compact:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    color: white !important;
+}
+
+.social-sharing-btn-compact:active {
+    transform: scale(0.95);
+}
+
+.social-sharing-btn-compact i {
+    font-size: 1rem;
+}
+
+/* Social sharing widget */
+.social-sharing-widget {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+}
+
+.social-sharing-widget h6 {
+    color: #495057;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.social-sharing-widget .social-sharing-buttons {
+    margin: 0;
+}
+
+/* Blog post sharing section */
+.blog-post-sharing {
+    border-top: 1px solid #dee2e6;
+    padding-top: 1.5rem;
+    margin-top: 2rem;
+}
+
+.blog-post-sharing h6 {
+    color: #495057;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .social-sharing-btn {
+        min-width: 80px;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+    }
+    
+    .social-sharing-btn span {
+        display: none;
+    }
+    
+    .social-sharing-btn i {
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .social-sharing-buttons {
+        justify-content: center;
+    }
+    
+    .social-sharing-btn {
+        min-width: 60px;
+        padding: 0.3rem 0.6rem;
+    }
+    
+    .social-sharing-btn-compact {
+        width: 35px !important;
+        height: 35px !important;
+    }
+}
+
+/* Animation for sharing buttons */
+@keyframes sharePulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.social-sharing-btn.sharing {
+    animation: sharePulse 0.6s ease-in-out;
+}
+
+/* Platform-specific colors */
+.social-sharing-btn[data-platform="facebook"] {
+    background-color: #1877f2 !important;
+}
+
+.social-sharing-btn[data-platform="twitter"] {
+    background-color: #1da1f2 !important;
+}
+
+.social-sharing-btn[data-platform="linkedin"] {
+    background-color: #0077b5 !important;
+}
+
+.social-sharing-btn[data-platform="whatsapp"] {
+    background-color: #25d366 !important;
+}
+
+.social-sharing-btn[data-platform="telegram"] {
+    background-color: #0088cc !important;
+}
+
+.social-sharing-btn[data-platform="email"] {
+    background-color: #6c757d !important;
+}
+
+/* Hover effects for platform colors */
+.social-sharing-btn[data-platform="facebook"]:hover {
+    background-color: #166fe5 !important;
+}
+
+.social-sharing-btn[data-platform="twitter"]:hover {
+    background-color: #1a8cd8 !important;
+}
+
+.social-sharing-btn[data-platform="linkedin"]:hover {
+    background-color: #006ba1 !important;
+}
+
+.social-sharing-btn[data-platform="whatsapp"]:hover {
+    background-color: #22c55e !important;
+}
+
+.social-sharing-btn[data-platform="telegram"]:hover {
+    background-color: #0077b3 !important;
+}
+
+.social-sharing-btn[data-platform="email"]:hover {
+    background-color: #5a6268 !important;
+}
+
+/* Loading state */
+.social-sharing-btn.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.social-sharing-btn.loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Success state */
+.social-sharing-btn.success {
+    background-color: #28a745 !important;
+}
+
+.social-sharing-btn.success i::before {
+    content: "\f00c" !important; /* FontAwesome check icon */
+}
+
+/* Error state */
+.social-sharing-btn.error {
+    background-color: #dc3545 !important;
+}
+
+.social-sharing-btn.error i::before {
+    content: "\f00d" !important; /* FontAwesome times icon */
+}

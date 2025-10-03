@@ -10,13 +10,14 @@
 {% endblock %}
 
 {% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/blog.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/user/blog/blog-category.css') }}">
 {% endblock %}
 
 
 {% block content %}
     <!-- Category Header -->
-    <section class="category-header">
+    <section class="category-header blog-page-container">
         <div class="container">
             <div class="text-center">
                 <h1 class="category-title">{{ category.title }}</h1>
@@ -44,29 +45,6 @@
         <div class="row">
             <!-- Main Content -->
             <div class="col-lg-8">
-                <!-- Category Stats -->
-                <div class="category-stats">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="stat-item">
-                                <span class="stat-number">{{ category.posts_count }}</span>
-                                <span class="stat-label">Artykułów</span>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="stat-item">
-                                <span class="stat-number">{{ category.children|length if category.children else 0 }}</span>
-                                <span class="stat-label">Podkategorii</span>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="stat-item">
-                                <span class="stat-number">{{ category.total_posts_count if category.total_posts_count else category.posts_count }}</span>
-                                <span class="stat-label">Wszystkich postów</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Category Posts -->
                 {% if posts.items %}
@@ -136,6 +114,7 @@
                                 <li>
                                     <a href="{{ get_category_url_with_hierarchy(cat) }}" {% if cat.id == category.id %}class="active"{% endif %}>
                                         {{ cat.title }}
+                                        <span class="badge bg-secondary ms-2">{{ cat.posts_count }}</span>
                                     </a>
                                     {% if cat.children and cat.id == category.id %}
                                     <ul class="categories-list ms-3 mt-2">
@@ -144,6 +123,7 @@
                                         <li>
                                             <a href="{{ get_category_url_with_hierarchy(child) }}" class="small">
                                                 {{ child.title }}
+                                                <span class="badge bg-secondary ms-1">{{ child.posts_count }}</span>
                                             </a>
                                         </li>
                                         {% endif %}

@@ -10,13 +10,14 @@
 {% endblock %}
 
 {% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/blog.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/user/blog/blog-tag.css') }}">
 {% endblock %}
 
 
 {% block content %}
     <!-- Tag Header -->
-    <section class="tag-header">
+    <section class="tag-header blog-page-container">
         <div class="container">
             <h1 class="tag-title">#{{ tag.name }}</h1>
             <p class="tag-description">Artykuły z tagiem {{ tag.name }}</p>

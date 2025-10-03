@@ -25,18 +25,17 @@
         <div class="admin-card-body">
             {% if categories.items %}
                 <div class="table-responsive">
-                    <table id="categoriesTable" class="table admin-table bulk-delete-table resizable-table" data-delete-endpoint="/api/blog/admin/categories/bulk-delete">
+                    <table id="commentsTable" class="table admin-table bulk-delete-table resizable-table" data-delete-endpoint="/api/blog/comments/bulk-delete">
                         <thead>
                             <tr>
                                 <th>
                                     <input type="checkbox" id="selectAll">
                                 </th>
                                 <th>ID</th>
-                                <th>Nazwa</th>
-                                <th>Slug</th>
-                                <th>Artykuły</th>
+                                <th>Autor</th>
+                                <th>Artykuł</th>
                                 <th>Status</th>
-                                <th>Utworzono</th>
+                                <th>Data</th>
                                 <th>Akcje</th>
                             </tr>
                         </thead>
@@ -44,16 +43,13 @@
                             {% for category in categories.items %}
                             <tr data-category-id="{{ category.id }}">
                                 <td>
-                                    <input type="checkbox" name="itemIds" value="{{ category.id }}">
-                                </td>
-                                <td>
                                     <span class="badge admin-badge admin-badge-primary">{{ category.id }}</span>
                                 </td>
                                 <td>
-                                    <strong>{{ category.title }}</strong>
+                                    <input type="checkbox" name="itemIds" value="{{ category.title }}">
                                 </td>
                                 <td>
-                                    <code>{{ category.slug }}</code>
+                                    <strong>{{ category.slug }}</strong>
                                 </td>
                                 <td>
                                     {% for post in category.posts %}

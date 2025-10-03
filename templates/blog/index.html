@@ -11,6 +11,7 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/user/blog/blog-index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/social-sharing.css') }}">
     <script src="{{ url_for('static', filename='js/utils/word-cloud.js') }}"></script>
 {% endblock %}
 
@@ -34,7 +35,7 @@
         </div>
     </section>
 
-    <div class="container py-5">
+    <div class="container blog-page-container py-5">
         <div class="row">
             <!-- Main Content -->
             <div class="col-lg-8" id="posts">
@@ -76,6 +77,11 @@
                                             </small>
                                         </div>
                                         
+                                        <!-- Social Sharing -->
+                                        <div class="post-sharing mb-3" id="socialSharing_{{ post.id }}">
+                                            <div class="social-sharing-compact" id="socialSharingButtons_{{ post.id }}"></div>
+                                        </div>
+                                        
                                         <!-- Przycisk Czytaj więcej -->
                                         <div class="d-flex justify-content-end">
                                             <a href="{{ get_post_url_with_category(post) }}" class="read-more">
@@ -113,6 +119,7 @@
                                 <li>
                                     <a href="{{ get_category_url_with_hierarchy(category) }}">
                                         {{ category.title }}
+                                        <span class="badge bg-secondary ms-2">{{ category.posts_count }}</span>
                                     </a>
                                     {% if category.children %}
                                     <ul class="categories-list ms-3 mt-2">
@@ -121,6 +128,7 @@
                                         <li>
                                             <a href="{{ get_category_url_with_hierarchy(child) }}" class="small">
                                                 {{ child.title }}
+                                                <span class="badge bg-secondary ms-1">{{ child.posts_count }}</span>
                                             </a>
                                         </li>
                                         {% endif %}
@@ -226,6 +234,34 @@
 {% endblock %}
 
 {% block scripts %}
+    <!-- Social Sharing Script -->
+    <script src="{{ url_for('static', filename='js/utils/social-sharing.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize social sharing for each post
+            {% if posts.items %}
+                {% for post in posts.items %}
+                    (function() {
+                        const postId = {{ post.id }};
+                        const containerId = 'socialSharingButtons_{{ post.id }}';
+                        
+                        window.socialSharing.init(postId).then(success => {
+                            if (success) {
+                                window.socialSharing.createCompactSharingButtons(containerId);
+                            } else {
+                                // Hide sharing section if initialization failed
+                                const container = document.getElementById('socialSharing_{{ post.id }}');
+                                if (container) {
+                                    container.style.display = 'none';
+                                }
+                            }
+                        });
+                    })();
+                {% endfor %}
+            {% endif %}
+        });
+    </script>
+    
     <!-- Pagination Script -->
     <script>
         // Pagination initialization will be handled here

@@ -46,9 +46,9 @@ def stop_work():
     """Stop agent work session"""
     try:
         # Check if agent has any active calls
-        active_call = Call.query.filter_by(
-            ankieter_id=current_user.id,
-            status__in=['ringing', 'answered', 'in_progress']
+        active_call = Call.query.filter(
+            Call.ankieter_id == current_user.id,
+            Call.status.in_(['ringing', 'answered', 'in_progress'])
         ).first()
         
         if active_call:

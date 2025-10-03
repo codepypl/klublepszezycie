@@ -71,6 +71,7 @@ def create_app():
     from app.routes.unsubscribe_routes import unsubscribe_bp
     from app.routes.user_groups_route import user_groups_bp
     from app.api import email_bp, users_api_bp, testimonials_api_bp, sections_api_bp, menu_api_bp, faq_api_bp, benefits_api_bp, events_api_bp, blog_api_bp, seo_api_bp, social_api_bp, crm_api_bp, agent_api_bp, stats_api_bp
+    from app.api.social_sharing_api import social_sharing_api_bp
     from app.api.user_groups_api import user_groups_bp as user_groups_api_bp
     from app.api.email_v2_api import email_v2_bp
     from app.api.mailgun_webhook_api import mailgun_webhook_bp
@@ -93,6 +94,7 @@ def create_app():
     app.register_blueprint(blog_api_bp, url_prefix='/api')
     app.register_blueprint(seo_api_bp, url_prefix='/api')
     app.register_blueprint(social_api_bp, url_prefix='/api')
+    app.register_blueprint(social_sharing_api_bp, url_prefix='/api')
     app.register_blueprint(auth_bp)
     app.register_blueprint(blog_bp)
     app.register_blueprint(seo_bp, url_prefix='/admin')

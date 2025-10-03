@@ -10,6 +10,7 @@
 {% endblock %}
 
 {% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/blog.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/user/blog/blog-search.css') }}">
 {% endblock %}
 
@@ -66,7 +67,7 @@
 
 {% block content %}
     <!-- Search Header -->
-    <section class="search-header">
+    <section class="search-header blog-page-container">
         <div class="container">
             <div class="search-header-content">
                 <!-- Breadcrumb -->

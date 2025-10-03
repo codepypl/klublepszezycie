@@ -4,7 +4,7 @@
 .category-header {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
     color: white;
-    padding: 8rem 0 4rem; /* Increased top padding to account for fixed navbar */
+    padding: 2rem 0 4rem; /* Minimal top padding since blog-page-container handles sticky header */
     margin-bottom: 4rem;
     position: relative;
     overflow: hidden;
@@ -362,53 +362,6 @@
     color: white;
 }
 
-/* Category Header */
-.category-header {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-    color: white;
-    padding: 3rem 0;
-    margin-bottom: 2rem;
-}
-
-.category-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-}
-
-.category-description {
-    font-size: 1.2rem;
-    opacity: 0.9;
-    margin-bottom: 0;
-}
-
-/* Category Stats */
-.category-stats {
-    background: white;
-    border-radius: 1rem;
-    padding: 2rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    margin-bottom: 2rem;
-}
-
-.stat-item {
-    text-align: center;
-    padding: 1rem;
-}
-
-.stat-number {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--primary-color);
-    display: block;
-}
-
-.stat-label {
-    color: #64748b;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
 
 /* Category Posts Grid */
 .category-posts {
@@ -530,5 +483,16 @@
     
     .stat-number {
         font-size: 1.5rem;
+    }
+}
+
+/* Fix for sticky header overlapping content in blog pages */
+.blog-page-container {
+    padding-top: 120px !important; /* Adjust based on your header height */
+}
+
+@media (max-width: 768px) {
+    .blog-page-container {
+        padding-top: 100px !important; /* Smaller padding for mobile */
     }
 }

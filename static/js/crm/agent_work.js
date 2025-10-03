@@ -172,6 +172,16 @@ function stopWork() {
         return;
     }
     
+    // Check if agent has fetched a record but hasn't made a call yet
+    if (currentContact && !isCallActive) {
+        // Ask user if they want to abandon the current record
+        if (confirm('Masz pobrany rekord, ale nie zadzwoniłeś/aś. Czy chcesz porzucić ten rekord i przejść na przerwę?')) {
+            // Abandon current record and stop work
+            abandonCurrentRecord();
+        }
+        return;
+    }
+    
     fetch('/api/crm/agent/stop-work', {
         method: 'POST',
         headers: {
@@ -1098,6 +1108,81 @@ function hideCallActions() {
 
 function showCallActions() {
     showCallButton();
+}
+
+function abandonCurrentRecord() {
+    console.log('🔄 Abandoning current record...');
+    
+    // Reset all record-related variables
+    currentContact = null;
+    currentCallId = null;
+    currentTwilioSid = null;
+    callStartTime = null;
+    recordStartTime = null;
+    isCallActive = false;
+    
+    // Stop timers
+    stopCallTimer();
+    stopRecordTimer();
+    
+    // Hide panels
+    hideCurrentCallPanel();
+    resetOutcomePanel();
+    
+    // Now proceed with stopping work
+    fetch('/api/crm/agent/stop-work', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+    })
+    .then(response => safeJsonParse(response))
+    .then(data => {
+        if (data.success) {
+            agentStatus = 'inactive';
+            updateStatusDisplay();
+            stopDailyWorkTimer(); // Stop daily work timer
+            showSuccess('Rekord został porzucony. Praca zatrzymana.');
+        } else {
+            showError('Błąd podczas zatrzymywania pracy: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Wystąpił błąd podczas zatrzymywania pracy');
+    });
+}
+
+function abandonCurrentRecordAndContinue() {
+    console.log('🔄 Abandoning current record and continuing work...');
+    
+    // Reset all record-related variables
+    currentContact = null;
+    currentCallId = null;
+    currentTwilioSid = null;
+    callStartTime = null;
+    recordStartTime = null;
+    isCallActive = false;
+    
+    // Stop timers
+    stopCallTimer();
+    stopRecordTimer();
+    
+    // Hide panels
+    hideCurrentCallPanel();
+    resetOutcomePanel();
+    
+    // Show success message
+    showSuccess('Rekord został porzucony.');
+    
+    // Auto-load next contact after 1 second
+    setTimeout(() => {
+        if (agentStatus === 'active') {
+            console.log('🔄 Auto-loading next contact after abandoning record');
+            getNextContact();
+        }
+    }, 1000);
 }
 
 function checkForCallbacks() {

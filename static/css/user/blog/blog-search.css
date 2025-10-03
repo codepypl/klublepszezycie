@@ -127,6 +127,7 @@
 /* Search Input Group */
 .search-input-group {
     position: relative;
+    display: flex;
 }
 
 .search-suggestions {
