@@ -163,7 +163,7 @@ def make_celery(app=None):
     }
     
     # Ręczne importy zadań - wymagane dla prawidłowej rejestracji
-    from app.tasks import email_tasks, event_tasks, monitor_tasks
+    from app.tasks import email_tasks, event_tasks, monitor_tasks, social_media_tasks
     
     return celery
 

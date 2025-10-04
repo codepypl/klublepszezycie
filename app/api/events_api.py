@@ -146,6 +146,15 @@ def api_event_schedule():
             task = schedule_event_reminders_task.delay(event.id)
             print(f"✅ Zadanie Celery zaplanowane (ID: {task.id}) dla wydarzenia: {event.title}")
             
+            # Trigger auto-posting for new event
+            if event.is_active and not event.is_archived:
+                try:
+                    from app.tasks.social_media_tasks import auto_post_event_task
+                    social_task = auto_post_event_task.delay(event.id)
+                    print(f"✅ Auto-posting zaplanowane dla wydarzenia {event.id} (Task ID: {social_task.id})")
+                except Exception as e:
+                    print(f"⚠️ Błąd planowania auto-posting dla wydarzenia {event.id}: {e}")
+            
             return jsonify({
                 'success': True,
                 'message': 'Event created successfully',

@@ -65,6 +65,9 @@ __all__ = [
     'BlacklistEntry',
     'ImportFile',
     'ImportRecord',
+    'SocialMediaConfig',
+    'SocialMediaPost',
+    'AutoPostingQueue',
     'blog_post_categories',
     'blog_post_tags'
 ]

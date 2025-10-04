@@ -165,3 +165,11 @@ def encrypt_data(data):
 def decrypt_data(encrypted_data):
     """Convenience function to decrypt arbitrary data"""
     return crypto_manager.decrypt_data(encrypted_data)
+
+def encrypt_text(text):
+    """Convenience function to encrypt text (alias for encrypt_data)"""
+    return crypto_manager.encrypt_data(text)
+
+def decrypt_text(encrypted_text):
+    """Convenience function to decrypt text (alias for decrypt_data)"""
+    return crypto_manager.decrypt_data(encrypted_text)
