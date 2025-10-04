@@ -897,9 +897,13 @@ function editPost(postId) {
     if (window.blogPostsManager && typeof window.blogPostsManager.editPost === 'function') {
         window.blogPostsManager.editPost(postId);
     } else {
-        console.error('BlogPostsManager not available');
+        // Fallback: redirect to posts page with edit parameter
+        window.location.href = `/admin/blog/posts?edit=${postId}`;
     }
 }
+
+// Make editPost available globally
+window.editPost = editPost;
 
 // Check for edit parameter in URL or template variable
 document.addEventListener('DOMContentLoaded', function() {

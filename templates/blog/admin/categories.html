@@ -23,35 +23,40 @@
     <!-- Categories Table -->
     <div class="admin-card">
         <div class="admin-card-body">
-            {% if categories.items %}
+            {% if categories %}
                 <div class="table-responsive">
-                    <table id="commentsTable" class="table admin-table bulk-delete-table resizable-table" data-delete-endpoint="/api/blog/comments/bulk-delete">
+                    <table id="categoriesTable" class="table admin-table bulk-delete-table resizable-table" data-delete-endpoint="/api/blog/admin/categories/bulk-delete">
                         <thead>
-                            <tr>
-                                <th>
-                                    <input type="checkbox" id="selectAll">
-                                </th>
-                                <th>ID</th>
-                                <th>Autor</th>
-                                <th>Artykuł</th>
-                                <th>Status</th>
-                                <th>Data</th>
-                                <th>Akcje</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for category in categories.items %}
-                            <tr data-category-id="{{ category.id }}">
-                                <td>
-                                    <span class="badge admin-badge admin-badge-primary">{{ category.id }}</span>
-                                </td>
-                                <td>
-                                    <input type="checkbox" name="itemIds" value="{{ category.title }}">
-                                </td>
-                                <td>
-                                    <strong>{{ category.slug }}</strong>
-                                </td>
-                                <td>
+                        <tr>
+                            <th>
+                                <input type="checkbox" id="selectAll">
+                            </th>
+                            <th>ID</th>
+                            <th>Nazwa</th>
+                            <th>Slug</th>
+                            <th>Artykuły</th>
+                            <th>Status</th>
+                            <th>Data utworzenia</th>
+                            <th>Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in categories %}
+                        <tr data-category-id="{{ category.id }}">
+                            <td>
+                                <input type="checkbox" name="itemIds" value="{{ category.id }}">
+                            </td>
+                            <td>
+                                <span class="badge admin-badge admin-badge-primary">{{ category.id }}</span>
+                            </td>
+                            <td>
+                                <strong>{{ category.title }}</strong>
+                            </td>
+                            <td>
+                                <code>{{ category.slug }}</code>
+                            </td>
+                            <td>
+                                {% if category.posts %}
                                     {% for post in category.posts %}
                                         <a href="#" onclick="editPost({{ post.id if post.id else 0 }})" 
                                            class="badge admin-badge admin-badge-primary me-1" 
@@ -61,30 +66,33 @@
                                             {{ post.id }}
                                         </a>
                                     {% endfor %}
-                                </td>
-                                <td>
-                                    {% if category.is_active %}
-                                        <span class="badge admin-badge admin-badge-success">Aktywna</span>
-                                    {% else %}
-                                        <span class="badge admin-badge admin-badge-danger">Nieaktywna</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {{ category.created_at.strftime('%d.%m.%Y') }}
-                                </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <button class="btn btn-sm admin-btn-outline" onclick="editCategory({{ category.id }})" title="Edytuj">
-                                            <i class="fas fa-pen"></i>
-                                        </button>
-                                        <button class="btn btn-sm admin-btn-danger" onclick="deleteCategory({{ category.id }})" title="Usuń">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
+                                {% else %}
+                                    <span class="text-muted">Brak artykułów</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if category.is_active %}
+                                    <span class="badge admin-badge admin-badge-success">Aktywna</span>
+                                {% else %}
+                                    <span class="badge admin-badge admin-badge-danger">Nieaktywna</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ category.created_at.strftime('%d.%m.%Y') if category.created_at else 'Brak' }}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm admin-btn-outline" onclick="editCategory({{ category.id }})" title="Edytuj">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                    <button class="btn btn-sm admin-btn-danger" onclick="deleteCategory({{ category.id }})" title="Usuń">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
                     </table>
                 </div>
 

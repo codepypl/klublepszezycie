@@ -1,0 +1,357 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Eksport Danych CRM - {{ super() }}{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-download me-2"></i>Eksport Danych CRM
+{% endblock %}
+
+{% block page_actions %}
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button class="btn admin-btn" onclick="generateExport()" id="exportBtn">
+            <i class="fas fa-file-excel me-2"></i>Generuj Eksport
+        </button>
+        <button class="btn admin-btn-outline" onclick="previewExport()" id="previewBtn">
+            <i class="fas fa-eye me-2"></i>Podgląd
+        </button>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <!-- Export Configuration -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-cog me-2"></i>Konfiguracja Eksportu</h5>
+                </div>
+                <div class="admin-card-body">
+                    <form id="exportForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="campaign_id" class="form-label">Kampania</label>
+                                    <select class="form-select" id="campaign_id" name="campaign_id">
+                                        <option value="">Wszystkie kampanie</option>
+                                        {% for campaign in campaigns %}
+                                        <option value="{{ campaign.id }}">{{ campaign.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="ankieter_id" class="form-label">Ankieter</label>
+                                    <select class="form-select" id="ankieter_id" name="ankieter_id">
+                                        <option value="">Wszyscy ankieterzy</option>
+                                        {% for ankieter in ankieter %}
+                                        <option value="{{ ankieter.id }}">{{ ankieter.username }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">Status Połączenia</label>
+                                    <select class="form-select" id="status" name="status">
+                                        <option value="">Wszystkie statusy</option>
+                                        {% for status in statuses %}
+                                        <option value="{{ status.value }}">{{ status.label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="date_from" class="form-label">Data od</label>
+                                    <input type="date" class="form-control" id="date_from" name="date_from">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="date_to" class="form-label">Data do</label>
+                                    <input type="date" class="form-control" id="date_to" name="date_to">
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="include_all_fields" checked>
+                                        <label class="form-check-label" for="include_all_fields">
+                                            Uwzględnij wszystkie pola
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Preview -->
+    <div class="row mb-4" id="previewSection" style="display: none;">
+        <div class="col-12">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5><i class="fas fa-eye me-2"></i>Podgląd Eksportu</h5>
+                </div>
+                <div class="admin-card-body">
+                    <div id="previewContent">
+                        <!-- Preview content will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Loading Modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Ładowanie...</span>
+                    </div>
+                    <h5>Generowanie eksportu...</h5>
+                    <p class="text-muted">Proszę czekać, przygotowujemy plik XLSX.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Global variables
+let exportPreviewData = null;
+
+// Set default date range (last 30 days)
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    document.getElementById('date_from').value = thirtyDaysAgo.toISOString().split('T')[0];
+    document.getElementById('date_to').value = today.toISOString().split('T')[0];
+    
+    console.log('📊 CRM Export page initialized');
+});
+
+// Preview export
+async function previewExport() {
+    const formData = getFormData();
+    
+    try {
+        const params = new URLSearchParams();
+        if (formData.campaign_id) params.append('campaign_id', formData.campaign_id);
+        if (formData.ankieter_id) params.append('ankieter_id', formData.ankieter_id);
+        if (formData.status) params.append('status', formData.status);
+        if (formData.date_from) params.append('date_from', formData.date_from);
+        if (formData.date_to) params.append('date_to', formData.date_to);
+        
+        const response = await fetch(`/api/crm/export/summary?${params}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            exportPreviewData = data.summary;
+            displayPreview(data.summary);
+        } else {
+            showError('Błąd podczas pobierania podglądu: ' + data.error);
+        }
+    } catch (error) {
+        showError('Błąd: ' + error.message);
+    }
+}
+
+// Display preview
+function displayPreview(summary) {
+    const previewSection = document.getElementById('previewSection');
+    const previewContent = document.getElementById('previewContent');
+    
+    let html = `
+        <div class="row">
+            <div class="col-md-3">
+                <div class="admin-stats-card">
+                    <i class="fas fa-phone"></i>
+                    <h3>${summary.total_calls}</h3>
+                    <p>Łączna liczba połączeń</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="admin-stats-card">
+                    <i class="fas fa-calendar"></i>
+                    <h3>${summary.date_range.from || 'N/A'}</h3>
+                    <p>Data od</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="admin-stats-card">
+                    <i class="fas fa-calendar"></i>
+                    <h3>${summary.date_range.to || 'N/A'}</h3>
+                    <p>Data do</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="admin-stats-card">
+                    <i class="fas fa-filter"></i>
+                    <h3>${Object.keys(summary.status_breakdown).length}</h3>
+                    <p>Różnych statusów</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <h6>Podział według statusów:</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Liczba</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+    `;
+    
+    for (const [status, count] of Object.entries(summary.status_breakdown)) {
+        html += `
+            <tr>
+                <td>${status}</td>
+                <td><span class="badge bg-primary">${count}</span></td>
+            </tr>
+        `;
+    }
+    
+    html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h6>Podział według priorytetów:</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Priorytet</th>
+                                <th>Liczba</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+    `;
+    
+    for (const [priority, count] of Object.entries(summary.priority_breakdown)) {
+        html += `
+            <tr>
+                <td>${priority}</td>
+                <td><span class="badge bg-secondary">${count}</span></td>
+            </tr>
+        `;
+    }
+    
+    html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="alert alert-info mt-3">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Informacja:</strong> Eksport będzie zawierał wszystkie połączenia spełniające wybrane kryteria. 
+            Każda próba kontaktu będzie osobnym wierszem w pliku XLSX.
+        </div>
+    `;
+    
+    previewContent.innerHTML = html;
+    previewSection.style.display = 'block';
+    
+    // Scroll to preview
+    previewSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Generate export
+async function generateExport() {
+    const formData = getFormData();
+    
+    if (!formData.date_from || !formData.date_to) {
+        showError('Proszę wybrać zakres dat');
+        return;
+    }
+    
+    // Show loading modal
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    loadingModal.show();
+    
+    try {
+        const response = await fetch('/api/crm/export/download', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (response.ok) {
+            // Check if response is JSON (error) or file (success)
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const errorData = await response.json();
+                showError('Błąd podczas generowania eksportu: ' + (errorData.error || 'Nieznany błąd'));
+                return;
+            }
+            
+            // Get filename from response headers
+            const contentDisposition = response.headers.get('content-disposition');
+            let filename = 'crm_export.xlsx';
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                if (filenameMatch) {
+                    filename = filenameMatch[1];
+                }
+            }
+            
+            // Create blob and download
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            showSuccess('Eksport został wygenerowany i pobrany pomyślnie!');
+        } else {
+            const errorData = await response.json();
+            showError('Błąd podczas generowania eksportu: ' + (errorData.error || 'Nieznany błąd'));
+        }
+    } catch (error) {
+        showError('Błąd: ' + error.message);
+    } finally {
+        loadingModal.hide();
+    }
+}
+
+// Get form data
+function getFormData() {
+    return {
+        campaign_id: document.getElementById('campaign_id').value || null,
+        ankieter_id: document.getElementById('ankieter_id').value || null,
+        status: document.getElementById('status').value || null,
+        date_from: document.getElementById('date_from').value,
+        date_to: document.getElementById('date_to').value,
+        include_all_fields: document.getElementById('include_all_fields').checked
+    };
+}
+
+// Show success message
+function showSuccess(message) {
+    // You can implement your own success notification here
+    alert('✅ ' + message);
+}
+
+// Show error message
+function showError(message) {
+    // You can implement your own error notification here
+    alert('❌ ' + message);
+}
+</script>
+{% endblock %}

@@ -234,12 +234,12 @@
         <!-- Grupa: CRM - Tylko dla administratorów -->
         {% if current_user.is_admin_role() %}
         <li class="nav-item">
-            <a href="#crmSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['crm.contacts', 'admin.crm_campaigns', 'admin.crm_blacklist', 'admin.crm_settings'] %}true{% else %}false{% endif %}">
+            <a href="#crmSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['crm.contacts', 'crm.export', 'admin.crm_campaigns', 'admin.crm_blacklist', 'admin.crm_settings'] %}true{% else %}false{% endif %}">
                 <i class="fas fa-chart-line me-2"></i>
                 <span class="nav-link-text">CRM</span>
                 <i class="fas fa-chevron-down ms-auto"></i>
             </a>
-            <div class="collapse{% if request.endpoint in ['crm.contacts', 'admin.crm_campaigns', 'admin.crm_blacklist', 'admin.crm_settings'] %} show{% endif %}" id="crmSubmenu">
+            <div class="collapse{% if request.endpoint in ['crm.contacts', 'crm.export', 'admin.crm_campaigns', 'admin.crm_blacklist', 'admin.crm_settings'] %} show{% endif %}" id="crmSubmenu">
                 <ul class="nav flex-column ms-3">
                     <li class="nav-item">
                         <a href="{{ url_for('crm.contacts') }}" class="nav-link {% if request.endpoint == 'crm.contacts' %}active{% endif %}">
@@ -260,15 +260,15 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ url_for('admin.crm_settings') }}" class="nav-link {% if request.endpoint == 'admin.crm_settings' %}active{% endif %}">
-                            <i class="fas fa-cog"></i>
-                            <span class="nav-link-text">Ustawienia</span>
+                        <a href="{{ url_for('crm.export') }}" class="nav-link {% if request.endpoint == 'crm.export' %}active{% endif %}">
+                            <i class="fas fa-download"></i>
+                            <span class="nav-link-text">Eksport Danych</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ url_for('admin.crm_analysis') }}" class="nav-link {% if request.endpoint == 'admin.crm_analysis' %}active{% endif %}">
-                            <i class="fas fa-chart-line"></i>
-                            <span class="nav-link-text">Analiza</span>
+                        <a href="{{ url_for('admin.crm_settings') }}" class="nav-link {% if request.endpoint == 'admin.crm_settings' %}active{% endif %}">
+                            <i class="fas fa-cog"></i>
+                            <span class="nav-link-text">Ustawienia</span>
                         </a>
                     </li>
                 </ul>

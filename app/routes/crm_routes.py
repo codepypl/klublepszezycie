@@ -15,7 +15,8 @@ from app.blueprints.crm_controller import (
     dashboard as crm_dashboard_func,
     calls as crm_calls_func,
     contacts as crm_contacts_func,
-    work as crm_work_func
+    work as crm_work_func,
+    export as crm_export_func
 )
 
 # Admin CRM Dashboard
@@ -49,3 +50,12 @@ def contacts():
 def work():
     """Admin CRM Work page"""
     return crm_work_func()
+
+# Admin CRM Export page
+@crm_bp.route('/export')
+@login_required
+@admin_required
+def export():
+    """Admin CRM Export page"""
+    return crm_export_func()
+

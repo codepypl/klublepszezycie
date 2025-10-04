@@ -150,17 +150,27 @@ class BlogCategoriesManager {
                     <input type="checkbox" name="itemIds" value="${category.id}">
                 </td>
                 <td>
+                    <span class="badge admin-badge admin-badge-primary">${category.id}</span>
+                </td>
+                <td>
                     <strong>${category.title}</strong>
-                    ${description ? `<br><small class="text-muted">${description}</small>` : ''}
                 </td>
                 <td>
                     <code>${category.slug}</code>
                 </td>
                 <td>
-                    ${path}
-                </td>
-                <td>
-                    <span class="badge admin-badge admin-badge-info">${category.posts_count || 0}</span>
+                    ${category.posts && category.posts.length > 0 ? 
+                        category.posts.map(post => 
+                            `<a href="#" onclick="editPost(${post.id || 0})" 
+                               class="badge admin-badge admin-badge-primary me-1" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="${post.title || 'Artykuł'}">
+                                ${post.id}
+                            </a>`
+                        ).join('') : 
+                        '<span class="text-muted">Brak artykułów</span>'
+                    }
                 </td>
                 <td>
                     <span class="badge admin-badge ${category.is_active ? 'admin-badge-success' : 'admin-badge-danger'}">
@@ -172,8 +182,8 @@ class BlogCategoriesManager {
                 </td>
                 <td>
                     <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.blogCategoriesManager.editCategory(${category.id})">
-                            <i class="fas fa-edit"></i>
+                        <button type="button" class="btn btn-sm admin-btn-outline" onclick="window.blogCategoriesManager.editCategory(${category.id})">
+                            <i class="fas fa-pen"></i>
                         </button>
                         <button type="button" class="btn btn-sm admin-btn-danger" onclick="window.blogCategoriesManager.deleteCategory(${category.id})">
                             <i class="fas fa-trash"></i>

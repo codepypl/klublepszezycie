@@ -297,3 +297,4 @@ class ImportRecord(db.Model):
         """Set raw data from dictionary"""
         import json
         self.raw_data = json.dumps(data_dict, ensure_ascii=False)
+

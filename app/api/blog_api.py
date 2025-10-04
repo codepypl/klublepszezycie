@@ -515,7 +515,8 @@ def api_blog_admin_categories():
             page = request.args.get('page', 1, type=int)
             per_page = request.args.get('per_page', 10, type=int)
             
-            pagination = BlogCategory.query.order_by(BlogCategory.title).paginate(
+            from sqlalchemy.orm import joinedload
+            pagination = BlogCategory.query.options(joinedload(BlogCategory.posts)).order_by(BlogCategory.title).paginate(
                 page=page, per_page=per_page, error_out=False
             )
             
@@ -531,6 +532,7 @@ def api_blog_admin_categories():
                 } if category.parent else None,
                 'is_active': category.is_active,
                 'posts_count': category.posts_count,
+                'posts': [{'id': post.id, 'title': post.title} for post in category.posts],
                 'created_at': category.created_at.isoformat() if category.created_at else None
             } for category in pagination.items]
             

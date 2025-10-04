@@ -67,10 +67,13 @@ class QueueManager:
             ankieter_id=ankieter_id,
             priority=priority,
             queue_status='pending',
+            status='pending',  # Domyślny status dla nowego rekordu
             call_date=__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
         )
         
         db.session.add(call_entry)
+        
+        
         db.session.commit()
         
         return call_entry
@@ -98,10 +101,13 @@ class QueueManager:
                 priority='low',
                 queue_status='pending',
                 queue_type='new',
+                status='pending',  # Domyślny status dla nowego rekordu
                 call_date=__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
             )
             
             db.session.add(call_entry)
+            
+            
             assigned_count += 1
         
         db.session.commit()
@@ -118,6 +124,7 @@ class QueueManager:
             scheduled_date=callback_date,
             queue_status='pending',
             queue_type='callback',
+            status='callback',  # Status dla callback
             call_date=__import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now()
         )
         
@@ -127,6 +134,7 @@ class QueueManager:
         contact = Contact.query.get(contact_id)
         if contact:
             contact.assigned_ankieter_id = ankieter_id
+        
         
         db.session.commit()
         
@@ -158,6 +166,7 @@ class QueueManager:
             call.next_call_date = callback_date
         
         db.session.add(call)
+        
         
         # Process based on status
         if call_status == 'lead':

@@ -213,6 +213,28 @@ def work():
         flash(f'Błąd podczas ładowania ekranu pracy: {str(e)}', 'error')
         return redirect(url_for('crm.dashboard'))
 
+@login_required
+@ankieter_required
+def export():
+    """CRM Export page"""
+    try:
+        from app.services.crm_export_service import CRMExportService
+        
+        # Get available options for filters
+        campaigns = CRMExportService.get_available_campaigns()
+        ankieter = CRMExportService.get_available_ankieters()
+        statuses = CRMExportService.get_available_statuses()
+        
+        return render_template('admin/crm/export.html',
+                             campaigns=campaigns,
+                             ankieter=ankieter,
+                             statuses=statuses)
+        
+    except Exception as e:
+        flash(f'Błąd podczas ładowania strony eksportu: {str(e)}', 'error')
+        return redirect(url_for('crm.dashboard'))
+
+
 # Register routes with blueprint for backward compatibility
 @ankieter_bp.route('/')
 @login_required
@@ -237,3 +259,4 @@ def ankieter_contacts():
 @ankieter_required
 def ankieter_work():
     return work()
+

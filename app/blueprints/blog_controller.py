@@ -419,7 +419,8 @@ class BlogController:
     def get_categories_paginated(page=1, per_page=10):
         """Get categories with pagination"""
         try:
-            categories = BlogCategory.query.order_by(BlogCategory.title).paginate(
+            from sqlalchemy.orm import joinedload
+            categories = BlogCategory.query.options(joinedload(BlogCategory.posts)).order_by(BlogCategory.title).paginate(
                 page=page, per_page=per_page, error_out=False
             )
             return {
