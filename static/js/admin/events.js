@@ -416,6 +416,7 @@ class EventsManager {
                             <th>Typ</th>
                             <th>Data</th>
                             <th>Lokalizacja</th>
+                            <th>Data utworzenia</th>
                             <th>Status</th>
                             <th>Akcje</th>
                         </tr>
@@ -494,6 +495,18 @@ class EventsManager {
             timeZone: 'Europe/Warsaw'
         });
 
+        // Format created_at date
+        const createdDate = event.created_at ? new Date(event.created_at) : null;
+        const formattedCreatedDate = createdDate ? createdDate.toLocaleDateString('pl-PL', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'Europe/Warsaw'
+        }) : '-';
+
         const statusBadges = [];
         
         // Archival status (highest priority)
@@ -531,6 +544,7 @@ class EventsManager {
                 </td>
                 <td>${formattedDate}</td>
                 <td>${event.location || '-'}</td>
+                <td>${formattedCreatedDate}</td>
                 <td>${statusBadges.join(' ')}</td>
                 <td>
                     <div class="btn-group" role="group">

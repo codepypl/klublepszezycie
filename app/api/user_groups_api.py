@@ -358,9 +358,8 @@ def remove_group_member(group_id, member_id):
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@user_groups_api_bp.route('/user-groups/cleanup-duplicates', methods=['POST'])
+@user_groups_bp.route('/user-groups/cleanup-duplicates', methods=['POST'])
 @login_required
-@admin_required_api
 def cleanup_duplicate_event_groups():
     """Usuwa duplikaty grup wydarzeń"""
     try:
