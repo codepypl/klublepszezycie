@@ -37,7 +37,7 @@ def process_event_reminders_task(self):
             ).all()
             
             # Filter out events that already have reminders scheduled
-            events = [event for event in events if not event.get_reminders_scheduled()]
+            events = [event for event in events if not event.reminders_scheduled]
             
             processed_count = 0
             success_count = 0
