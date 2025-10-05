@@ -169,3 +169,34 @@ def cleanup_old_reminders_task(self):
         except Exception as exc:
             logger.error(f"❌ Błąd czyszczenia starych przypomnień: {exc}")
             raise self.retry(exc=exc, countdown=60)
+
+@celery.task(bind=True, name='app.tasks.event_tasks.cleanup_duplicate_event_groups_task')
+def cleanup_duplicate_event_groups_task(self):
+    """
+    Czyści duplikaty grup wydarzeń - zadanie Celery
+    """
+    with get_app_context():
+        try:
+            logger.info("🔄 Rozpoczynam czyszczenie duplikatów grup wydarzeń")
+            
+            from app.services.group_manager import GroupManager
+            group_manager = GroupManager()
+            
+            success, message = group_manager.cleanup_duplicate_event_groups()
+            
+            if success:
+                logger.info(f"✅ Czyszczenie duplikatów zakończone: {message}")
+            else:
+                logger.error(f"❌ Błąd czyszczenia duplikatów: {message}")
+            
+            return {
+                'success': success,
+                'message': message
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Błąd zadania czyszczenia duplikatów grup: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }

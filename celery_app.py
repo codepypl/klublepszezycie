@@ -144,6 +144,11 @@ def make_celery(app=None):
             'schedule': 86400.0,  # Co 24 godziny
             'options': {'queue': 'event_queue'},
         },
+        'cleanup-duplicate-event-groups': {
+            'task': 'app.tasks.event_tasks.cleanup_duplicate_event_groups_task',
+            'schedule': 3600.0,  # Co godzinę
+            'options': {'queue': 'event_queue'},
+        },
         'full-system-monitor': {
             'task': 'full_system_monitor',
             'schedule': 300.0,  # Co 5 minut
