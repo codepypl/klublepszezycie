@@ -39,6 +39,21 @@ def process_event_reminders_task(self):
             # Filter out events that already have reminders scheduled
             events = [event for event in events if not event.reminders_scheduled]
             
+            # DODATKOWA KONTROLA: Sprawdź czy w kolejce już są emaile dla wydarzeń
+            from app.models.email_model import EmailQueue
+            events_with_emails = set()
+            for event in events:
+                existing_emails = EmailQueue.query.filter_by(
+                    event_id=event.id,
+                    status='pending'
+                ).count()
+                if existing_emails > 0:
+                    events_with_emails.add(event.id)
+                    logger.warning(f"⚠️ Wydarzenie {event.id} ({event.title}) już ma {existing_emails} emaili w kolejce")
+            
+            # Usuń wydarzenia które już mają emaile w kolejce
+            events = [event for event in events if event.id not in events_with_emails]
+            
             processed_count = 0
             success_count = 0
             failed_count = 0

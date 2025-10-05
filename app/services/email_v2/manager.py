@@ -168,6 +168,16 @@ class EmailManager:
             if event.reminders_scheduled:
                 return True, "Przypomnienia już zostały zaplanowane"
             
+            # DODATKOWA KONTROLA: Sprawdź czy w kolejce już są emaile dla tego wydarzenia
+            existing_emails = EmailQueue.query.filter_by(
+                event_id=event_id,
+                status='pending'
+            ).count()
+            
+            if existing_emails > 0:
+                self.logger.warning(f"⚠️ Wydarzenie {event_id} już ma {existing_emails} emaili w kolejce")
+                return True, f"Wydarzenie już ma {existing_emails} emaili w kolejce"
+            
             # Pobierz uczestników
             participants = self._get_event_participants(event_id)
             if not participants:

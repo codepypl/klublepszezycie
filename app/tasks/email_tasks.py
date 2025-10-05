@@ -245,24 +245,33 @@ def update_event_notifications_task(self, event_id):
 @celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.email_tasks.schedule_event_reminders_task')
 def schedule_event_reminders_task(self, event_id):
     """
-    Planuje przypomnienia o wydarzeniu - OPTIMIZED VERSION
+    Planuje przypomnienia o wydarzeniu - WYŁĄCZONE (używamy process_event_reminders_task)
     """
     with get_app_context():
         try:
-            logger.info(f"🔄 Planuję przypomnienia o wydarzeniu {event_id} (inteligentne planowanie)")
+            logger.warning(f"⚠️ schedule_event_reminders_task wyłączone - używamy process_event_reminders_task")
             
-            from app.services.smart_reminder_scheduler import SmartReminderScheduler
-            scheduler = SmartReminderScheduler()
+            # Sprawdź czy wydarzenie już ma przypomnienia
+            from app.models.events_model import EventSchedule
+            from app.models.email_model import EmailQueue
             
-            # Użyj inteligentnego planowania
-            success, message = scheduler.schedule_event_reminders_smart(event_id)
+            event = EventSchedule.query.get(event_id)
+            if not event:
+                return {'success': False, 'message': 'Wydarzenie nie zostało znalezione'}
             
-            if success:
-                logger.info(f"✅ {message}")
-                return {'success': True, 'message': message}
-            else:
-                logger.error(f"❌ {message}")
-                return {'success': False, 'message': message}
+            if event.reminders_scheduled:
+                return {'success': True, 'message': 'Przypomnienia już zaplanowane'}
+            
+            # Sprawdź czy w kolejce już są emaile
+            existing_emails = EmailQueue.query.filter_by(
+                event_id=event_id,
+                status='pending'
+            ).count()
+            
+            if existing_emails > 0:
+                return {'success': True, 'message': f'Wydarzenie już ma {existing_emails} emaili w kolejce'}
+            
+            return {'success': True, 'message': 'Zadanie wyłączone - używamy process_event_reminders_task'}
             
         except Exception as exc:
             logger.error(f"❌ Błąd planowania przypomnień: {exc}")
