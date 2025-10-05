@@ -638,6 +638,13 @@ class EmailManager:
             
             # Utwórz element kolejki (identycznie w obu trybach)
             import json
+            # Pobierz template_name z template_id
+            template_name = None
+            if template_id:
+                template = EmailTemplate.query.get(template_id)
+                if template:
+                    template_name = template.name
+            
             queue_item = EmailQueue(
                 recipient_email=to_email,
                 subject=subject,
@@ -649,7 +656,8 @@ class EmailManager:
                 context=json.dumps(context) if context else None,  # Konwertuj context na JSON string
                 campaign_id=campaign_id,
                 event_id=event_id,
-                template_id=template_id  # Zapisz template_id z EmailTemplate
+                template_id=template_id,  # Zapisz template_id z EmailTemplate
+                template_name=template_name  # Zapisz template_name
             )
             
             db.session.add(queue_item)
