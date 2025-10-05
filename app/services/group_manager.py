@@ -25,6 +25,22 @@ class GroupManager:
                 logger.info(f"✅ Grupa już istnieje dla wydarzenia {event_id}: {existing_group.name}")
                 return existing_group.id
             
+            # Podwójne sprawdzenie - czy nie ma grupy o tej samej nazwie
+            group_name = f"Wydarzenie: {event_title}"
+            existing_by_name = UserGroup.query.filter_by(
+                name=group_name,
+                group_type='event_based'
+            ).first()
+            
+            if existing_by_name:
+                logger.warning(f"⚠️ Znaleziono duplikat grupy o nazwie '{group_name}' dla wydarzenia {event_id}")
+                # Zaktualizuj event_id w istniejącej grupie
+                existing_by_name.event_id = event_id
+                existing_by_name.criteria = json.dumps({'event_id': event_id})
+                db.session.commit()
+                logger.info(f"✅ Zaktualizowano event_id dla istniejącej grupy {existing_by_name.id}")
+                return existing_by_name.id
+            
             # Utwórz nową grupę
             group = UserGroup(
                 name=f"Wydarzenie: {event_title}",
@@ -563,18 +579,34 @@ class GroupManager:
             ).first()
             
             if not group:
-                print(f"❌ Grupa wydarzenia '{group_name}' nie została znaleziona - tworzę nową grupę")
-                # Utwórz nową grupę wydarzenia
-                group = UserGroup(
-                    name=group_name,
-                    description=f"Grupa uczestników wydarzenia: {event.title}",
-                    group_type='event_based',
+                print(f"❌ Grupa wydarzenia '{group_name}' nie została znaleziona - sprawdzam czy istnieje po event_id")
+                # Sprawdź czy grupa istnieje po event_id
+                group = UserGroup.query.filter_by(
                     event_id=event_id,
-                    criteria=json.dumps({'event_id': event_id})
-                )
-                db.session.add(group)
-                db.session.commit()
-                print(f"✅ Utworzono nową grupę wydarzenia: {group_name}")
+                    group_type='event_based'
+                ).first()
+                
+                if not group:
+                    print(f"❌ Grupa wydarzenia nie istnieje - tworzę nową grupę")
+                    # Utwórz nową grupę wydarzenia
+                    group = UserGroup(
+                        name=group_name,
+                        description=f"Grupa uczestników wydarzenia: {event.title}",
+                        group_type='event_based',
+                        event_id=event_id,
+                        criteria=json.dumps({'event_id': event_id})
+                    )
+                    db.session.add(group)
+                    db.session.commit()
+                    print(f"✅ Utworzono nową grupę wydarzenia: {group_name}")
+                else:
+                    print(f"✅ Znaleziono grupę wydarzenia po event_id: {group.name}")
+                    # Zaktualizuj nazwę jeśli się zmieniła
+                    if group.name != group_name:
+                        group.name = group_name
+                        group.description = f"Grupa uczestników wydarzenia: {event.title}"
+                        db.session.commit()
+                        print(f"✅ Zaktualizowano nazwę grupy: {group_name}")
             
             # Pobierz wszystkich zarejestrowanych na wydarzenie
             registrations = User.query.filter_by(
@@ -906,4 +938,56 @@ class GroupManager:
         except Exception as e:
             print(f"❌ Błąd usuwania z grupy wydarzenia: {str(e)}")
             return False, f"Błąd usuwania z grupy wydarzenia: {str(e)}"
+    
+    def cleanup_duplicate_event_groups(self):
+        """Usuwa duplikaty grup wydarzeń"""
+        try:
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            # Znajdź wszystkie grupy wydarzeń
+            event_groups = UserGroup.query.filter_by(group_type='event_based').all()
+            
+            # Grupuj po event_id
+            groups_by_event = {}
+            for group in event_groups:
+                if group.event_id:
+                    if group.event_id not in groups_by_event:
+                        groups_by_event[group.event_id] = []
+                    groups_by_event[group.event_id].append(group)
+            
+            # Usuń duplikaty
+            duplicates_removed = 0
+            for event_id, groups in groups_by_event.items():
+                if len(groups) > 1:
+                    logger.warning(f"⚠️ Znaleziono {len(groups)} duplikatów grup dla wydarzenia {event_id}")
+                    
+                    # Zostaw pierwszą grupę, usuń pozostałe
+                    main_group = groups[0]
+                    for duplicate_group in groups[1:]:
+                        # Przenieś członków do głównej grupy
+                        members = UserGroupMember.query.filter_by(group_id=duplicate_group.id).all()
+                        for member in members:
+                            # Sprawdź czy członek już nie istnieje w głównej grupie
+                            existing = UserGroupMember.query.filter_by(
+                                group_id=main_group.id,
+                                email=member.email
+                            ).first()
+                            if not existing:
+                                member.group_id = main_group.id
+                            else:
+                                db.session.delete(member)
+                        
+                        db.session.delete(duplicate_group)
+                        duplicates_removed += 1
+                        logger.info(f"✅ Usunięto duplikat grupy {duplicate_group.id} dla wydarzenia {event_id}")
+            
+            db.session.commit()
+            logger.info(f"✅ Usunięto {duplicates_removed} duplikatów grup wydarzeń")
+            return True, f"Usunieto {duplicates_removed} duplikatów"
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"❌ Błąd usuwania duplikatów grup: {str(e)}")
+            return False, f"Błąd: {str(e)}"
 

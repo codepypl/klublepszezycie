@@ -357,3 +357,22 @@ def remove_group_member(group_id, member_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@user_groups_api_bp.route('/user-groups/cleanup-duplicates', methods=['POST'])
+@login_required
+@admin_required_api
+def cleanup_duplicate_event_groups():
+    """Usuwa duplikaty grup wydarzeń"""
+    try:
+        from app.services.group_manager import GroupManager
+        group_manager = GroupManager()
+        
+        success, message = group_manager.cleanup_duplicate_event_groups()
+        
+        return jsonify({
+            'success': success,
+            'message': message
+        })
+    except Exception as e:
+        logging.error(f"Error cleaning up duplicate event groups: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
