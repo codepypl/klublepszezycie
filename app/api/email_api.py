@@ -46,7 +46,7 @@ def email_retry_single(email_id):
         email_manager = EmailManager()
         
         success, message = email_manager.send_immediate_email(
-            email.to_email,
+            email.recipient_email,
             email.subject,
             email.html_content,
             email.text_content
@@ -98,8 +98,8 @@ def email_queue_list():
         for email in pagination.items:
             emails.append({
                 'id': email.id,
-                'to_email': email.to_email,
-                'to_name': email.to_name,
+                'to_email': email.recipient_email,
+                'to_name': email.recipient_name,
                 'subject': email.subject,
                 'status': email.status,
                 'retry_count': email.retry_count,

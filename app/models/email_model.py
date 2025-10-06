@@ -238,7 +238,7 @@ class EmailQueue(db.Model):
     template = db.relationship('EmailTemplate', backref='email_queue_items')
     
     def __repr__(self):
-        return f'<EmailQueue {self.to_email} - {self.status}>'
+        return f'<EmailQueue {self.recipient_email} - {self.status}>'
 
 
 class EmailReminder(db.Model):

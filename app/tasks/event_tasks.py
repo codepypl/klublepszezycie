@@ -31,15 +31,12 @@ def process_event_reminders_task(self):
             from app.services.email_v2 import EmailManager
             email_manager = EmailManager()
             
-            # Pobierz wszystkie aktywne wydarzenia, które nie mają zaplanowanych przypomnień
+            # Pobierz wszystkie aktywne wydarzenia
             events = EventSchedule.query.filter(
                 EventSchedule.is_active == True
             ).all()
-            
-            # Filter out events that already have reminders scheduled
-            events = [event for event in events if not event.reminders_scheduled]
-            
-            # DODATKOWA KONTROLA: Sprawdź czy w kolejce już są emaile dla wydarzeń
+
+            # DODATKOWA KONTROLA: Sprawdź czy w kolejce są emaile dla wydarzeń
             from app.models.email_model import EmailQueue
             events_with_emails = set()
             for event in events:
@@ -50,8 +47,18 @@ def process_event_reminders_task(self):
                 if existing_emails > 0:
                     events_with_emails.add(event.id)
                     logger.warning(f"⚠️ Wydarzenie {event.id} ({event.title}) już ma {existing_emails} emaili w kolejce")
+                else:
+                    # Jeśli kolejka pusta, a flaga reminders_scheduled = True, zresetuj flagę, aby umożliwić ponowne zaplanowanie
+                    if getattr(event, 'reminders_scheduled', False):
+                        try:
+                            event.reminders_scheduled = False
+                            from app import db as _db
+                            _db.session.commit()
+                            logger.info(f"ℹ️ Zresetowano reminders_scheduled dla wydarzenia {event.id} - kolejka była pusta")
+                        except Exception as _e:
+                            logger.error(f"❌ Błąd resetu reminders_scheduled dla wydarzenia {event.id}: {_e}")
             
-            # Usuń wydarzenia które już mają emaile w kolejce
+            # Usuń wydarzenia które już mają emaile w kolejce (dla reszty spróbujemy zaplanować)
             events = [event for event in events if event.id not in events_with_emails]
             
             processed_count = 0

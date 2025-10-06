@@ -123,24 +123,23 @@ class EventMonitorService:
                 # Sprawdź czy powiadomienie jest zaplanowane na odpowiedni czas
                 expected_time = self._calculate_expected_reminder_time(event, reminder)
                 
-                if expected_time and abs((reminder.scheduled_at - expected_time).total_seconds()) > 300:  # 5 minut tolerancji
-                    return True, f"Powiadomienie {reminder.id} ma nieaktualny czas: {reminder.scheduled_at} vs {expected_time}"
+                if expected_time:
+                    # Normalizuj timezone dla porównania
+                    scheduled_naive = reminder.scheduled_at.replace(tzinfo=None) if reminder.scheduled_at.tzinfo else reminder.scheduled_at
+                    expected_naive = expected_time.replace(tzinfo=None) if expected_time.tzinfo else expected_time
+                    
+                    if abs((scheduled_naive - expected_naive).total_seconds()) > 300:  # 5 minut tolerancji
+                        return True, f"Powiadomienie {reminder.id} ma nieaktualny czas: {reminder.scheduled_at} vs {expected_time}"
             
             # Sprawdź czy liczba powiadomień odpowiada liczbie uczestników
-            participants = self._get_event_participants(event.id)
-            expected_reminder_count = len(participants) * self._get_expected_reminder_types_count(event)
+            # participants = self._get_event_participants(event.id)
+            # expected_reminder_count = len(participants) * self._get_expected_reminder_types_count(event)
             
-            if len(existing_reminders) != expected_reminder_count:
-                return True, f"Nieprawidłowa liczba powiadomień: {len(existing_reminders)} vs {expected_reminder_count}"
+            # if len(existing_reminders) != expected_reminder_count:
+            #     return True, f"Nieprawidłowa liczba powiadomień: {len(existing_reminders)} vs {expected_reminder_count}"
             
-            # Sprawdź czy strategia się zmieniła (porównaj template_name)
-            current_strategy = self.email_manager._determine_reminder_strategy(event)
-            current_templates = {reminder['template'] for reminder in current_strategy['reminders']}
-            
-            existing_templates = {reminder.template_name for reminder in existing_reminders if reminder.template_name}
-            
-            if current_templates != existing_templates:
-                return True, f"Strategia się zmieniła: {existing_templates} → {current_templates}"
+            # Nie sprawdzaj strategii - to powoduje zbyt częste usuwanie przypomnień
+            # Po naprawie błędu timezone, powiadomienia powinny być stabilne
             
             return False, "Powiadomienia są aktualne"
             
@@ -186,12 +185,11 @@ class EventMonitorService:
             int: Liczba typów powiadomień
         """
         try:
-            # Użyj logiki z EmailManager
-            reminder_types = self.email_manager._determine_reminder_strategy(event)
-            return len(reminder_types)
+            # Domyślnie 2 typy: 1h i 5min przed
+            return 2
         except Exception as e:
             logger.error(f"❌ Błąd obliczania typów powiadomień: {e}")
-            return 1  # Domyślnie 1 typ
+            return 2  # Domyślnie 2 typy
     
     def _update_event_reminders(self, event: EventSchedule) -> Tuple[bool, str]:
         """

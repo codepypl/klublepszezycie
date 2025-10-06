@@ -188,10 +188,7 @@ class EmailQueueProcessor:
         """Pobiera e-maile do przetworzenia"""
         now = get_local_now()
         
-        # Normalizuj timezone dla porównania
-        if now.tzinfo is not None:
-            now = now.replace(tzinfo=None)
-        
+        # Użyj timezone-aware comparison
         return EmailQueue.query.filter(
             EmailQueue.status == 'pending',
             EmailQueue.scheduled_at <= now

@@ -16,28 +16,58 @@ from app.models.email_model import EmailQueue
 from app.services.celery_cleanup import CeleryCleanupService
 
 def clear_email_queue():
-    """Czyści kolejkę emaili w bazie danych"""
+    """Czyści kolejkę emaili w bazie danych w BEZPIECZNY sposób.
+    
+    Domyślnie:
+      - NIE usuwa e-maili w statusie 'pending' (aby nie gubić zaplanowanych wysyłek).
+      - Usuwa tylko e-maile w statusie 'processing' starsze niż 30 minut (potencjalnie zawieszone).
+      - Pełne czyszczenie (w tym 'pending') wymaga ustawienia zmiennej środowiskowej FORCE_CLEAR_EMAIL_QUEUE=true.
+    """
     app = create_app()
     
     with app.app_context():
+        force_clear = os.getenv('FORCE_CLEAR_EMAIL_QUEUE', 'false').lower() == 'true'
         print('🧹 Czyszczę kolejkę emaili w bazie danych...')
-        
-        # Usuń wszystkie emaile w kolejce
-        pending_emails = EmailQueue.query.filter(
+        print(f'   FORCE_CLEAR_EMAIL_QUEUE={force_clear}')
+
+        if not force_clear:
+            # Bezpieczny tryb: tylko sprzątanie zawieszonych 'processing'
+            from app.utils.timezone_utils import get_local_now
+            from datetime import timedelta
+            cutoff = get_local_now() - timedelta(minutes=30)
+
+            stuck_processing = EmailQueue.query.filter(
+                EmailQueue.status == 'processing',
+                EmailQueue.updated_at < cutoff
+            ).all()
+
+            print(f"📧 Zawieszone 'processing' do usunięcia: {len(stuck_processing)}")
+            removed = 0
+            for email in stuck_processing:
+                print(f"  - Usuwam (processing): {email.recipient_email} | updated_at={email.updated_at}")
+                db.session.delete(email)
+                removed += 1
+
+            db.session.commit()
+            print(f'✅ Usunięto {removed} zawieszonych emaili (processing).')
+            print("ℹ️ Aby usunąć także 'pending', ustaw FORCE_CLEAR_EMAIL_QUEUE=true na czas restartu.")
+            return
+
+        # Tryb wymuszony: usuń 'pending' i 'processing'
+        pending_and_processing = EmailQueue.query.filter(
             EmailQueue.status.in_(['pending', 'processing'])
         ).all()
-        
-        print(f'📧 Znaleziono {len(pending_emails)} emaili w kolejce')
-        
-        if pending_emails:
-            for email in pending_emails:
-                print(f'  - Usuwam: {email.recipient_email}')
+
+        print(f'📧 Znaleziono {len(pending_and_processing)} emaili do usunięcia (pending/processing)')
+
+        if pending_and_processing:
+            for email in pending_and_processing:
+                print(f'  - Usuwam: {email.recipient_email} | status={email.status}')
                 db.session.delete(email)
-            
             db.session.commit()
-            print(f'✅ Usunięto {len(pending_emails)} emaili z kolejki')
+            print(f'✅ Usunięto {len(pending_and_processing)} emaili z kolejki')
         else:
-            print('✅ Kolejka emaili jest już pusta')
+            print('✅ Brak emaili do usunięcia (pending/processing)')
 
 def stop_celery_workers():
     """Zatrzymuje wszystkie procesy Celery"""
