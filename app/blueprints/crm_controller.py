@@ -9,6 +9,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from app.utils.auth_utils import ankieter_required
 from app.models import db, User
+from app.services.crm_queue_manager import QueueManager
+from app.services.crm_event_integration import EventIntegrationService
 
 # Create blueprint for backward compatibility
 ankieter_bp = Blueprint('ankieter', __name__, template_folder='templates')
@@ -35,15 +37,10 @@ def dashboard():
 def calls():
     """Calls management page"""
     try:
-        from app.services.crm_queue_manager import QueueManager
-        from app.services.crm_event_integration import EventIntegrationService
-        
-        # Get next contact for ankieter
         next_contact = QueueManager.get_next_contact_for_ankieter(current_user.id)
-        
         # Get available events for lead registration
         available_events = EventIntegrationService.get_available_events()
-        
+    
         # Get queue statistics
         queue_stats = QueueManager.get_ankieter_queue_stats(current_user.id)
         
