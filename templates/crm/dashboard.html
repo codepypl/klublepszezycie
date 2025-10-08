@@ -144,27 +144,60 @@ let dashboardRefreshInterval;
 // Load statistics from API
 async function loadDashboardStats() {
     try {
+        console.log('🔄 Loading dashboard stats...');
         const response = await fetch('/api/crm/agent/queue-status');
         const data = await response.json();
         
+        console.log('📊 Dashboard API response:', data);
+        
         if (data.success) {
             // Today's statistics
-            document.getElementById('leadsToday').textContent = data.today_stats.leads || 0;
-            document.getElementById('answeredToday').textContent = data.today_stats.completed_calls || 0;
-            document.getElementById('callbacksToday').textContent = data.today_stats.callbacks || 0;
-            document.getElementById('longestCallToday').textContent = formatDuration(data.today_stats.longest_call_seconds || 0);
+            const leadsToday = data.today_stats.leads || 0;
+            const answeredToday = data.today_stats.completed_calls || 0;
+            const callbacksToday = data.today_stats.callbacks || 0;
+            const longestCallToday = data.today_stats.longest_call_seconds || 0;
+            
+            console.log('📈 Today stats:', {
+                leads: leadsToday,
+                answered: answeredToday,
+                callbacks: callbacksToday,
+                longestCall: longestCallToday
+            });
+            
+            document.getElementById('leadsToday').textContent = leadsToday;
+            document.getElementById('answeredToday').textContent = answeredToday;
+            document.getElementById('callbacksToday').textContent = callbacksToday;
+            document.getElementById('longestCallToday').textContent = formatDuration(longestCallToday);
             
             // Total statistics
-            document.getElementById('totalAnswered').textContent = data.total_stats.completed_calls || 0;
-            document.getElementById('totalCallbacks').textContent = data.total_stats.callbacks || 0;
+            const totalAnswered = data.total_stats.completed_calls || 0;
+            const totalCallbacks = data.total_stats.callbacks || 0;
+            
+            console.log('📊 Total stats:', {
+                answered: totalAnswered,
+                callbacks: totalCallbacks
+            });
+            
+            document.getElementById('totalAnswered').textContent = totalAnswered;
+            document.getElementById('totalCallbacks').textContent = totalCallbacks;
             
             // Time statistics - new ones
-            document.getElementById('totalLoginTimeToday').textContent = formatTimeDuration(data.today_stats.total_login_time_seconds || 0);
-            document.getElementById('totalWorkTimeToday').textContent = formatTimeDuration(data.today_stats.total_work_time_seconds || 0);
-            document.getElementById('totalBreakTimeToday').textContent = formatTimeDuration(data.today_stats.total_break_time_seconds || 0);
+            const totalLoginTime = data.today_stats.total_login_time_seconds || 0;
+            const totalWorkTime = data.today_stats.total_work_time_seconds || 0;
+            const totalBreakTime = data.today_stats.total_break_time_seconds || 0;
+            const avgCallTime = data.today_stats.avg_call_time_seconds || 0;
             
-            // Existing time statistics
-            document.getElementById('avgCallTime').textContent = formatDuration(data.today_stats.avg_call_time_seconds || 0);
+            console.log('⏰ Time stats:', {
+                loginTime: totalLoginTime,
+                workTime: totalWorkTime,
+                breakTime: totalBreakTime,
+                avgCallTime: avgCallTime
+            });
+            
+            document.getElementById('totalLoginTimeToday').textContent = formatTimeDuration(totalLoginTime);
+            document.getElementById('totalWorkTimeToday').textContent = formatTimeDuration(totalWorkTime);
+            document.getElementById('totalBreakTimeToday').textContent = formatTimeDuration(totalBreakTime);
+            document.getElementById('avgCallTime').textContent = formatDuration(avgCallTime);
             
             // Calculate success rate
             const totalCalls = (data.today_stats.leads || 0) + (data.today_stats.rejections || 0) + 
@@ -176,11 +209,13 @@ async function loadDashboardStats() {
             // Queue count
             const queueCount = (data.queue.callbacks || 0) + (data.queue.potentials || 0) + (data.queue.new_contacts || 0);
             document.getElementById('queueCount').textContent = queueCount;
+            
+            console.log('✅ Dashboard stats loaded successfully');
         } else {
-            console.error('Error loading dashboard stats:', data.error);
+            console.error('❌ Error loading dashboard stats:', data.error);
         }
     } catch (error) {
-        console.error('Error loading dashboard stats:', error);
+        console.error('❌ Error loading dashboard stats:', error);
     }
 }
 

@@ -2,6 +2,7 @@
 SEO and legal document models
 """
 from datetime import datetime
+from app.utils.timezone_utils import get_local_datetime
 from . import db
 
 class SEOSettings(db.Model):
@@ -17,8 +18,8 @@ class SEOSettings(db.Model):
     og_description = db.Column(db.Text)
     og_image = db.Column(db.String(200))
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)  # Added from database schema
     
     def __repr__(self):
@@ -38,8 +39,8 @@ class FooterSettings(db.Model):
     company_name = db.Column(db.String(100))
     show_privacy_policy = db.Column(db.Boolean, default=True)
     show_terms = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     def __repr__(self):
         return f'<FooterSettings {self.company_name}>'
@@ -53,8 +54,8 @@ class LegalDocument(db.Model):
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     def __repr__(self):
         return f'<LegalDocument {self.document_type}>'

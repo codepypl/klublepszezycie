@@ -165,3 +165,69 @@ def monthly_stats_summary():
         error_msg = f"Error generating monthly stats summary: {str(e)}"
         logging.error(error_msg)
         return error_msg
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.stats_tasks.update_email_stats_task')
+def update_email_stats_task(self):
+    """Aktualizuje statystyki email w tabeli stats"""
+    try:
+        logging.info("📊 Aktualizuję statystyki email")
+        
+        # Aktualizuj statystyki email
+        updated_stats = Stats.update_email_stats()
+        
+        logging.info(f"✅ Zaktualizowano statystyki email: {updated_stats}")
+        
+        return {
+            'success': True,
+            'updated_stats': updated_stats
+        }
+        
+    except Exception as exc:
+        logging.error(f"❌ Błąd aktualizacji statystyk email: {exc}")
+        raise self.retry(exc=exc, countdown=60)
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.stats_tasks.create_missing_event_groups_task')
+def create_missing_event_groups_task(self):
+    """Tworzy grupy dla wydarzeń, które nie mają grup"""
+    try:
+        logging.info("🔧 Sprawdzam wydarzenia bez grup")
+        
+        from app.models import EventSchedule, UserGroup
+        from app.services.group_manager import GroupManager
+        
+        # Znajdź aktywne wydarzenia bez grup
+        events_without_groups = db.session.query(EventSchedule).filter(
+            EventSchedule.is_active == True,
+            ~EventSchedule.id.in_(
+                db.session.query(UserGroup.event_id).filter(
+                    UserGroup.event_id.isnot(None),
+                    UserGroup.group_type == 'event_based'
+                )
+            )
+        ).all()
+        
+        group_manager = GroupManager()
+        created_count = 0
+        
+        for event in events_without_groups:
+            try:
+                group_id = group_manager.create_event_group(event.id, event.title)
+                if group_id:
+                    created_count += 1
+                    logging.info(f"✅ Utworzono grupę {group_id} dla wydarzenia {event.id}: {event.title}")
+                else:
+                    logging.warning(f"⚠️ Nie udało się utworzyć grupy dla wydarzenia {event.id}")
+            except Exception as e:
+                logging.error(f"❌ Błąd tworzenia grupy dla wydarzenia {event.id}: {e}")
+        
+        logging.info(f"✅ Utworzono {created_count} grup dla wydarzeń")
+        
+        return {
+            'success': True,
+            'created_groups': created_count,
+            'events_checked': len(events_without_groups)
+        }
+        
+    except Exception as exc:
+        logging.error(f"❌ Błąd tworzenia brakujących grup wydarzeń: {exc}")
+        raise self.retry(exc=exc, countdown=60)

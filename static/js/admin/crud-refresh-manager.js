@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const commonModals = [
         'userModal', 'eventModal', 'campaignModal', 'templateModal',
         'groupModal', 'postModal', 'categoryModal', 'tagModal',
-        'bulkDeleteModal', 'deleteModal', 'editModal'
+        'bulkDeleteModal', 'deleteModal', 'editModal', 'addPostModal', 'editPostModal'
     ];
     
     commonModals.forEach(modalId => {

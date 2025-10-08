@@ -2,6 +2,7 @@
 Event-related models
 """
 from datetime import datetime
+from app.utils.timezone_utils import get_local_datetime
 from . import db
 
 class EventSchedule(db.Model):
@@ -20,8 +21,8 @@ class EventSchedule(db.Model):
     is_published = db.Column(db.Boolean, default=True)
     hero_background = db.Column(db.String(200))  # Added from database schema
     hero_background_type = db.Column(db.String(50))  # Added from database schema
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     max_participants = db.Column(db.Integer)
     is_archived = db.Column(db.Boolean, default=False)
     reminders_scheduled = db.Column(db.Boolean, default=False)  # Flaga zabezpieczająca przed duplikatami

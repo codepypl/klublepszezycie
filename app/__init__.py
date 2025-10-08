@@ -70,19 +70,36 @@ def create_app():
     from app.routes import public_bp, admin_bp, auth_bp, blog_bp, seo_bp, social_bp, events_bp, users_bp, footer_bp, crm_bp, ankieter_bp
     from app.routes.unsubscribe_routes import unsubscribe_bp
     from app.routes.user_groups_route import user_groups_bp
-    from app.api import email_bp, users_api_bp, testimonials_api_bp, sections_api_bp, menu_api_bp, faq_api_bp, benefits_api_bp, events_api_bp, blog_api_bp, seo_api_bp, social_api_bp, crm_api_bp, agent_api_bp, crm_export_api_bp, stats_api_bp
-    from app.api.social_sharing_api import social_sharing_api_bp
+    from app.api import users_api_bp, testimonials_api_bp, sections_api_bp, menu_api_bp, faq_api_bp, benefits_api_bp, seo_api_bp, social_api_bp, stats_api_bp
+    # from app.api.social_sharing_api import social_sharing_api_bp  # File doesn't exist
     from app.api.user_groups_api import user_groups_bp as user_groups_api_bp
-    from app.api.email_v2_api import email_v2_bp
     from app.api.mailgun_webhook_api import mailgun_webhook_bp
-    from app.api.voip_api import voip_api_bp
+    # Nowe moduły email API - modularny system
+    from app.api.email import email_queue_bp, email_templates_bp, email_campaigns_bp, email_monitoring_bp
+    # Nowe moduły CRM API - modularny system
+    from app.api.crm import contacts_api_bp, imports_api_bp, campaigns_api_bp, blacklist_api_bp, queue_api_bp, agent_api_bp, export_api_bp, voip_api_bp, stats_api_bp
+    from app.api.blog import posts_api_bp, categories_api_bp, tags_api_bp, comments_api_bp, media_api_bp
+    from app.api.events import events_api_bp, schedules_api_bp, registrations_api_bp
     
     app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(user_groups_bp)
     # Main API blueprint removed - individual API modules are registered separately
-    app.register_blueprint(email_bp, url_prefix='/api')
-    app.register_blueprint(email_v2_bp, url_prefix='/api')  # Nowy system mailingu v2
+    # Nowe moduły email API - modularny system
+    app.register_blueprint(email_campaigns_bp, url_prefix='/api')
+    app.register_blueprint(email_queue_bp, url_prefix='/api')
+    app.register_blueprint(email_templates_bp, url_prefix='/api')
+    app.register_blueprint(email_monitoring_bp, url_prefix='/api')
+    # Nowe moduły CRM API - modularny system
+    app.register_blueprint(contacts_api_bp, url_prefix='/api')
+    app.register_blueprint(imports_api_bp, url_prefix='/api')
+    app.register_blueprint(campaigns_api_bp, url_prefix='/api')
+    app.register_blueprint(blacklist_api_bp, url_prefix='/api')
+    app.register_blueprint(queue_api_bp, url_prefix='/api')
+    app.register_blueprint(agent_api_bp, url_prefix='/api')
+    app.register_blueprint(export_api_bp, url_prefix='/api')
+    app.register_blueprint(voip_api_bp, url_prefix='/api')
+    app.register_blueprint(stats_api_bp, url_prefix='/api')
     app.register_blueprint(user_groups_api_bp, url_prefix='/api')
     app.register_blueprint(users_api_bp, url_prefix='/api')
     app.register_blueprint(testimonials_api_bp, url_prefix='/api')
@@ -90,11 +107,18 @@ def create_app():
     app.register_blueprint(menu_api_bp, url_prefix='/api')
     app.register_blueprint(faq_api_bp, url_prefix='/api')
     app.register_blueprint(benefits_api_bp, url_prefix='/api')
+    # Nowe moduły blog API - modularny system
+    app.register_blueprint(posts_api_bp, url_prefix='/api')
+    app.register_blueprint(categories_api_bp, url_prefix='/api')
+    app.register_blueprint(tags_api_bp, url_prefix='/api')
+    app.register_blueprint(comments_api_bp, url_prefix='/api')
+    app.register_blueprint(media_api_bp, url_prefix='/api')
+    # Nowe moduły events API - modularny system
     app.register_blueprint(events_api_bp, url_prefix='/api')
-    app.register_blueprint(blog_api_bp, url_prefix='/api')
+    app.register_blueprint(schedules_api_bp, url_prefix='/api')
+    app.register_blueprint(registrations_api_bp, url_prefix='/api')
     app.register_blueprint(seo_api_bp, url_prefix='/api')
     app.register_blueprint(social_api_bp, url_prefix='/api')
-    app.register_blueprint(social_sharing_api_bp, url_prefix='/api')
     app.register_blueprint(auth_bp)
     app.register_blueprint(blog_bp)
     app.register_blueprint(seo_bp, url_prefix='/admin')
@@ -104,12 +128,7 @@ def create_app():
     app.register_blueprint(footer_bp, url_prefix='/admin')
     app.register_blueprint(crm_bp, url_prefix='/admin/crm')
     app.register_blueprint(ankieter_bp, url_prefix='/ankieter')
-    app.register_blueprint(crm_api_bp, url_prefix='/api/crm')
-    app.register_blueprint(agent_api_bp, url_prefix='/api/crm/agent')
-    app.register_blueprint(crm_export_api_bp, url_prefix='/api/crm/export')
-    app.register_blueprint(stats_api_bp, url_prefix='/api')
     app.register_blueprint(mailgun_webhook_bp, url_prefix='/api')  # Webhook endpoints
-    app.register_blueprint(voip_api_bp)  # VoIP/Twilio endpoints
     app.register_blueprint(unsubscribe_bp)
     
     # Log blueprints

@@ -3,6 +3,7 @@ Blog-related models
 """
 from datetime import datetime
 from . import db
+from app.utils.timezone_utils import get_local_datetime
 
 class BlogCategory(db.Model):
     """Blog categories with hierarchical structure"""
@@ -15,8 +16,8 @@ class BlogCategory(db.Model):
     parent_id = db.Column(db.Integer, db.ForeignKey('blog_categories.id'), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     sort_order = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     # Relationships
     parent = db.relationship('BlogCategory', remote_side=[id], backref='children')
@@ -48,13 +49,18 @@ class BlogTag(db.Model):
     slug = db.Column(db.String(50), unique=True, nullable=False)
     description = db.Column(db.Text)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
     
     # Relationships
     posts = db.relationship('BlogPost', secondary='blog_post_tags', back_populates='tags')
     
     def __repr__(self):
         return f'<BlogTag {self.name}>'
+    
+    @property
+    def posts_count(self):
+        # Count posts associated with this tag
+        return len(self.posts) if self.posts else 0
 
 class BlogPost(db.Model):
     """Blog posts"""
@@ -76,8 +82,8 @@ class BlogPost(db.Model):
     social_twitter = db.Column(db.Boolean, default=False)
     social_linkedin = db.Column(db.Boolean, default=False)
     social_instagram = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     published_at = db.Column(db.DateTime)
     
     # Relationships
@@ -112,8 +118,8 @@ class BlogPostImage(db.Model):
     caption = db.Column(db.Text)
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     # Relationships
     post = db.relationship('BlogPost', backref=db.backref('images', cascade='all, delete-orphan', lazy='dynamic'))
@@ -150,8 +156,8 @@ class BlogComment(db.Model):
     moderated_at = db.Column(db.DateTime)  # Kiedy moderowano
     
     # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     # Relationships
     post = db.relationship('BlogPost', overlaps="comments")

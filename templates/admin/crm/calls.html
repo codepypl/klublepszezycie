@@ -74,7 +74,7 @@
                             <p class="mb-1"><strong>Firma:</strong> {{ next_contact.company }}</p>
                             {% endif %}
                             {% if next_contact.notes %}
-                            <p class="mb-1"><strong>Notatki:</strong> {{ next_contact.notes }}</p>
+                            <p class="mb-1"><strong>Notatki:</strong><br>{{ next_contact.notes|replace('\n', '<br>')|safe }}</p>
                             {% endif %}
                         </div>
                         <div class="col-md-6">

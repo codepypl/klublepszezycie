@@ -166,12 +166,17 @@ class QueueManager:
             call.next_call_date = callback_date
         
         db.session.add(call)
+        db.session.commit()  # Commit new record first
         
+        # Update statistics for all call statuses
+        from app.models.stats_model import Stats
+        Stats.update_crm_stats()
         
         # Process based on status
         if call_status == 'lead':
             # Lead - mark as completed
             QueueManager._mark_queue_completed(contact_id, ankieter_id)
+            
             # TODO: Register for event and send email
             
         elif call_status == 'rejection':
@@ -204,7 +209,7 @@ class QueueManager:
             QueueManager._mark_queue_completed(contact_id, ankieter_id)
         
         db.session.commit()
-        return True
+        return {'success': True, 'message': 'Call result processed successfully'}
     
     @staticmethod
     def _mark_queue_completed(contact_id, ankieter_id):
@@ -217,6 +222,7 @@ class QueueManager:
         
         if call_entry:
             call_entry.queue_status = 'completed'
+            db.session.commit()
     
     @staticmethod
     def _add_to_blacklist(contact_id, ankieter_id, reason):

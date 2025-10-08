@@ -2,6 +2,7 @@
 Content-related models (sections, benefits, testimonials, etc.)
 """
 from datetime import datetime
+from app.utils.timezone_utils import get_local_datetime
 from . import db
 
 class MenuItem(db.Model):
@@ -15,7 +16,7 @@ class MenuItem(db.Model):
     blog = db.Column(db.Boolean, nullable=True)  # Show only on blog pages (None = all pages, True = blog only, False = non-blog only)
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
     
     def __repr__(self):
         return f'<MenuItem {self.title}>'
@@ -47,7 +48,7 @@ class Section(db.Model):
     # Final text
     final_text = db.Column(db.Text)
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
     
     def __repr__(self):
         return f'<Section {self.name}>'
@@ -62,7 +63,7 @@ class BenefitItem(db.Model):
     icon = db.Column(db.String(100))
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
     
     def __repr__(self):
         return f'<BenefitItem {self.title}>'
@@ -78,7 +79,7 @@ class Testimonial(db.Model):
     rating = db.Column(db.Integer, default=5)
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
     
     def __repr__(self):
         return f'<Testimonial {self.author_name}>'
@@ -93,7 +94,7 @@ class SocialLink(db.Model):
     icon = db.Column(db.String(50))
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
     
     def __repr__(self):
         return f'<SocialLink {self.platform}>'
@@ -107,7 +108,7 @@ class FAQ(db.Model):
     answer = db.Column(db.Text, nullable=False)
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
     
     def __repr__(self):
         return f'<FAQ {self.question[:50]}...>'

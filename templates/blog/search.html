@@ -164,6 +164,30 @@
                                  data-max-visible-pages="5">
                             </div>
                         </div>
+                        
+                        <!-- Pagination Data -->
+                        <script>
+                            // Pass pagination data to JavaScript
+                            window.flaskPagination = {
+                                page: {{ posts.page }},
+                                pages: {{ posts.pages }},
+                                per_page: {{ posts.per_page }},
+                                total: {{ posts.total }},
+                                has_next: {{ posts.has_next|lower }},
+                                has_prev: {{ posts.has_prev|lower }},
+                                prev_num: {{ posts.prev_num or 'null' }},
+                                next_num: {{ posts.next_num or 'null' }}
+                            };
+                            
+                            // Set up pagination handlers
+                            window.paginationHandlers = {
+                                onPageChange: function(page) {
+                                    const urlParams = new URLSearchParams(window.location.search);
+                                    urlParams.set('page', page);
+                                    window.location.href = window.location.pathname + '?' + urlParams.toString();
+                                }
+                            };
+                        </script>
                     {% else %}
                         <div class="text-center py-5">
                             <i class="fas fa-search fa-3x text-muted mb-3"></i>

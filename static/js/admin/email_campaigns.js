@@ -193,6 +193,9 @@ function displayCampaigns(campaigns) {
                     ${campaign.status === 'ready' ? `<button class="btn btn-lg admin-btn-info" onclick="sendCampaign(${campaign.id})" title="Wyślij kampanię">
                         <i class="fas fa-paper-plane"></i>
                     </button>` : ''}
+                    ${campaign.status === 'sending' ? `<button class="btn btn-lg admin-btn-warning" disabled title="Kampania w trakcie wysyłania">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </button>` : ''}
                     ${campaign.status !== 'completed' && campaign.status !== 'sent' && campaign.status !== 'sending' ? `
                         <button class="btn btn-sm admin-btn-outline" onclick="editCampaign(${campaign.id})" title="Edytuj kampanię">
                             <i class="fas fa-edit"></i>

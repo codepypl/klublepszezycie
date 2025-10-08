@@ -2,6 +2,7 @@
 User History Model - historia uczestnictwa w wydarzeniach
 """
 from datetime import datetime
+from app.utils.timezone_utils import get_local_datetime
 from . import db
 
 class UserHistory(db.Model):
@@ -12,11 +13,11 @@ class UserHistory(db.Model):
     event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=False)
     registration_type = db.Column(db.String(20), nullable=False, default='registration')  # 'registration', 'participation'
     was_club_member = db.Column(db.Boolean, nullable=False, default=False)  # Czy był członkiem klubu podczas wydarzenia
-    registration_date = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    registration_date = db.Column(db.DateTime, default=get_local_datetime, index=True)
     participation_date = db.Column(db.DateTime, nullable=True)  # Data rzeczywistego uczestnictwa
     status = db.Column(db.String(20), nullable=False, default='registered')  # 'registered', 'participated', 'cancelled', 'no_show'
     notes = db.Column(db.Text, nullable=True)  # Dodatkowe notatki
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime, default=get_local_datetime, index=True)
     
     # Relationships
     user = db.relationship('User', backref=db.backref('event_history', cascade='all, delete-orphan'), lazy=True)

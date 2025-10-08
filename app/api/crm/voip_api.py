@@ -1,8 +1,7 @@
 """
-VoIP API endpoints for Twilio integration
+CRM VoIP API - Twilio integration for CRM calls
 """
-
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response
 from flask_login import login_required, current_user
 from app.utils.auth_utils import ankieter_required
 from app.services.twilio_service import twilio_service
@@ -13,10 +12,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Create blueprint
-voip_api_bp = Blueprint('voip_api', __name__, url_prefix='/api/voip')
+# Create VoIP API blueprint
+voip_api_bp = Blueprint('crm_voip_api', __name__)
 
-@voip_api_bp.route('/twilio/make-call', methods=['POST'])
+@voip_api_bp.route('/crm/voip/twilio/make-call', methods=['POST'])
 @login_required
 @ankieter_required
 def make_twilio_call():
@@ -78,7 +77,7 @@ def make_twilio_call():
         logger.error(f"❌ Error making Twilio call: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@voip_api_bp.route('/twilio/end-call', methods=['POST'])
+@voip_api_bp.route('/crm/voip/twilio/end-call', methods=['POST'])
 @login_required
 @ankieter_required
 def end_twilio_call():
@@ -111,7 +110,7 @@ def end_twilio_call():
         logger.error(f"❌ Error ending Twilio call: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@voip_api_bp.route('/twilio/call-status', methods=['POST'])
+@voip_api_bp.route('/crm/voip/twilio/call-status', methods=['POST'])
 @login_required
 def get_twilio_call_status():
     """Get status of a Twilio call"""
@@ -129,7 +128,7 @@ def get_twilio_call_status():
         logger.error(f"❌ Error getting call status: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@voip_api_bp.route('/twilio/voice', methods=['POST'])
+@voip_api_bp.route('/crm/voip/twilio/voice', methods=['POST'])
 def twilio_voice_webhook():
     """
     Twilio webhook for voice calls
@@ -153,16 +152,14 @@ def twilio_voice_webhook():
             twiml = twilio_service.generate_twiml_for_agent()
         
         # Return TwiML response
-        from flask import Response
         return Response(twiml, mimetype='text/xml')
         
     except Exception as e:
         logger.error(f"❌ Error in Twilio voice webhook: {e}")
         # Return empty TwiML on error
-        from flask import Response
         return Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', mimetype='text/xml')
 
-@voip_api_bp.route('/twilio/status', methods=['POST'])
+@voip_api_bp.route('/crm/voip/twilio/status', methods=['POST'])
 def twilio_status_webhook():
     """
     Twilio webhook for call status updates
@@ -194,7 +191,7 @@ def twilio_status_webhook():
         logger.error(f"❌ Error in Twilio status webhook: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@voip_api_bp.route('/twilio/recording', methods=['POST'])
+@voip_api_bp.route('/crm/voip/twilio/recording', methods=['POST'])
 @login_required
 @ankieter_required
 def get_call_recording():
@@ -212,3 +209,5 @@ def get_call_recording():
     except Exception as e:
         logger.error(f"❌ Error getting recording: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+

@@ -11,12 +11,14 @@ blog_bp = Blueprint('blog', __name__, url_prefix='/blog')
 def index():
     """Blog homepage - list of posts"""
     page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 6, type=int)  # Default to 6 posts per page
     category_slug = request.args.get('category')
     tag_slug = request.args.get('tag')
     search = request.args.get('search')
     
     data = BlogController.get_blog_posts(
         page=page, 
+        per_page=per_page,
         category_slug=category_slug, 
         tag_slug=tag_slug, 
         search=search
@@ -131,8 +133,9 @@ def post_detail_with_category(category_slug, post_slug):
 def category_detail(slug):
     """Category detail page"""
     page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 6, type=int)
     
-    data = BlogController.get_blog_posts(page=page, category_slug=slug)
+    data = BlogController.get_blog_posts(page=page, per_page=per_page, category_slug=slug)
     
     if not data['success']:
         flash(data['error'], 'error')
@@ -176,7 +179,7 @@ def category_hierarchy_detail(parent_slug, child_slug):
         else:
             return redirect(url_for('blog.category_detail', slug=child_slug), code=301)
     
-    data = BlogController.get_blog_posts(page=page, category_slug=child_slug)
+    data = BlogController.get_blog_posts(page=page, per_page=6, category_slug=child_slug)
     
     if not data['success']:
         flash(data['error'], 'error')
@@ -198,8 +201,9 @@ def category_hierarchy_detail(parent_slug, child_slug):
 def tag_detail(slug):
     """Tag detail page"""
     page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 6, type=int)
     
-    data = BlogController.get_blog_posts(page=page, tag_slug=slug)
+    data = BlogController.get_blog_posts(page=page, per_page=per_page, tag_slug=slug)
     
     if not data['success']:
         flash(data['error'], 'error')
@@ -225,13 +229,14 @@ def search():
     """Search blog posts"""
     query = request.args.get('q', '').strip()
     page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 6, type=int)
     
     if not query:
         flash('Wprowadź frazę do wyszukiwania', 'warning')
         return redirect(url_for('blog.index'))
     
     # Get search results from controller
-    data = BlogController.search_posts(query, page)
+    data = BlogController.search_posts(query, page, per_page)
     
     if not data['success']:
         flash(data['error'], 'error')
@@ -324,6 +329,7 @@ def add_comment():
 
 # Admin routes for blog management
 @blog_bp.route('/admin')
+@blog_bp.route('/admin/posts')  # Add alias for consistency
 @login_required
 def admin_index():
     """Blog admin dashboard"""
@@ -337,6 +343,8 @@ def admin_index():
     if not data['success']:
         flash(f'Błąd: {data["error"]}', 'error')
         return redirect(url_for('blog.index'))
+    
+    # AJAX handling removed - using simple page reload like users module
     
     return render_template('blog/admin/posts.html', posts=data['posts'], edit_post_id=edit_post_id)
 

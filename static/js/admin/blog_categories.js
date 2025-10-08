@@ -325,13 +325,10 @@ class BlogCategoriesManager {
         }
     }
 
-    async deleteCategory(categoryId) {
+    deleteCategory(categoryId) {
         window.deleteConfirmation.showSingleDelete(
             'kategorię',
-            () => {
-                // Continue with deletion
-                performDeleteCategory(categoryId);
-            },
+            () => this.performDeleteCategory(categoryId),
             'kategorię'
         );
     }

@@ -119,8 +119,16 @@ def cleanup_blog_post_files(post):
     try:
         # Delete featured image
         if post.featured_image:
-            if post.featured_image.startswith('/static/uploads/blog/article/'):
-                # New structure: /static/uploads/blog/article/<id>/featured/filename
+            if post.featured_image.startswith('/static/uploads/blog/') and '/featured/' in post.featured_image:
+                # New structure: /static/uploads/blog/<id>/featured/filename
+                url_path = post.featured_image.replace('/static/uploads/', '')
+                featured_path = os.path.join(current_app.config['UPLOAD_FOLDER'], url_path)
+                if os.path.exists(featured_path):
+                    os.remove(featured_path)
+                    deleted_files['featured_image'] = True
+                    logging.info(f"Deleted featured image: {featured_path}")
+            elif post.featured_image.startswith('/static/uploads/blog/article/'):
+                # Old structure: /static/uploads/blog/article/<id>/featured/filename
                 filename = post.featured_image.split('/')[-1]  # Get filename
                 featured_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post.id), 'featured', filename)
                 if os.path.exists(featured_path):
@@ -137,8 +145,19 @@ def cleanup_blog_post_files(post):
         if hasattr(post, 'images') and post.images:
             for image in post.images:
                 if image.image_url:
-                    if image.image_url.startswith(f'/static/uploads/blog/article/{post.id}/gallery/'):
-                        # New structure: /static/uploads/blog/article/<id>/gallery/filename
+                    if image.image_url.startswith('/static/uploads/blog/') and '/gallery/' in image.image_url:
+                        # New structure: /static/uploads/blog/<id>/gallery/filename
+                        url_path = image.image_url.replace('/static/uploads/', '')
+                        gallery_path = os.path.join(current_app.config['UPLOAD_FOLDER'], url_path)
+                        if os.path.exists(gallery_path):
+                            os.remove(gallery_path)
+                            deleted_files['gallery_images'].append({
+                                'filename': os.path.basename(gallery_path),
+                                'deleted': True
+                            })
+                            logging.info(f"Deleted gallery image: {gallery_path}")
+                    elif image.image_url.startswith(f'/static/uploads/blog/article/{post.id}/gallery/'):
+                        # Old structure: /static/uploads/blog/article/<id>/gallery/filename
                         filename = image.image_url.split('/')[-1]  # Get filename
                         gallery_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post.id), 'gallery', filename)
                         if os.path.exists(gallery_path):
@@ -160,23 +179,37 @@ def cleanup_blog_post_files(post):
         
         # Clean up empty directories
         try:
-            # Remove gallery directory if empty
-            gallery_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post.id), 'gallery')
+            # Remove new structure directories if empty
+            gallery_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', str(post.id), 'gallery')
             if os.path.exists(gallery_dir) and not os.listdir(gallery_dir):
                 os.rmdir(gallery_dir)
                 logging.info(f"Removed empty gallery directory: {gallery_dir}")
             
-            # Remove featured directory if empty
-            featured_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post.id), 'featured')
+            featured_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', str(post.id), 'featured')
             if os.path.exists(featured_dir) and not os.listdir(featured_dir):
                 os.rmdir(featured_dir)
                 logging.info(f"Removed empty featured directory: {featured_dir}")
             
-            # Remove article directory if empty
-            article_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post.id))
-            if os.path.exists(article_dir) and not os.listdir(article_dir):
-                os.rmdir(article_dir)
-                logging.info(f"Removed empty article directory: {article_dir}")
+            post_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', str(post.id))
+            if os.path.exists(post_dir) and not os.listdir(post_dir):
+                os.rmdir(post_dir)
+                logging.info(f"Removed empty post directory: {post_dir}")
+            
+            # Remove old structure directories if empty
+            old_gallery_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post.id), 'gallery')
+            if os.path.exists(old_gallery_dir) and not os.listdir(old_gallery_dir):
+                os.rmdir(old_gallery_dir)
+                logging.info(f"Removed empty old gallery directory: {old_gallery_dir}")
+            
+            old_featured_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post.id), 'featured')
+            if os.path.exists(old_featured_dir) and not os.listdir(old_featured_dir):
+                os.rmdir(old_featured_dir)
+                logging.info(f"Removed empty old featured directory: {old_featured_dir}")
+            
+            old_article_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'blog', 'article', str(post.id))
+            if os.path.exists(old_article_dir) and not os.listdir(old_article_dir):
+                os.rmdir(old_article_dir)
+                logging.info(f"Removed empty old article directory: {old_article_dir}")
         except Exception as e:
             logging.warning(f"Could not remove empty directories: {str(e)}")
         

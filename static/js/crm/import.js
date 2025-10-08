@@ -13,7 +13,6 @@ let fileInfo = null;
 let columns = [];
 let isImporting = false;
 let currentImportFileId = null;
-let currentMapping = null;
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -223,9 +222,13 @@ function handleFileAnalysis() {
             updateImportLightbox(70, 'Przetwarzanie danych...');
             
             // Store file info
-            fileData = data.file_data;
-            fileInfo = data.file_info;
+            fileData = data.sample_data;
+            fileInfo = {
+                total_rows: data.total_rows,
+                file_type: data.file_type
+            };
             columns = data.columns;
+            currentImportFileId = data.import_file_id;
             
             updateImportLightbox(90, 'Przygotowywanie mapowania...');
             
@@ -239,8 +242,10 @@ function handleFileAnalysis() {
             showStep2();
                 
                 // Show analysis results
+                const totalRows = fileInfo?.total_rows || 0;
+                const columnsCount = columns?.length || 0;
                 window.toastManager.show(
-                    `Plik przeanalizowany: ${data.file_info.total_rows} rekordów, ${data.columns.length} kolumn`,
+                    `Plik przeanalizowany: ${totalRows} rekordów, ${columnsCount} kolumn`,
                     'success'
                 );
             }, 500);
@@ -329,6 +334,7 @@ function populateColumnMappings() {
     });
 }
 
+
 // ===== STEP 3: PREVIEW MAPPING =====
 
 function setupPreviewMapping() {
@@ -356,7 +362,7 @@ function setupPreviewMapping() {
 }
 
 function loadPreviewData() {
-    if (!currentMapping || !fileInfo) {
+    if (!currentMapping || !fileInfo || !currentImportFileId) {
         window.toastManager.show('Brak danych do podglądu', 'warning');
         return;
     }
@@ -385,7 +391,7 @@ function loadPreviewData() {
         },
         credentials: 'include',
         body: JSON.stringify({
-            file_info: fileInfo,
+            import_file_id: currentImportFileId,
             mapping: currentMapping,
             rows_count: rowsCount
         })
@@ -506,6 +512,12 @@ function populateCampaignSelect(campaigns) {
     // Clear existing options
     select.innerHTML = '<option value="">Wybierz kampanię</option>';
     
+    // Check if campaigns is valid array
+    if (!campaigns || !Array.isArray(campaigns)) {
+        console.warn('Invalid campaigns data:', campaigns);
+        return;
+    }
+    
     // Add all campaigns with status indicator
     campaigns.forEach(campaign => {
         const option = document.createElement('option');
@@ -535,13 +547,20 @@ function setupImportProcess() {
     
     if (startImport) {
         startImport.addEventListener('click', function() {
-            showStep4(); // Show campaign selection first
+            if (window.validateMapping()) {
+                showStep4(); // Show campaign selection first
+            }
         });
     }
 }
 
 async function performImport() {
-    if (!currentMapping || !fileInfo) {
+    console.log('🔍 performImport - checking data:');
+    console.log('  window.currentMapping:', window.currentMapping);
+    console.log('  fileInfo:', fileInfo);
+    console.log('  currentImportFileId:', currentImportFileId);
+    
+    if (!window.currentMapping || !fileInfo || !currentImportFileId) {
         window.toastManager.show('Brak danych do importu', 'warning');
         return;
     }
@@ -569,21 +588,31 @@ async function performImport() {
             },
             credentials: 'include',
             body: JSON.stringify({
-                file_data: fileData,
-                file_info: fileInfo
+                import_file_id: currentImportFileId
             })
         });
         
         const extractData = await safeJsonParse(extractResponse);
+        
+        console.log('🔍 extractData response:', extractData);
         
         if (!extractData.success) {
             throw new Error(extractData.error);
         }
         
         currentImportFileId = extractData.import_file_id;
+        console.log('🔍 currentImportFileId after extract:', currentImportFileId);
         
         // Step 2: Process records with mapping
         updateImportLightbox(30, 'Przetwarzanie rekordów...');
+        
+        const requestBody = {
+            import_file_id: currentImportFileId,
+            mapping: window.currentMapping,
+            campaign_id: parseInt(campaignId)
+        };
+        
+        console.log('🔍 performImport - request body:', requestBody);
         
         const processResponse = await fetch('/api/crm/process-import', {
             method: 'POST',
@@ -591,11 +620,7 @@ async function performImport() {
                 'Content-Type': 'application/json',
             },
             credentials: 'include',
-            body: JSON.stringify({
-                import_file_id: currentImportFileId,
-                mapping: currentMapping,
-                campaign_id: parseInt(campaignId)
-            })
+            body: JSON.stringify(requestBody)
         });
         
         const processData = await safeJsonParse(processResponse);
@@ -716,7 +741,7 @@ function resetImportState() {
     fileInfo = null;
     columns = [];
     currentImportFileId = null;
-    currentMapping = null;
+    window.currentMapping = null;
     
     // Reset file selection
     resetFileSelection();

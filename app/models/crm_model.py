@@ -7,7 +7,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from app.models import db
 # Import moved to avoid circular dependency
-from datetime import datetime, timedelta
+from datetime import datetime
+from app.utils.timezone_utils import get_local_datetime, timedelta
 
 class Campaign(db.Model):
     """Campaign model for CRM system"""
@@ -18,8 +19,8 @@ class Campaign(db.Model):
     description = db.Column(db.Text)
     script_content = db.Column(db.Text)  # Call script content
     created_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     is_active = db.Column(db.Boolean, default=True)
     
     # Relationships
@@ -51,8 +52,8 @@ class Contact(db.Model):
     max_call_attempts = db.Column(db.Integer, default=3)  # Max attempts before blacklisting
     assigned_ankieter_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))  # Assigned ankieter
     last_call_date = db.Column(db.DateTime)  # Last call attempt
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     # Relationships
     calls = db.relationship('Call', backref='contact', cascade='all, delete-orphan')
@@ -126,8 +127,8 @@ class Call(db.Model):
     queue_status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed, cancelled
     queue_type = db.Column(db.String(20), default='new')  # new, callback, retry
     scheduled_date = db.Column(db.DateTime)  # When to call
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     # Relationships
     ankieter = db.relationship('User', backref='calls')
@@ -182,8 +183,8 @@ class BlacklistEntry(db.Model):
     blacklisted_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     contact_id = db.Column(db.Integer, db.ForeignKey('crm_contacts.id'))  # Original contact
     is_active = db.Column(db.Boolean, default=True)  # Can be reactivated by admin
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     # Relationships
     campaign = db.relationship('Campaign', backref='blacklist_entries')
@@ -254,7 +255,7 @@ class ImportFile(db.Model):
     total_rows = db.Column(db.Integer, default=0)
     processed_rows = db.Column(db.Integer, default=0)
     error_message = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
     processed_at = db.Column(db.DateTime)
     
     # Relationships
@@ -273,9 +274,9 @@ class ImportRecord(db.Model):
     row_number = db.Column(db.Integer, nullable=False)  # Row number in original file
     raw_data = db.Column(db.Text, nullable=False)  # JSON string with all column data
     processed = db.Column(db.Boolean, default=False)  # Whether record was processed into Contact
-    contact_id = db.Column(db.Integer, db.ForeignKey('crm_contacts.id'))  # Link to created contact
+    contact_id = db.Column(db.Integer, db.ForeignKey('crm_contacts.id', ondelete='CASCADE'))  # Link to created contact
     error_message = db.Column(db.Text)  # Error during processing
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
     
     # Relationships
     contact = db.relationship('Contact', backref='import_record')

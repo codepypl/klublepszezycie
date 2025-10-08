@@ -190,11 +190,13 @@ class BlogPostsManager {
             if (result.success) {
                 window.toastManager.success(result.message || 'Artykuł został dodany pomyślnie');
                 this.closeModal('addPostModal');
-                location.reload();
                 
-                // Wywołaj globalne odświeżenie
+                // Wywołaj globalne odświeżenie zamiast reload
                 if (typeof window.refreshAfterCRUD === 'function') {
                     window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available, falling back to page reload');
+                    location.reload();
                 }
             } else {
                 window.toastManager.error(result.error || 'Błąd podczas dodawania artykułu');
@@ -275,11 +277,16 @@ class BlogPostsManager {
             if (result.success) {
                 window.toastManager.success(result.message || 'Artykuł został zaktualizowany pomyślnie');
                 this.closeModal('editPostModal');
-                location.reload();
                 
-                // Wywołaj globalne odświeżenie
+                // Wywołaj globalne odświeżenie zamiast reload
+                console.log('🔄 Calling refreshAfterCRUD...');
+                console.log('🔄 refreshAfterCRUD available:', typeof window.refreshAfterCRUD === 'function');
+                
                 if (typeof window.refreshAfterCRUD === 'function') {
                     window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available, falling back to page reload');
+                    location.reload();
                 }
             } else {
                 window.toastManager.error(result.error || 'Błąd podczas aktualizacji artykułu');
@@ -442,7 +449,7 @@ class BlogPostsManager {
             'artykuł',
             () => {
                 // Continue with deletion
-                performDeletePost(postId);
+                this.performDeletePost(postId);
             },
             'artykuł'
         );
@@ -459,14 +466,14 @@ class BlogPostsManager {
             
             if (result.success) {
                 window.toastManager.success(result.message || 'Artykuł został usunięty pomyślnie');
-                location.reload();
                 
-                // Wywołaj globalne odświeżenie - temporarily disabled for debugging
-                // if (typeof window.refreshAfterCRUD === 'function') {
-                //     window.refreshAfterCRUD();
-                // } else {
-                //     console.warn('window.refreshAfterCRUD is not available');
-                // }
+                // Wywołaj globalne odświeżenie zamiast reload
+                if (typeof window.refreshAfterCRUD === 'function') {
+                    window.refreshAfterCRUD();
+                } else {
+                    console.warn('window.refreshAfterCRUD is not available, falling back to page reload');
+                    location.reload();
+                }
             } else {
                 window.toastManager.error(result.error || 'Błąd podczas usuwania artykułu');
             }
@@ -475,6 +482,20 @@ class BlogPostsManager {
             window.toastManager.error('Błąd podczas usuwania artykułu');
         }
     }
+
+    // Function to refresh posts data (for CRUD refresh manager)
+    async loadPosts() {
+        try {
+            console.log('🔄 Refreshing posts data...');
+            // Reload the page to refresh all data (simple approach like users)
+            location.reload();
+        } catch (error) {
+            console.error('❌ Error refreshing posts data:', error);
+            // Fallback to page reload
+            location.reload();
+        }
+    }
+
 
     closeModal(modalId) {
         const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
@@ -539,6 +560,12 @@ class BlogPostsManager {
         const imageFile = formData.get('image_file');
         const imageUrl = formData.get('image_url');
 
+        console.log('saveImage called:', { imageId, postId, imageFile: !!imageFile, imageUrl });
+        console.log('FormData contents:');
+        for (let [key, value] of formData.entries()) {
+            console.log(key, value);
+        }
+
         if (!postId) {
             window.toastManager.error('Błąd: Brak ID posta');
             return;
@@ -550,8 +577,19 @@ class BlogPostsManager {
             return;
         }
         
+        // Get the actual file from the file input
+        const fileInput = document.getElementById('imageFile');
+        const actualFile = fileInput ? fileInput.files[0] : null;
+        
+        console.log('File input check:', { 
+            fileInput: !!fileInput, 
+            actualFile: !!actualFile, 
+            actualFileSize: actualFile ? actualFile.size : 0,
+            imageFile: imageFile 
+        });
+        
         // If file is provided, use FormData for upload
-        if (imageFile && imageFile.size > 0) {
+        if (actualFile && actualFile.size > 0) {
             try {
                 let response;
                 if (imageId) {
@@ -904,6 +942,33 @@ function editPost(postId) {
 
 // Make editPost available globally
 window.editPost = editPost;
+
+// Global deletePost function
+function deletePost(postId) {
+    if (window.blogPostsManager && typeof window.blogPostsManager.deletePost === 'function') {
+        window.blogPostsManager.deletePost(postId);
+    } else {
+        console.error('BlogPostsManager not available');
+    }
+}
+
+// Make deletePost available globally
+window.deletePost = deletePost;
+
+// Make loadPosts available globally for CRUD refresh
+window.loadPosts = function() {
+    console.log('🔄 Global loadPosts called - reloading page');
+    location.reload();
+};
+
+// Initialize CRUD refresh manager
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize CRUD refresh manager for blog posts
+    if (window.crudRefreshManager) {
+        window.crudRefreshManager.init(window.loadPosts);
+        console.log('🔄 CRUD Refresh Manager initialized for blog posts');
+    }
+});
 
 // Check for edit parameter in URL or template variable
 document.addEventListener('DOMContentLoaded', function() {

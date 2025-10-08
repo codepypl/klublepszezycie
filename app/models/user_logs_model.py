@@ -2,6 +2,7 @@
 User Logs Model - śledzenie wszystkich akcji użytkowników
 """
 from datetime import datetime
+from app.utils.timezone_utils import get_local_datetime
 from . import db
 
 class UserLogs(db.Model):
@@ -16,7 +17,7 @@ class UserLogs(db.Model):
     extra_data = db.Column(db.JSON, nullable=True)  # Additional data as JSON
     ip_address = db.Column(db.String(45), nullable=True)  # IPv4 or IPv6
     user_agent = db.Column(db.String(500), nullable=True)  # Browser/client info
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime, default=get_local_datetime, index=True)
 
     # Relationships
     user = db.relationship('User', backref=db.backref('logs', cascade='all, delete-orphan'), lazy=True)

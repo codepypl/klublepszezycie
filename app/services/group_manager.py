@@ -237,8 +237,12 @@ class GroupManager:
                         is_orphaned = True
                         orphan_reason = f"event_id={group.event_id} nie istnieje"
                         print(f"  🚨 Grupa '{group.name}' (ID: {group.id}) - wydarzenie {group.event_id} nie istnieje")
+                    elif not event.is_active:
+                        is_orphaned = True
+                        orphan_reason = f"event_id={group.event_id} jest nieaktywne"
+                        print(f"  🚨 Grupa '{group.name}' (ID: {group.id}) - wydarzenie {group.event_id} jest nieaktywne")
                     else:
-                        print(f"  ✅ Grupa '{group.name}' (ID: {group.id}) - wydarzenie {group.event_id} istnieje")
+                        print(f"  ✅ Grupa '{group.name}' (ID: {group.id}) - wydarzenie {group.event_id} istnieje i jest aktywne")
                 
                 # Sprawdź 2: Czy criteria zawiera event_id (jeśli nie ma event_id w kolumnie)
                 if not is_orphaned and group.criteria:
@@ -252,8 +256,12 @@ class GroupManager:
                                 is_orphaned = True
                                 orphan_reason = f"criteria.event_id={event_id} nie istnieje"
                                 print(f"  🚨 Grupa '{group.name}' (ID: {group.id}) - wydarzenie {event_id} z criteria nie istnieje")
+                            elif not event.is_active:
+                                is_orphaned = True
+                                orphan_reason = f"criteria.event_id={event_id} jest nieaktywne"
+                                print(f"  🚨 Grupa '{group.name}' (ID: {group.id}) - wydarzenie {event_id} z criteria jest nieaktywne")
                             else:
-                                print(f"  ✅ Grupa '{group.name}' (ID: {group.id}) - wydarzenie {event_id} z criteria istnieje")
+                                print(f"  ✅ Grupa '{group.name}' (ID: {group.id}) - wydarzenie {event_id} z criteria istnieje i jest aktywne")
                     except (json.JSONDecodeError, TypeError):
                         # Jeśli criteria jest nieprawidłowe, usuń grupę
                         is_orphaned = True

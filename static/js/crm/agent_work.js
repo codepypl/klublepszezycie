@@ -289,7 +289,27 @@ function displayContact(contact) {
     if (contactPhone) contactPhone.textContent = contact.phone || '-';
     if (contactCompany) contactCompany.textContent = contact.company || '-';
     if (contactEmail) contactEmail.textContent = contact.email || '-';
-    if (contactNotes) contactNotes.textContent = contact.notes || '-';
+    if (contactNotes) {
+        if (contact.notes) {
+            // Format notes with proper line breaks
+            const formattedNotes = contact.notes.replace(/\n\n/g, '\n').replace(/\n/g, '<br>');
+            contactNotes.innerHTML = formattedNotes;
+            
+            // Show sort button if there are notes
+            const sortBtn = document.getElementById('sortNotesBtn');
+            if (sortBtn) {
+                sortBtn.style.display = 'inline-block';
+            }
+        } else {
+            contactNotes.textContent = '-';
+            
+            // Hide sort button if no notes
+            const sortBtn = document.getElementById('sortNotesBtn');
+            if (sortBtn) {
+                sortBtn.style.display = 'none';
+            }
+        }
+    }
     
     // Update script with contact name
     const scriptName = document.getElementById('scriptName');
@@ -403,7 +423,7 @@ function displayCallHistory(calls) {
                                     <i class="fas fa-sticky-note me-1"></i>Notatki:
                                 </small>
                                 <div class="mt-1 p-2 bg-light rounded small">
-                                    ${call.notes}
+                                    ${call.notes.replace(/\n/g, '<br>')}
                                 </div>
                             </div>
                         ` : `
@@ -1567,6 +1587,47 @@ function updateContactNotes() {
             console.error('Error updating contact notes:', error);
         });
     }
+}
+
+function sortContactNotes() {
+    if (!currentContact) {
+        showError('Brak aktywnego kontaktu');
+        return;
+    }
+    
+    const sortBtn = document.getElementById('sortNotesBtn');
+    if (sortBtn) {
+        sortBtn.disabled = true;
+        sortBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sortowanie...';
+    }
+    
+    fetch(`/api/crm/agent/sort-contact-notes/${currentContact.id}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+    })
+    .then(response => safeJsonParse(response))
+    .then(data => {
+        if (data.success) {
+            showSuccess('Notatki zostały posortowane');
+            currentContact = data.contact;
+            displayContact(currentContact);
+        } else {
+            showError('Błąd sortowania notatek: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error sorting notes:', error);
+        showError('Wystąpił błąd podczas sortowania notatek');
+    })
+    .finally(() => {
+        if (sortBtn) {
+            sortBtn.disabled = false;
+            sortBtn.innerHTML = '<i class="fas fa-sort-amount-down me-1"></i>Sortuj notatki';
+        }
+    });
 }
 
 // ===== CAMPAIGN SELECTION FUNCTIONALITY =====

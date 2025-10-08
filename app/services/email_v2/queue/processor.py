@@ -229,7 +229,69 @@ class EmailQueueProcessor:
                 stats['processed'] += 1
                 db.session.commit()
         
+        # Aktualizuj statusy kampanii po przetworzeniu emaili
+        self._update_campaign_statuses(emails)
+        
         return stats
+    
+    def _update_campaign_statuses(self, emails: List[EmailQueue]) -> None:
+        """Aktualizuje statusy kampanii po przetworzeniu emaili"""
+        try:
+            # Grupuj emaile według campaign_id
+            campaign_emails = {}
+            for email in emails:
+                if email.campaign_id:
+                    if email.campaign_id not in campaign_emails:
+                        campaign_emails[email.campaign_id] = []
+                    campaign_emails[email.campaign_id].append(email)
+            
+            # Aktualizuj status każdej kampanii
+            for campaign_id, campaign_email_list in campaign_emails.items():
+                self._update_single_campaign_status(campaign_id, campaign_email_list)
+                
+        except Exception as e:
+            self.logger.error(f"❌ Błąd aktualizacji statusów kampanii: {e}")
+    
+    def _update_single_campaign_status(self, campaign_id: int, emails: List[EmailQueue]) -> None:
+        """Aktualizuje status pojedynczej kampanii"""
+        try:
+            from app.models import EmailCampaign
+            
+            campaign = EmailCampaign.query.get(campaign_id)
+            if not campaign:
+                return
+            
+            # Sprawdź status wszystkich emaili kampanii (nie tylko przetworzonych)
+            all_campaign_emails = EmailQueue.query.filter_by(campaign_id=campaign_id).all()
+            
+            if not all_campaign_emails:
+                return
+            
+            # Policz statusy emaili
+            sent_count = sum(1 for email in all_campaign_emails if email.status == 'sent')
+            failed_count = sum(1 for email in all_campaign_emails if email.status == 'failed')
+            pending_count = sum(1 for email in all_campaign_emails if email.status in ['pending', 'processing'])
+            total_count = len(all_campaign_emails)
+            
+            # Aktualizuj status kampanii
+            if campaign.status in ['ready', 'scheduled', 'sending']:
+                if sent_count == total_count:
+                    # Wszystkie emaile wysłane
+                    campaign.status = 'sent'
+                    self.logger.info(f"✅ Kampania {campaign_id} oznaczona jako wysłana ({sent_count}/{total_count})")
+                elif failed_count > 0 and sent_count + failed_count == total_count:
+                    # Wszystkie emaile przetworzone, ale niektóre nieudane
+                    campaign.status = 'completed'
+                    self.logger.info(f"⚠️ Kampania {campaign_id} oznaczona jako zakończona z błędami ({sent_count} sukces, {failed_count} błąd)")
+                elif pending_count > 0:
+                    # Niektóre emaile jeszcze oczekują
+                    campaign.status = 'sending'
+                    self.logger.info(f"🔄 Kampania {campaign_id} w trakcie wysyłania ({sent_count} wysłane, {pending_count} oczekujące)")
+                
+                db.session.commit()
+                
+        except Exception as e:
+            self.logger.error(f"❌ Błąd aktualizacji statusu kampanii {campaign_id}: {e}")
     
     def _send_email(self, email: EmailQueue) -> Tuple[bool, str]:
         """Wysyła pojedynczy e-mail z fallback"""

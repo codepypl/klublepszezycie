@@ -2,6 +2,7 @@
 Stats Model - statystyki systemu
 """
 from datetime import datetime
+from app.utils.timezone_utils import get_local_datetime
 from . import db
 
 class Stats(db.Model):
@@ -15,8 +16,8 @@ class Stats(db.Model):
     related_type = db.Column(db.String(50), nullable=True)  # Type of related entity ('event', 'user', 'group')
     date_period = db.Column(db.Date, nullable=True, index=True)  # For time-based stats
     extra_data = db.Column(db.JSON, nullable=True)  # Additional data as JSON
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime, index=True)
+    updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)
     
     # Unique constraint to prevent duplicate stats
     __table_args__ = (

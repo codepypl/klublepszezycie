@@ -69,30 +69,30 @@
                 </div>
             </div>
             
+            <!-- Post Gallery -->
+            <div id="postGallery" class="post-gallery mt-4" style="display: none;">
+                <h4>Galeria zdjęć</h4>
+                <div class="gallery-grid" id="galleryGrid">
+                    <!-- Gallery images will be loaded here via AJAX -->
+                </div>
+            </div>
+            
+            <!-- Lightbox -->
+            <div id="lightbox" class="lightbox">
+                <div class="lightbox-content">
+                    <span class="lightbox-close">&times;</span>
+                    <span class="lightbox-nav lightbox-prev">&#10094;</span>
+                    <span class="lightbox-nav lightbox-next">&#10095;</span>
+                    <img id="lightboxImage" class="lightbox-image" src="" alt="">
+                    <div id="lightboxCaption" class="lightbox-caption"></div>
+                </div>
+            </div>
+            
             <!-- Social Sharing Section -->
             <div class="social-sharing" id="socialSharingContainer">
                 <h5>Udostępnij ten artykuł</h5>
                 <div id="socialSharingButtons"></div>
             </div>
-            
-            <!-- Tags and Categories -->
-            {% if post.tags %}
-            <div class="mt-4">
-                <div class="post-tags-list">
-                    {% for tag in post.tags %}
-                        <a href="{{ url_for('blog.tag_detail', slug=tag.slug) }}" class="post-tag-badge">{{ tag.name }}</a>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-            
-            {% if post.categories %}
-            <div class="mt-4">
-                {% for category in post.categories %}
-                    <a href="{{ url_for('blog.category_detail', slug=category.slug) }}" class="post-category-badge">{{ category.title }}</a>
-                {% endfor %}
-            </div>
-            {% endif %}
         </div>
         
         <!-- Sidebar -->
@@ -156,6 +156,60 @@
 </div>
 {% endblock %}
 
+{% block footer %}
+    <footer class="bg-dark text-white py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <h5 class="fw-bold mb-3">{{ footer_settings.company_title or 'Klub Lepsze Życie' }}</h5>
+                    <p class="text-light">{{ footer_settings.company_description or 'Dołącz do nas i zmień swoje życie na lepsze. Osiągnij sukces finansowy, zdrowie i szczęście w relacjach.' }}</p>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <h5 class="fw-bold mb-3">{{ footer_settings.contact_title or 'Kontakt' }}</h5>
+                    {% if footer_settings.contact_email %}
+                    <p class="text-light mb-2">
+                        <i class="fas fa-envelope me-2"></i>
+                        <a href="mailto:{{ footer_settings.contact_email }}" class="text-light text-decoration-none">
+                            {{ footer_settings.contact_email|replace('@', '[at]') }}
+                        </a>
+                    </p>
+                    {% endif %}
+                    {% if footer_settings.contact_phone %}
+                    <p class="text-light mb-2">
+                        <i class="fas fa-phone me-2"></i>
+                        {{ footer_settings.contact_phone }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <h5 class="fw-bold mb-3">{{ footer_settings.social_title or 'Śledź nas' }}</h5>
+                    <div class="d-flex gap-3">
+                        {% for social_link in active_social_links %}
+                            <a href="{{ social_link.url }}" target="{{ social_link.target or '_blank' }}" rel="noopener noreferrer" class="text-white" title="{{ social_link.platform }}">
+                                <i class="fab fa-{{ social_link.platform.lower() }} fa-2x"></i>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="mb-0 text-light">&copy; 2025 {{ footer_settings.company_name or 'Klub Lepsze Życie' }}. Wszystkie prawa zastrzeżone.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    {% if footer_settings.show_privacy_policy %}
+                        <a href="{{ url_for('public.privacy_policy') }}" class="text-light me-3">Polityka prywatności</a>
+                    {% endif %}
+                    {% if footer_settings.show_terms %}
+                        <a href="{{ url_for('public.terms') }}" class="text-light">Regulamin</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </footer>
+{% endblock %}
+
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/utils/social-sharing.js') }}"></script>
 <script>
@@ -180,6 +234,161 @@ document.addEventListener('DOMContentLoaded', function() {
             const container = document.getElementById('socialSharingContainer');
             if (container) {
                 container.style.display = 'none';
+            }
+        }
+    });
+    
+    // Load post gallery
+    loadPostGallery(postId);
+});
+
+// Function to load post gallery
+async function loadPostGallery(postId) {
+    try {
+        console.log(`🔍 Loading gallery for post ${postId}`);
+        const response = await fetch(`/api/blog/posts/${postId}/gallery`, {
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            console.log(`Gallery not available for post ${postId}`);
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('Gallery data:', data);
+        
+        if (data.success && data.images && data.images.length > 0) {
+            const galleryContainer = document.getElementById('postGallery');
+            const galleryGrid = document.getElementById('galleryGrid');
+            
+            // Show gallery section
+            galleryContainer.style.display = 'block';
+            
+            // Clear existing content
+            galleryGrid.innerHTML = '';
+            
+            // Add images to gallery
+            data.images.forEach((image, index) => {
+                const imageDiv = document.createElement('div');
+                imageDiv.className = 'gallery-item';
+                imageDiv.innerHTML = `
+                    <img src="${image.thumbnail_url}" alt="${image.alt_text}" class="gallery-image" 
+                         data-full-image="${image.url}" data-caption="${image.caption || ''}" data-index="${index}">
+                    ${image.caption ? `<div class="gallery-caption">${image.caption}</div>` : ''}
+                `;
+                galleryGrid.appendChild(imageDiv);
+            });
+            
+            console.log(`✅ Loaded ${data.images.length} gallery images`);
+            
+            // Store images for lightbox
+            window.galleryImages = data.images;
+            
+            // Add click handlers to gallery images
+            document.querySelectorAll('.gallery-image').forEach(img => {
+                img.addEventListener('click', openLightbox);
+            });
+            
+        } else {
+            console.log('No gallery images found');
+        }
+        
+    } catch (error) {
+        console.error('Error loading post gallery:', error);
+    }
+}
+
+// Lightbox functionality
+function openLightbox(event) {
+    const img = event.target;
+    const index = parseInt(img.dataset.index);
+    
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImage = document.getElementById('lightboxImage');
+    const lightboxCaption = document.getElementById('lightboxCaption');
+    
+    lightboxImage.src = img.dataset.fullImage;
+    lightboxImage.alt = img.alt;
+    lightboxCaption.textContent = img.dataset.caption || '';
+    
+    // Store current index
+    lightbox.dataset.currentIndex = index;
+    
+    lightbox.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+    const lightbox = document.getElementById('lightbox');
+    lightbox.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function showLightboxImage(index) {
+    if (!window.galleryImages || window.galleryImages.length === 0) return;
+    
+    // Wrap around if needed
+    if (index < 0) index = window.galleryImages.length - 1;
+    if (index >= window.galleryImages.length) index = 0;
+    
+    const image = window.galleryImages[index];
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImage = document.getElementById('lightboxImage');
+    const lightboxCaption = document.getElementById('lightboxCaption');
+    
+    lightboxImage.src = image.url;
+    lightboxImage.alt = image.alt_text;
+    lightboxCaption.textContent = image.caption || '';
+    
+    lightbox.dataset.currentIndex = index;
+}
+
+function nextLightboxImage() {
+    const lightbox = document.getElementById('lightbox');
+    const currentIndex = parseInt(lightbox.dataset.currentIndex || 0);
+    showLightboxImage(currentIndex + 1);
+}
+
+function prevLightboxImage() {
+    const lightbox = document.getElementById('lightbox');
+    const currentIndex = parseInt(lightbox.dataset.currentIndex || 0);
+    showLightboxImage(currentIndex - 1);
+}
+
+// Initialize lightbox event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    const lightbox = document.getElementById('lightbox');
+    const closeBtn = document.querySelector('.lightbox-close');
+    const prevBtn = document.querySelector('.lightbox-prev');
+    const nextBtn = document.querySelector('.lightbox-next');
+    
+    if (closeBtn) closeBtn.addEventListener('click', closeLightbox);
+    if (prevBtn) prevBtn.addEventListener('click', prevLightboxImage);
+    if (nextBtn) nextBtn.addEventListener('click', nextLightboxImage);
+    
+    // Close lightbox when clicking outside image
+    if (lightbox) {
+        lightbox.addEventListener('click', function(e) {
+            if (e.target === lightbox) {
+                closeLightbox();
+            }
+        });
+    }
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (lightbox && lightbox.style.display === 'block') {
+            switch(e.key) {
+                case 'Escape':
+                    closeLightbox();
+                    break;
+                case 'ArrowLeft':
+                    prevLightboxImage();
+                    break;
+                case 'ArrowRight':
+                    nextLightboxImage();
+                    break;
             }
         }
     });

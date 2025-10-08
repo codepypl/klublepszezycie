@@ -80,17 +80,13 @@ def process_scheduled_campaigns_task(self):
                 try:
                     logger.info(f"📧 Przetwarzam kampanię: {campaign.name} (ID: {campaign.id})")
                     
-                    # Wywołaj zadanie wysyłania kampanii
-                    from app.tasks.email_tasks import send_campaign_task
-                    task = send_campaign_task.delay(campaign.id)
-                    
-                    # Aktualizuj status kampanii
+                    # Aktualizuj status kampanii na 'sending' - emaile są już w kolejce
                     campaign.status = 'sending'
                     db.session.commit()
                     
                     success_count += 1
                     processed_count += 1
-                    logger.info(f"✅ Kampania {campaign.name} zaplanowana do wysłania (Task ID: {task.id})")
+                    logger.info(f"✅ Kampania {campaign.name} oznaczona jako wysyłana (emaile w kolejce)")
                     
                 except Exception as e:
                     failed_count += 1
@@ -118,9 +114,9 @@ def send_batch_emails_task(self, email_ids, batch_size=50):
         try:
             logger.info(f"🔄 Rozpoczynam wysyłanie {len(email_ids)} emaili w batchach po {batch_size}")
             
-            # Use Mailgun API service directly for better performance
-            from app.services.mailgun_api_service import MailgunAPIService
-            mailgun_service = MailgunAPIService()
+            # Use new EmailManager v2 for better performance
+            from app.services.email_v2 import EmailManager
+            email_manager = EmailManager()
             
             # Get emails from queue
             emails = EmailQueue.query.filter(EmailQueue.id.in_(email_ids)).all()
@@ -129,19 +125,20 @@ def send_batch_emails_task(self, email_ids, batch_size=50):
                 logger.warning("❌ Brak emaili do wysłania")
                 return {'success': False, 'message': 'No emails to send'}
             
-            # Send via Mailgun API with intelligent batching
-            success, message = mailgun_service.send_batch(emails, batch_size)
+            # Send via EmailManager with intelligent batching
+            stats = email_manager.process_queue(batch_size)
             
-            if success:
-                logger.info(f"✅ Wysłano {len(emails)} emaili: {message}")
+            if stats['processed'] > 0:
+                logger.info(f"✅ Przetworzono {stats['processed']} emaili: {stats['success']} sukces, {stats['failed']} błąd")
                 return {
                     'success': True,
-                    'sent': len(emails),
-                    'message': message
+                    'sent': stats['success'],
+                    'failed': stats['failed'],
+                    'processed': stats['processed']
                 }
             else:
-                logger.error(f"❌ Błąd wysyłania emaili: {message}")
-                return {'success': False, 'message': message}
+                logger.warning("⚠️ Brak emaili do przetworzenia")
+                return {'success': False, 'message': 'No emails to process'}
             
         except Exception as exc:
             logger.error(f"❌ Błąd wysyłania emaili: {exc}")
@@ -392,10 +389,11 @@ def send_campaign_task(self, campaign_id):
                             'delete_account_url': 'mailto:kontakt@klublepszezycie.pl'
                         })
                     
-                    # Wyślij email (zawsze używaj szablonu)
+                    # Wyślij email (użyj szablonu jeśli istnieje)
+                    template_name = campaign.template.name if campaign.template else 'default_campaign'
                     success, message = email_manager.send_template_email(
                         to_email=recipient.email,
-                        template_name=campaign.template.name,
+                        template_name=template_name,
                         context=recipient_context,
                         priority=2,
                         campaign_id=campaign_id

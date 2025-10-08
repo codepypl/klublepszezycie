@@ -201,7 +201,50 @@ class FormValidators {
             { type: 'file', fieldId: imageFieldId, maxSize: 100, fieldName: 'Zdjęcie główne' }
         ]);
     }
+
+    /**
+     * Validate image file for gallery upload
+     * @returns {boolean} - true if valid, false if invalid
+     */
+    static validateImageFile() {
+        return this.validateFile('imageFile', ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], 100, 'Obraz');
+    }
+
+    /**
+     * Validate column mapping for CRM import
+     * @returns {boolean} - true if valid, false if invalid
+     */
+    static validateMapping() {
+        const mapping = {
+            name: document.getElementById('nameColumn').value,
+            phone: document.getElementById('phoneColumn').value,
+            email: document.getElementById('emailColumn').value,
+            company: document.getElementById('companyColumn').value,
+            notes: document.getElementById('notesColumn').value,
+            tags: document.getElementById('tagsColumn').value
+        };
+        
+        console.log('🔍 validateMapping - mapping:', mapping);
+        
+        // Validate required fields - only phone is required
+        if (!mapping.phone) {
+            window.toastManager.show('Proszę wybrać kolumnę dla telefonu', 'warning');
+            return false;
+        }
+        
+        // Set global currentMapping
+        if (typeof window !== 'undefined') {
+            window.currentMapping = mapping;
+            console.log('✅ validateMapping - set window.currentMapping:', window.currentMapping);
+        }
+        
+        return true;
+    }
 }
 
 // Make validators available globally
 window.FormValidators = FormValidators;
+
+// Make individual functions available globally for backward compatibility
+window.validateImageFile = () => FormValidators.validateImageFile();
+window.validateMapping = () => FormValidators.validateMapping();

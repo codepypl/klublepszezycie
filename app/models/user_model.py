@@ -3,6 +3,7 @@ User-related models
 """
 from flask_login import UserMixin
 from datetime import datetime
+from app.utils.timezone_utils import get_local_datetime
 from . import db
 
 class User(UserMixin, db.Model):
@@ -93,7 +94,7 @@ class PasswordResetToken(db.Model):
     token = db.Column(db.String(255), unique=True, nullable=False)
     expires_at = db.Column(db.DateTime, nullable=False)
     used = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_datetime)
     
     def is_expired(self):
         """Check if token is expired"""

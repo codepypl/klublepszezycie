@@ -149,10 +149,40 @@ def make_celery(app=None):
             'schedule': 3600.0,  # Co godzinę
             'options': {'queue': 'event_queue'},
         },
+        'cleanup-orphaned-groups': {
+            'task': 'app.tasks.event_tasks.cleanup_orphaned_groups_task',
+            'schedule': 3600.0,  # Co godzinę
+            'options': {'queue': 'event_queue'},
+        },
         'full-system-monitor': {
             'task': 'full_system_monitor',
             'schedule': 300.0,  # Co 5 minut
             'options': {'queue': 'event_queue'},
+        },
+        'update-email-stats': {
+            'task': 'app.tasks.stats_tasks.update_email_stats_task',
+            'schedule': 300.0,  # Co 5 minut
+            'options': {'queue': 'default'},
+        },
+        'create-missing-event-groups': {
+            'task': 'app.tasks.stats_tasks.create_missing_event_groups_task',
+            'schedule': 3600.0,  # Co godzinę
+            'options': {'queue': 'default'},
+        },
+        'process-scheduled-calls': {
+            'task': 'app.tasks.crm_tasks.process_scheduled_calls_task',
+            'schedule': 60.0,  # Co minutę
+            'options': {'queue': 'crm_queue'},
+        },
+        'process-callback-calls': {
+            'task': 'app.tasks.crm_tasks.process_callback_calls_task',
+            'schedule': 60.0,  # Co minutę
+            'options': {'queue': 'crm_queue'},
+        },
+        'cleanup-old-calls': {
+            'task': 'app.tasks.crm_tasks.cleanup_old_calls_task',
+            'schedule': 86400.0,  # Co 24 godziny
+            'options': {'queue': 'crm_queue'},
         },
     }
     
@@ -165,10 +195,12 @@ def make_celery(app=None):
         'app.tasks.email_tasks.*': {'queue': 'email_queue'},
         'app.tasks.event_tasks.*': {'queue': 'event_queue'},
         'app.tasks.monitor_tasks.*': {'queue': 'event_queue'},
+        'app.tasks.crm_tasks.*': {'queue': 'crm_queue'},
+        'app.tasks.stats_tasks.*': {'queue': 'default'},
     }
     
     # Ręczne importy zadań - wymagane dla prawidłowej rejestracji
-    from app.tasks import email_tasks, event_tasks, monitor_tasks
+    from app.tasks import email_tasks, event_tasks, monitor_tasks, crm_tasks, stats_tasks
     
     return celery
 

@@ -4,6 +4,7 @@ Email-related models
 import hashlib
 from datetime import datetime
 from . import db
+from app.utils.timezone_utils import get_local_datetime
 
 class EmailTemplate(db.Model):
     """Email templates"""
@@ -52,6 +53,7 @@ class EmailCampaign(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)  # Campaign description
     subject = db.Column(db.String(200), nullable=False)
     html_content = db.Column(db.Text)
     text_content = db.Column(db.Text)

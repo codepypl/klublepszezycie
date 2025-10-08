@@ -4,10 +4,11 @@ Authentication utility functions
 from functools import wraps
 from flask import redirect, url_for, flash, request, jsonify
 from flask_login import current_user
-from app.models import User
+# Import moved to avoid circular import
 
 def load_user(user_id):
     """Load user for Flask-Login"""
+    from app.models import User  # Import here to avoid circular import
     return User.query.get(int(user_id))
 
 def admin_required(f):

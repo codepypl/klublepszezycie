@@ -108,19 +108,17 @@ class EmailManager:
             if not event:
                 return False, "Wydarzenie nie zostało znalezione"
             
-            # Sprawdź czy przypomnienia już zostały zaplanowane
-            if event.reminders_scheduled:
-                return True, "Przypomnienia już zostały zaplanowane"
+            # Zresetuj flagę przypomnień (usuniemy stare emaile i zaplanujemy nowe)
+            event.reminders_scheduled = False
             
-            # Sprawdź czy w kolejce już są emaile dla tego wydarzenia
-            existing_emails = EmailQueue.query.filter_by(
-                event_id=event_id,
-                status='pending'
-            ).count()
-            
-            if existing_emails > 0:
-                self.logger.warning(f"⚠️ Wydarzenie {event_id} już ma {existing_emails} emaili w kolejce")
-                return True, f"Wydarzenie już ma {existing_emails} emaili w kolejce"
+            # Usuń wszystkie stare emaile dla tego wydarzenia (pending i sent)
+            old_emails = EmailQueue.query.filter_by(event_id=event_id).all()
+            if old_emails:
+                self.logger.info(f"🗑️ Usuwam {len(old_emails)} starych emaili dla wydarzenia {event_id}")
+                for email in old_emails:
+                    db.session.delete(email)
+                db.session.commit()
+                self.logger.info(f"✅ Usunięto {len(old_emails)} starych emaili")
             
             # Pobierz uczestników
             participants = self._get_event_participants(event_id)

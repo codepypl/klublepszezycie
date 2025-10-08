@@ -2,6 +2,7 @@
 Event registration model
 """
 from datetime import datetime
+from app.utils.timezone_utils import get_local_datetime
 from . import db
 
 class EventRegistration(db.Model):
@@ -11,7 +12,7 @@ class EventRegistration(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=False)
-    registration_date = db.Column(db.DateTime, default=datetime.utcnow)
+    registration_date = db.Column(db.DateTime, default=get_local_datetime)
     is_active = db.Column(db.Boolean, default=True)
     registration_source = db.Column(db.String(50), default='website')  # website, admin, api
     notes = db.Column(db.Text, nullable=True)

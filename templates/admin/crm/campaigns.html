@@ -518,27 +518,37 @@ function toggleCampaignStatus(campaignId, currentStatus) {
 }
 
 function deleteCampaign(campaignId, campaignName, contactsCount, callsCount) {
-    document.getElementById('deleteCampaignName').textContent = campaignName;
-    
+    const nameElement = document.getElementById('deleteCampaignName');
     const warningDiv = document.getElementById('deleteCampaignWarning');
     const warningText = document.getElementById('deleteCampaignWarningText');
+    const confirmBtn = document.getElementById('confirmDeleteCampaignBtn');
+    const modal = document.getElementById('deleteCampaignModal');
+    
+    // Check if all required elements exist
+    if (!nameElement || !warningDiv || !warningText || !confirmBtn || !modal) {
+        console.error('Required elements for deleteCampaign modal not found');
+        alert('Błąd: Nie można załadować modala usuwania kampanii');
+        return;
+    }
+    
+    nameElement.textContent = campaignName;
     
     if (contactsCount > 0 || callsCount > 0) {
         warningDiv.style.display = 'block';
         warningText.textContent = `Nie można usunąć kampanii. Jest powiązana z ${contactsCount} kontaktami i ${callsCount} połączeniami.`;
-        document.getElementById('confirmDeleteCampaignBtn').disabled = true;
+        confirmBtn.disabled = true;
     } else {
         warningDiv.style.display = 'none';
-        document.getElementById('confirmDeleteCampaignBtn').disabled = false;
+        confirmBtn.disabled = false;
     }
     
     // Set up confirm button
-    document.getElementById('confirmDeleteCampaignBtn').onclick = function() {
+    confirmBtn.onclick = function() {
         confirmDeleteCampaign(campaignId);
     };
     
-    const modal = new bootstrap.Modal(document.getElementById('deleteCampaignModal'));
-    modal.show();
+    const bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
 }
 
 function confirmDeleteCampaign(campaignId) {
@@ -563,19 +573,30 @@ function confirmDeleteCampaign(campaignId) {
 
 // Delete campaign records
 function deleteCampaignRecords(campaignId, campaignName, recordsCount) {
-    document.getElementById('deleteRecordsCampaignName').textContent = campaignName;
-    document.getElementById('deleteRecordsCount').textContent = recordsCount;
+    const nameElement = document.getElementById('deleteRecordsCampaignName');
+    const countElement = document.getElementById('deleteRecordsCount');
+    const modal = document.getElementById('deleteRecordsModal');
+    const confirmBtn = document.getElementById('confirmDeleteRecordsBtn');
     
-    const modal = new bootstrap.Modal(document.getElementById('deleteRecordsModal'));
-    modal.show();
+    // Check if all required elements exist
+    if (!nameElement || !countElement || !modal || !confirmBtn) {
+        console.error('Required elements for deleteRecords modal not found');
+        alert('Błąd: Nie można załadować modala usuwania rekordów');
+        return;
+    }
+    
+    nameElement.textContent = campaignName;
+    countElement.textContent = recordsCount;
+    
+    const bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
     
     // Handle confirmation
-    document.getElementById('confirmDeleteRecordsBtn').onclick = function() {
+    confirmBtn.onclick = function() {
         fetch(`/api/crm/admin/campaigns/${campaignId}/delete-records`, {
             method: 'DELETE',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+                'Content-Type': 'application/json'
             }
         })
         .then(response => response.json())

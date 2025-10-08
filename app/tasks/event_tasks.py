@@ -222,3 +222,34 @@ def cleanup_duplicate_event_groups_task(self):
                 'success': False,
                 'error': str(e)
             }
+
+@celery.task(bind=True, name='app.tasks.event_tasks.cleanup_orphaned_groups_task')
+def cleanup_orphaned_groups_task(self):
+    """
+    Czyści osierocone grupy wydarzeń (gdy wydarzenia nie istnieją lub są nieaktywne)
+    """
+    with get_app_context():
+        try:
+            logger.info("🔄 Rozpoczynam czyszczenie osieroconych grup wydarzeń")
+            
+            from app.services.group_manager import GroupManager
+            group_manager = GroupManager()
+            
+            success, message = group_manager.cleanup_orphaned_groups()
+            
+            if success:
+                logger.info(f"✅ Czyszczenie osieroconych grup zakończone: {message}")
+            else:
+                logger.error(f"❌ Błąd czyszczenia osieroconych grup: {message}")
+            
+            return {
+                'success': success,
+                'message': message
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Błąd zadania czyszczenia osieroconych grup: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }

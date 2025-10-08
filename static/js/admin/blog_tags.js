@@ -272,24 +272,27 @@ class BlogTagsManager {
         }
     }
 
-    async deleteTag(tagId) {
+    deleteTag(tagId) {
         window.deleteConfirmation.showSingleDelete(
             'tag',
-            () => {
-                // Continue with deletion
-                performDeleteTag(tagId);
-            },
+            () => this.performDeleteTag(tagId),
             'tag'
         );
     }
 
     async performDeleteTag(tagId) {
         try {
+            console.log(`🔍 Attempting to delete tag ${tagId}`);
+            
             const response = await fetch(`/api/blog/tags/${tagId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                credentials: 'include'
             });
 
+            console.log(`🔍 Delete response status: ${response.status}`);
+            
             const result = await response.json();
+            console.log(`🔍 Delete response:`, result);
             
             if (result.success) {
                 window.toastManager.show(result.message || 'Tag został usunięty pomyślnie', 'success');
