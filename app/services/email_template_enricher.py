@@ -3,7 +3,7 @@ Serwis automatycznego dodawania linków unsubscribe i delete account do szablon�
 """
 import re
 from typing import Optional, Dict, Any
-from app.models.email_model import EmailTemplate, DefaultEmailTemplate
+from app.models.email_model import EmailTemplate
 
 class EmailTemplateEnricher:
     """Serwis dodawania linków unsubscribe/delete do szablonów email"""
@@ -206,29 +206,10 @@ Te linki są ważne przez 30 dni. Jeśli nie chcesz otrzymywać naszych emaili, 
                     self._add_variables_to_template(template)
                     updated_count += 1
             
-            # Aktualizuj DefaultEmailTemplate
-            default_templates = DefaultEmailTemplate.query.filter_by(is_active=True).all()
-            default_updated_count = 0
-            
-            for template in default_templates:
-                if self.should_add_links(template.name):
-                    enriched = self.enrich_template_content(
-                        template.html_content or '', 
-                        template.text_content or ''
-                    )
-                    
-                    template.html_content = enriched['html_content']
-                    template.text_content = enriched['text_content']
-                    
-                    # Dodaj zmienne do template variables
-                    self._add_variables_to_template(template)
-                    default_updated_count += 1
-            
             db.session.commit()
             
-            print(f"✅ Zaktualizowano {updated_count} szablonów EmailTemplate")
-            print(f"✅ Zaktualizowano {default_updated_count} szablonów DefaultEmailTemplate")
-            return True, f"Zaktualizowano {updated_count + default_updated_count} szablonów"
+            print(f"✅ Zaktualizowano {updated_count} szablonów EmailTemplate (włącznie z domyślnymi)")
+            return True, f"Zaktualizowano {updated_count} szablonów"
             
         except Exception as e:
             db.session.rollback()
