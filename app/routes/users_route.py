@@ -231,7 +231,7 @@ def profile():
         'phone': current_user.phone,
         'club_member': current_user.club_member,
         'is_active': current_user.is_active,
-        'role': current_user.role,
+        'role': current_user.account_type,  # Legacy compatibility
         'account_type': current_user.account_type,
         'created_at': current_user.created_at,
         'last_login': current_user.last_login,

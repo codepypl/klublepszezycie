@@ -166,10 +166,6 @@ class GroupManager:
             
             db.session.add(member)
             
-            # Ustaw group_id w tabeli users
-            user.group_id = group.id
-            db.session.add(user)
-            
             # Aktualizuj liczbę członków
             group.member_count = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).count()
             

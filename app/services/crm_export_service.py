@@ -340,7 +340,7 @@ class CRMExportService:
         """Get list of available ankieter for export"""
         from app.models import User
         ankieter = User.query.filter(
-            User.role.in_(['ankieter', 'admin']),
+            User.account_type.in_(['ankieter', 'admin']),
             User.is_active == True
         ).order_by(User.first_name).all()
         return [{'id': a.id, 'username': f"{a.first_name} ({a.email})"} for a in ankieter]

@@ -336,7 +336,7 @@ class Stats(db.Model):
         total_users = User.query.count()
         active_users = User.query.filter_by(is_active=True).count()
         admin_users = User.query.filter(
-            (User.role == 'admin') | (User.account_type == 'admin')
+            User.account_type == 'admin'
         ).count()
         
         thirty_days_ago = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() - timedelta(days=30)

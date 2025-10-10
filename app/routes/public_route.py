@@ -536,8 +536,6 @@ def register_event(event_id):
             else:
                 # Update existing user to register for this event
                 existing_user.account_type = 'event_registration'
-                existing_user.event_id = event_id
-                existing_user.group_id = None  # Will be set after group creation
                 created_user = existing_user
             
             # Get or create event group
@@ -556,10 +554,6 @@ def register_event(event_id):
                 )
                 db.session.add(event_group)
                 db.session.commit()
-            
-            # Update user's group_id
-            created_user.group_id = event_group.id
-            db.session.commit()
             
             # Synchronize event group
             print(f"🔍 Starting event group synchronization for event {event_id}")

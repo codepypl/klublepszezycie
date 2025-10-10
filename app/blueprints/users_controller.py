@@ -4,6 +4,7 @@ Users business logic controller
 from flask import request
 from flask_login import login_required, current_user
 from app.models import db, User, UserGroup, UserGroupMember, Stats
+from app.models.event_registration_model import EventRegistration
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash
 
@@ -39,13 +40,15 @@ class UsersController:
                     query = query.filter(User.club_member == False)
             
             if event_filter:
-                query = query.filter(User.event_id == event_filter)
+                # Filtruj po EventRegistration (nowa struktura many-to-many)
+                query = query.join(EventRegistration).filter(EventRegistration.event_id == event_filter)
             
             if group_filter:
-                query = query.filter(User.group_id == group_filter)
+                # Filtruj po UserGroupMember (nowa struktura many-to-many)
+                query = query.join(UserGroupMember).filter(UserGroupMember.group_id == group_filter)
             
-            # Join with UserGroup to get group name
-            users = query.join(UserGroup, User.group_id == UserGroup.id, isouter=True).order_by(User.created_at.desc()).paginate(
+            # Sortuj po dacie utworzenia
+            users = query.order_by(User.created_at.desc()).paginate(
                 page=page, per_page=per_page, error_out=False
             )
             
@@ -177,8 +180,10 @@ class UsersController:
             user.first_name = name
             user.email = email
             user.phone = phone
-            user.role = role
             user.is_active = is_active
+            # Używamy account_type zamiast legacy role
+            if role:
+                user.account_type = role
             if account_type:
                 user.account_type = account_type
             

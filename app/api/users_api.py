@@ -44,8 +44,6 @@ def api_users():
                 'email': user.email,
                 'phone': user.phone,
                 'is_active': user.is_active,
-                'event_id': user.event_id,
-                'group_id': user.group_id,
                 'account_type': user.account_type,
                 'is_admin': user.is_admin,
                 'created_at': user.created_at.isoformat() if user.created_at else None,
@@ -794,8 +792,6 @@ def api_user_profile(user_id):
                     'phone': user.phone,
                     'club_member': user.club_member,
                     'account_type': user.account_type,
-                    'event_id': user.event_id,
-                    'group_id': user.group_id,
                     'is_active': user.is_active,
                     'role': user.account_type,  # Legacy compatibility
                     'created_at': user.created_at.strftime('%Y-%m-%dT%H:%M:%S%z') if user.created_at else None,
