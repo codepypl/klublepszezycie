@@ -16,16 +16,10 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     club_member = db.Column(db.Boolean, default=False)  # Whether user wants to join the club
     is_active = db.Column(db.Boolean, default=True, index=True)  # Whether the account is active
-    role = db.Column(db.String(20), default='user', index=True)  # admin, user, ankieter
     account_type = db.Column(db.String(30), default='user', index=True)  # admin, user, ankieter, event_registration
-    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=True)  # ID of event for event registrations (backward compatibility)
-    group_id = db.Column(db.Integer, db.ForeignKey('user_groups.id'), nullable=True)  # ID of group user belongs to
     is_temporary_password = db.Column(db.Boolean, default=True)  # Whether user needs to change password
     created_at = db.Column(db.DateTime, default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     last_login = db.Column(db.DateTime)
-    
-    # Relationships
-    user_group = db.relationship('UserGroup', backref='users', lazy=True)
     
     def check_password(self, password):
         """Check if provided password matches the hash"""
@@ -42,7 +36,7 @@ class User(UserMixin, db.Model):
     
     def is_user_role(self):
         """Check if user has basic user role"""
-        return self.role == 'user'
+        return self.account_type == 'user'
     
     def has_role(self, role_name):
         """Check if user has specific role"""
@@ -91,10 +85,16 @@ class PasswordResetToken(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    token = db.Column(db.String(255), unique=True, nullable=False)
+    token = db.Column(db.String(36), unique=True, nullable=False, index=True)  # UUID format (36 chars)
     expires_at = db.Column(db.DateTime, nullable=False)
     used = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=get_local_datetime)
+    
+    @staticmethod
+    def generate_token():
+        """Generate UUID token"""
+        import uuid
+        return str(uuid.uuid4())
     
     def is_expired(self):
         """Check if token is expired"""

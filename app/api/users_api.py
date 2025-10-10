@@ -174,7 +174,8 @@ def api_user(user_id):
             if 'club_member' in data:
                 user.club_member = data['club_member']
             if 'role' in data:
-                user.role = data['role']
+                # Legacy: role jest teraz account_type
+                user.account_type = data['role']
             if 'account_type' in data:
                 user.account_type = data['account_type']
             
@@ -699,7 +700,7 @@ def api_profile():
                     'phone': user.phone,
                     'club_member': user.club_member,
                     'is_active': user.is_active,
-                    'role': user.role,
+                    'role': user.account_type,  # Legacy compatibility
                     'created_at': user.created_at.isoformat() if user.created_at else None,
                     'last_login': user.last_login.isoformat() if user.last_login else None
                 }
@@ -762,7 +763,7 @@ def api_profile():
                     'phone': user.phone,
                     'club_member': user.club_member,
                     'is_active': user.is_active,
-                    'role': user.role,
+                    'role': user.account_type,  # Legacy compatibility
                     'created_at': user.created_at.isoformat() if user.created_at else None,
                     'last_login': user.last_login.isoformat() if user.last_login else None
                 }
@@ -796,7 +797,7 @@ def api_user_profile(user_id):
                     'event_id': user.event_id,
                     'group_id': user.group_id,
                     'is_active': user.is_active,
-                    'role': user.role,
+                    'role': user.account_type,  # Legacy compatibility
                     'created_at': user.created_at.strftime('%Y-%m-%dT%H:%M:%S%z') if user.created_at else None,
                     'last_login': user.last_login.strftime('%Y-%m-%dT%H:%M:%S%z') if user.last_login else None
                 },

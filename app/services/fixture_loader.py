@@ -4,7 +4,7 @@ Flask Fixture Loader - podobny do Django fixtures
 import yaml
 import os
 import logging
-from app.models import db, DefaultEmailTemplate
+from app.models import db, EmailTemplate
 
 class FixtureLoader:
     """Loader dla fixtures w formacie YAML (podobny do Django)"""
@@ -36,10 +36,11 @@ class FixtureLoader:
                 model_name = fixture.get('model')
                 fields = fixture.get('fields', {})
                 
-                if model_name == 'DefaultEmailTemplate':
+                # DefaultEmailTemplate jest legacy - teraz używamy EmailTemplate
+                if model_name == 'DefaultEmailTemplate' or model_name == 'EmailTemplate':
                     success = self._load_email_template(fields, force_update=force_update)
                     if success:
-                        if force_update and DefaultEmailTemplate.query.filter_by(name=fields.get('name')).first():
+                        if force_update and EmailTemplate.query.filter_by(name=fields.get('name')).first():
                             updated_count += 1
                         else:
                             loaded_count += 1
@@ -68,8 +69,8 @@ class FixtureLoader:
                 logging.error("Brak nazwy szablonu w fixture")
                 return False
             
-            # Sprawdź czy szablon już istnieje
-            existing = DefaultEmailTemplate.query.filter_by(name=name).first()
+            # Sprawdź czy szablon już istnieje w EmailTemplate
+            existing = EmailTemplate.query.filter_by(name=name).first()
             if existing and not force_update:
                 logging.info(f"Szablon {name} już istnieje, pomijam")
                 return False
@@ -83,13 +84,14 @@ class FixtureLoader:
                 existing.variables = fields.get('variables', '{}')
                 existing.description = fields.get('description', '')
                 existing.is_active = fields.get('is_active', True)
+                existing.is_default = True  # Szablony z fixtures są domyślne/systemowe
                 
                 db.session.commit()
                 logging.info(f"Zaktualizowano szablon: {name}")
                 return True
             else:
-                # Utwórz nowy szablon
-                template = DefaultEmailTemplate(
+                # Utwórz nowy szablon w EmailTemplate
+                template = EmailTemplate(
                     name=name,
                     template_type=fields.get('template_type', 'html'),
                     subject=fields.get('subject', ''),
@@ -97,7 +99,8 @@ class FixtureLoader:
                     text_content=fields.get('text_content', ''),
                     variables=fields.get('variables', '{}'),
                     description=fields.get('description', ''),
-                    is_active=fields.get('is_active', True)
+                    is_active=fields.get('is_active', True),
+                    is_default=True  # Szablony z fixtures są domyślne/systemowe
                 )
                 
                 db.session.add(template)

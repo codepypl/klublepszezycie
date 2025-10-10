@@ -14,7 +14,7 @@ from .user_model import User, PasswordResetToken
 from .content_model import MenuItem, Section, BenefitItem, Testimonial, SocialLink, FAQ
 from .events_model import EventSchedule
 from .event_registration_model import EventRegistration
-from .email_model import EmailTemplate, DefaultEmailTemplate, EmailCampaign, EmailQueue, EmailLog, EmailReminder
+from .email_model import EmailTemplate, EmailCampaign, EmailQueue, EmailLog, EmailReminder
 from .user_groups_model import UserGroup, UserGroupMember
 from .blog_model import BlogCategory, BlogTag, BlogPost, BlogComment, BlogPostImage
 from .seo_model import SEOSettings, FooterSettings, LegalDocument
@@ -40,7 +40,6 @@ __all__ = [
     'EventSchedule',
     'EventRegistration',
     'EmailTemplate',
-    'DefaultEmailTemplate',
     'UserGroup',
     'UserGroupMember',
     'EmailCampaign',

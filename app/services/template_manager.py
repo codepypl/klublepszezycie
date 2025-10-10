@@ -4,21 +4,21 @@ Template Manager - zarządzanie szablonami emaili z bazy danych
 import json
 import logging
 from datetime import datetime
-from app.models import db, EmailTemplate, DefaultEmailTemplate
+from app.models import db, EmailTemplate
 
 class TemplateManager:
     """Menedżer szablonów emaili - używa bazy danych jako źródła prawdy"""
     
     def get_default_templates(self):
-        """Pobiera domyślne szablony z bazy danych"""
+        """Pobiera domyślne szablony z bazy danych (EmailTemplate z is_default=True)"""
         try:
-            templates = DefaultEmailTemplate.query.filter_by(is_active=True).all()
+            templates = EmailTemplate.query.filter_by(is_active=True, is_default=True).all()
             
             # Jeśli nie ma domyślnych szablonów, utwórz je automatycznie
             if not templates:
                 logging.info("Brak domyślnych szablonów, inicjalizuję...")
                 self.initialize_default_templates()
-                templates = DefaultEmailTemplate.query.filter_by(is_active=True).all()
+                templates = EmailTemplate.query.filter_by(is_active=True, is_default=True).all()
             
             return templates
         except Exception as e:

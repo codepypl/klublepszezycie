@@ -26,24 +26,8 @@ class EmailTemplate(db.Model):
     def __repr__(self):
         return f'<EmailTemplate {self.name}>'
 
-class DefaultEmailTemplate(db.Model):
-    """Default email templates stored in database"""
-    __tablename__ = 'default_email_templates'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False, unique=True)
-    template_type = db.Column(db.String(50), nullable=False)
-    subject = db.Column(db.String(200), nullable=False)
-    html_content = db.Column(db.Text)
-    text_content = db.Column(db.Text)
-    variables = db.Column(db.Text)  # JSON string of template variables with descriptions
-    description = db.Column(db.Text)
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
-    updated_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now(), onupdate=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
-    
-    def __repr__(self):
-        return f'<DefaultEmailTemplate {self.name}>'
+# DefaultEmailTemplate USUNIĘTE - redundancja
+# Fixtures wczytują bezpośrednio do EmailTemplate z is_default=True
 
 # UserGroup and UserGroupMember moved to app/models/user_groups_model.py
 

@@ -220,8 +220,8 @@ class AuthController:
                     'error': 'Użytkownik z tym emailem nie istnieje'
                 }
             
-            # Generate reset token
-            token = secrets.token_urlsafe(32)
+            # Generate UUID reset token
+            token = PasswordResetToken.generate_token()
             expires_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() + timedelta(minutes=5)
             
             # Delete existing tokens for this user

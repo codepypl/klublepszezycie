@@ -11,6 +11,7 @@ class EventSchedule(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=True, index=True)  # SEO-friendly URL
     event_type = db.Column(db.String(50))  # Added from database schema
     event_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=True)
@@ -52,6 +53,17 @@ class EventSchedule(db.Model):
         if self.max_participants is None:
             return None
         return max(0, self.max_participants - self.current_participants)
+    
+    def generate_slug(self):
+        """Generuje unikalny slug dla wydarzenia"""
+        from app.utils.blog_utils import generate_unique_slug
+        
+        if not self.slug:
+            # Użyj utility do generowania sluga (usuwa polskie znaki, dodaje ID dla unikalności)
+            base_slug = generate_unique_slug(self.title, EventSchedule, existing_id=self.id)
+            self.slug = base_slug
+        
+        return self.slug
     
     def is_ended(self):
         """Check if event has ended - improved with debugging"""

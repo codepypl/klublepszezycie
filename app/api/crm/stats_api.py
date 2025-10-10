@@ -14,8 +14,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Create Stats API blueprint
-stats_api_bp = Blueprint('crm_stats_api', __name__)
+# Create CRM Stats API blueprint
+crm_stats_api_bp = Blueprint('crm_stats_api', __name__)
 
 def ankieter_required(f):
     """Decorator to require ankieter role"""
@@ -28,7 +28,7 @@ def ankieter_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-@stats_api_bp.route('/crm/stats/queue-status')
+@crm_stats_api_bp.route('/crm/stats/queue-status')
 @login_required
 @ankieter_required
 def get_queue_status():
@@ -148,7 +148,7 @@ def get_queue_status():
         logger.error(f"❌ Błąd pobierania statusu kolejki: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@stats_api_bp.route('/crm/stats/daily-work-time', methods=['GET'])
+@crm_stats_api_bp.route('/crm/stats/daily-work-time', methods=['GET'])
 @login_required
 @ankieter_required
 def get_daily_work_time():
@@ -197,7 +197,7 @@ def get_daily_work_time():
         logger.error(f"❌ Błąd pobierania czasu pracy: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@stats_api_bp.route('/crm/stats/sync-twilio', methods=['POST'])
+@crm_stats_api_bp.route('/crm/stats/sync-twilio', methods=['POST'])
 @login_required
 @ankieter_required
 def sync_twilio_stats():
@@ -215,7 +215,7 @@ def sync_twilio_stats():
         logger.error(f"❌ Błąd synchronizacji statystyk Twilio: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@stats_api_bp.route('/crm/stats/performance', methods=['GET'])
+@crm_stats_api_bp.route('/crm/stats/performance', methods=['GET'])
 @login_required
 @ankieter_required
 def get_performance_stats():

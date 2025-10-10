@@ -27,8 +27,10 @@ class UnsubscribeManager:
     
     def generate_token(self, email: str, action: str) -> str:
         """
-        Generuje KRÓTKI token używając ID użytkownika
-        Format: {user_id}.{expires_timestamp}.{hmac_signature}
+        Generuje token używając HMAC (stateless, bezpieczny)
+        
+        Format: {user_id}.{expires_timestamp}.{action}.{hmac_signature}
+        Zalety: Stateless (nie zajmuje miejsca w bazie), bezpieczny (HMAC), krótki
         """
         try:
             # Znajdź użytkownika
@@ -37,14 +39,14 @@ class UnsubscribeManager:
                 print(f"❌ User not found: {email}")
                 return None
             
-            # Utwórz krótki payload
+            # Utwórz token payload
             expires_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() + timedelta(days=self.token_expiry_days)
             expires_timestamp = int(expires_at.timestamp())
             
-            # Payload to tylko: user_id.expires_timestamp.action
+            # Payload: user_id.expires_timestamp.action
             payload = f"{user.id}.{expires_timestamp}.{action}"
             
-            # Wygeneruj HMAC signature (tylko pierwsze 16 znaków dla krótkości)
+            # Wygeneruj HMAC signature (16 znaków dla krótkości)
             signature = hmac.new(
                 self.secret_key.encode('utf-8'),
                 payload.encode('utf-8'),
@@ -54,7 +56,7 @@ class UnsubscribeManager:
             # Token format: user_id.expires_timestamp.action.signature
             token = f"{user.id}.{expires_timestamp}.{action}.{signature}"
             
-            print(f"🔑 Generated SHORT {action} token for {email}")
+            print(f"🔑 Generated {action} token for {email}")
             print(f"   Expires: {expires_at.strftime('%Y-%m-%d %H:%M:%S')}")
             print(f"   Token: {token} (length: {len(token)})")
             
