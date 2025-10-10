@@ -20,7 +20,7 @@ class CampaignService:
     def __init__(self):
         self.email_manager = EmailManager()
     
-    def create_campaign(self, data: Dict) -> Tuple[bool, str, Optional[EmailCampaign]]:
+    def create_campaign(self, data: Dict) -> Tuple[bool, str, Optional[int]]:
         """Tworzy nową kampanię emailową"""
         try:
             # Walidacja danych
@@ -82,7 +82,7 @@ class CampaignService:
             db.session.commit()
             
             logger.info(f"✅ Created campaign: {campaign.name} (ID: {campaign.id})")
-            return True, 'Kampania utworzona pomyślnie', campaign
+            return True, 'Kampania utworzona pomyślnie', campaign.id
             
         except Exception as e:
             db.session.rollback()
@@ -360,12 +360,12 @@ class CampaignService:
                 }
                 
                 # Dodaj email do kolejki
-                success, message = self.email_manager._add_to_queue(
+                success, message, queue_id = self.email_manager._add_to_queue(
                     to_email=user.email,
                     subject=campaign.subject,
                     html_content=campaign.html_content,
                     text_content=campaign.text_content,
-                    priority=2,  # Normalna priorytet
+                    priority=2,  # Normalny priorytet
                     scheduled_at=campaign.scheduled_at,
                     context=context,
                     campaign_id=campaign.id,
