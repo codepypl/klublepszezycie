@@ -63,11 +63,12 @@ class TestimonialsManager {
     }
 
     deleteTestimonial(testimonialId) {
+        const self = this;
         window.deleteConfirmation.showSingleDelete(
             'opinię',
             () => {
-                // Continue with deletion
-                performDeleteTestimonial(testimonialId);
+                // Continue with deletion - use class method, not global function
+                self.performDeleteTestimonial(testimonialId);
             },
             'opinię'
         );

@@ -52,45 +52,73 @@ def process_email_queue_task(self, batch_size=50):
 @celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.email_tasks.process_scheduled_campaigns_task')
 def process_scheduled_campaigns_task(self):
     """
-    Przetwarza zaplanowane kampanie - NOWY SYSTEM v2
+    Przetwarza zaplanowane kampanie - NOWY SYSTEM v3
+    
+    Uruchamiany co 1 minutę.
+    Znajduje kampanie ze statusem 'draft' lub 'scheduled' i dodaje je do kolejki.
     """
     with get_app_context():
         try:
-            logger.info("🔄 Rozpoczynam przetwarzanie zaplanowanych kampanii v2")
+            logger.info("🔄 Rozpoczynam przetwarzanie kampanii v3")
             
+            from app.services.email_v2.queue.scheduler import EmailScheduler
             from app.utils.timezone_utils import get_local_now
             from app.models import db
+            
+            scheduler = EmailScheduler()
             
             now = get_local_now()
             if now.tzinfo is not None:
                 now = now.replace(tzinfo=None)
             
-            # Znajdź kampanie zaplanowane do wysłania
+            # Znajdź kampanie do zaplanowania
+            # 1. Kampanie natychmiastowe (draft + immediate)
+            immediate_campaigns = EmailCampaign.query.filter(
+                EmailCampaign.status == 'draft',
+                EmailCampaign.send_type == 'immediate'
+            ).all()
+            
+            # 2. Kampanie planowane (scheduled + scheduled_at <= now)
             scheduled_campaigns = EmailCampaign.query.filter(
-                EmailCampaign.status == 'scheduled',
+                EmailCampaign.status.in_(['draft', 'scheduled']),
                 EmailCampaign.send_type == 'scheduled',
                 EmailCampaign.scheduled_at <= now
             ).all()
+            
+            campaigns = immediate_campaigns + scheduled_campaigns
+            
+            if not campaigns:
+                logger.info("ℹ️ Brak kampanii do zaplanowania")
+                return {
+                    'success': True,
+                    'processed': 0,
+                    'success_count': 0,
+                    'failed_count': 0
+                }
             
             processed_count = 0
             success_count = 0
             failed_count = 0
             
-            for campaign in scheduled_campaigns:
+            for campaign in campaigns:
                 try:
-                    logger.info(f"📧 Przetwarzam kampanię: {campaign.name} (ID: {campaign.id})")
+                    logger.info(f"📧 Planuję kampanię: {campaign.name} (ID: {campaign.id}, typ: {campaign.send_type})")
                     
-                    # Aktualizuj status kampanii na 'sending' - emaile są już w kolejce
-                    campaign.status = 'sending'
-                    db.session.commit()
+                    # Użyj nowego schedulera
+                    success, message = scheduler.schedule_campaign(campaign.id)
                     
-                    success_count += 1
+                    if success:
+                        success_count += 1
+                        logger.info(f"✅ {message}")
+                    else:
+                        failed_count += 1
+                        logger.warning(f"⚠️ {message}")
+                    
                     processed_count += 1
-                    logger.info(f"✅ Kampania {campaign.name} oznaczona jako wysyłana (emaile w kolejce)")
                     
                 except Exception as e:
                     failed_count += 1
-                    logger.error(f"❌ Błąd przetwarzania kampanii {campaign.id}: {e}")
+                    logger.error(f"❌ Błąd planowania kampanii {campaign.id}: {e}")
             
             logger.info(f"✅ Przetworzono {processed_count} kampanii: {success_count} sukces, {failed_count} błąd")
             
@@ -102,7 +130,7 @@ def process_scheduled_campaigns_task(self):
             }
             
         except Exception as exc:
-            logger.error(f"❌ Błąd przetwarzania kampanii v2: {exc}")
+            logger.error(f"❌ Błąd przetwarzania kampanii v3: {exc}")
             raise self.retry(exc=exc, countdown=60)
 
 @celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.email_tasks.send_batch_emails_task')
@@ -216,27 +244,152 @@ def send_event_reminder_task(self, event_id, user_id, reminder_type="24h"):
 @celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.email_tasks.update_event_notifications_task')
 def update_event_notifications_task(self, event_id):
     """
-    Aktualizuje powiadomienia o wydarzeniu
+    Aktualizuje powiadomienia o wydarzeniu (reschedule przypomnień)
+    
+    Używane gdy:
+    - Admin zmienia datę wydarzenia
+    - System wykrywa niespójność w kolejce
     """
     with get_app_context():
         try:
             logger.info(f"🔄 Aktualizuję powiadomienia o wydarzeniu {event_id}")
             
             from app.models.events_model import EventSchedule
+            from app.services.email_v2.queue.scheduler import EmailScheduler
+            
             event = EventSchedule.query.get(event_id)
             
             if not event:
                 logger.error(f"❌ Nie znaleziono wydarzenia {event_id}")
                 return {'success': False, 'message': 'Event not found'}
             
-            # Tutaj można dodać logikę aktualizacji powiadomień
-            # Na przykład: anulowanie starych przypomnień, planowanie nowych
+            # Reschedule przypomnień
+            scheduler = EmailScheduler()
+            success, message = scheduler.reschedule_event_reminders(event_id)
             
-            logger.info(f"✅ Powiadomienia o wydarzeniu {event_id} zaktualizowane")
-            return {'success': True, 'message': 'Event notifications updated'}
+            if success:
+                logger.info(f"✅ Powiadomienia o wydarzeniu {event_id} zaktualizowane: {message}")
+                return {'success': True, 'message': message}
+            else:
+                logger.error(f"❌ Błąd aktualizacji powiadomień: {message}")
+                return {'success': False, 'message': message}
             
         except Exception as exc:
             logger.error(f"❌ Błąd aktualizacji powiadomień: {exc}")
+            raise self.retry(exc=exc, countdown=60)
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.email_tasks.monitor_event_changes_task')
+def monitor_event_changes_task(self):
+    """
+    Monitoruje zmiany w wydarzeniach i automatycznie reschedule'uje przypomnienia
+    
+    Uruchamiany: co 15 minut
+    
+    Sprawdza:
+    - Czy emaile w kolejce mają poprawne daty (zgodne z wydarzeniem)
+    - Czy potrzebny jest reschedule
+    """
+    with get_app_context():
+        try:
+            logger.info("🔍 Rozpoczynam monitorowanie zmian w wydarzeniach")
+            
+            from app.models.events_model import EventSchedule
+            from app.models.email_model import EmailQueue
+            from app.services.email_v2.queue.scheduler import EmailScheduler
+            from app.utils.timezone_utils import get_local_now
+            from datetime import timedelta
+            
+            # Pobierz wszystkie aktywne wydarzenia z zaplanowanymi przypomnieniami
+            events = EventSchedule.query.filter_by(
+                is_active=True,
+                reminders_scheduled=True
+            ).all()
+            
+            if not events:
+                logger.info("ℹ️ Brak wydarzeń do monitorowania")
+                return {
+                    'success': True,
+                    'checked': 0,
+                    'rescheduled': 0
+                }
+            
+            rescheduled_count = 0
+            scheduler = EmailScheduler()
+            
+            for event in events:
+                try:
+                    # Sprawdź czy są emaile dla tego wydarzenia w kolejce
+                    queue_items = EmailQueue.query.filter_by(
+                        event_id=event.id,
+                        status='pending'
+                    ).all()
+                    
+                    if not queue_items:
+                        # Brak emaili w kolejce - może trzeba zaplanować?
+                        logger.warning(f"⚠️ Wydarzenie {event.id} ma reminders_scheduled=True ale brak emaili w kolejce")
+                        
+                        # Zresetuj flagę i pozwól process_event_reminders_task zaplanować
+                        event.reminders_scheduled = False
+                        from app import db
+                        db.session.commit()
+                        continue
+                    
+                    # Sprawdź czy daty się zgadzają
+                    # Oczekiwane scheduled_at: event.event_date - offset
+                    needs_reschedule = False
+                    
+                    for queue_item in queue_items:
+                        # Wyciągnij typ przypomnienia z template_name (np. "event_reminder_24h" -> "24h")
+                        if queue_item.template_name and 'event_reminder_' in queue_item.template_name:
+                            reminder_type = queue_item.template_name.replace('event_reminder_', '')
+                            
+                            # Wylicz oczekiwaną datę scheduled_at
+                            offset_map = {
+                                '24h': timedelta(hours=24),
+                                '1h': timedelta(hours=1),
+                                '5min': timedelta(minutes=5)
+                            }
+                            
+                            if reminder_type in offset_map:
+                                offset = offset_map[reminder_type]
+                                expected_scheduled = event.event_date - offset
+                                
+                                # Normalizuj timezone
+                                expected_naive = expected_scheduled.replace(tzinfo=None) if hasattr(expected_scheduled, 'tzinfo') and expected_scheduled.tzinfo else expected_scheduled
+                                queue_naive = queue_item.scheduled_at.replace(tzinfo=None) if hasattr(queue_item.scheduled_at, 'tzinfo') and queue_item.scheduled_at.tzinfo else queue_item.scheduled_at
+                                
+                                # Sprawdź różnicę (tolerancja 5 minut)
+                                time_diff = abs((expected_naive - queue_naive).total_seconds())
+                                
+                                if time_diff > 300:  # > 5 minut
+                                    logger.warning(f"⚠️ Niespójność dla wydarzenia {event.id}: oczekiwano {expected_naive}, jest {queue_naive} (różnica: {time_diff}s)")
+                                    needs_reschedule = True
+                                    break
+                    
+                    # Jeśli potrzebny reschedule
+                    if needs_reschedule:
+                        logger.info(f"🔄 Reschedule przypomnień dla wydarzenia {event.id}: {event.title}")
+                        success, message = scheduler.reschedule_event_reminders(event.id)
+                        
+                        if success:
+                            rescheduled_count += 1
+                            logger.info(f"✅ Zreschedule'owano: {message}")
+                        else:
+                            logger.error(f"❌ Błąd reschedulingu: {message}")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Błąd sprawdzania wydarzenia {event.id}: {e}")
+            
+            logger.info(f"✅ Monitorowanie zakończone: sprawdzono {len(events)} wydarzeń, zreschedule'owano {rescheduled_count}")
+            
+            return {
+                'success': True,
+                'checked': len(events),
+                'rescheduled': rescheduled_count
+            }
+            
+        except Exception as exc:
+            logger.error(f"❌ Błąd monitorowania wydarzeń: {exc}")
             raise self.retry(exc=exc, countdown=60)
 
 @celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.email_tasks.schedule_event_reminders_task')

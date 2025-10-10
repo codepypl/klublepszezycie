@@ -185,17 +185,44 @@ class EmailQueueProcessor:
             }
     
     def _get_emails_to_process(self, limit: int) -> List[EmailQueue]:
-        """Pobiera e-maile do przetworzenia"""
-        now = get_local_now()
+        """
+        Pobiera e-maile do przetworzenia z priorytetyzacją
         
-        # Użyj timezone-aware comparison
-        return EmailQueue.query.filter(
-            EmailQueue.status == 'pending',
-            EmailQueue.scheduled_at <= now
+        Sortowanie:
+        1. Priorytet (0=najwyższy -> 1 -> 2)
+        2. Scheduled_at (najstarsze pierwsze)
+        """
+        now = get_local_now()
+        # Normalizuj timezone - usuń dla bezpiecznego porównania
+        now_naive = now.replace(tzinfo=None) if hasattr(now, 'tzinfo') and now.tzinfo else now
+        
+        # Pobierz wszystkie pending emaile z sortowaniem po priorytetach
+        # Priorytet 0 (system) > 1 (wydarzenia) > 2 (kampanie)
+        all_pending = EmailQueue.query.filter(
+            EmailQueue.status == 'pending'
         ).order_by(
-            EmailQueue.priority.asc(),
-            EmailQueue.created_at.asc()
-        ).limit(limit).all()
+            EmailQueue.priority.asc(),      # Najniższy numer = najwyższy priorytet
+            EmailQueue.scheduled_at.asc()   # Najstarsze emaile pierwsze
+        ).all()
+        
+        # Filtruj ręcznie z poprawnym timezone handling
+        emails_to_process = []
+        for email in all_pending:
+            scheduled_naive = email.scheduled_at.replace(tzinfo=None) if hasattr(email.scheduled_at, 'tzinfo') and email.scheduled_at.tzinfo else email.scheduled_at
+            
+            if scheduled_naive <= now_naive:
+                emails_to_process.append(email)
+                if len(emails_to_process) >= limit:
+                    break
+        
+        self.logger.info(f"📊 Wybrano {len(emails_to_process)} emaili do przetworzenia (limit: {limit})")
+        if emails_to_process:
+            priority_counts = {}
+            for email in emails_to_process:
+                priority_counts[email.priority] = priority_counts.get(email.priority, 0) + 1
+            self.logger.info(f"   Priorytetyzacja: {priority_counts}")
+        
+        return emails_to_process
     
     def _process_emails(self, emails: List[EmailQueue]) -> Dict[str, int]:
         """Przetwarza listę e-maili"""
@@ -296,6 +323,15 @@ class EmailQueueProcessor:
     def _send_email(self, email: EmailQueue) -> Tuple[bool, str]:
         """Wysyła pojedynczy e-mail z fallback"""
         try:
+            # VERBOSE LOGGING - Krok 1: Start
+            self.logger.info(f"\n{'='*60}")
+            self.logger.info(f"📤 PROCESSOR: Rozpoczynam wysyłkę emaila ID: {email.id}")
+            self.logger.info(f"   Do: {email.recipient_email}")
+            self.logger.info(f"   Temat: {email.subject}")
+            self.logger.info(f"   Template: {email.template_name}")
+            self.logger.info(f"   Event ID: {email.event_id}")
+            self.logger.info(f"   Priority: {email.priority}")
+            
             # Przygotuj dane e-maila
             email_data = {
                 'to_email': email.recipient_email,
@@ -306,9 +342,17 @@ class EmailQueueProcessor:
                 'from_name': getattr(email, 'from_name', 'Klub Lepsze Życie')
             }
             
+            # VERBOSE LOGGING - Krok 2: Sprawdzenie Mailgun
+            self.logger.info(f"🔍 Sprawdzam dostępność Mailgun...")
+            self.logger.info(f"   Mailgun available: {self.mailgun.is_available()}")
+            
             # Spróbuj Mailgun
             if self.mailgun.is_available():
+                self.logger.info(f"📮 Próba wysyłki przez Mailgun...")
                 success, message = self.mailgun.send_email(**email_data)
+                
+                self.logger.info(f"📬 Mailgun result: success={success}, message={message}")
+                
                 if success:
                     # Loguj e-mail do EmailLog
                     email_log = EmailLog(
@@ -316,16 +360,29 @@ class EmailQueueProcessor:
                         subject=email.subject,
                         status='sent',
                         template_id=email.template_id,
-                        event_id=email.event_id
+                        event_id=email.event_id,
+                        message_id=message  # Message ID z Mailgun
                     )
                     db.session.add(email_log)
+                    
+                    self.logger.info(f"✅ Email wysłany przez Mailgun!")
+                    self.logger.info(f"{'='*60}\n")
                     return True, message
                 else:
                     self.logger.warning(f"⚠️ Mailgun failed: {message}")
+            else:
+                self.logger.warning(f"⚠️ Mailgun nie jest dostępny")
+            
+            # VERBOSE LOGGING - Krok 3: Fallback do SMTP
+            self.logger.info(f"🔄 Próba fallback do SMTP...")
+            self.logger.info(f"   SMTP available: {self.smtp.is_available()}")
             
             # Fallback do SMTP
             if self.smtp.is_available():
                 success, message = self.smtp.send_email(**email_data)
+                
+                self.logger.info(f"📬 SMTP result: success={success}, message={message}")
+                
                 if success:
                     # Loguj e-mail do EmailLog
                     email_log = EmailLog(
@@ -336,11 +393,22 @@ class EmailQueueProcessor:
                         event_id=email.event_id
                     )
                     db.session.add(email_log)
+                    
+                    self.logger.info(f"✅ Email wysłany przez SMTP!")
+                    self.logger.info(f"{'='*60}\n")
                     return True, f"SMTP fallback: {message}"
                 else:
                     self.logger.error(f"❌ SMTP fallback failed: {message}")
+            else:
+                self.logger.error(f"❌ SMTP nie jest dostępny")
             
+            self.logger.error(f"❌ Brak dostępnych providerów!")
+            self.logger.info(f"{'='*60}\n")
             return False, "Brak dostępnych providerów e-maili"
             
         except Exception as e:
+            self.logger.error(f"❌ Exception w _send_email: {str(e)}")
+            import traceback
+            self.logger.error(traceback.format_exc())
+            self.logger.info(f"{'='*60}\n")
             return False, f"Błąd wysyłania e-maila: {str(e)}"

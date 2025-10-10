@@ -34,20 +34,21 @@ class EmailManager:
         self.logger.info(f"📧 EmailManager zainicjalizowany - limit: {self.daily_limit}/dzień")
     
     def send_template_email(self, to_email: str, template_name: str, 
-                   context: Dict = None, priority: int = 2, 
+                   context: Dict = None, priority: int = None, 
                    scheduled_at: datetime = None, campaign_id: int = None, 
-                           event_id: int = None) -> Tuple[bool, str]:
+                   event_id: int = None, email_type: str = 'other') -> Tuple[bool, str]:
         """
-        Wysyła e-mail z szablonu
+        Wysyła e-mail z szablonu (używa nowego schedulera)
         
         Args:
             to_email: Adres e-mail odbiorcy
             template_name: Nazwa szablonu
             context: Kontekst dla zmiennych
-            priority: Priorytet (1=wysoki, 2=normalny, 3=niski)
-            scheduled_at: Data wysłania (opcjonalna)
+            priority: Priorytet (0=system, 1=wydarzenia, 2=kampanie) - deprecated, używaj email_type
+            scheduled_at: Data wysłania (opcjonalna, dla kampanii planowanych)
             campaign_id: ID kampanii (opcjonalne)
             event_id: ID wydarzenia (opcjonalne)
+            email_type: Typ emaila ('system', 'event', 'campaign', 'other')
             
         Returns:
             Tuple[bool, str]: (sukces, komunikat)
@@ -55,6 +56,38 @@ class EmailManager:
         try:
             self.logger.info(f"📧 Wysyłam e-mail do {to_email}: {template_name}")
             
+            # Użyj nowego schedulera
+            from app.services.email_v2.queue.scheduler import EmailScheduler
+            scheduler = EmailScheduler()
+            
+            # Dla natychmiastowych emaili
+            if scheduled_at is None:
+                return scheduler.schedule_immediate_email(
+                    to_email=to_email,
+                    template_name=template_name,
+                    context=context,
+                    email_type=email_type,
+                    event_id=event_id
+                )
+            else:
+                # Dla planowanych emaili - użyj starej metody
+                return self._send_template_email_legacy(
+                    to_email, template_name, context, priority or 2, 
+                    scheduled_at, campaign_id, event_id
+                )
+            
+        except Exception as e:
+            self.logger.error(f"❌ Błąd wysyłania szablonu: {e}")
+            return False, f"Błąd wysyłania szablonu: {str(e)}"
+    
+    def _send_template_email_legacy(self, to_email: str, template_name: str, 
+                   context: Dict = None, priority: int = 2, 
+                   scheduled_at: datetime = None, campaign_id: int = None, 
+                   event_id: int = None) -> Tuple[bool, str]:
+        """
+        Legacy metoda wysyłania emaili (dla kompatybilności wstecznej)
+        """
+        try:
             # Sprawdź dzienny limit
             if not self._check_daily_limit():
                 return False, "Dzienny limit e-maili osiągnięty"
@@ -75,7 +108,7 @@ class EmailManager:
             rendered_subject = self._render_subject(template.subject, context or {})
             
             # Dodaj do kolejki
-            return self._add_to_queue(
+            success, message, queue_id = self._add_to_queue(
                 to_email=to_email,
                 subject=rendered_subject,
                 html_content=html_content,
@@ -89,13 +122,15 @@ class EmailManager:
                 template_name=template_name
             )
             
+            return success, message
+            
         except Exception as e:
             self.logger.error(f"❌ Błąd wysyłania szablonu: {e}")
             return False, f"Błąd wysyłania szablonu: {str(e)}"
     
     def send_event_reminders(self, event_id: int) -> Tuple[bool, str]:
         """
-        Planuje przypomnienia o wydarzeniu (1h i 5min przed)
+        Planuje przypomnienia o wydarzeniu używając EmailScheduler
         
         Args:
             event_id: ID wydarzenia
@@ -104,105 +139,21 @@ class EmailManager:
             Tuple[bool, str]: (sukces, komunikat)
         """
         try:
+            from app.services.email_v2.queue.scheduler import EmailScheduler
+            
             event = EventSchedule.query.get(event_id)
             if not event:
                 return False, "Wydarzenie nie zostało znalezione"
             
-            # Zresetuj flagę przypomnień (usuniemy stare emaile i zaplanujemy nowe)
-            event.reminders_scheduled = False
+            # Sprawdź czy przypomnienia już zostały zaplanowane
+            if event.reminders_scheduled:
+                return True, "Przypomnienia już zostały zaplanowane"
             
-            # Usuń wszystkie stare emaile dla tego wydarzenia (pending i sent)
-            old_emails = EmailQueue.query.filter_by(event_id=event_id).all()
-            if old_emails:
-                self.logger.info(f"🗑️ Usuwam {len(old_emails)} starych emaili dla wydarzenia {event_id}")
-                for email in old_emails:
-                    db.session.delete(email)
-                db.session.commit()
-                self.logger.info(f"✅ Usunięto {len(old_emails)} starych emaili")
+            # Użyj EmailScheduler (który ma poprawną logikę timezone i pomijania)
+            scheduler = EmailScheduler()
+            success, message = scheduler.schedule_event_reminders(event_id)
             
-            # Pobierz uczestników
-            participants = self._get_event_participants(event_id)
-            if not participants:
-                return False, "Brak uczestników wydarzenia"
-            
-            # Zaplanuj przypomnienia
-            scheduled_count = 0
-            
-            for participant in participants:
-                # Przygotuj kontekst dla e-maili
-                context = {
-                    'user_name': participant.first_name or 'Użytkowniku',
-                    'event_title': event.title,
-                    'event_date': event.event_date.strftime('%d.%m.%Y'),
-                    'event_time': event.event_date.strftime('%H:%M'),
-                    'event_location': getattr(event, 'location', '') or 'Online',
-                    'event_url': f"https://klublepszezycie.pl/events/{event_id}",
-                    'event_id': event_id,
-                    'user_id': participant.id
-                }
-                
-                # Przypomnienie 1h przed
-                send_time_1h = event.event_date - timedelta(hours=1)
-                now = get_local_now()
-                
-                # Normalizuj timezone dla porównania
-                if now.tzinfo is not None:
-                    now_naive = now.replace(tzinfo=None)
-                else:
-                    now_naive = now
-                    
-                if send_time_1h.tzinfo is not None:
-                    send_time_1h_naive = send_time_1h.replace(tzinfo=None)
-                else:
-                    send_time_1h_naive = send_time_1h
-                
-                # Jeśli czas już minął, wyślij za 1 minutę
-                if send_time_1h_naive <= now_naive:
-                    send_time_1h = now + timedelta(minutes=1)
-                
-                success, message = self.send_template_email(
-                    to_email=participant.email,
-                    template_name='event_reminder_1h',
-                    context=context,
-                    priority=1,
-                    scheduled_at=send_time_1h,
-                    event_id=event_id
-                )
-                
-                if success:
-                    scheduled_count += 1
-                
-                # Przypomnienie 5min przed
-                send_time_5min = event.event_date - timedelta(minutes=5)
-                
-                # Normalizuj timezone dla porównania
-                if send_time_5min.tzinfo is not None:
-                    send_time_5min_naive = send_time_5min.replace(tzinfo=None)
-                else:
-                    send_time_5min_naive = send_time_5min
-                
-                # Jeśli czas już minął, wyślij za 2 minuty
-                if send_time_5min_naive <= now_naive:
-                    send_time_5min = now + timedelta(minutes=2)
-                
-                success, message = self.send_template_email(
-                    to_email=participant.email,
-                    template_name='event_reminder_5min',
-                    context=context,
-                    priority=1,
-                    scheduled_at=send_time_5min,
-                    event_id=event_id
-                )
-                    
-                if success:
-                    scheduled_count += 1
-            
-            # Oznacz jako zaplanowane
-            if scheduled_count > 0:
-                event.reminders_scheduled = True
-                db.session.commit()
-            
-            return True, f"Zaplanowano {scheduled_count} przypomnień dla {len(participants)} uczestników"
+            return success, message
             
         except Exception as e:
             self.logger.error(f"❌ Błąd planowania przypomnień: {e}")
@@ -378,8 +329,13 @@ class EmailManager:
                      text_content: str, priority: int, scheduled_at: datetime = None,
                      context: Dict = None, campaign_id: int = None, 
                      event_id: int = None, template_id: int = None,
-                     template_name: str = None) -> Tuple[bool, str]:
-        """Dodaje e-mail do kolejki"""
+                     template_name: str = None) -> Tuple[bool, str, int]:
+        """
+        Dodaje e-mail do kolejki
+        
+        Returns:
+            Tuple[bool, str, int]: (sukces, komunikat, queue_id)
+        """
         try:
             if scheduled_at is None:
                 scheduled_at = get_local_now()
@@ -404,11 +360,14 @@ class EmailManager:
             )
             
             db.session.add(email)
+            db.session.flush()  # Flush aby otrzymać ID przed commit
+            
+            queue_id = email.id
             db.session.commit()
             
-            return True, f"E-mail dodany do kolejki (ID: {email.id})"
+            return True, f"E-mail dodany do kolejki (ID: {queue_id})", queue_id
             
         except Exception as e:
             db.session.rollback()
             self.logger.error(f"❌ Błąd dodawania do kolejki: {e}")
-            return False, f"Błąd dodawania do kolejki: {str(e)}"
+            return False, f"Błąd dodawania do kolejki: {str(e)}", None

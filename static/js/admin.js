@@ -205,7 +205,7 @@ function updateTestimonial(testimonialId) {
         is_active: formData.get('is_active') === 'on'
     };
     
-    fetch(`/admin/api/testimonials/${testimonialId}`, {
+    fetch(`/api/testimonials/${testimonialId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -272,7 +272,7 @@ function deleteTestimonial(testimonialId) {
 }
 
 function performDeleteTestimonial(testimonialId) {
-    fetch(`/admin/api/testimonials/${testimonialId}`, {
+    fetch(`/api/testimonials/${testimonialId}`, {
         method: 'DELETE'
     })
     .then(response => safeJsonParse(response))

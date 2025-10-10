@@ -45,11 +45,23 @@ class MailgunProvider(BaseEmailProvider):
                    from_name: str = None) -> Tuple[bool, str]:
         """Wysyła pojedynczy e-mail przez Mailgun"""
         try:
+            # VERBOSE LOGGING - Krok 1: Sprawdzenie dostępności
+            if self.logger:
+                self.logger.info(f"📤 Mailgun: Próba wysłania do {to_email}")
+                self.logger.info(f"   Temat: {subject}")
+                self.logger.info(f"   API URL: {self.api_url}")
+                self.logger.info(f"   API Key configured: {'Yes' if self.api_key else 'No'}")
+                self.logger.info(f"   Domain: {self.domain}")
+            
             if not self.is_available():
+                if self.logger:
+                    self.logger.error(f"❌ Mailgun nie jest dostępny (brak API key lub domain)")
                 return False, "Mailgun nie jest dostępny"
             
             # Sprawdź rate limiting
             if not self._check_rate_limits():
+                if self.logger:
+                    self.logger.warning(f"⚠️ Przekroczono limity wysyłania")
                 return False, "Przekroczono limity wysyłania"
             
             # Przygotuj dane
@@ -64,6 +76,12 @@ class MailgunProvider(BaseEmailProvider):
             if text_content:
                 data['text'] = text_content
             
+            # VERBOSE LOGGING - Krok 2: Przed wysłaniem
+            if self.logger:
+                self.logger.info(f"🔄 Wysyłam request do Mailgun...")
+                self.logger.info(f"   From: {data['from']}")
+                self.logger.info(f"   To: {data['to']}")
+            
             # Wyślij e-mail
             response = requests.post(
                 self.api_url,
@@ -72,21 +90,45 @@ class MailgunProvider(BaseEmailProvider):
                 timeout=30
             )
             
+            # VERBOSE LOGGING - Krok 3: Response
+            if self.logger:
+                self.logger.info(f"📬 Mailgun response: status_code={response.status_code}")
+            
             if response.status_code == 200:
                 self._update_counters()
                 # Pobierz Message ID z odpowiedzi Mailgun
                 try:
                     response_data = response.json()
                     message_id = response_data.get('id', 'unknown')
+                    
+                    if self.logger:
+                        self.logger.info(f"✅ Email wysłany pomyślnie!")
+                        self.logger.info(f"   Message ID: {message_id}")
+                        self.logger.info(f"   Response: {response_data}")
+                    
                     return True, message_id
-                except:
+                except Exception as e:
+                    if self.logger:
+                        self.logger.warning(f"⚠️ Nie można parsować response JSON: {e}")
+                        self.logger.info(f"   Raw response: {response.text}")
                     return True, "E-mail wysłany pomyślnie"
             else:
                 error_msg = f"Błąd Mailgun: {response.status_code} - {response.text}"
+                
+                if self.logger:
+                    self.logger.error(f"❌ Mailgun błąd: {error_msg}")
+                
                 return False, error_msg
                 
         except Exception as e:
-            return False, f"Błąd wysyłania e-maila: {str(e)}"
+            error_msg = f"Błąd wysyłania e-maila: {str(e)}"
+            
+            if self.logger:
+                self.logger.error(f"❌ Exception podczas wysyłania: {error_msg}")
+                import traceback
+                self.logger.error(traceback.format_exc())
+            
+            return False, error_msg
     
     def send_batch(self, emails: List[Dict[str, Any]]) -> Tuple[bool, str, Dict[str, int]]:
         """Wysyła e-maile w batchu z inteligentnym rozłożeniem"""

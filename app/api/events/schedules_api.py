@@ -144,6 +144,10 @@ def update_schedule(schedule_id):
         schedule = EventSchedule.query.get_or_404(schedule_id)
         data = request.get_json()
         
+        # Zapamiętaj starą datę (do sprawdzenia czy się zmieniła)
+        old_event_date = schedule.event_date
+        event_date_changed = False
+        
         # Update fields
         if 'title' in data:
             schedule.title = data['title']
@@ -152,7 +156,11 @@ def update_schedule(schedule_id):
         if 'event_type' in data:
             schedule.event_type = data['event_type']
         if 'event_date' in data:
-            schedule.event_date = datetime.fromisoformat(data['event_date'].replace('Z', '+00:00'))
+            new_event_date = datetime.fromisoformat(data['event_date'].replace('Z', '+00:00'))
+            if old_event_date != new_event_date:
+                event_date_changed = True
+                logger.info(f"📅 Data wydarzenia {schedule_id} zmieniona: {old_event_date} -> {new_event_date}")
+            schedule.event_date = new_event_date
         if 'end_date' in data and data['end_date']:
             schedule.end_date = datetime.fromisoformat(data['end_date'].replace('Z', '+00:00'))
         if 'location' in data:
@@ -171,14 +179,75 @@ def update_schedule(schedule_id):
         schedule.updated_at = datetime.utcnow()
         db.session.commit()
         
+        # Jeśli data wydarzenia się zmieniła i przypomnienia były zaplanowane, reschedule
+        reschedule_message = None
+        if event_date_changed and schedule.reminders_scheduled:
+            try:
+                from app.services.email_v2.queue.scheduler import EmailScheduler
+                scheduler = EmailScheduler()
+                success, message = scheduler.reschedule_event_reminders(schedule_id)
+                
+                if success:
+                    logger.info(f"✅ Rescheduling przypomnień: {message}")
+                    reschedule_message = message
+                else:
+                    logger.warning(f"⚠️ Błąd reschedulingu przypomnień: {message}")
+                    reschedule_message = f"OSTRZEŻENIE: {message}"
+                    
+            except Exception as e:
+                logger.error(f"❌ Błąd reschedulingu przypomnień: {e}")
+                reschedule_message = f"OSTRZEŻENIE: Nie udało się zreschedule'ować przypomnień: {str(e)}"
+        
+        response_message = 'Harmonogram został zaktualizowany'
+        if reschedule_message:
+            response_message += f'. {reschedule_message}'
+        
         return jsonify({
             'success': True,
-            'message': 'Harmonogram został zaktualizowany'
+            'message': response_message,
+            'event_date_changed': event_date_changed,
+            'reminders_rescheduled': event_date_changed and schedule.reminders_scheduled
         })
         
     except Exception as e:
         db.session.rollback()
         logger.error(f"❌ Błąd aktualizacji harmonogramu: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@schedules_api_bp.route('/schedules/<int:schedule_id>/reschedule-reminders', methods=['POST'])
+@login_required
+@admin_required_api
+def reschedule_reminders(schedule_id):
+    """
+    Manually reschedule event reminders
+    
+    Używaj gdy:
+    - Zmieniłeś datę wydarzenia
+    - Chcesz ponownie zaplanować przypomnienia
+    - Stare emaile są w kolejce z nieaktualnymi datami
+    """
+    try:
+        schedule = EventSchedule.query.get_or_404(schedule_id)
+        
+        logger.info(f"🔄 Manual reschedule dla wydarzenia: {schedule.title} (ID: {schedule_id})")
+        
+        from app.services.email_v2.queue.scheduler import EmailScheduler
+        scheduler = EmailScheduler()
+        success, message = scheduler.reschedule_event_reminders(schedule_id)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': message
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': message
+            }), 400
+            
+    except Exception as e:
+        logger.error(f"❌ Błąd reschedulingu przypomnień: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @schedules_api_bp.route('/schedules/<int:schedule_id>', methods=['DELETE'])

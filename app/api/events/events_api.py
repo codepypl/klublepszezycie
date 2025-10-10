@@ -223,6 +223,10 @@ def update_event(event_id):
         event = EventSchedule.query.get_or_404(event_id)
         data = request.get_json()
         
+        # Zapamiętaj starą datę (do sprawdzenia czy się zmieniła)
+        old_event_date = event.event_date
+        event_date_changed = False
+        
         # Update fields
         if 'title' in data:
             event.title = data['title']
@@ -231,7 +235,11 @@ def update_event(event_id):
         if 'event_type' in data:
             event.event_type = data['event_type']
         if 'event_date' in data:
-            event.event_date = datetime.fromisoformat(data['event_date'].replace('Z', '+00:00'))
+            new_event_date = datetime.fromisoformat(data['event_date'].replace('Z', '+00:00'))
+            if old_event_date != new_event_date:
+                event_date_changed = True
+                logger.info(f"📅 Data wydarzenia {event_id} zmieniona: {old_event_date} -> {new_event_date}")
+            event.event_date = new_event_date
         if 'end_date' in data and data['end_date']:
             event.end_date = datetime.fromisoformat(data['end_date'].replace('Z', '+00:00'))
         if 'location' in data:
@@ -249,9 +257,34 @@ def update_event(event_id):
         
         db.session.commit()
         
+        # Jeśli data wydarzenia się zmieniła i przypomnienia były zaplanowane, reschedule
+        reschedule_message = None
+        if event_date_changed and event.reminders_scheduled:
+            try:
+                from app.services.email_v2.queue.scheduler import EmailScheduler
+                scheduler = EmailScheduler()
+                success, message = scheduler.reschedule_event_reminders(event_id)
+                
+                if success:
+                    logger.info(f"✅ Automatyczny rescheduling: {message}")
+                    reschedule_message = message
+                else:
+                    logger.warning(f"⚠️ Błąd automatycznego reschedulingu: {message}")
+                    reschedule_message = f"OSTRZEŻENIE: {message}"
+                    
+            except Exception as e:
+                logger.error(f"❌ Błąd automatycznego reschedulingu: {e}")
+                reschedule_message = f"OSTRZEŻENIE: Nie udało się zreschedule'ować przypomnień: {str(e)}"
+        
+        response_message = 'Wydarzenie zostało zaktualizowane'
+        if reschedule_message:
+            response_message += f'. {reschedule_message}'
+        
         return jsonify({
             'success': True,
-            'message': 'Wydarzenie zostało zaktualizowane'
+            'message': response_message,
+            'event_date_changed': event_date_changed,
+            'reminders_rescheduled': event_date_changed and event.reminders_scheduled
         })
         
     except Exception as e:

@@ -151,11 +151,12 @@ if (cancelButton.parentNode) {
             bsModal.show();
         } else {
             // Fallback to confirm() if modal not available
+            const self = this;
             window.deleteConfirmation.showSingleDelete(
                 'element menu',
                 () => {
-                    // Continue with deletion
-                    performDeleteMenuItem(menuItemId);
+                    // Continue with deletion - use class method
+                    self.performDeleteMenuItem(menuItemId);
                 },
                 'element menu'
             );

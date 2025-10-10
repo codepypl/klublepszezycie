@@ -189,6 +189,19 @@ class EventsController:
                 print(f"❌ Błąd synchronizacji grupy wydarzenia: {message}")
             
             # Ponownie zaplanuj przypomnienia po aktualizacji wydarzenia - NOWY SYSTEM v2
+            # RESETUJ flagę i usuń stare emaile, aby zaplanować nowe
+            event.reminders_scheduled = False
+            
+            # Usuń wszystkie stare emaile dla tego wydarzenia
+            from app.models import EmailQueue
+            old_emails = EmailQueue.query.filter_by(event_id=event_id).all()
+            if old_emails:
+                print(f"🗑️ Usuwam {len(old_emails)} starych emaili przed ponownym planowaniem")
+                for email in old_emails:
+                    db.session.delete(email)
+                db.session.commit()
+            
+            # Teraz zaplanuj nowe przypomnienia
             from app.services.email_v2 import EmailManager
             email_manager = EmailManager()
             success, message = email_manager.send_event_reminders(event_id)

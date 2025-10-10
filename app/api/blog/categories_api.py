@@ -262,3 +262,5 @@ def bulk_delete_categories():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
+
+

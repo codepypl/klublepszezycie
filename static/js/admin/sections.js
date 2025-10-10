@@ -174,11 +174,12 @@ class SectionsManager {
             bsModal.show();
         } else {
             // Fallback to confirm() if modal not available
+            const self = this;
             window.deleteConfirmation.showSingleDelete(
                 'sekcję',
                 () => {
-                    // Continue with deletion
-                    performDeleteSection(sectionId);
+                    // Continue with deletion - use class method
+                    self.performDeleteSection(sectionId);
                 },
                 'sekcję'
             );

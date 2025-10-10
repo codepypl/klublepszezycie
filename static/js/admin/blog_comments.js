@@ -44,11 +44,12 @@ class BlogCommentsManager {
 
 
     async deleteComment(commentId) {
+        const self = this;
         window.deleteConfirmation.showSingleDelete(
             'komentarz',
             () => {
-                // Continue with deletion
-                performDeleteComment(commentId);
+                // Continue with deletion - use class method
+                self.performDeleteComment(commentId);
             },
             'komentarz'
         );

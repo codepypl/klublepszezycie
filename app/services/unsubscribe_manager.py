@@ -27,41 +27,36 @@ class UnsubscribeManager:
     
     def generate_token(self, email: str, action: str) -> str:
         """
-        Generuje token zawierający zaszyfrowany email i akcję
-        Format: base64(json({email, action, expires_at, random}):hmac_signature)
+        Generuje KRÓTKI token używając ID użytkownika
+        Format: {user_id}.{expires_timestamp}.{hmac_signature}
         """
         try:
-            # Zaszyfruj email używając prostego szyfrowania
-            encrypted_email = self._encrypt_email(email)
+            # Znajdź użytkownika
+            user = User.query.filter_by(email=email).first()
+            if not user:
+                print(f"❌ User not found: {email}")
+                return None
             
-            # Utwórz payload
+            # Utwórz krótki payload
             expires_at = __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() + timedelta(days=self.token_expiry_days)
-            payload = {
-                'email': encrypted_email,
-                'action': action,
-                'expires_at': expires_at.isoformat(),
-                'random': secrets.token_hex(16)
-            }
+            expires_timestamp = int(expires_at.timestamp())
             
-            # Serializuj do JSON
-            payload_json = json.dumps(payload, sort_keys=True)
+            # Payload to tylko: user_id.expires_timestamp.action
+            payload = f"{user.id}.{expires_timestamp}.{action}"
             
-            # Wygeneruj HMAC signature
+            # Wygeneruj HMAC signature (tylko pierwsze 16 znaków dla krótkości)
             signature = hmac.new(
                 self.secret_key.encode('utf-8'),
-                payload_json.encode('utf-8'),
+                payload.encode('utf-8'),
                 hashlib.sha256
-            ).hexdigest()
+            ).hexdigest()[:16]
             
-            # Połącz payload z signature
-            token_data = f"{payload_json}:{signature}"
+            # Token format: user_id.expires_timestamp.action.signature
+            token = f"{user.id}.{expires_timestamp}.{action}.{signature}"
             
-            # Encode do base64 URL-safe
-            token = base64.urlsafe_b64encode(token_data.encode('utf-8')).decode('ascii')
-            
-            print(f"🔑 Generated {action} token for {email}")
+            print(f"🔑 Generated SHORT {action} token for {email}")
             print(f"   Expires: {expires_at.strftime('%Y-%m-%d %H:%M:%S')}")
-            print(f"   Token: {token[:50]}...")
+            print(f"   Token: {token} (length: {len(token)})")
             
             return token
             
@@ -71,63 +66,67 @@ class UnsubscribeManager:
     
     def verify_token(self, token: str) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """
-        Weryfikuje token i zwraca dane użytkownika
+        Weryfikuje KRÓTKI token i zwraca dane użytkownika
+        Format: {user_id}.{expires_timestamp}.{action}.{hmac_signature}
         Returns: (is_valid, user_data)
         """
         try:
-            # Decode base64
-            token_data = base64.urlsafe_b64decode(token.encode('ascii')).decode('utf-8')
-            
-            # Podziel na payload i signature
-            if ':' not in token_data:
+            # Podziel token na części
+            parts = token.split('.')
+            if len(parts) != 4:
+                print(f"❌ Invalid token format: {len(parts)} parts (expected 4)")
                 return False, None
             
-            payload_json, signature = token_data.rsplit(':', 1)
+            user_id_str, expires_timestamp_str, action, signature = parts
+            
+            # Konwertuj ID i timestamp
+            try:
+                user_id = int(user_id_str)
+                expires_timestamp = int(expires_timestamp_str)
+            except ValueError:
+                print(f"❌ Invalid token: non-numeric user_id or timestamp")
+                return False, None
+            
+            # Sprawdź czy token nie wygasł
+            from app.utils.timezone_utils import get_local_now
+            expires_at = datetime.fromtimestamp(expires_timestamp)
+            now = get_local_now().replace(tzinfo=None)  # Remove timezone for comparison
+            if now > expires_at:
+                print(f"❌ Token expired at {expires_at}")
+                return False, None
             
             # Weryfikuj HMAC signature
+            payload = f"{user_id}.{expires_timestamp}.{action}"
             expected_signature = hmac.new(
                 self.secret_key.encode('utf-8'),
-                payload_json.encode('utf-8'),
+                payload.encode('utf-8'),
                 hashlib.sha256
-            ).hexdigest()
+            ).hexdigest()[:16]
             
             if not hmac.compare_digest(signature, expected_signature):
                 print(f"❌ Invalid token signature")
                 return False, None
             
-            # Parsuj payload
-            payload = json.loads(payload_json)
-            
-            # Sprawdź czy token nie wygasł
-            expires_at = datetime.fromisoformat(payload['expires_at'])
-            if __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now() > expires_at:
-                print(f"❌ Token expired at {expires_at}")
-                return False, None
-            
-            # Odszyfruj email
-            email = self._decrypt_email(payload['email'])
-            if not email:
-                print(f"❌ Failed to decrypt email")
-                return False, None
-            
             # Znajdź użytkownika
-            user = User.query.filter_by(email=email).first()
+            user = User.query.get(user_id)
             if not user:
-                print(f"❌ User not found: {email}")
+                print(f"❌ User not found: ID {user_id}")
                 return False, None
             
-            print(f"✅ Valid {payload['action']} token for {email}")
+            print(f"✅ Valid {action} token for {user.email}")
             print(f"   Expires: {expires_at.strftime('%Y-%m-%d %H:%M:%S')}")
             
             return True, {
                 'user': user,
-                'email': email,
-                'action': payload['action'],
+                'email': user.email,
+                'action': action,
                 'expires_at': expires_at
             }
             
         except Exception as e:
             print(f"❌ Error verifying token: {e}")
+            import traceback
+            traceback.print_exc()
             return False, None
     
     def get_unsubscribe_url(self, email: str) -> str:
@@ -187,32 +186,6 @@ class UnsubscribeManager:
             print(f"❌ Error processing account deletion: {e}")
             return False, f"Błąd: {str(e)}"
     
-    def _encrypt_email(self, email: str) -> str:
-        """Proste szyfrowanie emaila"""
-        try:
-            # Użyj HMAC jako prostego szyfrowania
-            encrypted = hmac.new(
-                self.secret_key.encode('utf-8'),
-                email.encode('utf-8'),
-                hashlib.sha256
-            ).hexdigest()
-            return encrypted
-        except Exception as e:
-            print(f"❌ Error encrypting email: {e}")
-            return None
-    
-    def _decrypt_email(self, encrypted_email: str) -> Optional[str]:
-        """Odszyfrowanie emaila - wymaga sprawdzenia w bazie danych"""
-        try:
-            # Znajdź użytkownika którego zaszyfrowany email pasuje
-            users = User.query.all()
-            for user in users:
-                if self._encrypt_email(user.email) == encrypted_email:
-                    return user.email
-            return None
-        except Exception as e:
-            print(f"❌ Error decrypting email: {e}")
-            return None
 
 
 # Global instance

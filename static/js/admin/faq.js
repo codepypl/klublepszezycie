@@ -126,11 +126,12 @@ if (cancelButton.parentNode) {
             bsModal.show();
         } else {
             // Fallback to confirm() if modal not available
+            const self = this;
             window.deleteConfirmation.showSingleDelete(
                 'pytanie',
                 () => {
-                    // Continue with deletion
-                    performDeleteFAQ(faqId);
+                    // Continue with deletion - use class method
+                    self.performDeleteFaq(faqId);
                 },
                 'pytanie'
             );

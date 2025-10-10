@@ -125,11 +125,12 @@ if (cancelButton.parentNode) {
             bsModal.show();
         } else {
             // Fallback to confirm() if modal not available
+            const self = this;
             window.deleteConfirmation.showSingleDelete(
                 'korzyść',
                 () => {
-                    // Continue with deletion
-                    performDeleteBenefit(benefitId);
+                    // Continue with deletion - use class method
+                    self.performDeleteBenefit(benefitId);
                 },
                 'korzyść'
             );

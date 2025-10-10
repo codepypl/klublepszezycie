@@ -97,12 +97,12 @@ def make_celery(app=None):
     # Zaplanowane zadania - MONITOROWANIE PRZED PRZETWARZANIEM
     celery.conf.beat_schedule = {
         'monitor-event-changes': {
-            'task': 'monitor_event_changes',
-            'schedule': 30.0,  # Co 30 sekund - aktualizacja wydarzeń
+            'task': 'app.tasks.email_tasks.monitor_event_changes_task',  # Nasz nowy task z email_tasks
+            'schedule': 900.0,  # Co 15 minut - monitorowanie zmian dat wydarzeń i reschedule przypomnień
             'options': {'queue': 'event_queue'},
         },
         'monitor-member-changes': {
-            'task': 'monitor_member_changes',
+            'task': 'monitor_member_changes',  # Krótka nazwa z monitor_tasks.py
             'schedule': 60.0,  # Co minutę
             'options': {'queue': 'event_queue'},
         },

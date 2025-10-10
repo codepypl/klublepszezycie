@@ -156,3 +156,5 @@ def create_featured_thumbnail(post_id, image_filename, upload_folder):
         return {'success': False, 'error': str(e)}
 
 
+
+

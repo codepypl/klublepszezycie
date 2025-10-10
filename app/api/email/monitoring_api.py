@@ -3,12 +3,12 @@ Email monitoring API - complete monitoring and stats
 """
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
-from app.models import EmailQueue, EmailLog
+from app.models import EmailQueue, EmailLog, EmailCampaign
 from app.services.email_v2 import EmailManager
 from app.services.email_v2.queue.processor import EmailQueueProcessor
 from app.services.email_v2.monitoring import EmailStats
-from app.utils.email_monitor import EmailMonitor
 import logging
+from datetime import datetime, timedelta
 
 email_monitoring_bp = Blueprint('email_monitoring_api', __name__)
 logger = logging.getLogger(__name__)
@@ -44,10 +44,46 @@ def get_queue_stats():
 def get_email_monitor_stats():
     """Pobiera szczegółowe statystyki wysyłania e-maili"""
     try:
-        from app.utils.email_monitor import EmailMonitor
+        hours = int(request.args.get('hours', 24))
+        cutoff_time = datetime.now() - timedelta(hours=hours)
         
-        monitor = EmailMonitor()
-        stats = monitor.get_stats()
+        # Statystyki z bazy danych
+        total_sent = EmailLog.query.filter(
+            EmailLog.sent_at >= cutoff_time,
+            EmailLog.status == 'sent'
+        ).count()
+        
+        total_failed = EmailLog.query.filter(
+            EmailLog.sent_at >= cutoff_time,
+            EmailLog.status == 'failed'
+        ).count()
+        
+        # Statystyki kolejki
+        queue_pending = EmailQueue.query.filter_by(status='pending').count()
+        queue_processing = EmailQueue.query.filter_by(status='processing').count()
+        queue_sent = EmailQueue.query.filter_by(status='sent').count()
+        queue_failed = EmailQueue.query.filter_by(status='failed').count()
+        
+        # Statystyki kampanii
+        active_campaigns = EmailCampaign.query.filter(
+            EmailCampaign.status.in_(['sending', 'scheduled'])
+        ).count()
+        
+        stats = {
+            'period_hours': hours,
+            'emails_sent': total_sent,
+            'emails_failed': total_failed,
+            'success_rate': round((total_sent / (total_sent + total_failed)) * 100, 2) if (total_sent + total_failed) > 0 else 0,
+            'queue_stats': {
+                'pending': queue_pending,
+                'processing': queue_processing,
+                'sent': queue_sent,
+                'failed': queue_failed,
+                'total': queue_pending + queue_processing + queue_sent + queue_failed
+            },
+            'active_campaigns': active_campaigns,
+            'timestamp': datetime.now().isoformat()
+        }
         
         return jsonify({
             'success': True,
@@ -194,10 +230,46 @@ def cleanup_old_emails():
 def get_system_health():
     """Pobiera stan systemu e-maili"""
     try:
-        from app.utils.email_monitor import EmailMonitor
+        # Sprawdź kolejkę
+        queue_pending = EmailQueue.query.filter_by(status='pending').count()
+        queue_failed = EmailQueue.query.filter_by(status='failed').count()
+        queue_processing = EmailQueue.query.filter_by(status='processing').count()
         
-        monitor = EmailMonitor()
-        health = monitor.get_system_health()
+        # Sprawdź ostatnie błędy
+        recent_errors = EmailQueue.query.filter_by(status='failed').order_by(EmailQueue.created_at.desc()).limit(5).all()
+        
+        # Określ status systemu
+        if queue_failed > 100:
+            status = 'critical'
+            message = f'Duża liczba błędów w kolejce: {queue_failed}'
+        elif queue_pending > 1000:
+            status = 'warning'
+            message = f'Duża liczba oczekujących emaili: {queue_pending}'
+        elif queue_processing > 50:
+            status = 'warning'
+            message = f'Wiele emaili w przetwarzaniu: {queue_processing}'
+        else:
+            status = 'healthy'
+            message = 'System działa prawidłowo'
+        
+        health = {
+            'status': status,
+            'message': message,
+            'queue': {
+                'pending': queue_pending,
+                'processing': queue_processing,
+                'failed': queue_failed
+            },
+            'recent_errors': [
+                {
+                    'id': e.id,
+                    'recipient': e.recipient_email,
+                    'error': e.error_message,
+                    'created_at': e.created_at.isoformat() if e.created_at else None
+                } for e in recent_errors
+            ],
+            'timestamp': datetime.now().isoformat()
+        }
         
         return jsonify({
             'success': True,

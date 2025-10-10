@@ -22,44 +22,36 @@ def get_app_context():
 @celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.event_tasks.process_event_reminders_task')
 def process_event_reminders_task(self):
     """
-    Przetwarza przypomnienia o wydarzeniach - NOWY SYSTEM v2
+    Przetwarza przypomnienia o wydarzeniach - NOWY SYSTEM v3
+    
+    Uruchamiany co 5 minut.
+    Dla każdego aktywnego wydarzenia sprawdza czy przypomnienia zostały zaplanowane.
+    Jeśli nie, wywołuje scheduler.schedule_event_reminders()
     """
     with get_app_context():
         try:
-            logger.info("🔄 Rozpoczynam przetwarzanie przypomnień o wydarzeniach v2")
+            logger.info("🔄 Rozpoczynam przetwarzanie przypomnień o wydarzeniach v3")
             
-            from app.services.email_v2 import EmailManager
-            email_manager = EmailManager()
-            
-            # Pobierz wszystkie aktywne wydarzenia
-            events = EventSchedule.query.filter(
-                EventSchedule.is_active == True
-            ).all()
-
-            # DODATKOWA KONTROLA: Sprawdź czy w kolejce są emaile dla wydarzeń
+            from app.services.email_v2.queue.scheduler import EmailScheduler
             from app.models.email_model import EmailQueue
-            events_with_emails = set()
-            for event in events:
-                existing_emails = EmailQueue.query.filter_by(
-                    event_id=event.id,
-                    status='pending'
-                ).count()
-                if existing_emails > 0:
-                    events_with_emails.add(event.id)
-                    logger.warning(f"⚠️ Wydarzenie {event.id} ({event.title}) już ma {existing_emails} emaili w kolejce")
-                else:
-                    # Jeśli kolejka pusta, a flaga reminders_scheduled = True, zresetuj flagę, aby umożliwić ponowne zaplanowanie
-                    if getattr(event, 'reminders_scheduled', False):
-                        try:
-                            event.reminders_scheduled = False
-                            from app import db as _db
-                            _db.session.commit()
-                            logger.info(f"ℹ️ Zresetowano reminders_scheduled dla wydarzenia {event.id} - kolejka była pusta")
-                        except Exception as _e:
-                            logger.error(f"❌ Błąd resetu reminders_scheduled dla wydarzenia {event.id}: {_e}")
+            from app import db
             
-            # Usuń wydarzenia które już mają emaile w kolejce (dla reszty spróbujemy zaplanować)
-            events = [event for event in events if event.id not in events_with_emails]
+            scheduler = EmailScheduler()
+            
+            # Pobierz wszystkie aktywne wydarzenia bez zaplanowanych przypomnień
+            events = EventSchedule.query.filter(
+                EventSchedule.is_active == True,
+                EventSchedule.reminders_scheduled == False
+            ).all()
+            
+            if not events:
+                logger.info("ℹ️ Brak wydarzeń do zaplanowania")
+                return {
+                    'success': True,
+                    'processed': 0,
+                    'success_count': 0,
+                    'failed_count': 0
+                }
             
             processed_count = 0
             success_count = 0
@@ -67,23 +59,23 @@ def process_event_reminders_task(self):
             
             for event in events:
                 try:
-                    logger.info(f"📅 Przetwarzam wydarzenie: {event.title} (ID: {event.id})")
+                    logger.info(f"📅 Planuję przypomnienia dla: {event.title} (ID: {event.id})")
                     
-                    # Wywołaj send_event_reminders dla każdego wydarzenia
-                    success, message = email_manager.send_event_reminders(event.id)
+                    # Użyj nowego schedulera
+                    success, message = scheduler.schedule_event_reminders(event.id)
                     
                     if success:
                         success_count += 1
-                        logger.info(f"✅ Zaplanowano przypomnienia dla: {event.title}")
+                        logger.info(f"✅ {message}")
                     else:
                         failed_count += 1
-                        logger.warning(f"⚠️ Błąd planowania przypomnień dla {event.title}: {message}")
+                        logger.warning(f"⚠️ {message}")
                     
                     processed_count += 1
                     
                 except Exception as e:
                     failed_count += 1
-                    logger.error(f"❌ Błąd przetwarzania wydarzenia {event.id}: {e}")
+                    logger.error(f"❌ Błąd planowania przypomnień dla wydarzenia {event.id}: {e}")
             
             logger.info(f"✅ Przetworzono {processed_count} wydarzeń: {success_count} sukces, {failed_count} błąd")
             
@@ -95,7 +87,7 @@ def process_event_reminders_task(self):
             }
             
         except Exception as exc:
-            logger.error(f"❌ Błąd przetwarzania przypomnień v2: {exc}")
+            logger.error(f"❌ Błąd przetwarzania przypomnień v3: {exc}")
             raise self.retry(exc=exc, countdown=60)
 
 @celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.event_tasks.archive_ended_events_task')

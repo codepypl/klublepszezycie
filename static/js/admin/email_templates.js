@@ -1007,6 +1007,11 @@ function performDeleteTemplate(templateId) {
         if (data.success) {
             window.toastManager.success('Szablon usunięty!');
             loadTemplates();
+            
+            // Wywołaj globalne odświeżenie
+            if (typeof window.refreshAfterCRUD === 'function') {
+                window.refreshAfterCRUD();
+            }
         } else {
             window.toastManager.error('Błąd usuwania: ' + data.error);
         }

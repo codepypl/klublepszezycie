@@ -36,16 +36,16 @@ class PublicController:
                 is_blog_page = request.endpoint.startswith('blog.')
             
             if is_blog_page:
-                # For blog pages, show ONLY items marked for blog (True) OR items for all pages (None)
+                # For blog pages, show only items with blog=True (which means "show everywhere")
                 menu_items_db = MenuItem.query.filter(
                     MenuItem.is_active == True,
-                    (MenuItem.blog == True) | (MenuItem.blog.is_(None))
+                    MenuItem.blog == True
                 ).order_by(MenuItem.order.asc()).all()
             else:
-                # For other pages, show items NOT marked for blog (False) OR items for all pages (None)
+                # For main page, show items with blog=True (everywhere) OR blog=False/None (main page only)
                 menu_items_db = MenuItem.query.filter(
                     MenuItem.is_active == True,
-                    (MenuItem.blog == False) | (MenuItem.blog.is_(None))
+                    (MenuItem.blog == True) | (MenuItem.blog == False) | (MenuItem.blog.is_(None))
                 ).order_by(MenuItem.order.asc()).all()
             
             menu_items = []
