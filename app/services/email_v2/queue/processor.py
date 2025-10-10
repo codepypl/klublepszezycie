@@ -361,6 +361,7 @@ class EmailQueueProcessor:
                         status='sent',
                         template_id=email.template_id,
                         event_id=email.event_id,
+                        campaign_id=email.campaign_id,  # DODANO: campaign_id
                         message_id=message  # Message ID z Mailgun
                     )
                     db.session.add(email_log)
@@ -390,7 +391,8 @@ class EmailQueueProcessor:
                         subject=email.subject,
                         status='sent',
                         template_id=email.template_id,
-                        event_id=email.event_id
+                        event_id=email.event_id,
+                        campaign_id=email.campaign_id  # DODANO: campaign_id
                     )
                     db.session.add(email_log)
                     

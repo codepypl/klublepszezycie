@@ -106,11 +106,14 @@ function loadStats() {
         .then(data => {
             console.log('📊 Stats API response data:', data);
             if (data.success) {
-                document.getElementById('totalEmails').textContent = data.stats.total;
-                document.getElementById('pendingEmails').textContent = data.stats.pending;
-                document.getElementById('sentEmails').textContent = data.stats.sent;
-                document.getElementById('failedEmails').textContent = data.stats.failed;
-                console.log('✅ Stats updated:', data.stats);
+                // API może zwracać stats bezpośrednio lub zagnieżdżone w 'queue'
+                const stats = data.stats.queue || data.stats;
+                
+                document.getElementById('totalEmails').textContent = stats.total || 0;
+                document.getElementById('pendingEmails').textContent = stats.pending || 0;
+                document.getElementById('sentEmails').textContent = stats.sent || 0;
+                document.getElementById('failedEmails').textContent = stats.failed || 0;
+                console.log('✅ Stats updated:', stats);
             } else {
                 console.log('❌ Stats API error:', data.error);
                 toastManager.error('Błąd ładowania statystyk: ' + data.error);
@@ -611,6 +614,10 @@ function refreshEmailQueueData() {
 function updateEmailQueueStats(stats) {
     console.log('📊 Updating email queue stats:', stats);
     
+    // API może zwracać stats bezpośrednio lub zagnieżdżone w 'queue'
+    const queueStats = stats.queue || stats;
+    console.log('📊 Using queue stats:', queueStats);
+    
     // Update stats cards
     const totalElement = document.getElementById('totalEmails');
     const pendingElement = document.getElementById('pendingEmails');
@@ -626,23 +633,23 @@ function updateEmailQueueStats(stats) {
     
     if (totalElement) {
         const oldValue = totalElement.textContent;
-        totalElement.textContent = stats.total || 0;
-        console.log('📈 Total updated:', oldValue, '->', stats.total || 0);
+        totalElement.textContent = queueStats.total || 0;
+        console.log('📈 Total updated:', oldValue, '->', queueStats.total || 0);
     }
     if (pendingElement) {
         const oldValue = pendingElement.textContent;
-        pendingElement.textContent = stats.pending || 0;
-        console.log('⏳ Pending updated:', oldValue, '->', stats.pending || 0);
+        pendingElement.textContent = queueStats.pending || 0;
+        console.log('⏳ Pending updated:', oldValue, '->', queueStats.pending || 0);
     }
     if (sentElement) {
         const oldValue = sentElement.textContent;
-        sentElement.textContent = stats.sent || 0;
-        console.log('✅ Sent updated:', oldValue, '->', stats.sent || 0);
+        sentElement.textContent = queueStats.sent || 0;
+        console.log('✅ Sent updated:', oldValue, '->', queueStats.sent || 0);
     }
     if (failedElement) {
         const oldValue = failedElement.textContent;
-        failedElement.textContent = stats.failed || 0;
-        console.log('❌ Failed updated:', oldValue, '->', stats.failed || 0);
+        failedElement.textContent = queueStats.failed || 0;
+        console.log('❌ Failed updated:', oldValue, '->', queueStats.failed || 0);
     }
     
     console.log('✅ Stats update completed');
