@@ -145,33 +145,35 @@ let dashboardRefreshInterval;
 async function loadDashboardStats() {
     try {
         console.log('🔄 Loading dashboard stats...');
-        const response = await fetch('/api/crm/agent/queue-status');
+        const response = await fetch('/api/crm/dashboard/stats');
         const data = await response.json();
         
         console.log('📊 Dashboard API response:', data);
         
         if (data.success) {
-            // Today's statistics
-            const leadsToday = data.today_stats.leads || 0;
-            const answeredToday = data.today_stats.completed_calls || 0;
-            const callbacksToday = data.today_stats.callbacks || 0;
-            const longestCallToday = data.today_stats.longest_call_seconds || 0;
+            const stats = data.stats;
+            
+            // Today's statistics (z nowego API)
+            const leadsToday = stats.leads_today || 0;
+            const answeredToday = stats.calls_connected_today || 0;
+            const callbacksToday = stats.total_rescheduled || 0;
+            const avgCallTime = stats.average_call_time_today || 0;
             
             console.log('📈 Today stats:', {
                 leads: leadsToday,
                 answered: answeredToday,
                 callbacks: callbacksToday,
-                longestCall: longestCallToday
+                avgCallTime: avgCallTime
             });
             
             document.getElementById('leadsToday').textContent = leadsToday;
             document.getElementById('answeredToday').textContent = answeredToday;
             document.getElementById('callbacksToday').textContent = callbacksToday;
-            document.getElementById('longestCallToday').textContent = formatDuration(longestCallToday);
+            document.getElementById('longestCallToday').textContent = formatDuration(avgCallTime); // Placeholder
             
             // Total statistics
-            const totalAnswered = data.total_stats.completed_calls || 0;
-            const totalCallbacks = data.total_stats.callbacks || 0;
+            const totalAnswered = stats.calls_total_today || 0;
+            const totalCallbacks = stats.total_rescheduled || 0;
             
             console.log('📊 Total stats:', {
                 answered: totalAnswered,
@@ -181,33 +183,32 @@ async function loadDashboardStats() {
             document.getElementById('totalAnswered').textContent = totalAnswered;
             document.getElementById('totalCallbacks').textContent = totalCallbacks;
             
-            // Time statistics - new ones
-            const totalLoginTime = data.today_stats.total_login_time_seconds || 0;
-            const totalWorkTime = data.today_stats.total_work_time_seconds || 0;
-            const totalBreakTime = data.today_stats.total_break_time_seconds || 0;
-            const avgCallTime = data.today_stats.avg_call_time_seconds || 0;
+            // Time statistics
+            const totalLoginTime = stats.total_logged_time_today || 0;
+            const totalWorkTime = stats.total_work_time_today || 0;
+            const totalBreakTime = stats.total_break_time_today || 0;
+            const avgCallTimeSec = stats.average_call_time_today || 0;
             
             console.log('⏰ Time stats:', {
                 loginTime: totalLoginTime,
                 workTime: totalWorkTime,
                 breakTime: totalBreakTime,
-                avgCallTime: avgCallTime
+                avgCallTime: avgCallTimeSec
             });
             
             document.getElementById('totalLoginTimeToday').textContent = formatTimeDuration(totalLoginTime);
             document.getElementById('totalWorkTimeToday').textContent = formatTimeDuration(totalWorkTime);
             document.getElementById('totalBreakTimeToday').textContent = formatTimeDuration(totalBreakTime);
-            document.getElementById('avgCallTime').textContent = formatDuration(avgCallTime);
+            document.getElementById('avgCallTime').textContent = formatDuration(avgCallTimeSec);
             
             // Calculate success rate
-            const totalCalls = (data.today_stats.leads || 0) + (data.today_stats.rejections || 0) + 
-                              (data.today_stats.callbacks || 0) + (data.today_stats.no_answer || 0) + 
-                              (data.today_stats.busy || 0) + (data.today_stats.wrong_number || 0);
-            const successRate = totalCalls > 0 ? Math.round((data.today_stats.leads || 0) / totalCalls * 100) : 0;
+            const totalCalls = stats.calls_total_today || 0;
+            const leads = stats.leads_today || 0;
+            const successRate = totalCalls > 0 ? Math.round(leads / totalCalls * 100) : 0;
             document.getElementById('successRate').textContent = successRate + '%';
             
-            // Queue count
-            const queueCount = (data.queue.callbacks || 0) + (data.queue.potentials || 0) + (data.queue.new_contacts || 0);
+            // Queue count (contacts assigned)
+            const queueCount = stats.total_contacts || 0;
             document.getElementById('queueCount').textContent = queueCount;
             
             console.log('✅ Dashboard stats loaded successfully');

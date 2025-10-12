@@ -10,6 +10,7 @@ from .agent_api import agent_api_bp
 from .export_api import export_api_bp
 from .voip_api import voip_api_bp
 from .stats_api import crm_stats_api_bp
+from .dashboard_stats_api import dashboard_stats_api_bp
 
 __all__ = [
     'contacts_api_bp',
@@ -20,5 +21,6 @@ __all__ = [
     'agent_api_bp',
     'export_api_bp',
     'voip_api_bp',
-    'crm_stats_api_bp'
+    'crm_stats_api_bp',
+    'dashboard_stats_api_bp'
 ]

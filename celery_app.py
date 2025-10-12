@@ -24,7 +24,8 @@ def make_celery(app=None):
             'app.tasks.email_tasks',
             'app.tasks.event_tasks',
             'app.tasks.monitor_tasks',
-            'app.tasks.stats_tasks'
+            'app.tasks.stats_tasks',
+            'app.tasks.crm_tasks'
         ]
     )
     
@@ -182,6 +183,11 @@ def make_celery(app=None):
         'cleanup-old-calls': {
             'task': 'app.tasks.crm_tasks.cleanup_old_calls_task',
             'schedule': 86400.0,  # Co 24 godziny
+            'options': {'queue': 'crm_queue'},
+        },
+        'update-ankieter-stats': {
+            'task': 'app.tasks.crm_tasks.update_ankieter_stats',
+            'schedule': 300.0,  # Co 5 minut - aktualizacja statystyk dashboardu
             'options': {'queue': 'crm_queue'},
         },
     }

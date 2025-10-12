@@ -77,7 +77,7 @@ def create_app():
     # Nowe moduły email API - modularny system
     from app.api.email import email_queue_bp, email_templates_bp, email_campaigns_bp, email_monitoring_bp
     # Nowe moduły CRM API - modularny system
-    from app.api.crm import contacts_api_bp, imports_api_bp, campaigns_api_bp, blacklist_api_bp, queue_api_bp, agent_api_bp, export_api_bp, voip_api_bp, crm_stats_api_bp
+    from app.api.crm import contacts_api_bp, imports_api_bp, campaigns_api_bp, blacklist_api_bp, queue_api_bp, agent_api_bp, export_api_bp, voip_api_bp, crm_stats_api_bp, dashboard_stats_api_bp
     from app.api.blog import posts_api_bp, categories_api_bp, tags_api_bp, comments_api_bp, media_api_bp
     from app.api.events import events_api_bp, schedules_api_bp, registrations_api_bp
     
@@ -101,6 +101,7 @@ def create_app():
     app.register_blueprint(voip_api_bp, url_prefix='/api')
     app.register_blueprint(stats_api_bp, url_prefix='/api')  # Ogólne statystyki (users, email, etc.)
     app.register_blueprint(crm_stats_api_bp, url_prefix='/api')  # Statystyki CRM (ankieter dashboard)
+    app.register_blueprint(dashboard_stats_api_bp, url_prefix='/api/crm')  # Dashboard ankietera
     app.register_blueprint(user_groups_api_bp, url_prefix='/api')
     app.register_blueprint(users_api_bp, url_prefix='/api')
     app.register_blueprint(testimonials_api_bp, url_prefix='/api')

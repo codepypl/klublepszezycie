@@ -194,3 +194,61 @@ def cleanup_old_calls_task(self):
         except Exception as exc:
             logger.error(f"❌ Błąd czyszczenia starych połączeń: {exc}")
             raise self.retry(exc=exc, countdown=60)
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60, name='app.tasks.crm_tasks.update_ankieter_stats')
+def update_ankieter_stats(self):
+    """
+    Aktualizuje statystyki wszystkich ankieterów (uruchamiane co 5 minut)
+    """
+    with get_app_context():
+        try:
+            logger.info("📊 Rozpoczynam aktualizację statystyk ankieterów")
+            
+            from app.models import User
+            from app.services.dashboard_stats_service import DashboardStatsService
+            from datetime import date
+            
+            # Pobierz wszystkich aktywnych ankieterów
+            ankieters = User.query.filter(
+                User.account_type == 'ankieter',
+                User.is_active == True
+            ).all()
+            
+            if not ankieters:
+                logger.info("ℹ️  Brak aktywnych ankieterów")
+                return {'success': True, 'updated': 0}
+            
+            service = DashboardStatsService()
+            today = date.today()
+            
+            updated_count = 0
+            failed_count = 0
+            
+            for ankieter in ankieters:
+                try:
+                    logger.info(f"📊 Aktualizuję statystyki dla ankietera: {ankieter.first_name} (ID: {ankieter.id})")
+                    
+                    # Pobierz statystyki (to automatycznie zapisze do Stats)
+                    stats = service.get_stats_for_ankieter(ankieter.id, today)
+                    
+                    if stats:
+                        updated_count += 1
+                        logger.info(f"✅ Zaktualizowano statystyki: {stats.get('leads_today', 0)} leadów, {stats.get('calls_total_today', 0)} połączeń")
+                    
+                except Exception as e:
+                    failed_count += 1
+                    logger.error(f"❌ Błąd aktualizacji statystyk dla ankietera {ankieter.id}: {e}")
+            
+            logger.info(f"✅ Zaktualizowano statystyki {updated_count} ankieterów ({failed_count} błędów)")
+            
+            return {
+                'success': True,
+                'updated': updated_count,
+                'failed': failed_count,
+                'total': len(ankieters)
+            }
+            
+        except Exception as exc:
+            logger.error(f"❌ Błąd aktualizacji statystyk ankieterów: {exc}")
+            raise self.retry(exc=exc, countdown=60)

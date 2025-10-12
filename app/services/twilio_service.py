@@ -243,6 +243,38 @@ class TwilioVoIPService:
             logger.error(f"❌ Error ending call: {e}")
             return {'success': False, 'error': str(e)}
     
+    def get_call_details(self, call_sid: str) -> Dict[str, Any]:
+        """
+        Pobiera szczegóły połączenia z Twilio API
+        
+        Args:
+            call_sid: Twilio Call SID
+            
+        Returns:
+            Dict z szczegółami połączenia (status, duration, timestamps, etc.)
+        """
+        try:
+            if not self.is_configured():
+                return {}
+            
+            call = self.client.calls(call_sid).fetch()
+            
+            return {
+                'sid': call.sid,
+                'status': call.status,
+                'duration': int(call.duration or 0),
+                'start_time': call.start_time.isoformat() if call.start_time else None,
+                'end_time': call.end_time.isoformat() if call.end_time else None,
+                'from_number': call.from_,
+                'to_number': call.to,
+                'price': float(call.price) if call.price else 0.0,
+                'price_unit': call.price_unit,
+                'direction': call.direction
+            }
+        except Exception as e:
+            logger.error(f"❌ Error fetching call details for {call_sid}: {e}")
+            return {}
+    
     def get_call_recording(self, call_sid: str) -> Dict[str, Any]:
         """Get recording URL for a call (if available)"""
         try:

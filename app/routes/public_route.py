@@ -151,6 +151,7 @@ def register():
         
         # Check if user already exists
         existing_user = User.query.filter_by(email=data['email']).first()
+        user = None  # Initialize user variable
         
         if existing_user:
             # User exists - check their status
@@ -163,6 +164,7 @@ def register():
                 # Keep account_type as 'user' - club membership is tracked by club_member boolean
                 db.session.commit()
                 print(f"✅ Converted existing user to club member: {existing_user.email}")
+                user = existing_user  # Set user for later use
         else:
             # Create new club member user
             from werkzeug.security import generate_password_hash
@@ -205,10 +207,6 @@ def register():
         # Add user to system groups
         from app.services.group_manager import GroupManager
         group_manager = GroupManager()
-        
-        # Get the user (either existing or newly created)
-        if existing_user:
-            user = existing_user
         
         # Add to all users group
         success, message = group_manager.add_user_to_all_users(user.id)

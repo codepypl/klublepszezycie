@@ -51,6 +51,7 @@ class Contact(db.Model):
     call_attempts = db.Column(db.Integer, default=0)  # Number of call attempts
     max_call_attempts = db.Column(db.Integer, default=3)  # Max attempts before blacklisting
     assigned_ankieter_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))  # Assigned ankieter
+    business_reason = db.Column(db.String(50))  # Business reason: 'przełożenie', 'odrzucenie', 'lead', etc.
     last_call_date = db.Column(db.DateTime)  # Last call attempt
     created_at = db.Column(db.DateTime, default=get_local_datetime)
     updated_at = db.Column(db.DateTime, default=get_local_datetime, onupdate=get_local_datetime)

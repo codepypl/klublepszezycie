@@ -37,7 +37,8 @@ def start_work():
         log_entry = UserLogs(
             user_id=current_user.id,
             action_type='work_start',
-            details={'timestamp': datetime.now().isoformat()}
+            description='Rozpoczęcie pracy',
+            extra_data={'timestamp': datetime.now().isoformat()}
         )
         db.session.add(log_entry)
         db.session.commit()
@@ -67,7 +68,8 @@ def stop_work():
         log_entry = UserLogs(
             user_id=current_user.id,
             action_type='work_stop',
-            details={'timestamp': datetime.now().isoformat()}
+            description='Zakończenie pracy',
+            extra_data={'timestamp': datetime.now().isoformat()}
         )
         db.session.add(log_entry)
         db.session.commit()
@@ -172,7 +174,7 @@ def get_call_history(contact_id):
                 'email': contact.email,
                 'company': contact.company
             },
-            'call_history': call_history
+            'calls': call_history  # JavaScript oczekuje 'calls'
         })
         
     except Exception as e:
@@ -225,7 +227,8 @@ def start_call():
         log_entry = UserLogs(
             user_id=current_user.id,
             action_type='call_start',
-            details={
+            description=f'Rozpoczęcie połączenia z {contact.name}',
+            extra_data={
                 'contact_id': contact_id,
                 'call_id': call.id,
                 'timestamp': datetime.now().isoformat()
@@ -317,7 +320,8 @@ def save_call_outcome():
             log_entry = UserLogs(
                 user_id=current_user.id,
                 action_type='call_complete',
-                details={
+                description=f'Zakończenie połączenia - status: {call_status}',
+                extra_data={
                     'contact_id': contact_id,
                     'call_status': call_status,
                     'duration_minutes': duration_minutes,
