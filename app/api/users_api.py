@@ -73,10 +73,17 @@ def api_users_for_event_group(event_id):
         # 1. Are NOT club members (club_member=False)
         # 2. Are registered for events (account_type='event_registration')
         # 3. Are NOT registered for the current event being edited
+        # Get users who are NOT registered for this event
+        from app.models import EventRegistration
+        registered_user_ids = db.session.query(EventRegistration.user_id).filter(
+            EventRegistration.event_id == event_id,
+            EventRegistration.is_active == True
+        ).subquery()
+        
         query = User.query.filter(
             User.club_member == False,
             User.account_type == 'event_registration',
-            User.event_id != event_id
+            ~User.id.in_(registered_user_ids)
         )
         
         if search:
@@ -96,7 +103,7 @@ def api_users_for_event_group(event_id):
                 'first_name': user.first_name,
                 'email': user.email,
                 'phone': user.phone,
-                'event_id': user.event_id,
+                'event_ids': [reg.event_id for reg in user.event_registrations if reg.is_active],
                 'account_type': user.account_type
             } for user in users]
         })

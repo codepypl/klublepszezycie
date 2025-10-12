@@ -27,21 +27,34 @@ def delete_registration(registration_id):
             }), 404
         
         # Store data before deletion for group cleanup
-        event_id = user.event_id
+        # Get user's event registrations
+        from app.models import EventRegistration
+        registrations = EventRegistration.query.filter_by(
+            user_id=user.id,
+            is_active=True
+        ).all()
+        
+        if not registrations:
+            return jsonify({'success': False, 'message': 'Brak aktywnych rejestracji'}), 404
+        
+        # Unregister from all events
+        for reg in registrations:
+            reg.is_active = False
+        
         email = user.email
         
         # Reset user account type
         user.account_type = 'user'
-        user.event_id = None
         db.session.commit()
         
-        # Asynchronicznie synchronizuj grupę wydarzenia
+        # Asynchronicznie synchronizuj grupy wszystkich wydarzeń dla tego użytkownika
         try:
             from app.services.group_manager import GroupManager
             group_manager = GroupManager()
             
-            # Wywołaj asynchroniczną synchronizację grupy wydarzenia
-            success, message = group_manager.async_sync_event_group(event_id)
+            # Synchronizuj grupy dla każdego wydarzenia
+            for reg in registrations:
+                success, message = group_manager.async_sync_event_group(reg.event_id)
             if success:
                 logger.info(f"✅ Zsynchronizowano grupę wydarzenia po usunięciu rejestracji")
             else:
@@ -86,17 +99,24 @@ def bulk_delete_registrations():
                 'message': 'Nie znaleziono rejestracji do usunięcia'
             }), 404
         
-        # Store event IDs for group synchronization
+        # Store event IDs for group synchronization and unregister users
+        from app.models import EventRegistration
         event_ids = set()
-        for user in users:
-            if user.event_id:
-                event_ids.add(user.event_id)
-        
-        # Reset user account types
         deleted_count = 0
+        
         for user in users:
+            # Get user's event registrations
+            user_registrations = EventRegistration.query.filter_by(
+                user_id=user.id,
+                is_active=True
+            ).all()
+            
+            # Collect event IDs and deactivate registrations
+            for reg in user_registrations:
+                event_ids.add(reg.event_id)
+                reg.is_active = False
+            
             user.account_type = 'user'
-            user.event_id = None
             deleted_count += 1
         
         db.session.commit()

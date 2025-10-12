@@ -233,7 +233,14 @@ class PublicController:
             if user:
                 # Update existing user
                 user.account_type = 'event_registration'
-                user.event_id = event_id
+                
+                # Create EventRegistration entry
+                from app.models import EventRegistration
+                EventRegistration.register_user(
+                    user_id=user.id,
+                    event_id=event_id,
+                    registration_source='website'
+                )
             else:
                 # Create new user - this would need password generation
                 return {

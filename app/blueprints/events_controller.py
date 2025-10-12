@@ -380,7 +380,14 @@ class EventsController:
             # Update user to register for event
             user = User.query.get(user_id)
             user.account_type = 'event_registration'
-            user.event_id = event_id
+            
+            # Create EventRegistration entry
+            from app.models import EventRegistration
+            EventRegistration.register_user(
+                user_id=user_id,
+                event_id=event_id,
+                registration_source='admin'
+            )
             
             # Log the registration in UserHistory (event participation history)
             UserHistory.log_event_registration(
@@ -434,9 +441,12 @@ class EventsController:
             event = EventSchedule.query.get(event_id)
             event_title = event.title if event else f'Event {event_id}'
             
+            # Unregister from event
+            from app.models import EventRegistration
+            EventRegistration.unregister_user(user_id, event_id)
+            
             # Reset user account type
             user.account_type = 'user'
-            user.event_id = None
             
             # Log the cancellation in user history
             UserHistory.log_event_cancellation(

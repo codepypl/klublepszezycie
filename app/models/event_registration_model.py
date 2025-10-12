@@ -10,16 +10,16 @@ class EventRegistration(db.Model):
     __tablename__ = 'event_registrations'
     
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id', ondelete='CASCADE'), nullable=False)
     registration_date = db.Column(db.DateTime, default=get_local_datetime)
     is_active = db.Column(db.Boolean, default=True)
     registration_source = db.Column(db.String(50), default='website')  # website, admin, api
     notes = db.Column(db.Text, nullable=True)
     
     # Relationships
-    user = db.relationship('User', backref='event_registrations')
-    event = db.relationship('EventSchedule', backref='registrations')
+    user = db.relationship('User', backref=db.backref('event_registrations', cascade='all, delete', passive_deletes=True))
+    event = db.relationship('EventSchedule', backref=db.backref('registrations', cascade='all, delete', passive_deletes=True))
     
     # Unique constraint to prevent duplicate registrations
     __table_args__ = (
