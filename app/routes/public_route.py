@@ -181,8 +181,7 @@ def register():
                 is_active=True,
                 is_temporary_password=True,
                 club_member=True,
-                account_type='user',
-                role='user'
+                account_type='user'
             )
             
             try:
@@ -410,9 +409,14 @@ def check_registration(event_id):
 @public_bp.route('/register-event/<int:event_id>', methods=['POST'])
 def register_event(event_id):
     """Register for event with new user management logic"""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"🎫 Event registration request received for event_id: {event_id}")
+    
     try:
         # Only accept JSON data
         if not request.is_json:
+            logger.error("❌ Content-Type must be application/json")
             print("❌ Content-Type must be application/json")
             return jsonify({'success': False, 'message': 'Content-Type must be application/json'}), 400
         
@@ -481,40 +485,48 @@ def register_event(event_id):
             # User doesn't exist - will be created during registration
             pass
         
-        # Check max participants - count users registered for this event
+        # Import EventRegistration model
+        from app.models import EventRegistration
+        
+        # Check max participants - count event registrations
         if event.max_participants:
-            current_registrations = User.query.filter_by(
+            current_registrations = EventRegistration.query.filter_by(
                 event_id=event_id,
-                account_type='event_registration'
+                is_active=True
             ).count()
             if current_registrations >= event.max_participants:
                 return jsonify({'success': False, 'message': 'Brak wolnych miejsc na to wydarzenie'}), 400
         
-        # Use database transaction with proper locking to prevent race conditions
+        # Use database transaction to prevent race conditions
         try:
-            # Check if user is already registered for this event (with row-level locking)
-            existing_event_user = User.query.filter_by(
-                event_id=event_id,
-                email=data['email'],
-                account_type='event_registration'
-            ).with_for_update().first()
+            # Check if user is already registered for this event
+            existing_registration = None
+            if existing_user:
+                existing_registration = EventRegistration.query.filter_by(
+                    user_id=existing_user.id,
+                    event_id=event_id,
+                    is_active=True
+                ).first()
             
-            if existing_event_user:
+            if existing_registration:
+                logger.info(f"❌ User already registered for this event: {data['email']}")
                 print(f"❌ User already registered for this event: {data['email']}")
                 return jsonify({'success': False, 'message': 'Jesteś już zarejestrowany na to wydarzenie'}), 400
             
-            # Double-check max participants after locking
+            # Double-check max participants
             if event.max_participants:
-                current_registrations = User.query.filter_by(
+                current_registrations = EventRegistration.query.filter_by(
                     event_id=event_id,
-                    account_type='event_registration'
+                    is_active=True
                 ).count()
                 if current_registrations >= event.max_participants:
                     print(f"❌ Event full: {current_registrations}/{event.max_participants}")
                     return jsonify({'success': False, 'message': 'Brak wolnych miejsc na to wydarzenie'}), 400
             
             # Create user account for event registration
+            logger.info(f"🔍 Creating/updating user for event registration")
             if not existing_user:
+                logger.info(f"🔍 Creating new user for event {event_id}")
                 from app.blueprints.users_controller import UsersController
                 user_result = UsersController.create_event_registration_user(
                     first_name=data['first_name'],
@@ -525,17 +537,36 @@ def register_event(event_id):
                 )
                 
                 if not user_result['success']:
+                    logger.error(f"❌ Failed to create user: {user_result['error']}")
                     print(f"❌ Failed to create user: {user_result['error']}")
                     db.session.rollback()
                     return jsonify({'success': False, 'message': 'Błąd podczas tworzenia konta użytkownika. Spróbuj ponownie.'}), 500
                 else:
+                    logger.info(f"✅ User created for event registration: {data['email']}")
                     print(f"✅ User created for event registration: {data['email']}")
                     created_user = user_result['user']
             else:
+                logger.info(f"🔍 Using existing user for event {event_id}")
                 # Update existing user to register for this event
                 existing_user.account_type = 'event_registration'
                 created_user = existing_user
             
+            # Create EventRegistration entry
+            logger.info(f"🔍 Creating EventRegistration for user {created_user.id} and event {event_id}")
+            print(f"🔍 Creating EventRegistration for user {created_user.id} and event {event_id}")
+            registration, reg_message = EventRegistration.register_user(
+                user_id=created_user.id,
+                event_id=event_id,
+                registration_source='website'
+            )
+            if not registration:
+                logger.warning(f"⚠️ EventRegistration creation: {reg_message}")
+                print(f"⚠️ EventRegistration creation: {reg_message}")
+            else:
+                logger.info(f"✅ EventRegistration created successfully")
+                print(f"✅ EventRegistration created successfully")
+            
+            logger.info(f"🔍 About to get or create event group for event {event_id}")
             # Get or create event group
             from app.services.group_manager import GroupManager
             group_manager = GroupManager()
@@ -544,6 +575,7 @@ def register_event(event_id):
             event_group = UserGroup.query.filter_by(group_type='event_based', event_id=event_id).first()
             if not event_group:
                 # Create event group if it doesn't exist
+                logger.info(f"🔍 Creating new event group for event {event_id}")
                 event_group = UserGroup(
                     name=f"Wydarzenie: {event.title}",
                     description=f"Grupa uczestników wydarzenia: {event.title}",
@@ -552,14 +584,27 @@ def register_event(event_id):
                 )
                 db.session.add(event_group)
                 db.session.commit()
+                logger.info(f"✅ Event group created: {event_group.name}")
+            else:
+                logger.info(f"✅ Found existing event group: {event_group.name}")
             
             # Synchronize event group
-            print(f"🔍 Starting event group synchronization for event {event_id}")
-            success, message = group_manager.async_sync_event_group(event_id)
-            if success:
-                print(f"✅ Event group synchronized: {event.title}")
-            else:
-                print(f"❌ Event group synchronization error: {message}")
+            logger.info(f"🔍 Starting group synchronization for event {event_id}")
+            print(f"🔍 Starting group synchronization for event {event_id}")
+            
+            try:
+                success, message = group_manager.async_sync_event_group(event_id)
+                if success:
+                    logger.info(f"✅ Group synchronized: {message}")
+                    print(f"✅ Group synchronized: {event.title}")
+                else:
+                    logger.error(f"❌ Group synchronization error: {message}")
+                    print(f"❌ Group synchronization error: {message}")
+            except Exception as sync_error:
+                logger.error(f"❌ Failed to sync group: {sync_error}", exc_info=True)
+                print(f"❌ Failed to sync group: {sync_error}")
+                import traceback
+                traceback.print_exc()
             
             # Send confirmation email
             email_manager = EmailManager()
@@ -597,12 +642,14 @@ def register_event(event_id):
             
         except Exception as e:
             db.session.rollback()
+            logger.error(f"❌ Database error during registration: {e}", exc_info=True)
             print(f"❌ Database error during registration: {e}")
             import traceback
             traceback.print_exc()
             return jsonify({'success': False, 'message': 'Błąd podczas rejestracji. Spróbuj ponownie.'}), 500
         
     except Exception as e:
+        logger.error(f"❌ Unexpected error in register_event: {e}", exc_info=True)
         print(f"❌ Unexpected error in register_event: {e}")
         import traceback
         traceback.print_exc()
@@ -693,34 +740,32 @@ def register_for_event(user, event_id):
         if not event:
             return jsonify({'success': False, 'message': 'Wydarzenie nie zostało znalezione lub nie jest dostępne'}), 404
         
-        # Check if user is already registered for this event (but only if they weren't just created)
-        # If user already has event_id and account_type set, they were just registered in register_event
-        if user.event_id == event_id and user.account_type == 'event_registration':
-            print(f"✅ User {user.email} was just registered for event {event_id}, proceeding with group assignment and email")
-        else:
-            # Check if user is already registered for this event from previous registration
-            existing_registration = User.query.filter_by(
-                id=user.id, 
-                event_id=event_id,
-                account_type='event_registration'
-            ).first()
-            
-            if existing_registration:
-                return jsonify({'success': False, 'message': 'Jesteś już zarejestrowany na to wydarzenie'}), 400
-        
-        # Update user to register for event
-        user.account_type = 'event_registration'
-        
-        # Register user for event using EventRegistration table
+        # Check if user is already registered for this event using EventRegistration model
         from app.models import EventRegistration
-        registration, message = EventRegistration.register_user(
+        existing_registration = EventRegistration.query.filter_by(
             user_id=user.id,
             event_id=event_id,
-            registration_source='website'
-        )
+            is_active=True
+        ).first()
         
-        if not registration:
-            return jsonify({'success': False, 'message': message}), 400
+        if existing_registration:
+            print(f"✅ User {user.email} is already registered for event {event_id}")
+            # Don't return error, just proceed with group assignment and email
+        else:
+            # Register user for event using EventRegistration table
+            registration, message = EventRegistration.register_user(
+                user_id=user.id,
+                event_id=event_id,
+                registration_source='website'
+            )
+            
+            if not registration:
+                return jsonify({'success': False, 'message': message}), 400
+        
+        # Update user account type if not already set
+        if user.account_type != 'event_registration':
+            user.account_type = 'event_registration'
+            db.session.commit()
         
         # Log the registration in UserHistory (event participation history)
         UserHistory.log_event_registration(

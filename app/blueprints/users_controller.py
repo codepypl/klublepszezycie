@@ -467,11 +467,8 @@ class UsersController:
                 phone=phone,
                 password_hash=generate_password_hash(password),
                 account_type='event_registration',
-                event_id=event_id,
-                group_id=group_id,
                 club_member=False,
-                is_active=True,
-                role='user'
+                is_active=True
             )
             
             db.session.add(user)

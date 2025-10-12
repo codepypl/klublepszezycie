@@ -612,11 +612,15 @@ class GroupManager:
                         db.session.commit()
                         print(f"✅ Zaktualizowano nazwę grupy: {group_name}")
             
-            # Pobierz wszystkich zarejestrowanych na wydarzenie
-            registrations = User.query.filter_by(
+            # Pobierz wszystkich zarejestrowanych na wydarzenie przez EventRegistration
+            from app.models import EventRegistration
+            event_registrations = EventRegistration.query.filter_by(
                 event_id=event_id,
-                account_type='event_registration'
+                is_active=True
             ).all()
+            
+            # Pobierz użytkowników z rejestracji
+            registrations = [reg.user for reg in event_registrations if reg.user]
             
             # Pobierz obecnych członków grupy (tylko aktywnych)
             current_members = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).all()

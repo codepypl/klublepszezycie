@@ -184,6 +184,40 @@ def cleanup_old_reminders_task(self):
             logger.error(f"❌ Błąd czyszczenia starych przypomnień: {exc}")
             raise self.retry(exc=exc, countdown=60)
 
+@celery.task(bind=True, name='app.tasks.event_tasks.sync_event_group_task')
+def sync_event_group_task(self, event_id):
+    """
+    Synchronizuje grupę wydarzenia - zadanie Celery
+    Używane po rejestracji użytkownika na wydarzenie
+    """
+    with get_app_context():
+        try:
+            logger.info(f"🔄 Rozpoczynam synchronizację grupy dla wydarzenia {event_id}")
+            
+            from app.services.group_manager import GroupManager
+            group_manager = GroupManager()
+            
+            success, message = group_manager.async_sync_event_group(event_id)
+            
+            if success:
+                logger.info(f"✅ Synchronizacja grupy zakończona: {message}")
+            else:
+                logger.error(f"❌ Błąd synchronizacji grupy: {message}")
+            
+            return {
+                'success': success,
+                'message': message,
+                'event_id': event_id
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Błąd zadania synchronizacji grupy wydarzenia {event_id}: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'event_id': event_id
+            }
+
 @celery.task(bind=True, name='app.tasks.event_tasks.cleanup_duplicate_event_groups_task')
 def cleanup_duplicate_event_groups_task(self):
     """

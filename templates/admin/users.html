@@ -264,31 +264,38 @@
                                     </a>
                                 </td>
                                 <td>
-                                    {% if not user.club_member and user.event_id %}
-                                        <span class="badge admin-badge admin-badge-info">{{ user.event_id }}</span>
+                                    {% set user_events = [] %}
+                                    {% for reg in user.event_registrations %}
+                                        {% if reg.is_active %}
+                                            {% set _ = user_events.append(reg.event_id) %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if user_events %}
+                                        {% for event_id in user_events %}
+                                            <span class="badge admin-badge admin-badge-info me-1">{{ event_id }}</span>
+                                        {% endfor %}
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if user.group_id %}
-                                        {% if user.group_id == 19 %}
-                                            <span class="badge admin-badge admin-badge-secondary" 
-                                                  data-bs-toggle="tooltip" 
-                                                  data-bs-placement="top" 
-                                                  title="{{ user.user_group.name if user.user_group else 'Grupa ID: ' + user.group_id|string }} (Nie można edytować)">
-                                                {{ user.group_id }}
-                                            </span>
-                                        {% else %}
+                                    {% set user_groups = [] %}
+                                    {% for membership in user.group_memberships %}
+                                        {% if membership.is_active %}
+                                            {% set _ = user_groups.append(membership.group_id) %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if user_groups %}
+                                        {% for group_id in user_groups %}
                                             <a href="#" 
-                                               onclick="editGroup({{ user.group_id }})"
-                                               class="badge admin-badge admin-badge-primary" 
+                                               onclick="editGroup({{ group_id }})"
+                                               class="badge admin-badge admin-badge-primary me-1" 
                                                data-bs-toggle="tooltip" 
                                                data-bs-placement="top" 
-                                               title="{{ user.user_group.name if user.user_group else 'Grupa ID: ' + user.group_id|string }}">
-                                                {{ user.group_id }}
+                                               title="Grupa ID: {{ group_id }}">
+                                                {{ group_id }}
                                             </a>
-                                        {% endif %}
+                                        {% endfor %}
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
