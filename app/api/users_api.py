@@ -304,6 +304,16 @@ def api_user(user_id):
             except Exception as group_error:
                 print(f"❌ Błąd usuwania użytkownika z grup: {str(group_error)}")
             
+            # Delete EventRegistrations for this user
+            try:
+                from app.models import EventRegistration
+                event_registrations = EventRegistration.query.filter_by(user_id=user_id).all()
+                for reg in event_registrations:
+                    db.session.delete(reg)
+                print(f"📋 Usunięto {len(event_registrations)} rejestracji na wydarzenia dla {user_email}")
+            except Exception as reg_error:
+                print(f"❌ Błąd usuwania rejestracji: {str(reg_error)}")
+            
             # Delete email queue items for this user
             try:
                 from app.models import EmailQueue
@@ -501,6 +511,16 @@ def api_bulk_delete_users():
                                 
                 except Exception as group_error:
                     print(f"❌ Bulk delete: Błąd usuwania użytkownika {user.email} z grup: {str(group_error)}")
+                
+                # Delete EventRegistrations for this user
+                try:
+                    from app.models import EventRegistration
+                    event_registrations = EventRegistration.query.filter_by(user_id=user.id).all()
+                    for reg in event_registrations:
+                        db.session.delete(reg)
+                    print(f"📋 Bulk delete: Usunięto {len(event_registrations)} rejestracji na wydarzenia dla {user.email}")
+                except Exception as reg_error:
+                    print(f"❌ Bulk delete: Błąd usuwania rejestracji: {str(reg_error)}")
                 
                 # Delete email queue items for this user
                 try:
