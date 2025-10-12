@@ -185,11 +185,18 @@ def create_event():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @events_api_bp.route('/event-schedule/<int:event_id>', methods=['GET'])
-@login_required
 def get_event(event_id):
-    """Get single event"""
+    """Get single event - public endpoint (no login required for public event registration)"""
     try:
         event = EventSchedule.query.get_or_404(event_id)
+        
+        # Only return published events for non-authenticated users
+        from flask_login import current_user
+        if not current_user.is_authenticated and not event.is_published:
+            return jsonify({
+                'success': False,
+                'message': 'Wydarzenie nie zostało znalezione'
+            }), 404
         
         return jsonify({
             'success': True,
