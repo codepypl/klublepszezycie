@@ -8,10 +8,17 @@ let availableGroups = [];
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize global CRUD refresh manager for this page
-    window.crudRefreshManager.init(loadCampaigns);
+    // Prevent multiple initializations
+    if (window.emailCampaignsInitialized) {
+        return;
+    }
+    window.emailCampaignsInitialized = true;
     
-    loadCampaigns();
+    // Initialize global CRUD refresh manager for this page
+    if (window.crudRefreshManager) {
+        window.crudRefreshManager.init(loadCampaigns);
+    }
+    
     loadTemplates();
     loadGroups();
     initializeFilters();
@@ -86,7 +93,10 @@ function loadCampaigns() {
                 if (data.pagination) {
                     // Update currentPerPage from server response
                     currentPerPage = data.pagination.per_page;
+                    console.log('📊 Pagination data:', data.pagination);
                     updatePagination(data.pagination);
+                } else {
+                    console.log('⚠️ No pagination data received');
                 }
             } else {
                 toastManager.error('Błąd ładowania kampanii: ' + data.error);

@@ -13,14 +13,69 @@ logger = logging.getLogger(__name__)
 @email_campaigns_bp.route('/email/campaigns', methods=['GET'])
 @login_required
 def get_campaigns():
-    """Pobiera listę kampanii"""
+    """Pobiera listę kampanii z filtrami"""
     try:
         from app.models import EmailCampaign
+        from sqlalchemy import and_, or_
         
-        campaigns = EmailCampaign.query.order_by(EmailCampaign.created_at.desc()).all()
+        # Pobierz parametry filtrów
+        name_filter = request.args.get('name', '').strip()
+        subject_filter = request.args.get('subject', '').strip()
+        status_filter = request.args.get('status', '').strip()
+        date_from = request.args.get('date_from', '').strip()
+        date_to = request.args.get('date_to', '').strip()
+        
+        # Paginacja
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        
+        # Bazowe zapytanie
+        query = EmailCampaign.query
+        
+        # Zastosuj filtry
+        if name_filter:
+            query = query.filter(EmailCampaign.name.ilike(f'%{name_filter}%'))
+        
+        if subject_filter:
+            query = query.filter(EmailCampaign.subject.ilike(f'%{subject_filter}%'))
+        
+        if status_filter:
+            if status_filter == 'not_completed':
+                # Wszystkie oprócz zakończonych
+                query = query.filter(~EmailCampaign.status.in_(['completed']))
+            else:
+                # Konkretny status
+                query = query.filter(EmailCampaign.status == status_filter)
+        
+        if date_from:
+            try:
+                from datetime import datetime
+                date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+                query = query.filter(EmailCampaign.created_at >= date_from_obj)
+            except ValueError:
+                pass  # Ignoruj nieprawidłowe daty
+        
+        if date_to:
+            try:
+                from datetime import datetime
+                date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
+                query = query.filter(EmailCampaign.created_at <= date_to_obj)
+            except ValueError:
+                pass  # Ignoruj nieprawidłowe daty
+        
+        # Sortuj i zastosuj paginację
+        campaigns_query = query.order_by(EmailCampaign.created_at.desc())
+        campaigns_pagination = campaigns_query.paginate(
+            page=page, per_page=per_page, error_out=False
+        )
         
         campaigns_data = []
-        for campaign in campaigns:
+        for campaign in campaigns_pagination.items:
+            # Pobierz statystyki kampanii
+            from app.models import EmailQueue
+            total_emails = EmailQueue.query.filter_by(campaign_id=campaign.id).count()
+            sent_emails = EmailQueue.query.filter_by(campaign_id=campaign.id, status='sent').count()
+            
             campaigns_data.append({
                 'id': campaign.id,
                 'name': campaign.name,
@@ -29,12 +84,24 @@ def get_campaigns():
                 'description': campaign.description or '',
                 'created_at': campaign.created_at.isoformat() if campaign.created_at else None,
                 'scheduled_at': campaign.scheduled_at.isoformat() if campaign.scheduled_at else None,
-                'sent_at': campaign.sent_at.isoformat() if campaign.sent_at else None
+                'sent_at': campaign.sent_at.isoformat() if campaign.sent_at else None,
+                'total_recipients': total_emails,
+                'sent_count': sent_emails
             })
         
         return jsonify({
             'success': True,
-            'campaigns': campaigns_data
+            'campaigns': campaigns_data,
+            'pagination': {
+                'page': campaigns_pagination.page,
+                'per_page': campaigns_pagination.per_page,
+                'total': campaigns_pagination.total,
+                'pages': campaigns_pagination.pages,
+                'has_prev': campaigns_pagination.has_prev,
+                'has_next': campaigns_pagination.has_next,
+                'prev_num': campaigns_pagination.prev_num,
+                'next_num': campaigns_pagination.next_num
+            }
         })
         
     except Exception as e:
