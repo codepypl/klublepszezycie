@@ -397,8 +397,8 @@ class GroupManager:
             # Pobierz wszystkich członków klubu (club_member=True)
             club_members = User.query.filter_by(club_member=True, is_active=True).all()
             
-            # Pobierz obecnych członków grupy
-            current_members = UserGroupMember.query.filter_by(group_id=group.id).all()
+            # Pobierz obecnych członków grupy (tylko aktywnych)
+            current_members = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).all()
             current_user_ids = {member.user_id for member in current_members}
             
             # Dodaj nowych członków klubu (którzy nie są jeszcze w grupie)
@@ -973,8 +973,8 @@ class GroupManager:
                     # Zostaw pierwszą grupę, usuń pozostałe
                     main_group = groups[0]
                     for duplicate_group in groups[1:]:
-                        # Przenieś członków do głównej grupy
-                        members = UserGroupMember.query.filter_by(group_id=duplicate_group.id).all()
+                        # Przenieś członków do głównej grupy (tylko aktywnych)
+                        members = UserGroupMember.query.filter_by(group_id=duplicate_group.id, is_active=True).all()
                         for member in members:
                             # Sprawdź czy członek już nie istnieje w głównej grupie
                             existing = UserGroupMember.query.filter_by(

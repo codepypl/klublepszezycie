@@ -281,7 +281,7 @@
                                 <td>
                                     {% set user_groups = [] %}
                                     {% for membership in user.group_memberships %}
-                                        {% if membership.is_active %}
+                                        {% if membership.is_active and membership.group_id not in user_groups %}
                                             {% set _ = user_groups.append(membership.group_id) %}
                                         {% endif %}
                                     {% endfor %}
