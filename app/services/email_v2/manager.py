@@ -80,7 +80,8 @@ class EmailManager:
             self.logger.error(f"❌ Błąd wysyłania szablonu: {e}")
             return False, f"Błąd wysyłania szablonu: {str(e)}"
     
-    def send_immediate_email(self, to_email: str, subject: str, html_content: str, text_content: str = None) -> Tuple[bool, str]:
+    def send_immediate_email(self, to_email: str, subject: str, html_content: str, text_content: str = None, 
+                            template_id: int = None, event_id: int = None, campaign_id: int = None) -> Tuple[bool, str]:
         """
         Wysyła email natychmiastowo z gotową zawartością (dla retry)
         
@@ -89,6 +90,9 @@ class EmailManager:
             subject: Temat emaila
             html_content: Zawartość HTML
             text_content: Zawartość tekstowa (opcjonalna)
+            template_id: ID szablonu (opcjonalne, dla logów)
+            event_id: ID wydarzenia (opcjonalne, dla logów)
+            campaign_id: ID kampanii (opcjonalne, dla logów)
             
         Returns:
             Tuple[bool, str]: (sukces, komunikat)
@@ -107,9 +111,10 @@ class EmailManager:
                 text_content=text_content or html_content,
                 priority=0,  # Wysoki priorytet dla retry
                 scheduled_at=get_local_now(),
-                template_id=None,
+                template_id=template_id,  # Zachowaj template_id z oryginalnego emaila
                 template_name='retry_email',
-                event_id=None,
+                event_id=event_id,  # Zachowaj event_id z oryginalnego emaila
+                campaign_id=campaign_id,  # Zachowaj campaign_id z oryginalnego emaila
                 context=json.dumps({}),  # Konwertuj dict na JSON string
                 status='pending'
             )

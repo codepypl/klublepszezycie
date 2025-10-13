@@ -203,7 +203,10 @@ def retry_single_email(email_id):
             email.recipient_email,
             email.subject,
             email.html_content,
-            email.text_content
+            email.text_content,
+            template_id=email.template_id,  # Przekaż template_id z oryginalnego emaila
+            event_id=email.event_id,       # Przekaż event_id z oryginalnego emaila
+            campaign_id=email.campaign_id  # Przekaż campaign_id z oryginalnego emaila
         )
         
         if success:
