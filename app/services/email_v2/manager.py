@@ -98,6 +98,7 @@ class EmailManager:
             
             # Dodaj bezpośrednio do kolejki EmailQueue
             from app.models import EmailQueue
+            import json
             
             email_queue = EmailQueue(
                 recipient_email=to_email,
@@ -109,7 +110,7 @@ class EmailManager:
                 template_id=None,
                 template_name='retry_email',
                 event_id=None,
-                context={},
+                context=json.dumps({}),  # Konwertuj dict na JSON string
                 status='pending'
             )
             
