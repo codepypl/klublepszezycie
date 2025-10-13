@@ -102,15 +102,18 @@ class DashboardStatsService:
             # Oblicz średni czas rozmowy
             average_duration = total_duration / connected_calls if connected_calls > 0 else 0
             
+            # Oblicz czasy pracy na podstawie logów
+            work_time_stats = self._calculate_work_time(ankieter_id, target_date)
+            
             return {
                 'calls_total_today': total_calls,
                 'calls_connected_today': connected_calls,
                 'calls_missed_today': missed_calls,
                 'total_call_time_today': total_duration,
                 'average_call_time_today': round(average_duration, 2),
-                'total_work_time_today': total_duration,  # Czas rozmów = czas pracy (można rozszerzyć)
-                'total_logged_time_today': total_duration,  # TODO: tracking sesji logowania
-                'total_break_time_today': 0  # TODO: tracking przerw
+                'total_work_time_today': work_time_stats['total_work_time'],
+                'total_logged_time_today': work_time_stats['total_logged_time'],
+                'total_break_time_today': work_time_stats['total_break_time']
             }
             
         except Exception as e:
@@ -227,6 +230,68 @@ class DashboardStatsService:
             'active_campaigns': 0,
             'timestamp': datetime.now().isoformat()
         }
+    
+    def _calculate_work_time(self, ankieter_id: int, target_date: date) -> Dict[str, int]:
+        """
+        Oblicza czasy pracy na podstawie logów UserLogs
+        
+        Returns:
+            Dict z czasami w sekundach: total_logged_time, total_work_time, total_break_time
+        """
+        from sqlalchemy import func
+        from app.models.user_logs_model import UserLogs
+        
+        try:
+            # Pobierz wszystkie logi pracy dla danego dnia
+            work_logs = UserLogs.query.filter(
+                UserLogs.user_id == ankieter_id,
+                UserLogs.action_type.in_(['work_start', 'work_stop', 'break_start', 'break_end']),
+                func.date(UserLogs.created_at) == target_date
+            ).order_by(UserLogs.created_at).all()
+            
+            if not work_logs:
+                return {'total_logged_time': 0, 'total_work_time': 0, 'total_break_time': 0}
+            
+            total_logged_time = 0
+            total_break_time = 0
+            current_work_start = None
+            current_break_start = None
+            
+            for log in work_logs:
+                if log.action_type == 'work_start':
+                    current_work_start = log.created_at
+                elif log.action_type == 'work_stop' and current_work_start:
+                    # Oblicz czas od work_start do work_stop
+                    work_duration = (log.created_at - current_work_start).total_seconds()
+                    total_logged_time += work_duration
+                    current_work_start = None
+                elif log.action_type == 'break_start':
+                    current_break_start = log.created_at
+                elif log.action_type == 'break_end' and current_break_start:
+                    # Oblicz czas przerwy
+                    break_duration = (log.created_at - current_break_start).total_seconds()
+                    total_break_time += break_duration
+                    current_break_start = None
+            
+            # Jeśli sesja pracy nadal trwa (work_start bez work_stop)
+            if current_work_start:
+                now = datetime.now()
+                if now.date() == target_date:
+                    work_duration = (now - current_work_start).total_seconds()
+                    total_logged_time += work_duration
+            
+            # Czas pracy = czas zalogowania - czas przerw
+            total_work_time = total_logged_time - total_break_time
+            
+            return {
+                'total_logged_time': int(total_logged_time),
+                'total_work_time': int(total_work_time),
+                'total_break_time': int(total_break_time)
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Błąd obliczania czasu pracy: {e}")
+            return {'total_logged_time': 0, 'total_work_time': 0, 'total_break_time': 0}
     
     def _get_empty_twilio_stats(self) -> Dict[str, int]:
         """Zwraca puste statystyki Twilio"""

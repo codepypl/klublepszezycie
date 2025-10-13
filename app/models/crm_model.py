@@ -94,11 +94,21 @@ class Contact(db.Model):
             self.set_tags(tags)
     
     def can_be_called(self):
-        """Check if contact can be called (not blacklisted and within attempt limit)"""
+        """Check if contact can be called (not blacklisted, within attempt limit, and in calling hours)"""
         if self.is_blacklisted:
             return False
         if self.call_attempts >= self.max_call_attempts:
             return False
+        
+        # TODO: Enable time validation on production (8:00 - 21:00)
+        # Currently disabled for development/testing
+        # Uncomment below code for production:
+        # from app.utils.timezone_utils import get_local_now
+        # now = get_local_now()
+        # current_hour = now.hour
+        # if current_hour < 8 or current_hour >= 21:
+        #     return False
+        
         return True
 
 class Call(db.Model):

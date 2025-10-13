@@ -80,6 +80,49 @@ class EmailManager:
             self.logger.error(f"❌ Błąd wysyłania szablonu: {e}")
             return False, f"Błąd wysyłania szablonu: {str(e)}"
     
+    def send_immediate_email(self, to_email: str, subject: str, html_content: str, text_content: str = None) -> Tuple[bool, str]:
+        """
+        Wysyła email natychmiastowo z gotową zawartością (dla retry)
+        
+        Args:
+            to_email: Adres email odbiorcy
+            subject: Temat emaila
+            html_content: Zawartość HTML
+            text_content: Zawartość tekstowa (opcjonalna)
+            
+        Returns:
+            Tuple[bool, str]: (sukces, komunikat)
+        """
+        try:
+            self.logger.info(f"📧 Wysyłam email bezpośrednio do {to_email}")
+            
+            # Dodaj bezpośrednio do kolejki EmailQueue
+            from app.models import EmailQueue
+            
+            email_queue = EmailQueue(
+                recipient_email=to_email,
+                subject=subject,
+                html_content=html_content,
+                text_content=text_content or html_content,
+                priority=0,  # Wysoki priorytet dla retry
+                scheduled_at=get_local_now(),
+                template_id=None,
+                template_name='retry_email',
+                event_id=None,
+                context={},
+                status='pending'
+            )
+            
+            db.session.add(email_queue)
+            db.session.commit()
+            
+            self.logger.info(f"✅ Email retry dodany do kolejki: {email_queue.id}")
+            return True, f"Email dodany do kolejki (ID: {email_queue.id})"
+                
+        except Exception as e:
+            self.logger.error(f"❌ Błąd wysyłania emaila bezpośrednio: {e}")
+            return False, f"Błąd wysyłania emaila: {str(e)}"
+    
     def _send_template_email_legacy(self, to_email: str, template_name: str, 
                    context: Dict = None, priority: int = 2, 
                    scheduled_at: datetime = None, campaign_id: int = None, 

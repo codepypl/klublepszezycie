@@ -108,6 +108,32 @@ def get_next_contact():
                     'duration_minutes': call.duration_minutes
                 })
             
+            # Get campaign script if contact has campaign
+            campaign_script = None
+            if next_contact.campaign_id:
+                from app.models.crm_model import Campaign
+                campaign = Campaign.query.get(next_contact.campaign_id)
+                if campaign:
+                    campaign_script = campaign.script_content
+            
+            # Get current pending call to determine priority and type
+            current_call = Call.query.filter_by(
+                contact_id=next_contact.id,
+                ankieter_id=current_user.id,
+                queue_status='pending'
+            ).order_by(Call.created_at.desc()).first()
+            
+            is_new_record = False
+            is_rescheduled = False
+            scheduled_time = None
+            priority = 'low'
+            
+            if current_call:
+                priority = current_call.priority
+                scheduled_time = current_call.scheduled_date.isoformat() if current_call.scheduled_date else None
+                is_rescheduled = current_call.scheduled_date is not None
+                is_new_record = current_call.queue_type == 'new' if hasattr(current_call, 'queue_type') else (current_call.call_attempts == 0 or current_call.call_attempts is None)
+            
             return jsonify({
                 'success': True,
                 'contact': {
@@ -120,7 +146,12 @@ def get_next_contact():
                     'call_attempts': next_contact.call_attempts,
                     'max_call_attempts': next_contact.max_call_attempts,
                     'tags': next_contact.get_tags(),
-                    'last_call_date': next_contact.last_call_date.isoformat() if next_contact.last_call_date else None
+                    'last_call_date': next_contact.last_call_date.isoformat() if next_contact.last_call_date else None,
+                    'campaign_script': campaign_script,
+                    'is_new_record': is_new_record,
+                    'is_rescheduled': is_rescheduled,
+                    'scheduled_time': scheduled_time,
+                    'priority': priority
                 },
                 'call_history': history
             })
@@ -410,16 +441,20 @@ def add_contact_note():
 
 def sort_notes_by_date(notes_text):
     """Sort notes by date, newest first"""
+    from datetime import datetime
+    import re
+    
     if not notes_text:
         return notes_text
+    
     notes = [note.strip() for note in notes_text.split('\n\n') if note.strip()]
+    
     def extract_timestamp(note):
-        import re
         match = re.match(r'\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\]', note)
         if match:
-            from datetime import datetime
             return datetime.strptime(match.group(1), '%Y-%m-%d %H:%M')
         return datetime.min
+    
     notes.sort(key=extract_timestamp, reverse=True)
     return '\n\n'.join(notes)
 
@@ -499,19 +534,50 @@ def get_contact_details(contact_id):
 @login_required
 @ankieter_required
 def get_campaigns():
-    """Get campaigns for agent"""
+    """Get campaigns for agent with statistics"""
     try:
-        from app.models.crm_model import Campaign
+        from app.models.crm_model import Campaign, Contact, Call
+        from app.utils.timezone_utils import get_local_now
         
         campaigns = Campaign.query.filter_by(is_active=True).all()
+        now = get_local_now()
         
         campaigns_data = []
         for campaign in campaigns:
+            # Get contacts assigned to this ankieter in this campaign
+            campaign_contacts = Contact.query.filter_by(
+                campaign_id=campaign.id,
+                assigned_ankieter_id=current_user.id,
+                is_active=True,
+                is_blacklisted=False
+            ).all()
+            
+            # Count different types of records
+            total_contacts = len(campaign_contacts)
+            available_contacts = sum(1 for c in campaign_contacts if c.can_be_called())
+            
+            # Get pending calls for this ankieter in this campaign
+            pending_calls = Call.query.join(Contact).filter(
+                Contact.campaign_id == campaign.id,
+                Call.ankieter_id == current_user.id,
+                Call.queue_status == 'pending'
+            ).all()
+            
+            # Count new vs rescheduled vs potential
+            new_contacts = sum(1 for call in pending_calls if call.queue_type == 'new' or (not call.scheduled_date and call.contact.call_attempts == 0))
+            callback_contacts = sum(1 for call in pending_calls if call.scheduled_date)
+            potential_contacts = sum(1 for call in pending_calls if not call.scheduled_date and call.contact.call_attempts > 0 and call.queue_type != 'new')
+            
             campaigns_data.append({
                 'id': campaign.id,
                 'name': campaign.name,
                 'description': campaign.description,
-                'script_content': campaign.script_content
+                'script_content': campaign.script_content,
+                'total_contacts': total_contacts,
+                'available_contacts': available_contacts,
+                'new_contacts': new_contacts,
+                'callback_contacts': callback_contacts,
+                'potential_contacts': potential_contacts
             })
         
         return jsonify({

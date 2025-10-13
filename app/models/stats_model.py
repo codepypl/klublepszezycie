@@ -249,6 +249,37 @@ class Stats(db.Model):
             'daily_leads': daily_leads
         }
     
+    @classmethod
+    def increment_lead_count(cls, ankieter_id):
+        """Increment lead count for today and this month"""
+        from datetime import date
+        from .crm_model import Call
+        
+        today = date.today()
+        first_day_of_month = today.replace(day=1)
+        
+        # Count leads today
+        leads_today = Call.query.filter(
+            Call.ankieter_id == ankieter_id,
+            Call.call_date >= today,
+            Call.status == 'lead'
+        ).count()
+        
+        # Count leads this month
+        leads_month = Call.query.filter(
+            Call.ankieter_id == ankieter_id,
+            Call.call_date >= first_day_of_month,
+            Call.status == 'lead'
+        ).count()
+        
+        # Update stats
+        cls.set_value(f'leads_today_ankieter_{ankieter_id}', leads_today)
+        cls.set_value(f'leads_month_ankieter_{ankieter_id}', leads_month)
+        
+        print(f"📊 Updated lead stats for ankieter {ankieter_id}: dzisiaj={leads_today}, w miesiącu={leads_month}")
+        
+        return {'leads_today': leads_today, 'leads_month': leads_month}
+    
     # Email Statistics
     @classmethod
     def get_total_emails(cls):

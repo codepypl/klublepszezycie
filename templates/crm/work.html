@@ -85,14 +85,14 @@
                         
                         <!-- Call Action Buttons -->
                         <div class="d-flex gap-2">
-                            <button class="btn btn-success btn-sm" onclick="makeCall()" id="makeCallBtn">
-                                <i class="fas fa-phone me-1"></i>Zadzwoń
+                            <button class="btn btn-success" onclick="makeCall()" id="makeCallBtn" title="Zadzwoń">
+                                <i class="fas fa-phone fa-lg"></i>
                             </button>
-                            <button class="btn btn-danger btn-sm" onclick="endCall()" id="endCallBtn" style="display: none;">
-                                <i class="fas fa-phone-slash me-1"></i>Zakończ
+                            <button class="btn btn-danger" onclick="endCall()" id="endCallBtn" style="display: none;" title="Zakończ połączenie">
+                                <i class="fas fa-phone-slash fa-lg"></i>
                             </button>
-                            <button class="btn btn-outline-secondary btn-sm" onclick="abandonCurrentRecordAndContinue()" id="abandonRecordBtn" title="Porzuć ten rekord i pobierz następny">
-                                <i class="fas fa-times me-1"></i>Anuluj rekord
+                            <button class="btn btn-outline-secondary" onclick="abandonCurrentRecordAndContinue()" id="abandonRecordBtn" title="Porzuć ten rekord i pobierz następny">
+                                <i class="fas fa-times fa-lg"></i>
                             </button>
                         </div>
                         
@@ -111,46 +111,34 @@
                     </div>
                 </div>
                 <div class="admin-card-body">
-                    <!-- Contact Information -->
+                    <!-- Contact Information, Script, and History in 3 columns -->
                     <div class="row mb-4">
-                        <div class="col-12">
+                        <div class="col-md-3">
                             <h6>Dane kontaktu:</h6>
                             <div class="contact-info">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <p><strong>Imię i nazwisko:</strong><br><span id="contactName">-</span></p>
-                                        <p><strong>Telefon:</strong><br><span id="contactPhone">-</span></p>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <p><strong>Firma:</strong><br><span id="contactCompany">-</span></p>
-                                        <p><strong>Email:</strong><br><span id="contactEmail">-</span></p>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <p><strong>Notatki:</strong><br><span id="contactNotes">-</span></p>
-                                        
-                                        <!-- Call History moved here -->
-                                        <div class="mt-3" id="callHistorySection">
-                                            <h6><i class="fas fa-history me-2"></i>Historia interakcji</h6>
-                                            <div class="call-history" id="callHistory">
-                                                <div class="text-muted text-center py-3">
-                                                    <i class="fas fa-spinner fa-spin me-2"></i>Ładowanie historii...
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <p><strong>Imię i nazwisko:</strong><br><span id="contactName">-</span></p>
+                                <p><strong>Telefon:</strong><br><span id="contactPhone">-</span></p>
+                                <p><strong>Firma:</strong><br><span id="contactCompany">-</span></p>
+                                <p><strong>Email:</strong><br><span id="contactEmail">-</span></p>
+                                <p><strong>Notatki:</strong><br><span id="contactNotes">-</span></p>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Call Script -->
-                    <div class="row mb-4">
-                        <div class="col-12">
+                        
+                        <div class="col-md-5">
                             <h6>Tekst do przeczytania:</h6>
                             <div class="call-script" id="callScript">
                                 <p>Dzień dobry, dzwonię z Klubu Lepsze Życie. Czy mogę rozmawiać z Panem/Panią <span id="scriptName">[IMIĘ]</span>?</p>
                                 <p>Nazywam się <span id="agentName">[IMIĘ AGENTA]</span> i chciałbym zaprosić Pana/Panią na nasze bezpłatne wydarzenie dotyczące rozwoju osobistego.</p>
                                 <p>Czy byłby Pan/Pani zainteresowany/a udziałem w takim wydarzeniu?</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-history me-2"></i>Historia interakcji</h6>
+                            <div class="call-history" id="callHistory" style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; background-color: #f8f9fa;">
+                                <div class="text-muted text-center py-3">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>Ładowanie historii...
+                                </div>
                             </div>
                         </div>
                     </div>

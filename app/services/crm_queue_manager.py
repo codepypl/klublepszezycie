@@ -15,12 +15,17 @@ class QueueManager:
     
     @staticmethod
     def get_next_contact_for_ankieter(ankieter_id):
-        """Get next contact for ankieter based on priority"""
-        # First try high priority (callbacks)
+        """Get next contact for ankieter based on priority and scheduled time"""
+        from app.utils.timezone_utils import get_local_now
+        now = get_local_now()
+        
+        # First try high priority (scheduled callbacks) - only if scheduled time has passed
         high_priority = Call.query.filter_by(
             ankieter_id=ankieter_id,
             priority='high',
             queue_status='pending'
+        ).filter(
+            (Call.scheduled_date.is_(None)) | (Call.scheduled_date <= now)
         ).order_by(Call.scheduled_date.asc()).first()
         
         if high_priority and high_priority.contact.can_be_called():
@@ -142,74 +147,100 @@ class QueueManager:
     
     @staticmethod
     def process_call_result(contact_id, ankieter_id, call_status, notes=None, 
-                          callback_date=None, event_id=None):
+                          callback_date=None, event_id=None, duration_minutes=0):
         """Process call result and update queue accordingly"""
+        from app.utils.timezone_utils import get_local_now
+        
         contact = Contact.query.get(contact_id)
         if not contact:
-            return False
+            return {'success': False, 'error': 'Contact not found'}
         
         # Update contact call attempts
         contact.call_attempts += 1
-        contact.last_call_date = datetime.now()
+        contact.last_call_date = get_local_now()
         
         # Create call record
         call = Call(
             contact_id=contact_id,
             ankieter_id=ankieter_id,
-            call_date=datetime.now(),
+            call_date=get_local_now(),
             status=call_status,
             notes=notes,
-            event_id=event_id
+            duration_minutes=duration_minutes
         )
         
-        if callback_date:
-            call.next_call_date = callback_date
-        
         db.session.add(call)
-        db.session.commit()  # Commit new record first
+        db.session.commit()  # Commit call record first
         
-        # Update statistics for all call statuses
-        from app.models.stats_model import Stats
-        Stats.update_crm_stats()
-        
-        # Process based on status
+        # Process based on status - implementation of business rules
         if call_status == 'lead':
-            # Lead - mark as completed
+            # LEAD - Sukces! Podbij liczniki, oznacz jako zakończony, nigdy więcej nie dzwoń
+            contact.business_reason = 'lead'
             QueueManager._mark_queue_completed(contact_id, ankieter_id)
             
-            # TODO: Register for event and send email
+            # Update stats - increment lead counter
+            from app.models.stats_model import Stats
+            Stats.increment_lead_count(ankieter_id)
+            
+            print(f"✅ LEAD: Kontakt {contact.name} oznaczony jako sukces (lead)")
+            
+        elif call_status == 'blacklist':
+            # CZARNA LISTA - Dodaj do blacklist, oznacz jako zakończony, nigdy więcej nie dzwoń
+            contact.business_reason = 'blacklist'
+            QueueManager._add_to_blacklist(contact_id, ankieter_id, 'blacklist')
+            QueueManager._mark_queue_completed(contact_id, ankieter_id)
+            
+            print(f"✅ BLACKLIST: Kontakt {contact.name} dodany do czarnej listy")
             
         elif call_status == 'rejection':
-            # Rejection - add to blacklist
-            QueueManager._add_to_blacklist(contact_id, ankieter_id, 'rejection')
+            # ODMOWA - Oznacz jako zakończony, nigdy więcej nie dzwoń
+            contact.business_reason = 'rejection'
             QueueManager._mark_queue_completed(contact_id, ankieter_id)
             
+            print(f"✅ ODMOWA: Kontakt {contact.name} odrzucił ofertę")
+            
+        elif call_status == 'wrong_number':
+            # BŁĘDNY NUMER - Oznacz jako zakończony, nigdy więcej nie dzwoń
+            contact.business_reason = 'wrong_number'
+            QueueManager._mark_queue_completed(contact_id, ankieter_id)
+            
+            print(f"✅ BŁĘDNY NUMER: Kontakt {contact.name} ma nieprawidłowy numer")
+            
+        elif call_status in ['no_answer', 'busy']:
+            # NIE ODEBRAŁ / ZAJĘTE - Automatyczne przeplanowanie za 4h (tylko w godzinach 8-21)
+            contact.business_reason = 'callback_auto'
+            
+            # Oblicz czas za 4 godziny
+            retry_time = get_local_now() + timedelta(hours=4)
+            
+            # Sprawdź czy to będzie w godzinach pracy (8-21)
+            retry_hour = retry_time.hour
+            if retry_hour < 8:
+                # Jeśli przed 8:00, ustaw na 8:00
+                retry_time = retry_time.replace(hour=8, minute=0, second=0)
+            elif retry_hour >= 21:
+                # Jeśli po 21:00, ustaw na następny dzień o 8:00
+                retry_time = retry_time + timedelta(days=1)
+                retry_time = retry_time.replace(hour=8, minute=0, second=0)
+            
+            QueueManager.schedule_callback(contact_id, ankieter_id, retry_time, notes)
+            
+            print(f"✅ AUTO-PRZEPLANOWANIE: Kontakt {contact.name} przeplanowany na {retry_time}")
+            
         elif call_status == 'callback':
-            # Callback - schedule for later
+            # RĘCZNE PRZEPLANOWANIE - użytkownik sam wybrał datę
+            contact.business_reason = 'callback_manual'
+            
             if callback_date:
                 QueueManager.schedule_callback(contact_id, ankieter_id, callback_date, notes)
+                print(f"✅ PRZEPLANOWANIE: Kontakt {contact.name} przeplanowany na {callback_date}")
             else:
-                # Default callback in 1 hour
-                default_callback = datetime.now() + timedelta(hours=1)
+                # Default callback in 1 hour if no date provided
+                default_callback = get_local_now() + timedelta(hours=1)
                 QueueManager.schedule_callback(contact_id, ankieter_id, default_callback, notes)
         
-        elif call_status in ['no_answer', 'busy']:
-            # No answer or busy - check if max attempts reached
-            if contact.call_attempts >= contact.max_call_attempts:
-                QueueManager._add_to_blacklist(contact_id, ankieter_id, 'max_attempts')
-                QueueManager._mark_queue_completed(contact_id, ankieter_id)
-            else:
-                # Schedule retry
-                retry_time = datetime.now() + timedelta(minutes=30)  # Retry in 30 minutes
-                QueueManager.schedule_callback(contact_id, ankieter_id, retry_time, notes)
-        
-        elif call_status == 'wrong_number':
-            # Wrong number - add to blacklist
-            QueueManager._add_to_blacklist(contact_id, ankieter_id, 'wrong_number')
-            QueueManager._mark_queue_completed(contact_id, ankieter_id)
-        
         db.session.commit()
-        return {'success': True, 'message': 'Call result processed successfully'}
+        return {'success': True, 'message': 'Wynik połączenia zapisany pomyślnie'}
     
     @staticmethod
     def _mark_queue_completed(contact_id, ankieter_id):

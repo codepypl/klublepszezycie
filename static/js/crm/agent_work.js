@@ -311,6 +311,12 @@ function displayContact(contact) {
         }
     }
     
+    // Display campaign script if available
+    if (contact.campaign_script) {
+        console.log('✅ Displaying campaign script from contact data');
+        displayCampaignScript(contact.campaign_script, 'Current Campaign');
+    }
+    
     // Update script with contact name
     const scriptName = document.getElementById('scriptName');
     if (scriptName) {
@@ -1463,21 +1469,21 @@ function updateCallHeader(contact) {
     header.className = 'admin-card-header d-flex justify-content-between align-items-center';
     callbackInfo.style.display = 'none';
     
-    if (contact.priority === 'callback') {
-        // Yellow header for callbacks
+    if (contact.is_rescheduled) {
+        // Yellow header with black text for rescheduled contacts
         header.classList.add('bg-warning', 'text-dark');
         headerTitle.textContent = 'Oddzwonienie w terminie';
         
-        // Show callback info if available
-        if (contact.callback_date) {
-            const callbackDate = new Date(contact.callback_date);
+        // Show scheduled time if available
+        if (contact.scheduled_time) {
+            const scheduledDate = new Date(contact.scheduled_time);
             callbackInfo.innerHTML = `
                 <i class="fas fa-clock me-1"></i>
-                Zaplanowane na: ${callbackDate.toLocaleString('pl-PL')}
+                Zaplanowane na: ${scheduledDate.toLocaleString('pl-PL')}
             `;
             callbackInfo.style.display = 'inline-block';
         }
-    } else if (contact.priority === 'new') {
+    } else if (contact.is_new_record) {
         // Green header for new contacts
         header.classList.add('bg-success');
         headerTitle.textContent = 'Nowy kontakt';
