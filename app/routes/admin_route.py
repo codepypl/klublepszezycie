@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from app.blueprints.admin_controller import AdminController
 
-admin_bp = Blueprint('admin', __name__)
+admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 # Admin dashboard
 @admin_bp.route('/')
@@ -67,122 +67,133 @@ def email_logs():
     return render_template('admin/email_logs.html', stats=stats)
 
 
-@admin_bp.route('/celery-monitor')
+@admin_bp.route('/email-monitor')
 @login_required
-def celery_monitor():
-    """Monitor zadań Celery"""
-    return render_template('admin/celery_monitor.html')
+def email_monitor():
+    """Monitor systemu emaili"""
+    return render_template('admin/email_monitor.html')
 
-# API endpoints for Celery monitoring
-@admin_bp.route('/api/celery/status')
+# API endpoints for email monitoring
+@admin_bp.route('/api/email/queue-stats')
 @login_required
-def api_celery_status():
-    """API: Status Celery"""
+def api_email_queue_stats():
+    """API: Statystyki kolejki emaili"""
     try:
-        from app.services.celery_monitor import CeleryMonitorService
-        monitor = CeleryMonitorService()
-        status = monitor.get_celery_status()
-        return jsonify(status)
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@admin_bp.route('/api/celery/tasks')
-@login_required
-def api_celery_tasks():
-    """API: Lista zadań Celery"""
-    try:
-        from app.services.celery_monitor import CeleryMonitorService
-        monitor = CeleryMonitorService()
+        # Test database connection first
+        from app import db
+        from app.models import EmailQueue
         
-        # Pobierz parametry filtrowania
-        task_type = request.args.get('type', 'all')  # all, scheduled, active, completed
-        event_id = request.args.get('event_id')
-        limit = int(request.args.get('limit', 50))
+        # Simple test query
+        test_count = EmailQueue.query.count()
+        print(f"DEBUG: Database connection test - EmailQueue count: {test_count}")
         
-        tasks = monitor.get_tasks(task_type=task_type, event_id=event_id, limit=limit)
-        return jsonify(tasks)
+        # Test if we can access the database session
+        from sqlalchemy import text
+        result = db.session.execute(text('SELECT 1')).scalar()
+        print(f"DEBUG: Database session test passed, result: {result}")
+        
+        # Test direct query
+        direct_stats = {
+            'total': EmailQueue.query.count(),
+            'pending': EmailQueue.query.filter_by(status='pending').count(),
+            'failed': EmailQueue.query.filter_by(status='failed').count(),
+            'processing': EmailQueue.query.filter_by(status='processing').count(),
+            'sent': EmailQueue.query.filter_by(status='sent').count()
+        }
+        print(f"DEBUG: Direct query stats: {direct_stats}")
+        
+        # Try EmailManager first
+        try:
+            from app.services.email_v2 import EmailManager
+            email_manager = EmailManager()
+            stats = email_manager.get_stats()
+            print(f"DEBUG: EmailManager stats: {stats}")  # Debug log
+            return jsonify({'success': True, 'stats': stats})
+        except Exception as em_error:
+            print(f"DEBUG: EmailManager failed, using direct query: {em_error}")
+            # Fallback to direct query
+            return jsonify({'success': True, 'stats': direct_stats})
     except Exception as e:
+        print(f"DEBUG: Error in api_email_queue_stats: {e}")  # Debug log
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@admin_bp.route('/api/celery/tasks/<task_id>/cancel', methods=['POST'])
+@admin_bp.route('/api/email/process-queue', methods=['POST'])
 @login_required
-def api_cancel_task(task_id):
-    """API: Anuluj zadanie Celery"""
+def api_process_email_queue():
+    """API: Przetwórz kolejkę emaili"""
     try:
-        from app.services.celery_monitor import CeleryMonitorService
-        monitor = CeleryMonitorService()
-        result = monitor.cancel_task(task_id)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@admin_bp.route('/api/celery/events/<event_id>/cancel-all', methods=['POST'])
-@login_required
-def api_cancel_event_tasks(event_id):
-    """API: Anuluj wszystkie zadania dla wydarzenia"""
-    try:
-        from app.services.celery_cleanup import CeleryCleanupService
-        cleanup = CeleryCleanupService()
-        cancelled_count = cleanup.cancel_event_tasks(int(event_id))
+        from app.services.email_v2 import EmailManager
+        email_manager = EmailManager()
+        
+        # Get limit from JSON or form data
+        limit = 50  # default
+        if request.is_json and request.json:
+            limit = request.json.get('limit', 50)
+        elif request.form:
+            limit = int(request.form.get('limit', 50))
+        elif request.args:
+            limit = int(request.args.get('limit', 50))
+        stats = email_manager.process_queue(limit=limit)
+        
         return jsonify({
-            'success': True, 
-            'cancelled_count': cancelled_count,
-            'message': f'Anulowano {cancelled_count} zadań dla wydarzenia {event_id}'
+            'success': True,
+            'stats': stats,
+            'message': f'Przetworzono {stats.get("processed", 0)} emaili'
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@admin_bp.route('/api/celery/queue-stats')
+@admin_bp.route('/api/email/retry-failed', methods=['POST'])
 @login_required
-def api_celery_queue_stats():
-    """API: Statystyki kolejki emaili"""
+def api_retry_failed_emails():
+    """API: Ponów nieudane emaile"""
     try:
-        from app.services.celery_monitor import CeleryMonitorService
-        monitor = CeleryMonitorService()
-        stats = monitor.get_queue_stats()
-        return jsonify(stats)
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@admin_bp.route('/api/celery/beat-schedule')
-@login_required
-def api_celery_beat_schedule():
-    """API: Harmonogram beat"""
-    try:
-        from app.services.celery_monitor import CeleryMonitorService
-        monitor = CeleryMonitorService()
-        schedule = monitor.get_beat_schedule()
-        return jsonify(schedule)
-    except Exception as e:
-        import logging
-        logging.getLogger(__name__).error(f"❌ Błąd w api_celery_beat_schedule: {e}", exc_info=True)
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@admin_bp.route('/api/celery/restart-worker', methods=['POST'])
-@login_required
-def api_celery_restart_worker():
-    """API: Restart worker Celery"""
-    try:
-        from app.services.celery_monitor import CeleryMonitorService
-        monitor = CeleryMonitorService()
-        result = monitor.restart_worker()
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@admin_bp.route('/api/celery/worker-logs')
-@login_required
-def api_celery_worker_logs():
-    """API: Logi workerów"""
-    try:
-        from app.services.celery_monitor import CeleryMonitorService
-        monitor = CeleryMonitorService()
+        from app.services.email_v2.queue.processor import EmailQueueProcessor
+        processor = EmailQueueProcessor()
         
-        worker_name = request.args.get('worker')
-        lines = int(request.args.get('lines', 100))
+        # Get limit from JSON or form data
+        limit = 10  # default
+        if request.is_json and request.json:
+            limit = request.json.get('limit', 10)
+        elif request.form:
+            limit = int(request.form.get('limit', 10))
+        elif request.args:
+            limit = int(request.args.get('limit', 10))
+        stats = processor.retry_failed_emails(limit=limit)
         
-        logs = monitor.get_worker_logs(worker_name, lines)
-        return jsonify(logs)
+        return jsonify({
+            'success': True,
+            'stats': stats,
+            'message': f'Ponowiono {stats.get("retried", 0)} emaili'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@admin_bp.route('/api/email/cleanup', methods=['POST'])
+@login_required
+def api_cleanup_emails():
+    """API: Wyczyść stare emaile"""
+    try:
+        from app.services.email_v2.queue.processor import EmailQueueProcessor
+        processor = EmailQueueProcessor()
+        
+        # Get days from JSON or form data
+        days = 30  # default
+        if request.is_json and request.json:
+            days = request.json.get('days', 30)
+        elif request.form:
+            days = int(request.form.get('days', 30))
+        elif request.args:
+            days = int(request.args.get('days', 30))
+        stats = processor.cleanup_old_emails(days=days)
+        
+        return jsonify({
+            'success': True,
+            'stats': stats,
+            'message': f'Usunięto {stats.get("total_deleted", 0)} starych emaili'
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 

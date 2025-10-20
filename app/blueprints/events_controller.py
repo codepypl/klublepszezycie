@@ -100,12 +100,13 @@ class EventsController:
             group_manager = GroupManager()
             group_manager.create_event_group(event.id, event.title)
             
-            # Automatycznie zaplanuj przypomnienia o wydarzeniu przez Celery
-            from app.tasks.email_tasks import schedule_event_reminders_task
+            # Automatycznie zaplanuj przypomnienia o wydarzeniu
+            from app.services.email_v2 import EmailManager
             
-            # Wywołaj zadanie Celery asynchronicznie
-            task = schedule_event_reminders_task.delay(event.id)
-            print(f"✅ Zadanie Celery zaplanowane (ID: {task.id}) dla wydarzenia: {event.title}")
+            # Zaplanuj przypomnienia przez EmailManager
+            email_manager = EmailManager()
+            success, message = email_manager.send_event_reminders(event.id)
+            print(f"✅ Przypomnienia zaplanowane dla wydarzenia: {event.title} - {message}")
             
             # Trigger auto-posting for new event
             if event.is_active and not event.is_archived:
@@ -251,18 +252,12 @@ class EventsController:
                     'error': f'Nie można usunąć wydarzenia z {registrations_count} rejestracjami'
                 }
             
-            # Clean up related groups and cancel Celery tasks before deleting event
+            # Clean up related groups before deleting event
             from app.services.group_manager import GroupManager
-            from app.services.celery_cleanup import CeleryCleanupService
             
             group_manager = GroupManager()
-            celery_cleanup = CeleryCleanupService()
             
-            # 1. Cancel all scheduled Celery tasks for this event
-            cancelled_tasks = celery_cleanup.cancel_event_tasks(event_id)
-            print(f"🚫 Anulowano {cancelled_tasks} zadań Celery dla wydarzenia {event_id}")
-            
-            # 2. Clean up event groups
+            # Clean up event groups
             success, message = group_manager.cleanup_event_groups(event_id)
             if success:
                 print(f"🧹 {message}")
@@ -287,7 +282,7 @@ class EventsController:
             
             return {
                 'success': True,
-                'message': f'Wydarzenie zostało usunięte pomyślnie. Anulowano {cancelled_tasks} zadań Celery.'
+                'message': 'Wydarzenie zostało usunięte pomyślnie.'
             }
         except Exception as e:
             db.session.rollback()

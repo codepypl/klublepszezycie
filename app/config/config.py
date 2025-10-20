@@ -119,12 +119,11 @@ class Config:
     ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
     ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
     
-    # Celery Configuration
-    CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-    CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
-    
     # Email Queue Settings
     EMAIL_QUEUE_BATCH_SIZE = int(os.getenv('EMAIL_QUEUE_BATCH_SIZE', 100))
+    EMAIL_DAILY_LIMIT = int(os.getenv('EMAIL_DAILY_LIMIT', 1000))
+    EMAIL_MAX_RETRIES = int(os.getenv('EMAIL_MAX_RETRIES', 3))
+    EMAIL_RETRY_DELAY = int(os.getenv('EMAIL_RETRY_DELAY', 300))
     EMAIL_QUEUE_DELAY = int(os.getenv('EMAIL_QUEUE_DELAY', 2))
     
     # Group Synchronization Settings

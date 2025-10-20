@@ -306,7 +306,13 @@ function processQueue() {
     
     // Start processing
     fetch('/api/email/process-queue', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            limit: 50
+        })
     })
     .then(response => response.json())
     .then(data => {
@@ -328,7 +334,13 @@ function processQueue() {
 // Retry failed emails
 function retryFailed() {
     fetch('/api/email/retry-failed', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            limit: 10
+        })
     })
     .then(response => response.json())
     .then(data => {
@@ -352,7 +364,10 @@ function retryFailed() {
 // Retry single email
 function retryEmail(emailId) {
     fetch(`/api/email/retry/${emailId}`, {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
     })
     .then(response => response.json())
     .then(data => {

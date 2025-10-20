@@ -1,0 +1,27 @@
+# Przykład konfiguracji crontab dla systemu emaili
+# Skopiuj te linie do crontab: crontab -e
+
+# Przetwarzanie kolejki emaili co 1 minutę
+* * * * * cd /Volumes/Dane/Projekty/devs/klublepszezycie && /Volumes/Dane/Projekty/devs/klublepszezycie/.venv/bin/python app/services/process_email_queue.py --limit 50 >> logs/email_cron.log 2>&1
+
+# Planowanie przypomnień o wydarzeniach co 5 minut
+*/5 * * * * cd /Volumes/Dane/Projekty/devs/klublepszezycie && /Volumes/Dane/Projekty/devs/klublepszezycie/.venv/bin/python app/services/process_email_queue.py --schedule-reminders >> logs/email_cron.log 2>&1
+
+# Ponawianie nieudanych emaili co 15 minut
+*/15 * * * * cd /Volumes/Dane/Projekty/devs/klublepszezycie && /Volumes/Dane/Projekty/devs/klublepszezycie/.venv/bin/python app/services/process_email_queue.py --retry 10 >> logs/email_cron.log 2>&1
+
+# Czyszczenie starych emaili co godzinę
+0 * * * * cd /Volumes/Dane/Projekty/devs/klublepszezycie && /Volumes/Dane/Projekty/devs/klublepszezycie/.venv/bin/python app/services/process_email_queue.py --cleanup --days 30 >> logs/email_cron.log 2>&1
+
+# Sprawdzanie statystyk co 5 minut (opcjonalne)
+*/5 * * * * cd /Volumes/Dane/Projekty/devs/klublepszezycie && /Volumes/Dane/Projekty/devs/klublepszezycie/.venv/bin/python app/services/process_email_queue.py --stats >> logs/email_cron.log 2>&1
+
+# UWAGI:
+# 1. Zastąp ścieżki na swoje rzeczywiste ścieżki
+# 2. Upewnij się, że katalog logs/ istnieje
+# 3. Sprawdź uprawnienia do zapisu w katalogu projektu
+# 4. Możesz dostosować częstotliwość według potrzeb:
+#    - Co 1 minutę: * * * * *
+#    - Co 5 minut: */5 * * * *
+#    - Co 15 minut: */15 * * * *
+#    - Co godzinę: 0 * * * *

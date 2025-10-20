@@ -237,13 +237,24 @@ class EmailManager:
             Dict[str, int]: Statystyki kolejki
         """
         try:
-            total = EmailQueue.query.count()
-            pending = EmailQueue.query.filter_by(status='pending').count()
-            failed = EmailQueue.query.filter_by(status='failed').count()
-            processing = EmailQueue.query.filter_by(status='processing').count()
-            sent = EmailQueue.query.filter_by(status='sent').count()
+            self.logger.info("📊 Pobieranie statystyk kolejki emaili...")
             
-            return {
+            total = EmailQueue.query.count()
+            self.logger.info(f"📊 Total emails: {total}")
+            
+            pending = EmailQueue.query.filter_by(status='pending').count()
+            self.logger.info(f"📊 Pending emails: {pending}")
+            
+            failed = EmailQueue.query.filter_by(status='failed').count()
+            self.logger.info(f"📊 Failed emails: {failed}")
+            
+            processing = EmailQueue.query.filter_by(status='processing').count()
+            self.logger.info(f"📊 Processing emails: {processing}")
+            
+            sent = EmailQueue.query.filter_by(status='sent').count()
+            self.logger.info(f"📊 Sent emails: {sent}")
+            
+            stats = {
                 'total': total,
                 'pending': pending,
                 'failed': failed,
@@ -251,8 +262,13 @@ class EmailManager:
                 'sent': sent
             }
             
+            self.logger.info(f"📊 Final stats: {stats}")
+            return stats
+            
         except Exception as e:
             self.logger.error(f"❌ Błąd pobierania statystyk: {e}")
+            import traceback
+            traceback.print_exc()
             return {
                 'total': 0,
                 'pending': 0,

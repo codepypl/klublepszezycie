@@ -1,0 +1,444 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Monitor Systemu Emaili - Panel Admin{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-chart-line me-2"></i>Monitor Systemu Emaili
+{% endblock %}
+
+{% block page_actions %}
+    <div class="d-flex justify-content-between gap-2 mb-3">
+        <div>
+            <button class="btn admin-btn-primary" onclick="refreshStats()">
+                <i class="fas fa-sync-alt me-2"></i>Odśwież statystyki
+            </button>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn admin-btn-warning" onclick="processQueue()">
+                <i class="fas fa-play me-2"></i>Przetwórz kolejkę
+            </button>
+            <button class="btn admin-btn-secondary" onclick="retryFailed()">
+                <i class="fas fa-redo me-2"></i>Ponów nieudane
+            </button>
+            <button class="btn admin-btn-danger" onclick="cleanupEmails()">
+                <i class="fas fa-broom me-2"></i>Wyczyść stare
+            </button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+
+    <!-- System Status Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <div class="admin-stats-card-body">
+                    <div class="admin-stats-card-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="admin-stats-card-content">
+                        <h3 id="totalEmails">0</h3>
+                        <p>Wszystkie emaile</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <div class="admin-stats-card-body">
+                    <div class="admin-stats-card-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="admin-stats-card-content">
+                        <h3 id="pendingEmails">0</h3>
+                        <p>Oczekujące</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <div class="admin-stats-card-body">
+                    <div class="admin-stats-card-icon">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="admin-stats-card-content">
+                        <h3 id="sentEmails">0</h3>
+                        <p>Wysłane</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="admin-stats-card">
+                <div class="admin-stats-card-body">
+                    <div class="admin-stats-card-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="admin-stats-card-content">
+                        <h3 id="failedEmails">0</h3>
+                        <p>Nieudane</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Health Status -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="admin-card">
+                <div class="admin-card-body">
+                    <h5 class="mb-3">
+                        <i class="fas fa-heartbeat me-2"></i>Status Systemu
+                    </h5>
+                    <div id="systemStatus">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="spinner-border spinner-border-sm me-2" role="status">
+                                <span class="visually-hidden">Ładowanie...</span>
+                            </div>
+                            <span>Sprawdzanie statusu...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="admin-card">
+                <div class="admin-card-body">
+                    <h5 class="mb-3">
+                        <i class="fas fa-tachometer-alt me-2"></i>Wydajność
+                    </h5>
+                    <div id="performanceStats">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="spinner-border spinner-border-sm me-2" role="status">
+                                <span class="visually-hidden">Ładowanie...</span>
+                            </div>
+                            <span>Ładowanie statystyk...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Queue Management -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="admin-card">
+                <div class="admin-card-body">
+                    <h5 class="mb-3">
+                        <i class="fas fa-tasks me-2"></i>Zarządzanie Kolejką
+                    </h5>
+                    
+                    <!-- Progress Bar (hidden by default) -->
+                    <div id="progressContainer" style="display: none;">
+                        <div class="progress mb-2" style="height: 25px;">
+                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                <span id="progressText">0%</span>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <small id="progressDetails" class="text-muted">Przygotowywanie...</small>
+                            <small id="progressTime" class="text-muted">00:00</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <button class="btn admin-btn-primary" onclick="processQueue(50)">
+                                    <i class="fas fa-play me-2"></i>Przetwórz 50 emaili
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <button class="btn admin-btn-warning" onclick="retryFailed(10)">
+                                    <i class="fas fa-redo me-2"></i>Ponów 10 nieudanych
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <button class="btn admin-btn-danger" onclick="cleanupEmails(30)">
+                                    <i class="fas fa-broom me-2"></i>Wyczyść starsze niż 30 dni
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-12">
+            <div class="admin-card">
+                <div class="admin-card-body">
+                    <h5 class="mb-3">
+                        <i class="fas fa-history me-2"></i>Ostatnia Aktywność
+                    </h5>
+                    <div id="recentActivity">
+                        <div class="d-flex align-items-center">
+                            <div class="spinner-border spinner-border-sm me-2" role="status">
+                                <span class="visually-hidden">Ładowanie...</span>
+                            </div>
+                            <span>Ładowanie aktywności...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let refreshInterval;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Load initial data
+    refreshStats();
+    
+    // Set up auto-refresh every 30 seconds
+    refreshInterval = setInterval(refreshStats, 30000);
+});
+
+function refreshStats() {
+    // Update stats cards
+    fetch('/admin/api/email/queue-stats')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Stats API response:', data);
+            if (data.success) {
+                updateStatsCards(data.stats);
+                updateSystemStatus(data.stats);
+                updatePerformanceStats(data.stats);
+            } else {
+                console.error('Error loading stats:', data.error);
+                showError('Błąd podczas ładowania statystyk: ' + (data.error || 'Nieznany błąd'));
+            }
+        })
+        .catch(error => {
+            console.error('Error loading stats:', error);
+            showError('Błąd podczas ładowania statystyk: ' + error.message);
+        });
+}
+
+function updateStatsCards(stats) {
+    document.getElementById('totalEmails').textContent = stats.total || 0;
+    document.getElementById('pendingEmails').textContent = stats.pending || 0;
+    document.getElementById('sentEmails').textContent = stats.sent || 0;
+    document.getElementById('failedEmails').textContent = stats.failed || 0;
+}
+
+function updateSystemStatus(stats) {
+    const statusContainer = document.getElementById('systemStatus');
+    const total = stats.total || 0;
+    const pending = stats.pending || 0;
+    const failed = stats.failed || 0;
+    
+    let statusHtml = '';
+    
+    // Queue status
+    if (pending === 0) {
+        statusHtml += '<div class="d-flex align-items-center mb-2"><i class="fas fa-check-circle text-success me-2"></i><span>Kolejka pusta</span></div>';
+    } else if (pending < 10) {
+        statusHtml += '<div class="d-flex align-items-center mb-2"><i class="fas fa-info-circle text-info me-2"></i><span>Kolejka: ' + pending + ' emaili</span></div>';
+    } else {
+        statusHtml += '<div class="d-flex align-items-center mb-2"><i class="fas fa-exclamation-triangle text-warning me-2"></i><span>Kolejka: ' + pending + ' emaili</span></div>';
+    }
+    
+    // Failed emails status
+    if (failed > 0) {
+        statusHtml += '<div class="d-flex align-items-center mb-2"><i class="fas fa-exclamation-triangle text-danger me-2"></i><span>Nieudane: ' + failed + ' emaili</span></div>';
+    } else {
+        statusHtml += '<div class="d-flex align-items-center mb-2"><i class="fas fa-check-circle text-success me-2"></i><span>Brak nieudanych emaili</span></div>';
+    }
+    
+    // Overall status
+    if (failed === 0 && pending < 10) {
+        statusHtml += '<div class="d-flex align-items-center mb-2"><i class="fas fa-check-circle text-success me-2"></i><span class="fw-bold">System działa prawidłowo</span></div>';
+    } else if (failed > 0) {
+        statusHtml += '<div class="d-flex align-items-center mb-2"><i class="fas fa-exclamation-triangle text-warning me-2"></i><span class="fw-bold">Wymagana uwaga</span></div>';
+    }
+    
+    statusContainer.innerHTML = statusHtml;
+}
+
+function updatePerformanceStats(stats) {
+    const perfContainer = document.getElementById('performanceStats');
+    const total = stats.total || 0;
+    const sent = stats.sent || 0;
+    const failed = stats.failed || 0;
+    
+    const successRate = total > 0 ? Math.round((sent / total) * 100) : 0;
+    const failureRate = total > 0 ? Math.round((failed / total) * 100) : 0;
+    
+    let perfHtml = '';
+    perfHtml += '<div class="d-flex justify-content-between mb-2"><span>Wskaźnik sukcesu:</span><span class="fw-bold">' + successRate + '%</span></div>';
+    perfHtml += '<div class="d-flex justify-content-between mb-2"><span>Wskaźnik błędów:</span><span class="fw-bold">' + failureRate + '%</span></div>';
+    perfHtml += '<div class="d-flex justify-content-between mb-2"><span>Wszystkich emaili:</span><span class="fw-bold">' + total + '</span></div>';
+    
+    perfContainer.innerHTML = perfHtml;
+}
+
+function processQueue(limit = 50) {
+    showProgress();
+    
+    fetch('/admin/api/email/process-queue', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ limit: limit })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideProgress();
+        if (data.success) {
+            showSuccess(data.message);
+            refreshStats();
+        } else {
+            showError('Błąd podczas przetwarzania kolejki: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideProgress();
+        console.error('Error processing queue:', error);
+        showError('Błąd podczas przetwarzania kolejki');
+    });
+}
+
+function retryFailed(limit = 10) {
+    showProgress();
+    
+    fetch('/admin/api/email/retry-failed', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ limit: limit })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideProgress();
+        if (data.success) {
+            showSuccess(data.message);
+            refreshStats();
+        } else {
+            showError('Błąd podczas ponawiania emaili: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideProgress();
+        console.error('Error retrying failed emails:', error);
+        showError('Błąd podczas ponawiania emaili');
+    });
+}
+
+function cleanupEmails(days = 30) {
+    if (!confirm('Czy na pewno chcesz usunąć emaile starsze niż ' + days + ' dni?')) {
+        return;
+    }
+    
+    showProgress();
+    
+    fetch('/admin/api/email/cleanup', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ days: days })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideProgress();
+        if (data.success) {
+            showSuccess(data.message);
+            refreshStats();
+        } else {
+            showError('Błąd podczas czyszczenia emaili: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideProgress();
+        console.error('Error cleaning up emails:', error);
+        showError('Błąd podczas czyszczenia emaili');
+    });
+}
+
+function showProgress() {
+    document.getElementById('progressContainer').style.display = 'block';
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('progressText').textContent = '0%';
+    document.getElementById('progressDetails').textContent = 'Przygotowywanie...';
+    document.getElementById('progressTime').textContent = '00:00';
+    
+    // Simulate progress
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.random() * 10;
+        if (progress > 90) progress = 90;
+        
+        document.getElementById('progressBar').style.width = progress + '%';
+        document.getElementById('progressText').textContent = Math.round(progress) + '%';
+        document.getElementById('progressDetails').textContent = 'Przetwarzanie...';
+    }, 200);
+    
+    // Store interval ID for cleanup
+    window.progressInterval = interval;
+}
+
+function hideProgress() {
+    if (window.progressInterval) {
+        clearInterval(window.progressInterval);
+        window.progressInterval = null;
+    }
+    
+    document.getElementById('progressBar').style.width = '100%';
+    document.getElementById('progressText').textContent = '100%';
+    document.getElementById('progressDetails').textContent = 'Zakończono';
+    
+    setTimeout(() => {
+        document.getElementById('progressContainer').style.display = 'none';
+    }, 1000);
+}
+
+function showSuccess(message) {
+    if (window.toastManager) {
+        window.toastManager.success(message);
+    } else {
+        alert('Sukces: ' + message);
+    }
+}
+
+function showError(message) {
+    if (window.toastManager) {
+        window.toastManager.error(message);
+    } else {
+        alert('Błąd: ' + message);
+    }
+}
+
+// Clean up interval on page unload
+window.addEventListener('beforeunload', function() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+    if (window.progressInterval) {
+        clearInterval(window.progressInterval);
+    }
+});
+</script>
+{% endblock %}

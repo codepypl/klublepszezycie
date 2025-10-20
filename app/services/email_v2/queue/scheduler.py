@@ -409,7 +409,7 @@ class EmailScheduler:
                             'event_date': event.event_date.strftime('%d.%m.%Y'),
                             'event_time': event.event_date.strftime('%H:%M'),
                             'event_location': event.location or 'Online',
-                            'event_url': f"https://klublepszezycie.pl/events/{event.id}",
+                            'event_url': event.get_event_url(),
                             'event_datetime': event.event_date.strftime('%d.%m.%Y %H:%M'),
                             'event_description': event.description or ''
                         }

@@ -17,6 +17,7 @@ class EventSchedule(db.Model):
     end_date = db.Column(db.DateTime, nullable=True)
     description = db.Column(db.Text)
     meeting_link = db.Column(db.String(500))
+    event_url = db.Column(db.String(500))  # Custom URL for event (for reminders, etc.)
     location = db.Column(db.String(200))
     is_active = db.Column(db.Boolean, default=True)
     is_published = db.Column(db.Boolean, default=True)
@@ -150,6 +151,12 @@ class EventSchedule(db.Model):
             error_msg = f"Błąd archiwizacji wydarzenia '{self.title}': {str(e)}"
             print(f"❌ {error_msg}")
             return False, error_msg
+    
+    def get_event_url(self):
+        """Get event URL - custom URL or default fallback"""
+        if self.event_url:
+            return self.event_url
+        return f"https://klublepszezycie.pl/events/{self.id}"
     
     def __repr__(self):
         return f'<EventSchedule {self.title}>'

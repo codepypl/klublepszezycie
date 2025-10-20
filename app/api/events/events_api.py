@@ -143,6 +143,7 @@ def create_event():
             end_date=datetime.fromisoformat(data['end_date'].replace('Z', '+00:00')) if data.get('end_date') else None,
             location=data.get('location', ''),
             meeting_link=data.get('meeting_link', ''),
+            event_url=data.get('event_url', ''),
             max_participants=data.get('max_participants', 0),
             is_active=data.get('is_active', True),
             is_published=data.get('is_published', False),
@@ -253,6 +254,8 @@ def update_event(event_id):
             event.location = data['location']
         if 'meeting_link' in data:
             event.meeting_link = data['meeting_link']
+        if 'event_url' in data:
+            event.event_url = data['event_url']
         if 'max_participants' in data:
             event.max_participants = data['max_participants']
         if 'is_active' in data:
