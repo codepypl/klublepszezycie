@@ -34,7 +34,7 @@ def create_app(config_name=None):
     
     # Inicjalizacja rozszerzeń
     db.init_app(app)
-    migrate = Migrate(app, db)
+    migrate = Migrate(app, db, directory='app/migrations')
     
     # CORS
     CORS(app, resources={
