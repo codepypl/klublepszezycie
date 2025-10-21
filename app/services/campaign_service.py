@@ -262,17 +262,23 @@ class CampaignService:
                 else:
                     return False, 'Kampania nie może być wysłana w obecnym statusie'
             
-            # Użyj zadań Celery do wysyłki
-            from app.tasks.email_tasks import send_campaign_task, schedule_campaign_task
+            # Użyj EmailManager do wysyłki
+            from app.services.email_v2 import EmailManager
+            
+            email_manager = EmailManager()
             
             if campaign.send_type == 'immediate':
-                # Wyślij natychmiast
-                task = send_campaign_task.delay(campaign_id)
-                message = f"Kampania zaplanowana do wysłania (Task ID: {task.id})"
+                # Wyślij natychmiast - dodaj emaile do kolejki
+                success, message = self._add_campaign_emails_to_queue(campaign)
+                if not success:
+                    return False, message
+                message = f"Kampania dodana do kolejki wysyłki"
             elif campaign.send_type == 'scheduled' and campaign.scheduled_at:
-                # Zaplanuj wysłanie
-                task = schedule_campaign_task.delay(campaign_id)
-                message = f"Kampania zaplanowana na {campaign.scheduled_at} (Task ID: {task.id})"
+                # Zaplanuj wysłanie - dodaj emaile z scheduled_at
+                success, message = self._add_campaign_emails_to_queue(campaign, scheduled_at=campaign.scheduled_at)
+                if not success:
+                    return False, message
+                message = f"Kampania zaplanowana na {campaign.scheduled_at}"
             else:
                 return False, 'Nieprawidłowy tryb wysyłania lub brak czasu wysłania'
             
@@ -385,4 +391,90 @@ class CampaignService:
             
         except Exception as e:
             logger.error(f"❌ Error adding campaign to queue: {str(e)}")
+            return False, f"Błąd dodawania kampanii do kolejki: {str(e)}"
+    
+    def _add_campaign_emails_to_queue(self, campaign, scheduled_at=None):
+        """
+        Dodaje emaile kampanii do kolejki EmailQueue
+        
+        Args:
+            campaign: EmailCampaign object
+            scheduled_at: datetime - kiedy wysłać (None = natychmiast)
+            
+        Returns:
+            Tuple[bool, str]: (sukces, komunikat)
+        """
+        try:
+            from app.services.email_v2.queue.scheduler import EmailScheduler
+            from app.models import EmailQueue
+            import json
+            
+            logger = logging.getLogger(__name__)
+            logger.info(f"📧 Dodaję emaile kampanii {campaign.id} do kolejki")
+            
+            # Pobierz odbiorców kampanii
+            recipients = self._get_campaign_recipients(campaign)
+            
+            if not recipients:
+                return False, "Brak odbiorców kampanii"
+            
+            # Pobierz szablon
+            template = campaign.template
+            if not template:
+                return False, "Brak szablonu emaila"
+            
+            # Renderuj szablon
+            from app.services.email_v2.templates.engine import EmailTemplateEngine
+            template_engine = EmailTemplateEngine()
+            
+            added_count = 0
+            
+            for user in recipients:
+                try:
+                    # Przygotuj kontekst
+                    context = {
+                        'user': user,
+                        'campaign': campaign,
+                        'unsubscribe_url': f"https://klublepszezycie.pl/unsubscribe/{user.email}",
+                        'site_url': 'https://klublepszezycie.pl'
+                    }
+                    
+                    # Renderuj subject i content
+                    rendered_subject = template_engine.render_template(template.subject, context)
+                    rendered_html = template_engine.render_template(template.html_content, context)
+                    rendered_text = template_engine.render_template(template.text_content, context)
+                    
+                    # Dodaj do kolejki
+                    email_queue = EmailQueue(
+                        recipient_email=user.email,
+                        recipient_name=f"{user.first_name} {user.last_name}".strip(),
+                        subject=rendered_subject,
+                        html_content=rendered_html,
+                        text_content=rendered_text,
+                        priority=2,  # Priorytet kampanii
+                        scheduled_at=scheduled_at or get_local_now(),
+                        status='pending',
+                        template_id=template.id,
+                        template_name=template.name,
+                        campaign_id=campaign.id,
+                        context=json.dumps(context)
+                    )
+                    
+                    db.session.add(email_queue)
+                    added_count += 1
+                    
+                except Exception as e:
+                    logger.warning(f"⚠️ Błąd dodawania emaila dla {user.email}: {e}")
+                    continue
+            
+            db.session.commit()
+            
+            if added_count == 0:
+                return False, "Nie udało się dodać żadnego emaila do kolejki"
+            
+            logger.info(f"✅ Dodano {added_count} emaili do kolejki dla kampanii {campaign.id}")
+            return True, f"Dodano {added_count} emaili do kolejki"
+            
+        except Exception as e:
+            logger.error(f"❌ Błąd dodawania kampanii do kolejki: {e}")
             return False, f"Błąd dodawania kampanii do kolejki: {str(e)}"
