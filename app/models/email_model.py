@@ -71,7 +71,7 @@ class EmailQueue(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('email_campaigns.id'), nullable=True)
     template_id = db.Column(db.Integer, db.ForeignKey('email_templates.id'), nullable=True)
-    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=True)  # Event ID for event-related emails
+    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id', ondelete='CASCADE'), nullable=True)  # Event ID for event-related emails
     recipient_email = db.Column(db.String(120), nullable=False)  # Changed from to_email
     recipient_name = db.Column(db.String(120))  # Changed from to_name
     template_name = db.Column(db.String(100))  # Template name for new system
@@ -260,7 +260,7 @@ class EmailLog(db.Model):
     message_id = db.Column(db.String(255), nullable=True)  # Mailgun message ID for webhook tracking
     sent_at = db.Column(db.DateTime(timezone=True), default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     campaign_id = db.Column(db.Integer, db.ForeignKey('email_campaigns.id'), nullable=True)
-    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id'), nullable=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id', ondelete='CASCADE'), nullable=True)
     recipient_data = db.Column(db.Text)  # JSON string of recipient information
     
     # Relationships
