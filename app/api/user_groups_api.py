@@ -154,12 +154,12 @@ def get_user_group(group_id):
                 member_data.update({
                     'user_id': member.user.id,
                     'email': member.user.email,
-                    'name': member.user.first_name or member.user.email
+                    'user_name': member.user.first_name or member.user.email
                 })
             else:
                 member_data.update({
                     'email': member.email,
-                    'name': member.name
+                    'user_name': member.name
                 })
             
             members.append(member_data)
@@ -263,12 +263,12 @@ def get_group_members(group_id):
                 member_data.update({
                     'user_id': member.user.id,
                     'email': member.user.email,
-                    'name': member.user.first_name or member.user.email
+                    'user_name': member.user.first_name or member.user.email
                 })
             else:
                 member_data.update({
                     'email': member.email,
-                    'name': member.name
+                    'user_name': member.name
                 })
             
             members.append(member_data)

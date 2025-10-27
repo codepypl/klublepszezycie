@@ -28,6 +28,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup auto-refresh
     setupEmailQueueAutoRefresh();
     
+    // Setup modal pause listeners
+    setupModalPauseListeners();
+    
     // Clean up interval when leaving page
     window.addEventListener('beforeunload', function() {
         if (emailQueueRefreshInterval) {
@@ -538,6 +541,32 @@ function setupEmailQueueAutoRefresh() {
         console.log('🚀 Initial auto-refresh...');
         refreshEmailQueueData();
     }, 2000);
+}
+
+function setupModalPauseListeners() {
+    // Setup modal event listeners to pause refresh when modal is open
+    const bulkDeleteModal = document.getElementById('bulkDeleteModal');
+    if (bulkDeleteModal) {
+        bulkDeleteModal.addEventListener('show.bs.modal', () => {
+            console.log('⏸️ Bulk delete modal opened - pausing auto-refresh');
+            if (emailQueueRefreshInterval) {
+                clearInterval(emailQueueRefreshInterval);
+            }
+        });
+        
+        bulkDeleteModal.addEventListener('hidden.bs.modal', () => {
+            console.log('▶️ Bulk delete modal closed - resuming auto-refresh');
+            // Restart the interval instead of calling setupEmailQueueAutoRefresh to avoid recursion
+            if (emailQueueRefreshInterval) {
+                clearInterval(emailQueueRefreshInterval);
+            }
+            emailQueueRefreshInterval = setInterval(() => {
+                if (!isProcessing) {
+                    refreshEmailQueueData();
+                }
+            }, 15000);
+        });
+    }
 }
 
 function refreshEmailQueueData() {
