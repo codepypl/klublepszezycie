@@ -102,7 +102,7 @@ def get_event_schedule():
                 'end_date': event.end_date.isoformat() if event.end_date else None,
                 'location': event.location,
                 'meeting_link': event.meeting_link,
-                'event_url': event.event_url,
+                'event_url': event.get_event_url(),  # Zwracamy wynik get_event_url() dla kompatybilności
                 'max_participants': event.max_participants,
                 'is_active': event.is_active,
                 'is_published': event.is_published,
@@ -144,7 +144,7 @@ def create_event():
             end_date=datetime.fromisoformat(data['end_date'].replace('Z', '+00:00')) if data.get('end_date') else None,
             location=data.get('location', ''),
             meeting_link=data.get('meeting_link', ''),
-            event_url=data.get('event_url', ''),
+            event_url=data.get('event_url', ''),  # Zachowujemy dla kompatybilności
             max_participants=data.get('max_participants', 0),
             is_active=data.get('is_active', True),
             is_published=data.get('is_published', False),
@@ -211,7 +211,7 @@ def get_event(event_id):
                 'end_date': event.end_date.isoformat() if event.end_date else None,
                 'location': event.location,
                 'meeting_link': event.meeting_link,
-                'event_url': event.event_url,
+                'event_url': event.get_event_url(),  # Zwracamy wynik get_event_url() dla kompatybilności
                 'max_participants': event.max_participants,
                 'is_active': event.is_active,
                 'is_published': event.is_published,

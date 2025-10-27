@@ -153,9 +153,9 @@ class EventSchedule(db.Model):
             return False, error_msg
     
     def get_event_url(self):
-        """Get event URL - custom URL or default fallback"""
-        if self.event_url:
-            return self.event_url
+        """Get event URL - uses meeting_link or default fallback"""
+        if self.meeting_link:
+            return self.meeting_link
         return f"https://klublepszezycie.pl/events/{self.id}"
     
     def __repr__(self):

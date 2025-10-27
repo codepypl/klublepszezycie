@@ -141,7 +141,6 @@ class EventsManager {
         
         document.getElementById('editEventLocation').value = event.location || '';
         document.getElementById('editMeetingLink').value = event.meeting_link || '';
-        document.getElementById('editEventUrl').value = event.event_url || '';
         document.getElementById('editMaxParticipants').value = event.max_participants || '';
         document.getElementById('editHeroBackgroundType').value = event.hero_background_type || 'image';
         // Set description in Quill editor
@@ -197,7 +196,6 @@ class EventsManager {
             end_date: this.combineDateTime(formData.get('end_date'), formData.get('end_time')),
             location: formData.get('location'),
             meeting_link: formData.get('meeting_link'),
-            event_url: formData.get('event_url'),
             max_participants: formData.get('max_participants') ? parseInt(formData.get('max_participants')) : null,
             hero_background_type: formData.get('hero_background_type'),
             description: formData.get('description'),
@@ -258,7 +256,6 @@ class EventsManager {
             end_date: this.combineDateTime(formData.get('end_date'), formData.get('end_time')),
             location: formData.get('location'),
             meeting_link: formData.get('meeting_link'),
-            event_url: formData.get('event_url'),
             max_participants: formData.get('max_participants') ? parseInt(formData.get('max_participants')) : null,
             hero_background_type: formData.get('hero_background_type'),
             description: formData.get('description'),
