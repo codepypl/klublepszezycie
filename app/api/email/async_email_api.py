@@ -290,6 +290,20 @@ def schedule_event_reminder():
                     'reminder_time': reminder_time
                 }
                 
+                # Dodaj linki do wypisania
+                try:
+                    from app.services.unsubscribe_manager import unsubscribe_manager
+                    context.update({
+                        'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(participant.email),
+                        'delete_account_url': unsubscribe_manager.get_delete_account_url(participant.email)
+                    })
+                except Exception as e:
+                    logger.warning(f"⚠️ Błąd generowania linków unsubscribe: {e}")
+                    context.update({
+                        'unsubscribe_url': 'mailto:kontakt@klublepszezycie.pl',
+                        'delete_account_url': 'mailto:kontakt@klublepszezycie.pl'
+                    })
+                
                 # Dodaj do kolejki
                 success, message, email_id = email_cron_service.add_email_to_queue(
                     to_email=participant.email,

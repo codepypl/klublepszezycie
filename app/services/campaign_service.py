@@ -365,6 +365,20 @@ class CampaignService:
                     **content_variables  # Dodaj zmienne z kampanii
                 }
                 
+                # Dodaj linki do wypisania
+                try:
+                    from app.services.unsubscribe_manager import unsubscribe_manager
+                    context.update({
+                        'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(user.email),
+                        'delete_account_url': unsubscribe_manager.get_delete_account_url(user.email)
+                    })
+                except Exception as e:
+                    logger.warning(f"⚠️ Błąd generowania linków unsubscribe: {e}")
+                    context.update({
+                        'unsubscribe_url': 'mailto:kontakt@klublepszezycie.pl',
+                        'delete_account_url': 'mailto:kontakt@klublepszezycie.pl'
+                    })
+                
                 # Dodaj email do kolejki
                 success, message, queue_id = self.email_manager._add_to_queue(
                     to_email=user.email,
@@ -435,9 +449,22 @@ class CampaignService:
                     context = {
                         'user': user,
                         'campaign': campaign,
-                        'unsubscribe_url': f"https://klublepszezycie.pl/unsubscribe/{user.email}",
                         'site_url': 'https://klublepszezycie.pl'
                     }
+                    
+                    # Dodaj linki do wypisania
+                    try:
+                        from app.services.unsubscribe_manager import unsubscribe_manager
+                        context.update({
+                            'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(user.email),
+                            'delete_account_url': unsubscribe_manager.get_delete_account_url(user.email)
+                        })
+                    except Exception as e:
+                        logger.warning(f"⚠️ Błąd generowania linków unsubscribe: {e}")
+                        context.update({
+                            'unsubscribe_url': 'mailto:kontakt@klublepszezycie.pl',
+                            'delete_account_url': 'mailto:kontakt@klublepszezycie.pl'
+                        })
                     
                     # Renderuj subject i content
                     rendered_subject = template_engine.render_template(template.subject, context)
