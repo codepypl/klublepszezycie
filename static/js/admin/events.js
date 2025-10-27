@@ -211,7 +211,7 @@ class EventsManager {
             window.toastManager.error(validationErrors.join('<br>'));
             return;
         }
-
+        
         // Remove null/empty values, but keep required fields
         const requiredFields = ['event_type']; // Fields that should not be removed even if empty
         Object.keys(eventData).forEach(key => {

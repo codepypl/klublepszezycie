@@ -332,12 +332,26 @@ class EmailQueueProcessor:
             self.logger.info(f"   Event ID: {email.event_id}")
             self.logger.info(f"   Priority: {email.priority}")
             
+            # Dla event emails, re-renderuj z aktualnym event_url
+            html_content = email.html_content
+            text_content = email.text_content
+            subject = email.subject
+            
+            if email.event_id:
+                self.logger.info(f"🔄 Re-renderuję email dla event {email.event_id} z aktualnym event_url")
+                success, html, text, subj = self._re_render_event_email(email)
+                if success:
+                    html_content = html
+                    text_content = text
+                    subject = subj
+                    self.logger.info(f"   ✅ Email zaktualizowany z aktualnym event_url")
+            
             # Przygotuj dane e-maila
             email_data = {
                 'to_email': email.recipient_email,
-                'subject': email.subject,
-                'html_content': email.html_content,
-                'text_content': email.text_content,
+                'subject': subject,
+                'html_content': html_content,
+                'text_content': text_content,
                 'from_email': getattr(email, 'from_email', 'noreply@klublepszezycie.pl'),
                 'from_name': getattr(email, 'from_name', 'Klub Lepsze Życie')
             }
@@ -414,3 +428,87 @@ class EmailQueueProcessor:
             self.logger.error(traceback.format_exc())
             self.logger.info(f"{'='*60}\n")
             return False, f"Błąd wysyłania e-maila: {str(e)}"
+    
+    def _re_render_event_email(self, email: EmailQueue) -> Tuple[bool, str, str, str]:
+        """
+        Re-renderuje email dla wydarzenia z aktualnym event_url
+        
+        Returns:
+            Tuple[bool, str, str, str]: (success, html_content, text_content, subject)
+        """
+        try:
+            # Pobierz wydarzenie
+            from app.models.events_model import EventSchedule
+            event = EventSchedule.query.get(email.event_id)
+            
+            if not event:
+                self.logger.warning(f"⚠️ Wydarzenie {email.event_id} nie znalezione, używam starego HTML")
+                return False, email.html_content, email.text_content, email.subject
+            
+            # Pobierz template
+            from app.models import EmailTemplate
+            template = None
+            if email.template_id:
+                template = EmailTemplate.query.get(email.template_id)
+            elif email.template_name:
+                template = EmailTemplate.query.filter_by(name=email.template_name, is_active=True).first()
+            
+            if not template:
+                self.logger.warning(f"⚠️ Template nie znalezione, używam starego HTML")
+                return False, email.html_content, email.text_content, email.subject
+            
+            # Przygotuj kontekst z aktualnymi danymi
+            from app.models.user_model import User
+            user = User.query.filter_by(email=email.recipient_email).first()
+            
+            # Parse old context to get some variables
+            import json
+            old_context = {}
+            if email.context:
+                try:
+                    old_context = json.loads(email.context)
+                except:
+                    pass
+            
+            # Build new context with current event data
+            context = {
+                'user_name': user.first_name if user else old_context.get('user_name', 'Użytkowniku'),
+                'event_title': event.title,
+                'event_date': event.event_date.strftime('%d.%m.%Y'),
+                'event_time': event.event_date.strftime('%H:%M'),
+                'event_location': event.location or 'Online',
+                'event_url': event.get_event_url(),  # AKTUALNY event_url!
+                'event_datetime': event.event_date.strftime('%d.%m.%Y %H:%M'),
+                'event_description': event.description or ''
+            }
+            
+            # Dodaj linki do wypisania
+            try:
+                from app.services.unsubscribe_manager import unsubscribe_manager
+                context.update({
+                    'unsubscribe_url': unsubscribe_manager.get_unsubscribe_url(email.recipient_email),
+                    'delete_account_url': unsubscribe_manager.get_delete_account_url(email.recipient_email)
+                })
+            except Exception as e:
+                self.logger.warning(f"⚠️ Błąd generowania linków unsubscribe: {e}")
+                context.update({
+                    'unsubscribe_url': 'mailto:kontakt@klublepszezycie.pl',
+                    'delete_account_url': 'mailto:kontakt@klublepszezycie.pl'
+                })
+            
+            # Render template
+            from jinja2 import Template
+            html_template = Template(template.html_content)
+            html_content = html_template.render(**context)
+            
+            text_template = Template(template.text_content)
+            text_content = text_template.render(**context)
+            
+            subject_template = Template(template.subject)
+            subject = subject_template.render(**context)
+            
+            return True, html_content, text_content, subject
+            
+        except Exception as e:
+            self.logger.error(f"❌ Błąd re-renderowania emaila: {e}")
+            return False, email.html_content, email.text_content, email.subject
