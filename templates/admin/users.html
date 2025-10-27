@@ -660,6 +660,82 @@
 }
 </style>
 
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editUserModalLabel">
+                    <i class="fas fa-user-edit me-2"></i>Edytuj użytkownika
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editUserModalForm">
+                <input type="hidden" id="editUserId" name="id">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="editUserName" class="form-label">Imię *</label>
+                            <input type="text" class="form-control" id="editUserName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editUserEmail" class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="editUserEmail" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editUserPhone" class="form-label">Telefon</label>
+                            <input type="tel" class="form-control" id="editUserPhone">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editUserClub" class="form-label">Członek klubu</label>
+                            <select class="form-select" id="editUserClub">
+                                <option value="false">Nie</option>
+                                <option value="true">Tak</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editUserAccountType" class="form-label">Typ konta</label>
+                            <select class="form-select" id="editUserAccountType">
+                                <option value="user">Użytkownik</option>
+                                <option value="admin">Administrator</option>
+                                <option value="ankieter">Ankieter</option>
+                                <option value="event_registration">Rejestracja na wydarzenia</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editUserActive" class="form-label">Status konta</label>
+                            <select class="form-select" id="editUserActive">
+                                <option value="true">Aktywny</option>
+                                <option value="false">Nieaktywny</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editUserPassword" class="form-label">Nowe hasło</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="editUserPassword" placeholder="Zostaw puste, aby nie zmieniać">
+                                <button class="btn btn-outline-secondary" type="button" onclick="generatePassword()">
+                                    <i class="fas fa-random"></i> Generuj
+                                </button>
+                            </div>
+                            <small class="form-text text-muted">Zostaw puste, aby nie zmieniać hasła</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editUserPasswordConfirm" class="form-label">Potwierdź hasło</label>
+                            <input type="password" class="form-control" id="editUserPasswordConfirm" placeholder="Potwierdź nowe hasło">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn admin-btn">
+                        <i class="fas fa-save me-2"></i>Zapisz zmiany
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Bulk Edit Modal -->
 <div class="modal fade" id="bulkEditModal" tabindex="-1" aria-labelledby="bulkEditModalLabel" aria-hidden="true">
     <div class="modal-dialog">

@@ -75,10 +75,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Obsługa bulk edit
     initializeBulkEdit();
     
-    // Obsługa formularza edycji użytkownika
-    const editUserForm = document.getElementById('editUserForm');
-    if (editUserForm) {
-        editUserForm.addEventListener('submit', function(e) {
+    // Obsługa formularza edycji użytkownika w modalu
+    const editUserModalForm = document.getElementById('editUserModalForm');
+    if (editUserModalForm) {
+        editUserModalForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
             const userId = document.getElementById('editUserId').value;
@@ -133,8 +133,68 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     
                     // Wywołaj globalne odświeżenie
-                    // Refresh data using global CRUD manager
                     window.crudRefreshManager.executeRefresh();
+                } else {
+                    window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.toastManager.error('Wystąpił błąd podczas aktualizacji użytkownika');
+            });
+        });
+    }
+    
+    // Obsługa formularza edycji użytkownika na stronie (dla kompatybilności wstecznej)
+    const editUserForm = document.getElementById('editUserForm');
+    if (editUserForm) {
+        editUserForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const userId = document.getElementById('editUserId').value;
+            const password = document.getElementById('editUserPassword').value;
+            const passwordConfirm = document.getElementById('editUserPasswordConfirm').value;
+            
+            // Sprawdź czy hasła się zgadzają
+            if (password && password !== passwordConfirm) {
+                window.toastManager.error('Hasła nie są identyczne!');
+                return;
+            }
+            
+            // Sprawdź długość hasła
+            if (password && password.length < 6) {
+                window.toastManager.error('Hasło musi mieć co najmniej 6 znaków!');
+                return;
+            }
+            
+            const userData = {
+                first_name: document.getElementById('editUserName').value,
+                email: document.getElementById('editUserEmail').value,
+                phone: document.getElementById('editUserPhone').value,
+                club_member: document.getElementById('editUserClub').value === 'true',
+                is_active: document.getElementById('editUserActive').value === 'true',
+                account_type: document.getElementById('editUserAccountType').value
+            };
+            
+            // Dodaj hasło tylko jeśli zostało ustawione
+            if (password) {
+                userData.password = password;
+            }
+            
+            // Wyślij żądanie aktualizacji
+            fetch(`/api/user/${userId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(userData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.toastManager.success('Użytkownik został zaktualizowany pomyślnie!');
+                    // Przekieruj z powrotem do listy użytkowników
+                    window.location.href = '/admin/users';
                 } else {
                     window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
                 }
@@ -223,11 +283,44 @@ function loadFiltersFromURL() {
 
 // Funkcje do edycji i usuwania użytkowników (jeśli są używane w innych miejscach)
 function editUser(userId) {
-    // Przekieruj do strony użytkowników z parametrem edycji
-    console.log('editUser called with userId:', userId);
-    const url = `/admin/users?edit_user=${userId}`;
-    console.log('Redirecting to:', url);
-    window.location.href = url;
+    // Pobierz dane użytkownika i wyświetl modal
+    fetch(`/api/user/${userId}`)
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error('Unauthorized');
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const user = data.user;
+                // Wypełnij pola formularza
+                document.getElementById('editUserId').value = user.id;
+                document.getElementById('editUserName').value = user.first_name || '';
+                document.getElementById('editUserEmail').value = user.email || '';
+                document.getElementById('editUserPhone').value = user.phone || '';
+                document.getElementById('editUserClub').value = user.club_member ? 'true' : 'false';
+                document.getElementById('editUserAccountType').value = user.account_type || 'user';
+                document.getElementById('editUserActive').value = user.is_active ? 'true' : 'false';
+                
+                // Wyczyść pola hasła
+                document.getElementById('editUserPassword').value = '';
+                document.getElementById('editUserPasswordConfirm').value = '';
+                
+                // Otwórz modal
+                const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+                modal.show();
+            } else {
+                window.toastManager.error('Błąd podczas ładowania użytkownika: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            window.toastManager.error('Wystąpił błąd podczas ładowania użytkownika');
+        });
 }
 
 function deleteUser(userId) {
