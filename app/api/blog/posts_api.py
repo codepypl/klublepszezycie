@@ -14,6 +14,7 @@ import shutil
 from datetime import datetime
 from app.utils.timezone_utils import get_local_now
 from werkzeug.utils import secure_filename
+from app.services.social_media_service import social_media_service
 
 logger = logging.getLogger(__name__)
 
@@ -229,11 +230,15 @@ def create_post():
         post.featured_image = featured_image_url
         
         db.session.add(post)
-        db.session.flush()  # Get the ID
+        db.session.commit()  # Commit to get the ID
         
         # Move featured image to proper directory if it was uploaded
         if featured_image_url.startswith('/static/uploads/blog/temp_featured/'):
             _move_featured_image_to_post_folder(post.id, featured_image_url, current_app)
+        
+        # Automatycznie publikuj na mediach społecznościowych jeśli status != draft
+        if status != 'draft' and any([data.get('social_facebook'), data.get('social_twitter'), data.get('social_linkedin')]):
+            _auto_publish_to_social_media(post, current_app)
         
         # Add categories
         if 'categories' in data and data['categories']:
@@ -611,3 +616,38 @@ def _move_gallery_image_to_post_folder(post_id, temp_url, app):
             
     except Exception as e:
         logger.error(f"❌ Error moving gallery image: {e}")
+
+def _auto_publish_to_social_media(post, app):
+    """
+    Automatycznie publikuje post na mediach społecznościowych
+    
+    Args:
+        post: BlogPost object
+        app: Flask app context
+    """
+    try:
+        # Przygotuj dane posta
+        post_url = f"{app.config.get('BASE_URL', 'https://klublepszezycie.pl')}/blog/{post.slug}"
+        
+        post_data = {
+            'title': post.title,
+            'url': post_url,
+            'excerpt': post.excerpt or post.meta_description or '',
+            'image_url': post.featured_image if post.featured_image else None,
+            'social_facebook': post.social_facebook,
+            'social_twitter': post.social_twitter,
+            'social_linkedin': post.social_linkedin
+        }
+        
+        # Publikuj na social media
+        results = social_media_service.auto_publish_post(post_data)
+        
+        # Loguj wyniki
+        for platform, (success, message) in results.items():
+            if success:
+                logger.info(f"✅ Post {post.id} opublikowany na {platform}: {message}")
+            else:
+                logger.warning(f"⚠️ Post {post.id} NIE opublikowany na {platform}: {message}")
+    
+    except Exception as e:
+        logger.error(f"❌ Błąd automatycznej publikacji na social media: {e}")

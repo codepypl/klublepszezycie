@@ -96,6 +96,11 @@ class Config:
     TIMEZONE = os.getenv('TIMEZONE', 'Europe/Warsaw')
     USE_LOCAL_TIME = os.getenv('USE_LOCAL_TIME', 'true').lower() == 'true'
     
+    # Social Media Configuration
+    FACEBOOK_ACCESS_TOKEN = os.getenv('FACEBOOK_ACCESS_TOKEN')
+    FACEBOOK_PAGE_ID = os.getenv('FACEBOOK_PAGE_ID')
+    FACEBOOK_ENABLED = os.getenv('FACEBOOK_ENABLED', 'false').lower() == 'true'
+    
     # File Upload Settings
     UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', 'static/uploads')
     MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))  # 16MB default

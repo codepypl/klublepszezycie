@@ -75,6 +75,11 @@ SMTP_BATCH_DELAY=5.0
 TIMEZONE=Europe/Warsaw
 USE_LOCAL_TIME=true
 
+# Social Media Configuration (Facebook)
+FACEBOOK_ACCESS_TOKEN=your-facebook-access-token-here
+FACEBOOK_PAGE_ID=your-facebook-page-id-here
+FACEBOOK_ENABLED=true
+
 # Group Synchronization
 AUTO_GROUP_SYNC=false
 
