@@ -103,6 +103,16 @@ def create_app(config_name=None):
         app.register_blueprint(templates_api.email_templates_bp, url_prefix='/api')
         app.register_blueprint(events_api.events_api_bp, url_prefix='/api')
         
+        # Rejestracja blog API
+        from app.api.blog import posts_api, tags_api, categories_api, media_api, comments_api
+        app.register_blueprint(posts_api.posts_api_bp, url_prefix='/api')
+        app.register_blueprint(tags_api.tags_api_bp, url_prefix='/api')
+        app.register_blueprint(categories_api.categories_api_bp, url_prefix='/api')
+        app.register_blueprint(media_api.media_api_bp, url_prefix='/api')
+        app.register_blueprint(comments_api.comments_api_bp, url_prefix='/api')
+        
+        logger.info("✅ Blog API blueprints zarejestrowane")
+        
         logger.info("✅ API blueprints zarejestrowane")
     except Exception as e:
         logger.warning(f"⚠️ Nie udało się zarejestrować wszystkich API blueprintów: {e}")
@@ -171,7 +181,7 @@ def create_app(config_name=None):
     def get_blog_category_seo(category):
         """Funkcja globalna do pobierania SEO dla kategorii bloga"""
         from app.utils.seo_utils import SEOManager
-        return SEOManager.get_blog_category_seo(category)
+        return SEOManager.generate_blog_category_seo(category)
     
     @app.template_global()
     def get_blog_tag_seo(tag):

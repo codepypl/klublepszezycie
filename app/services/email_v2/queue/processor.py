@@ -38,6 +38,54 @@ class EmailQueueProcessor:
         self.mailgun.set_logger(self.logger)
         self.smtp.set_logger(self.logger)
     
+    def fix_delayed_event_emails(self):
+        """
+        Naprawia delayed event emails - zmienia scheduled_at na 'teraz' jeśli:
+        - Czas wysyłki minął
+        - Wydarzenie jeszcze się nie odbyło
+        - Email jest pending
+        """
+        try:
+            from app.models.events_model import EventSchedule
+            from sqlalchemy import and_
+            
+            now = get_local_now()
+            now_naive = now.replace(tzinfo=None) if now.tzinfo else now
+            
+            # Znajdź pending emaile dla wydarzeń gdzie czas wysyłki minął
+            delayed_emails = EmailQueue.query.filter(
+                and_(
+                    EmailQueue.status == 'pending',
+                    EmailQueue.event_id.isnot(None),
+                    EmailQueue.scheduled_at < now  # Czas wysyłki minął
+                )
+            ).all()
+            
+            fixed_count = 0
+            
+            for email in delayed_emails:
+                event = EventSchedule.query.get(email.event_id)
+                if event:
+                    event_date_naive = event.event_date.replace(tzinfo=None) if event.event_date.tzinfo else event.event_date
+                    
+                    # Sprawdź czy wydarzenie jeszcze się nie odbyło
+                    if now_naive < event_date_naive:
+                        # Zmień scheduled_at na teraz aby natychmiast wysłać
+                        email.scheduled_at = now
+                        db.session.commit()
+                        
+                        self.logger.info(f"🔧 Naprawiono email {email.id} - zmieniono scheduled_at na {now}")
+                        fixed_count += 1
+            
+            if fixed_count > 0:
+                self.logger.info(f"✅ Naprawiono {fixed_count} delayed event emails")
+            
+            return fixed_count
+            
+        except Exception as e:
+            self.logger.error(f"❌ Błąd naprawiania delayed emails: {e}")
+            return 0
+    
     def process_queue(self, limit: int = None) -> Dict[str, Any]:
         """
         Przetwarza kolejkę e-maili
@@ -53,6 +101,11 @@ class EmailQueueProcessor:
                 limit = self.batch_size
             
             self.logger.info(f"🔄 Rozpoczynam przetwarzanie kolejki (limit: {limit})")
+            
+            # Napraw delayed event emails (ustaw scheduled_at na 'teraz')
+            fixed_count = self.fix_delayed_event_emails()
+            if fixed_count > 0:
+                self.logger.info(f"🔧 Naprawiono {fixed_count} delayed event emails - ustawiono na natychmiastową wysyłkę")
             
             # Pobierz e-maile do przetworzenia
             queue_items = self._get_emails_to_process(limit)
@@ -205,12 +258,29 @@ class EmailQueueProcessor:
             EmailQueue.scheduled_at.asc()   # Najstarsze emaile pierwsze
         ).all()
         
-        # Filtruj ręcznie z poprawnym timezone handling
+        # Filtruj ręcznie z poprawnym timezone handling + sprawdzaj czy wydarzenie już się odbyło
         emails_to_process = []
         for email in all_pending:
             scheduled_naive = email.scheduled_at.replace(tzinfo=None) if hasattr(email.scheduled_at, 'tzinfo') and email.scheduled_at.tzinfo else email.scheduled_at
             
+            # Sprawdź czy czas wysyłki minął
             if scheduled_naive <= now_naive:
+                # Dla event emails, sprawdź czy wydarzenie już się odbyło
+                if email.event_id:
+                    from app.models.events_model import EventSchedule
+                    event = EventSchedule.query.get(email.event_id)
+                    if event:
+                        event_date_naive = event.event_date.replace(tzinfo=None) if hasattr(event.event_date, 'tzinfo') and event.event_date.tzinfo else event.event_date
+                        
+                        # Jeśli wydarzenie już się odbyło, NIE WYSYŁAJY tego emaila
+                        if event_date_naive < now_naive:
+                            self.logger.info(f"⏭️ Pomijam email {email.id} dla wydarzenia {email.event_id} - wydarzenie już się odbyło")
+                            # Oznacz jako anulowany
+                            email.status = 'cancelled'
+                            email.error_message = f"Wydarzenie już się odbyło (event_date: {event_date_naive}, teraz: {now_naive})"
+                            db.session.commit()
+                            continue
+                
                 emails_to_process.append(email)
                 if len(emails_to_process) >= limit:
                     break
