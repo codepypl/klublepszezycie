@@ -199,14 +199,17 @@
 
 {% block extra_js %}
 <script>
-let refreshInterval;
-
 document.addEventListener('DOMContentLoaded', function() {
     // Load initial data
     refreshStats();
     
-    // Set up auto-refresh every 30 seconds
-    refreshInterval = setInterval(refreshStats, 30000);
+    // Initialize CRUD Refresh Manager for email monitor
+    if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
+        window.crudRefreshManager.init(() => {
+            refreshStats();
+        });
+        console.log('CRUD Refresh Manager initialized for email monitor');
+    }
 });
 
 function refreshStats() {
@@ -431,11 +434,8 @@ function showError(message) {
     }
 }
 
-// Clean up interval on page unload
+// Clean up progress interval on page unload
 window.addEventListener('beforeunload', function() {
-    if (refreshInterval) {
-        clearInterval(refreshInterval);
-    }
     if (window.progressInterval) {
         clearInterval(window.progressInterval);
     }

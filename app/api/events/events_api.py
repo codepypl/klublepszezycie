@@ -18,6 +18,23 @@ events_api_bp = Blueprint('events_main_api', __name__)
 def get_events():
     """Get all events"""
     try:
+        # Auto-archive ended events that are still active/published
+        all_ended_events = EventSchedule.query.filter(
+            EventSchedule.is_archived == False,
+            (EventSchedule.is_active == True) | (EventSchedule.is_published == True)
+        ).all()
+        
+        archived_count = 0
+        for event in all_ended_events:
+            if event.is_ended():
+                success, message = event.archive()
+                if success:
+                    archived_count += 1
+                    logger.info(f"🔄 Auto-archived ended event: {event.title} (ID: {event.id})")
+        
+        if archived_count > 0:
+            logger.info(f"✅ Auto-archived {archived_count} ended event(s)")
+        
         events = EventSchedule.query.order_by(EventSchedule.event_date.asc()).all()
         return jsonify({
             'success': True,
@@ -75,6 +92,47 @@ def get_event_schedule():
                 EventSchedule.description.ilike(f'%{search}%') |
                 EventSchedule.location.ilike(f'%{search}%')
             )
+        
+        # Auto-archive ended events that are still active/published
+        # Check all events (not just paginated ones) to ensure we catch all ended events
+        # Find all ended events that are still active and/or published
+        all_ended_events = EventSchedule.query.filter(
+            EventSchedule.is_archived == False,
+            (EventSchedule.is_active == True) | (EventSchedule.is_published == True)
+        ).all()
+        
+        archived_count = 0
+        for event in all_ended_events:
+            if event.is_ended():
+                success, message = event.archive()
+                if success:
+                    archived_count += 1
+                    logger.info(f"🔄 Auto-archived ended event: {event.title} (ID: {event.id})")
+        
+        if archived_count > 0:
+            logger.info(f"✅ Auto-archived {archived_count} ended event(s)")
+            # Refresh query after archiving
+            query = EventSchedule.query
+            
+            # Reapply filters after archiving
+            if show_archived_param is not None:
+                show_archived = show_archived_param.lower() == 'true'
+                if not show_archived:
+                    query = query.filter(EventSchedule.is_archived == False)
+                else:
+                    query = query.filter(EventSchedule.is_archived == True)
+            
+            if show_published == 'true':
+                query = query.filter(EventSchedule.is_published == True)
+            elif show_published == 'false':
+                query = query.filter(EventSchedule.is_published == False)
+            
+            if search:
+                query = query.filter(
+                    EventSchedule.title.ilike(f'%{search}%') |
+                    EventSchedule.description.ilike(f'%{search}%') |
+                    EventSchedule.location.ilike(f'%{search}%')
+                )
         
         # Apply pagination
         events_pagination = query.order_by(EventSchedule.event_date.desc()).paginate(

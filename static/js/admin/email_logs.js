@@ -13,22 +13,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Pagination handlers are now set up in updatePagination function
     
-    // Initialize CRUD Refresh Manager for email logs
-    if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
-        window.crudRefreshManager.init(() => {
-            loadLogsStats();
-            loadLogs();
-        });
-        console.log('CRUD Refresh Manager initialized for email logs');
-    }
-    
     // Initialize table resizer
     if (window.tableResizer) {
         window.tableResizer.init('#logsTable');
     }
     
-    // Setup auto-refresh for email logs
-    setupEmailLogsAutoRefresh();
+    // Initialize CRUD Refresh Manager for email logs
+    if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
+        window.crudRefreshManager.init(() => {
+            refreshLogs();
+        });
+        console.log('CRUD Refresh Manager initialized for email logs');
+    }
     
     // Set up event listeners
     document.getElementById('searchInput').addEventListener('keypress', function(e) {
@@ -241,23 +237,6 @@ function refreshLogs() {
     loadLogs();
 }
 
-// Setup auto-refresh for email logs
-let emailLogsRefreshInterval;
-
-function setupEmailLogsAutoRefresh() {
-    // Refresh every 30 seconds (less frequent than queue since logs don't change as often)
-    emailLogsRefreshInterval = setInterval(() => {
-        refreshLogs();
-    }, 30000); // 30 seconds
-    
-    console.log('Email logs auto-refresh setup: every 30 seconds');
-    
-    // Initial refresh after 2 seconds
-    setTimeout(() => {
-        console.log('🚀 Initial email logs refresh...');
-        refreshLogs();
-    }, 2000);
-}
 
 // View log details
 function viewLogDetails(logId) {

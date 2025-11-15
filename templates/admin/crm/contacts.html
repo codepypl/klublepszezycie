@@ -737,36 +737,10 @@ function displayImportErrors(data) {
 
 <script>
 // Global variables
-let contactsRefreshInterval;
-
 // Refresh contacts page
 function refreshContacts() {
     // Reload the page to get fresh data
     window.location.reload();
-}
-
-// Setup auto-refresh ONLY during import step 4 (Import Progress)
-function setupContactsAutoRefresh() {
-    // Only refresh if we're in import step 4 (Import Progress)
-    const importStep4 = document.getElementById('importStep4');
-    if (!importStep4) {
-        console.log('No import step 4 found, auto-refresh disabled');
-        return;
-    }
-    
-    const isVisible = importStep4.style.display !== 'none' && 
-                     window.getComputedStyle(importStep4).display !== 'none';
-    
-    if (!isVisible) {
-        console.log('Import step 4 not visible, auto-refresh disabled');
-        return;
-    }
-    
-    console.log('Import step 4 visible, starting auto-refresh');
-    // Refresh every 30 seconds ONLY during step 4 (Import Progress)
-    contactsRefreshInterval = setInterval(() => {
-        window.location.reload();
-    }, 30000); // 30 seconds
 }
 
 // Load import containers
@@ -849,9 +823,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load import containers
     loadImportContainers();
     
-    // Only setup auto-refresh if we're in import step 3
-    // Auto-refresh is NOT needed for normal contacts page viewing
-    setupContactsAutoRefresh();
+    // Initialize CRUD Refresh Manager for contacts page
+    if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
+        window.crudRefreshManager.init(() => {
+            // Only refresh if we're in import step 4 (Import Progress)
+            const importStep4 = document.getElementById('importStep4');
+            if (importStep4) {
+                const isVisible = importStep4.style.display !== 'none' && 
+                                 window.getComputedStyle(importStep4).display !== 'none';
+                if (isVisible) {
+                    // During import step 4, refresh the page
+                    refreshContacts();
+                }
+            }
+            // For normal viewing, don't refresh (page reload would be disruptive)
+        });
+        console.log('CRUD Refresh Manager initialized for contacts page');
+    }
     
     // Setup import history functionality using bulk-delete.js
     if (document.getElementById('importsTable')) {

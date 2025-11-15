@@ -10,8 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
         importForm.addEventListener('submit', handleImportSubmission);
     }
     
-    // Setup auto-refresh for contacts
-    setupContactsAutoRefresh();
+    // Auto-refresh is now handled by global CRUD Refresh Manager in contacts.html
 });
 
 function loadContacts() {
@@ -196,18 +195,8 @@ function formatDate(dateString) {
     return date.toLocaleDateString('pl-PL');
 }
 
-// Auto-refresh functionality for contacts
-let contactsRefreshInterval;
-
-function setupContactsAutoRefresh() {
-    // Refresh every 60 seconds (less frequent than calls page)
-    contactsRefreshInterval = setInterval(() => {
-        refreshContactsData();
-    }, 60000); // 60 seconds
-    
-    // Add manual refresh button
-    addContactsRefreshButton();
-}
+// Manual refresh functionality (auto-refresh is handled by global CRUD Refresh Manager)
+// Note: addContactsRefreshButton() can still be called manually if needed
 
 function refreshContactsData() {
     // Show subtle loading indicator

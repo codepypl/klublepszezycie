@@ -259,51 +259,38 @@ if (callResultForm) {
 <script src="{{ url_for('static', filename='js/crm/calls.js') }}"></script>
 
 <script>
-// Global variables
-let callsRefreshInterval;
-
 // Refresh calls page
 function refreshCalls() {
     // Reload the page to get fresh data
     window.location.reload();
 }
 
-// Setup auto-refresh like email queue
-function setupCallsAutoRefresh() {
-    // Refresh every 30 seconds
-    callsRefreshInterval = setInterval(() => {
-        // Don't refresh if import is in progress
-        if (typeof isImporting !== 'undefined' && isImporting) {
-            return;
-        }
-        
-        window.location.reload();
-    }, 30000); // 30 seconds
-}
-
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if import is in progress first (localStorage)
-    const importInProgress = localStorage.getItem('crm_import_in_progress') === 'true';
-    if (importInProgress) {
-        console.log('Import in progress (localStorage), auto-refresh disabled');
-        return;
+    // Initialize CRUD Refresh Manager for calls page
+    if (typeof CRUDRefreshManager !== 'undefined' && window.crudRefreshManager) {
+        window.crudRefreshManager.init(() => {
+            // Check if import is in progress before refreshing
+            const importInProgress = localStorage.getItem('crm_import_in_progress') === 'true';
+            if (importInProgress) {
+                console.log('Import in progress, skipping refresh');
+                return;
+            }
+            
+            const importStep3 = document.getElementById('importStep3');
+            if (importStep3) {
+                const isVisible = importStep3.style.display !== 'none' && 
+                                 window.getComputedStyle(importStep3).display !== 'none';
+                if (isVisible) {
+                    console.log('Import in progress (step 3 visible), skipping refresh');
+                    return;
+                }
+            }
+            
+            refreshCalls();
+        });
+        console.log('CRUD Refresh Manager initialized for calls page');
     }
-    
-    // Check if import is in progress by looking for step 3
-    const importStep3 = document.getElementById('importStep3');
-    if (importStep3) {
-        const isVisible = importStep3.style.display !== 'none' && 
-                         window.getComputedStyle(importStep3).display !== 'none';
-        if (isVisible) {
-            // Import is in progress, don't start auto-refresh
-            console.log('Import in progress (step 3 visible), auto-refresh disabled');
-            return;
-        }
-    }
-    
-    // Setup auto refresh only if no import is running
-    setupCallsAutoRefresh();
 });
 </script>
 {% endblock %}

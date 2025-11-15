@@ -10,8 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
         callForm.addEventListener('submit', handleCallSubmission);
     }
     
-    // Setup auto-refresh
-    setupAutoRefresh();
+    // Auto-refresh is now handled by global CRUD Refresh Manager in calls.html
 });
 
 function loadQueueStats() {
@@ -201,22 +200,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Auto-refresh functionality
-let refreshInterval;
+// Manual refresh functionality (auto-refresh is handled by global CRUD Refresh Manager)
 let isFormVisible = false;
-
-function setupAutoRefresh() {
-    // Refresh every 30 seconds
-    refreshInterval = setInterval(() => {
-        // Only refresh if form is not visible (user is not in the middle of a call)
-        if (!isFormVisible) {
-            refreshQueueData();
-        }
-    }, 30000); // 30 seconds
-    
-    // Add visual indicator for auto-refresh
-    addRefreshIndicator();
-}
 
 function refreshQueueData() {
     // Show subtle loading indicator

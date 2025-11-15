@@ -447,9 +447,6 @@
         // Load user stats on page load
         loadUserStats();
         
-        // Setup auto-refresh for user stats
-        setupUserStatsAutoRefresh();
-        
         // Setup filters state management
         setupFiltersState();
     });
@@ -488,17 +485,6 @@
             });
     }
     
-    // Setup auto-refresh for user stats
-    let userStatsRefreshInterval;
-    
-    function setupUserStatsAutoRefresh() {
-        // Refresh every 60 seconds (less frequent since user stats don't change often)
-        userStatsRefreshInterval = setInterval(() => {
-            loadUserStats();
-        }, 60000); // 60 seconds
-        
-        console.log('User stats auto-refresh setup: every 60 seconds');
-    }
     
     // Setup filters state management
     function setupFiltersState() {
