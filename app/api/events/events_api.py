@@ -13,6 +13,39 @@ logger = logging.getLogger(__name__)
 # Create Events API blueprint
 events_api_bp = Blueprint('events_main_api', __name__)
 
+
+def _parse_datetime_safe(datetime_str):
+    """Safely parse datetime string, handling both ISO format and timezone"""
+    if not datetime_str:
+        return None
+    if isinstance(datetime_str, datetime):
+        return datetime_str
+    if isinstance(datetime_str, str):
+        if datetime_str.endswith('Z'):
+            datetime_str = datetime_str.replace('Z', '+00:00')
+        return datetime.fromisoformat(datetime_str)
+    return datetime_str
+
+
+def _parse_bool(value, default=None):
+    """
+    Safely parse boolean-like values coming from JSON or HTML forms.
+    Accepts: True/False, 'true'/'false', 'on'/'off', '1'/'0'.
+    """
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        v = value.strip().lower()
+        if v in ('true', '1', 'on', 'yes'):
+            return True
+        if v in ('false', '0', 'off', 'no'):
+            return False
+    return default
+
 @events_api_bp.route('/events', methods=['GET'])
 @login_required
 def get_events():
@@ -223,6 +256,8 @@ def get_event_schedule():
                 'meeting_link': event.meeting_link,
                 'event_url': event.get_event_url(),  # Zwracamy wynik get_event_url() dla kompatybilności
                 'max_participants': event.max_participants,
+                'hero_background': event.hero_background,
+                'hero_background_type': event.hero_background_type,
                 'is_active': event.is_active,
                 'is_published': event.is_published,
                 'is_archived': event.is_archived,
@@ -240,7 +275,63 @@ def get_event_schedule():
 def create_event():
     """Create new event"""
     try:
-        data = request.get_json()
+        # Handle both JSON and FormData
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form.to_dict()
+        
+        # Handle hero background upload (image or video)
+        hero_background = None
+        hero_background_type = data.get('hero_background_type', 'image')
+        
+        from werkzeug.utils import secure_filename
+        import time
+        import os
+        from flask import current_app
+        from app.utils.validation_utils import allowed_file
+        
+        # Check for image file upload
+        if 'hero_background_image' in request.files and request.files['hero_background_image'].filename:
+            file = request.files['hero_background_image']
+            if file and file.filename and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                filename = f"{int(time.time())}_{filename}"
+                
+                # Create events-specific upload folder
+                events_upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'events')
+                os.makedirs(events_upload_folder, exist_ok=True)
+                
+                file_path = os.path.join(events_upload_folder, filename)
+                file.save(file_path)
+                
+                hero_background = f'/static/uploads/events/{filename}'
+                logger.info(f"✅ Uploaded hero background image: {hero_background}")
+        # Check for video file upload
+        elif 'hero_background_video_file' in request.files and request.files['hero_background_video_file'].filename:
+            file = request.files['hero_background_video_file']
+            if file and file.filename and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                filename = f"{int(time.time())}_{filename}"
+                
+                # Create events-specific upload folder
+                events_upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'events')
+                os.makedirs(events_upload_folder, exist_ok=True)
+                
+                file_path = os.path.join(events_upload_folder, filename)
+                file.save(file_path)
+                
+                hero_background = f'/static/uploads/events/{filename}'
+                logger.info(f"✅ Uploaded hero background video: {hero_background}")
+        elif data.get('hero_background'):
+            # Use provided URL
+            hero_background = data.get('hero_background')
+        elif hero_background_type == 'video' and data.get('hero_background_video'):
+            # Video URL
+            hero_background = data.get('hero_background_video')
+        elif hero_background_type == 'image' and data.get('hero_background_image_url'):
+            # Image URL
+            hero_background = data.get('hero_background_image_url')
         
         # Validate required fields
         required_fields = ['title', 'event_date']
@@ -251,8 +342,15 @@ def create_event():
                     'message': f'Pole {field} jest wymagane'
                 }), 400
         
-        # Parse event date
-        event_date = datetime.fromisoformat(data['event_date'].replace('Z', '+00:00'))
+        # Parse event date - handle both ISO format and datetime string
+        event_date_str = data['event_date']
+        if isinstance(event_date_str, str):
+            # Remove 'Z' and replace with timezone if needed
+            if event_date_str.endswith('Z'):
+                event_date_str = event_date_str.replace('Z', '+00:00')
+            event_date = datetime.fromisoformat(event_date_str)
+        else:
+            event_date = event_date_str
         
         # Create event
         event = EventSchedule(
@@ -260,14 +358,16 @@ def create_event():
             description=data.get('description', ''),
             event_type=data.get('event_type', 'workshop'),
             event_date=event_date,
-            end_date=datetime.fromisoformat(data['end_date'].replace('Z', '+00:00')) if data.get('end_date') else None,
+            end_date=_parse_datetime_safe(data.get('end_date')) if data.get('end_date') else None,
             location=data.get('location', ''),
             meeting_link=data.get('meeting_link', ''),
             event_url=data.get('event_url', ''),  # Zachowujemy dla kompatybilności
             max_participants=data.get('max_participants', 0),
-            is_active=data.get('is_active', True),
-            is_published=data.get('is_published', False),
-            is_archived=data.get('is_archived', False)
+            hero_background=hero_background,
+            hero_background_type=hero_background_type,
+            is_active=_parse_bool(data.get('is_active', True), True),
+            is_published=_parse_bool(data.get('is_published', False), False),
+            is_archived=_parse_bool(data.get('is_archived', False), False)
         )
         
         db.session.add(event)
@@ -332,6 +432,8 @@ def get_event(event_id):
                 'meeting_link': event.meeting_link,
                 'event_url': event.get_event_url(),  # Zwracamy wynik get_event_url() dla kompatybilności
                 'max_participants': event.max_participants,
+                'hero_background': event.hero_background,
+                'hero_background_type': event.hero_background_type,
                 'is_active': event.is_active,
                 'is_published': event.is_published,
                 'is_archived': event.is_archived,
@@ -350,7 +452,111 @@ def update_event(event_id):
     """Update event"""
     try:
         event = EventSchedule.query.get_or_404(event_id)
-        data = request.get_json()
+        
+        # Handle both JSON and FormData
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form.to_dict()
+        
+        # Handle hero background removal
+        if data.get('remove_hero_background') == 'true' or data.get('remove_hero_background') == True:
+            # Delete old file if exists
+            if event.hero_background and event.hero_background.startswith('/static/uploads/events/'):
+                import os
+                from flask import current_app
+                old_image_path = event.hero_background.replace('/static/uploads/events/', '')
+                old_full_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'events', old_image_path)
+                if os.path.exists(old_full_path):
+                    try:
+                        os.remove(old_full_path)
+                        logger.info(f"✅ Deleted old hero background file: {old_full_path}")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Could not delete old hero background: {e}")
+            event.hero_background = None
+            event.hero_background_type = None
+        else:
+            # Handle hero background image upload
+            hero_background = None
+            hero_background_type = data.get('hero_background_type', event.hero_background_type or 'image')
+            
+            from werkzeug.utils import secure_filename
+            import time
+            import os
+            from flask import current_app
+            from app.utils.validation_utils import allowed_file
+            
+            # Check for image file upload
+            if 'hero_background_image' in request.files and request.files['hero_background_image'].filename:
+                file = request.files['hero_background_image']
+                if file and file.filename and allowed_file(file.filename):
+                    # Delete old file if exists
+                    if event.hero_background and event.hero_background.startswith('/static/uploads/events/'):
+                        old_file_path = event.hero_background.replace('/static/uploads/events/', '')
+                        old_full_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'events', old_file_path)
+                        if os.path.exists(old_full_path):
+                            try:
+                                os.remove(old_full_path)
+                                logger.info(f"✅ Deleted old hero background file: {old_full_path}")
+                            except Exception as e:
+                                logger.warning(f"⚠️ Could not delete old hero background: {e}")
+                    
+                    filename = secure_filename(file.filename)
+                    filename = f"{int(time.time())}_{filename}"
+                    
+                    # Create events-specific upload folder
+                    events_upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'events')
+                    os.makedirs(events_upload_folder, exist_ok=True)
+                    
+                    file_path = os.path.join(events_upload_folder, filename)
+                    file.save(file_path)
+                    
+                    hero_background = f'/static/uploads/events/{filename}'
+                    logger.info(f"✅ Uploaded hero background image: {hero_background}")
+            # Check for video file upload
+            elif 'hero_background_video_file' in request.files and request.files['hero_background_video_file'].filename:
+                file = request.files['hero_background_video_file']
+                if file and file.filename and allowed_file(file.filename):
+                    # Delete old file if exists
+                    if event.hero_background and event.hero_background.startswith('/static/uploads/events/'):
+                        old_file_path = event.hero_background.replace('/static/uploads/events/', '')
+                        old_full_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'events', old_file_path)
+                        if os.path.exists(old_full_path):
+                            try:
+                                os.remove(old_full_path)
+                                logger.info(f"✅ Deleted old hero background file: {old_full_path}")
+                            except Exception as e:
+                                logger.warning(f"⚠️ Could not delete old hero background: {e}")
+                    
+                    filename = secure_filename(file.filename)
+                    filename = f"{int(time.time())}_{filename}"
+                    
+                    # Create events-specific upload folder
+                    events_upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'events')
+                    os.makedirs(events_upload_folder, exist_ok=True)
+                    
+                    file_path = os.path.join(events_upload_folder, filename)
+                    file.save(file_path)
+                    
+                    hero_background = f'/static/uploads/events/{filename}'
+                    logger.info(f"✅ Uploaded hero background video: {hero_background}")
+            elif data.get('hero_background'):
+                # Use provided URL
+                hero_background = data.get('hero_background')
+            elif hero_background_type == 'video' and data.get('hero_background_video'):
+                # Video URL
+                hero_background = data.get('hero_background_video')
+            elif hero_background_type == 'image' and data.get('hero_background_image_url'):
+                # Image URL
+                hero_background = data.get('hero_background_image_url')
+            else:
+                # Keep existing if no new value provided
+                hero_background = event.hero_background
+            
+            if hero_background is not None:
+                event.hero_background = hero_background
+            if hero_background_type:
+                event.hero_background_type = hero_background_type
         
         # Zapamiętaj starą datę (do sprawdzenia czy się zmieniła)
         old_event_date = event.event_date
@@ -364,13 +570,13 @@ def update_event(event_id):
         if 'event_type' in data:
             event.event_type = data['event_type']
         if 'event_date' in data:
-            new_event_date = datetime.fromisoformat(data['event_date'].replace('Z', '+00:00'))
+            new_event_date = _parse_datetime_safe(data['event_date'])
             if old_event_date != new_event_date:
                 event_date_changed = True
                 logger.info(f"📅 Data wydarzenia {event_id} zmieniona: {old_event_date} -> {new_event_date}")
             event.event_date = new_event_date
         if 'end_date' in data and data['end_date']:
-            event.end_date = datetime.fromisoformat(data['end_date'].replace('Z', '+00:00'))
+            event.end_date = _parse_datetime_safe(data['end_date'])
         if 'location' in data:
             event.location = data['location']
         if 'meeting_link' in data:
@@ -378,13 +584,35 @@ def update_event(event_id):
         if 'event_url' in data:
             event.event_url = data['event_url']
         if 'max_participants' in data:
-            event.max_participants = data['max_participants']
+            # Cast to int if coming as string from form
+            try:
+                event.max_participants = int(data['max_participants']) if data['max_participants'] not in (None, '') else None
+            except (ValueError, TypeError):
+                event.max_participants = event.max_participants
         if 'is_active' in data:
-            event.is_active = data['is_active']
+            event.is_active = _parse_bool(data['is_active'], event.is_active)
         if 'is_published' in data:
-            event.is_published = data['is_published']
+            event.is_published = _parse_bool(data['is_published'], event.is_published)
         if 'is_archived' in data:
-            event.is_archived = data['is_archived']
+            event.is_archived = _parse_bool(data['is_archived'], event.is_archived)
+        
+        # Auto-unarchive logic:
+        # Jeśli wydarzenie było zarchiwizowane, ale po edycji:
+        # - ma datę w przyszłości (lub nie jest zakończone wg is_ended())
+        # - i jest aktywne lub opublikowane
+        # to automatycznie zdejmij flagę is_archived.
+        try:
+            if event.is_archived and (event.is_active or event.is_published):
+                # Używamy modelowej logiki, która bierze pod uwagę event_date/end_date
+                if not event.is_ended():
+                    event.is_archived = False
+                    logger.info(
+                        f"🔄 Auto-unarchive event {event.id}: "
+                        f"is_active={event.is_active}, is_published={event.is_published}, "
+                        f"event_date={event.event_date}, end_date={event.end_date}"
+                    )
+        except Exception as e:
+            logger.warning(f"⚠️ Auto-unarchive check failed for event {event.id}: {e}")
         
         db.session.commit()
         

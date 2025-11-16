@@ -11,6 +11,7 @@ class EventsManager {
         this.loadEvents();
         this.setMinDates();
         this.initializeEditFormDefaults();
+        this.initializeHeroBackgroundHandlers();
     }
 
     initializeEventListeners() {
@@ -32,6 +33,191 @@ class EventsManager {
         }
     }
 
+    initializeHeroBackgroundHandlers() {
+        // Add event form handlers
+        const heroBackgroundType = document.getElementById('heroBackgroundType');
+        if (heroBackgroundType) {
+            heroBackgroundType.addEventListener('change', () => this.toggleHeroBackgroundFields('add'));
+            // Trigger on load to set initial state
+            this.toggleHeroBackgroundFields('add');
+        }
+        
+        // Edit event form handlers
+        const editHeroBackgroundType = document.getElementById('editHeroBackgroundType');
+        if (editHeroBackgroundType) {
+            editHeroBackgroundType.addEventListener('change', () => this.toggleHeroBackgroundFields('edit'));
+        }
+        
+        // Preview handlers for add form
+        const heroBackgroundImage = document.getElementById('heroBackgroundImage');
+        const heroBackgroundImageUrl = document.getElementById('heroBackgroundImageUrl');
+        if (heroBackgroundImage) {
+            heroBackgroundImage.addEventListener('change', (e) => this.previewHeroBackgroundImage(e, 'add'));
+        }
+        if (heroBackgroundImageUrl) {
+            heroBackgroundImageUrl.addEventListener('input', (e) => this.previewHeroBackgroundImageUrl(e, 'add'));
+        }
+        
+        const heroBackgroundVideo = document.getElementById('heroBackgroundVideo');
+        const heroBackgroundVideoFile = document.getElementById('heroBackgroundVideoFile');
+        if (heroBackgroundVideo) {
+            heroBackgroundVideo.addEventListener('input', (e) => this.previewHeroBackgroundVideo(e, 'add'));
+        }
+        if (heroBackgroundVideoFile) {
+            heroBackgroundVideoFile.addEventListener('change', (e) => this.previewHeroBackgroundVideoFile(e, 'add'));
+        }
+        
+        // Preview handlers for edit form
+        const editHeroBackgroundImage = document.getElementById('editHeroBackgroundImage');
+        const editHeroBackgroundImageUrl = document.getElementById('editHeroBackgroundImageUrl');
+        if (editHeroBackgroundImage) {
+            editHeroBackgroundImage.addEventListener('change', (e) => this.previewHeroBackgroundImage(e, 'edit'));
+        }
+        if (editHeroBackgroundImageUrl) {
+            editHeroBackgroundImageUrl.addEventListener('input', (e) => this.previewHeroBackgroundImageUrl(e, 'edit'));
+        }
+        
+        const editHeroBackgroundVideo = document.getElementById('editHeroBackgroundVideo');
+        const editHeroBackgroundVideoFile = document.getElementById('editHeroBackgroundVideoFile');
+        if (editHeroBackgroundVideo) {
+            editHeroBackgroundVideo.addEventListener('input', (e) => this.previewHeroBackgroundVideo(e, 'edit'));
+        }
+        if (editHeroBackgroundVideoFile) {
+            editHeroBackgroundVideoFile.addEventListener('change', (e) => this.previewHeroBackgroundVideoFile(e, 'edit'));
+        }
+    }
+    
+    toggleHeroBackgroundFields(formType) {
+        const prefix = formType === 'add' ? '' : 'edit';
+        const typeSelect = document.getElementById(`${prefix}HeroBackgroundType`);
+        const imageContainer = document.getElementById(`${prefix}HeroBackgroundImageContainer`);
+        const videoContainer = document.getElementById(`${prefix}HeroBackgroundVideoContainer`);
+        
+        if (!typeSelect) return;
+        
+        const selectedType = typeSelect.value;
+        
+        if (selectedType === 'image') {
+            if (imageContainer) imageContainer.style.display = 'block';
+            if (videoContainer) videoContainer.style.display = 'none';
+        } else if (selectedType === 'video') {
+            if (imageContainer) imageContainer.style.display = 'none';
+            if (videoContainer) videoContainer.style.display = 'block';
+        } else {
+            if (imageContainer) imageContainer.style.display = 'none';
+            if (videoContainer) videoContainer.style.display = 'none';
+        }
+    }
+
+    /**
+     * Toggle between file upload and URL input for hero background IMAGE
+     * formType: 'add' | 'edit'
+     */
+    toggleHeroBackgroundImageSource(formType) {
+        const prefix = formType === 'add' ? '' : 'edit';
+        const fileInput = document.getElementById(`${prefix}HeroBackgroundImage`);
+        const urlInput = document.getElementById(`${prefix}HeroBackgroundImageUrl`);
+
+        if (!fileInput || !urlInput) return;
+
+        const usingFile = fileInput.style.display !== 'none';
+
+        if (usingFile) {
+            // Switch to URL mode
+            fileInput.style.display = 'none';
+            urlInput.style.display = 'block';
+            // Do NOT clear existing values automatically
+        } else {
+            // Switch back to file mode
+            fileInput.style.display = 'block';
+            urlInput.style.display = 'none';
+        }
+    }
+
+    /**
+     * Toggle between file upload and URL input for hero background VIDEO
+     * formType: 'add' | 'edit'
+     */
+    toggleHeroBackgroundVideoSource(formType) {
+        const prefix = formType === 'add' ? '' : 'edit';
+        const fileInput = document.getElementById(`${prefix}HeroBackgroundVideoFile`);
+        const urlInput = document.getElementById(`${prefix}HeroBackgroundVideo`);
+
+        if (!fileInput || !urlInput) return;
+
+        const usingFile = fileInput.style.display !== 'none';
+
+        if (usingFile) {
+            // Switch to URL mode
+            fileInput.style.display = 'none';
+            urlInput.style.display = 'block';
+        } else {
+            // Switch back to file mode
+            fileInput.style.display = 'block';
+            urlInput.style.display = 'none';
+        }
+    }
+    
+    previewHeroBackgroundImage(e, formType) {
+        const prefix = formType === 'add' ? '' : 'edit';
+        const file = e.target.files[0];
+        const preview = document.getElementById(`${prefix}HeroBackgroundImagePreview`);
+        const previewImg = document.getElementById(`${prefix}HeroBackgroundImagePreviewImg`);
+        
+        if (file && preview && previewImg) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    previewHeroBackgroundImageUrl(e, formType) {
+        const prefix = formType === 'add' ? '' : 'edit';
+        const url = e.target.value;
+        const preview = document.getElementById(`${prefix}HeroBackgroundImagePreview`);
+        const previewImg = document.getElementById(`${prefix}HeroBackgroundImagePreviewImg`);
+        
+        if (url && preview && previewImg) {
+            previewImg.src = url;
+            preview.style.display = 'block';
+        } else if (preview) {
+            preview.style.display = 'none';
+        }
+    }
+    
+    previewHeroBackgroundVideo(e, formType) {
+        const prefix = formType === 'add' ? '' : 'edit';
+        const url = e.target.value;
+        const preview = document.getElementById(`${prefix}HeroBackgroundVideoPreview`);
+        const previewVideo = document.getElementById(`${prefix}HeroBackgroundVideoPreviewVideo`);
+        
+        if (url && preview && previewVideo) {
+            previewVideo.src = url;
+            preview.style.display = 'block';
+        } else if (preview) {
+            preview.style.display = 'none';
+        }
+    }
+    
+    previewHeroBackgroundVideoFile(e, formType) {
+        const prefix = formType === 'add' ? '' : 'edit';
+        const file = e.target.files[0];
+        const preview = document.getElementById(`${prefix}HeroBackgroundVideoPreview`);
+        const previewVideo = document.getElementById(`${prefix}HeroBackgroundVideoPreviewVideo`);
+        
+        if (file && preview && previewVideo) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewVideo.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
     showAddEventModal() {
         document.getElementById('addEventForm').reset();
         
@@ -40,13 +226,42 @@ class EventsManager {
             window.quillInstances['eventDescription'].root.innerHTML = '';
         }
         
+        // Reset hero background fields
+        this.resetHeroBackgroundFields('add');
+        
         // Set today's date as default
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('eventDate').value = today;
         document.getElementById('eventTime').value = '18:00';
         
+        // Set default hero background type
+        document.getElementById('heroBackgroundType').value = 'image';
+        this.toggleHeroBackgroundFields('add');
+        
         const modal = new bootstrap.Modal(document.getElementById('addEventModal'));
         modal.show();
+    }
+    
+    resetHeroBackgroundFields(formType) {
+        const prefix = formType === 'add' ? '' : 'edit';
+        
+        // Reset image fields
+        const imageInput = document.getElementById(`${prefix}HeroBackgroundImage`);
+        const imageUrl = document.getElementById(`${prefix}HeroBackgroundImageUrl`);
+        const imagePreview = document.getElementById(`${prefix}HeroBackgroundImagePreview`);
+        if (imageInput) imageInput.value = '';
+        if (imageUrl) {
+            imageUrl.value = '';
+            imageUrl.style.display = 'none';
+        }
+        if (imageInput) imageInput.style.display = 'block';
+        if (imagePreview) imagePreview.style.display = 'none';
+        
+        // Reset video fields
+        const videoInput = document.getElementById(`${prefix}HeroBackgroundVideo`);
+        const videoPreview = document.getElementById(`${prefix}HeroBackgroundVideoPreview`);
+        if (videoInput) videoInput.value = '';
+        if (videoPreview) videoPreview.style.display = 'none';
     }
 
     editEvent(eventId) {
@@ -142,7 +357,16 @@ class EventsManager {
         document.getElementById('editEventLocation').value = event.location || '';
         document.getElementById('editMeetingLink').value = event.meeting_link || '';
         document.getElementById('editMaxParticipants').value = event.max_participants || '';
-        document.getElementById('editHeroBackgroundType').value = event.hero_background_type || 'image';
+        
+        // Set hero background type and show current background
+        const heroBackgroundType = event.hero_background_type || 'image';
+        document.getElementById('editHeroBackgroundType').value = heroBackgroundType;
+        this.toggleHeroBackgroundFields('edit');
+        this.displayCurrentHeroBackground(event);
+        
+        // Reset remove flag
+        document.getElementById('removeHeroBackgroundFlag').value = 'false';
+        
         // Set description in Quill editor
         if (window.quillInstances && window.quillInstances['editEventDescription']) {
             window.quillInstances['editEventDescription'].root.innerHTML = event.description || '';
@@ -162,6 +386,49 @@ class EventsManager {
             dateInputs.forEach(input => {
                 input.removeAttribute('min');
             });
+        }
+        
+        // Reset hero background fields
+        this.resetHeroBackgroundFields('edit');
+    }
+    
+    displayCurrentHeroBackground(event) {
+        if (!event.hero_background) {
+            // No background set
+            document.getElementById('editHeroBackgroundCurrent').style.display = 'none';
+            document.getElementById('editHeroBackgroundVideoCurrent').style.display = 'none';
+            return;
+        }
+        
+        const backgroundType = event.hero_background_type || 'image';
+        const backgroundUrl = event.hero_background;
+        
+        if (backgroundType === 'video') {
+            // Show current video
+            const currentContainer = document.getElementById('editHeroBackgroundVideoCurrent');
+            const currentContent = document.getElementById('editHeroBackgroundVideoCurrentContent');
+            if (currentContainer && currentContent) {
+                currentContent.innerHTML = `
+                    <video src="${backgroundUrl}" controls class="img-thumbnail" style="max-width: 200px; max-height: 150px;"></video>
+                    <div class="mt-1"><small class="text-muted">${backgroundUrl}</small></div>
+                `;
+                currentContainer.style.display = 'block';
+            }
+            document.getElementById('editHeroBackgroundCurrent').style.display = 'none';
+            document.getElementById('editHeroBackgroundVideo').value = backgroundUrl;
+        } else {
+            // Show current image
+            const currentContainer = document.getElementById('editHeroBackgroundCurrent');
+            const currentContent = document.getElementById('editHeroBackgroundCurrentContent');
+            if (currentContainer && currentContent) {
+                currentContent.innerHTML = `
+                    <img src="${backgroundUrl}" alt="Aktualne tło" class="img-thumbnail" style="max-width: 200px; max-height: 150px;">
+                    <div class="mt-1"><small class="text-muted">${backgroundUrl}</small></div>
+                `;
+                currentContainer.style.display = 'block';
+            }
+            document.getElementById('editHeroBackgroundVideoCurrent').style.display = 'none';
+            document.getElementById('editHeroBackgroundImageUrl').value = backgroundUrl;
         }
     }
 
@@ -189,6 +456,89 @@ class EventsManager {
         e.preventDefault();
         
         const formData = new FormData(e.target);
+        
+        // Handle hero background
+        const heroBackgroundType = formData.get('hero_background_type') || 'image';
+        let heroBackground = null;
+        
+        if (heroBackgroundType === 'image') {
+            // Check for uploaded file first
+            const imageFile = formData.get('hero_background_image');
+            if (imageFile && imageFile.size > 0) {
+                // File will be handled by FormData
+                heroBackground = null; // Will be set after upload
+            } else {
+                // Check for URL
+                const imageUrl = formData.get('hero_background_image_url');
+                if (imageUrl) {
+                    heroBackground = imageUrl;
+                }
+            }
+        } else if (heroBackgroundType === 'video') {
+            // Check for uploaded file first
+            const videoFile = formData.get('hero_background_video_file');
+            if (videoFile && videoFile.size > 0) {
+                // File will be handled by FormData
+                heroBackground = null; // Will be set after upload
+            } else {
+                // Check for URL
+                const videoUrl = formData.get('hero_background_video');
+                if (videoUrl) {
+                    heroBackground = videoUrl;
+                }
+            }
+        }
+        
+        // Check if we have a file to upload - if so, use FormData, otherwise use JSON
+        const hasImageFile = formData.get('hero_background_image') && formData.get('hero_background_image').size > 0;
+        const hasVideoFile = formData.get('hero_background_video_file') && formData.get('hero_background_video_file').size > 0;
+        
+        if (hasImageFile || hasVideoFile) {
+            // Use FormData for file upload
+            if (heroBackground) {
+                formData.append('hero_background', heroBackground);
+            }
+            formData.append('hero_background_type', heroBackgroundType);
+            
+            // Add other fields to FormData
+            formData.append('title', formData.get('title'));
+            formData.append('event_type', formData.get('event_type'));
+            formData.append('event_date', this.combineDateTime(formData.get('event_date'), formData.get('event_time')));
+            const endDate = this.combineDateTime(formData.get('end_date'), formData.get('end_time'));
+            if (endDate) formData.append('end_date', endDate);
+            const location = formData.get('location');
+            if (location) formData.append('location', location);
+            const meetingLink = formData.get('meeting_link');
+            if (meetingLink) formData.append('meeting_link', meetingLink);
+            const maxParticipants = formData.get('max_participants');
+            if (maxParticipants) formData.append('max_participants', maxParticipants);
+            const description = formData.get('description');
+            if (description) formData.append('description', description);
+            formData.append('is_active', formData.get('is_active') === 'on' ? 'true' : 'false');
+            formData.append('is_published', formData.get('is_published') === 'on' ? 'true' : 'false');
+            
+            fetch('/api/event-schedule', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.toastManager.success(data.message || 'Wydarzenie zostało dodane pomyślnie');
+                    this.loadEvents();
+                    bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
+                } else {
+                    window.toastManager.error(data.message || 'Błąd podczas dodawania wydarzenia');
+                }
+            })
+            .catch(error => {
+                console.error('Error adding event:', error);
+                window.toastManager.error('Wystąpił błąd podczas dodawania wydarzenia');
+            });
+            return;
+        }
+        
+        // Use JSON for non-file data
         const eventData = {
             title: formData.get('title'),
             event_type: formData.get('event_type'),
@@ -197,7 +547,8 @@ class EventsManager {
             location: formData.get('location'),
             meeting_link: formData.get('meeting_link'),
             max_participants: formData.get('max_participants') ? parseInt(formData.get('max_participants')) : null,
-            hero_background_type: formData.get('hero_background_type'),
+            hero_background_type: heroBackgroundType,
+            hero_background: heroBackground,
             description: formData.get('description'),
             is_active: formData.get('is_active') === 'on',
             is_published: formData.get('is_published') === 'on'
@@ -249,6 +600,84 @@ class EventsManager {
         
         const formData = new FormData(e.target);
         
+        // Handle hero background
+        const heroBackgroundType = formData.get('hero_background_type') || 'image';
+        let heroBackground = null;
+        const removeHeroBackground = formData.get('remove_hero_background') === 'true';
+        
+        if (removeHeroBackground) {
+            heroBackground = null;
+        } else if (heroBackgroundType === 'image') {
+            // Check for uploaded file first
+            const imageFile = formData.get('hero_background_image');
+            if (imageFile && imageFile.size > 0) {
+                // File will be handled by FormData
+                heroBackground = null; // Will be set after upload
+            } else {
+                // Check for URL
+                const imageUrl = formData.get('hero_background_image_url');
+                if (imageUrl) {
+                    heroBackground = imageUrl;
+                } else {
+                    // Keep existing if no new value provided
+                    heroBackground = this.currentEventData?.hero_background || null;
+                }
+            }
+        } else if (heroBackgroundType === 'video') {
+            // Check for uploaded file first
+            const videoFile = formData.get('hero_background_video_file');
+            if (videoFile && videoFile.size > 0) {
+                // File will be handled by FormData
+                heroBackground = null; // Will be set after upload
+            } else {
+                // Check for URL
+                const videoUrl = formData.get('hero_background_video');
+                if (videoUrl) {
+                    heroBackground = videoUrl;
+                } else {
+                    // Keep existing if no new value provided
+                    heroBackground = this.currentEventData?.hero_background || null;
+                }
+            }
+        }
+        
+        // Check if we have a file to upload - if so, use FormData, otherwise use JSON
+        const hasImageFile = formData.get('hero_background_image') && formData.get('hero_background_image').size > 0;
+        const hasVideoFile = formData.get('hero_background_video_file') && formData.get('hero_background_video_file').size > 0;
+        
+        if (hasImageFile || hasVideoFile) {
+            // Use FormData for file upload
+            if (heroBackground) {
+                formData.append('hero_background', heroBackground);
+            }
+            formData.append('hero_background_type', heroBackgroundType);
+            if (removeHeroBackground) {
+                formData.append('remove_hero_background', 'true');
+            }
+            
+            const eventId = formData.get('id');
+            
+            fetch(`/api/event-schedule/${eventId}`, {
+                method: 'PUT',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.toastManager.success(data.message || 'Wydarzenie zostało zaktualizowane pomyślnie');
+                    this.loadEvents();
+                    bootstrap.Modal.getInstance(document.getElementById('editEventModal')).hide();
+                } else {
+                    window.toastManager.error(data.message || 'Błąd podczas aktualizacji wydarzenia');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating event:', error);
+                window.toastManager.error('Wystąpił błąd podczas aktualizacji wydarzenia');
+            });
+            return;
+        }
+        
         const eventData = {
             title: formData.get('title'),
             event_type: formData.get('event_type'),
@@ -257,12 +686,17 @@ class EventsManager {
             location: formData.get('location'),
             meeting_link: formData.get('meeting_link'),
             max_participants: formData.get('max_participants') ? parseInt(formData.get('max_participants')) : null,
-            hero_background_type: formData.get('hero_background_type'),
+            hero_background_type: heroBackgroundType,
+            hero_background: heroBackground,
             description: formData.get('description'),
             is_active: formData.get('is_active') === 'on',
             is_published: formData.get('is_published') === 'on',
             is_archived: this.currentEventData?.is_archived || false
         };
+        
+        if (removeHeroBackground) {
+            eventData.remove_hero_background = true;
+        }
 
         // NO VALIDATION FOR ARCHIVED EVENTS - they can have any dates!
         if (eventData.is_archived !== true) {
@@ -789,5 +1223,57 @@ function deleteEvent(eventId) {
         window.eventsManager.deleteEvent(eventId);
     }
 }
+
+// Global helpers for hero background source toggles (used by inline onclick in templates)
+function toggleHeroBackgroundImageSource(formType) {
+    if (window.eventsManager && typeof window.eventsManager.toggleHeroBackgroundImageSource === 'function') {
+        window.eventsManager.toggleHeroBackgroundImageSource(formType);
+    }
+}
+
+function toggleHeroBackgroundVideoSource(formType) {
+    if (window.eventsManager && typeof window.eventsManager.toggleHeroBackgroundVideoSource === 'function') {
+        window.eventsManager.toggleHeroBackgroundVideoSource(formType);
+    }
+}
+
+// Expose globally
+window.toggleHeroBackgroundImageSource = toggleHeroBackgroundImageSource;
+window.toggleHeroBackgroundVideoSource = toggleHeroBackgroundVideoSource;
+
+// Remove hero background function
+function removeHeroBackground() {
+    const flag = document.getElementById('removeHeroBackgroundFlag');
+    if (flag) {
+        flag.value = 'true';
+    }
+    
+    // Hide current background display
+    const currentImage = document.getElementById('editHeroBackgroundCurrent');
+    const currentVideo = document.getElementById('editHeroBackgroundVideoCurrent');
+    if (currentImage) currentImage.style.display = 'none';
+    if (currentVideo) currentVideo.style.display = 'none';
+    
+    // Clear input fields
+    const imageInput = document.getElementById('editHeroBackgroundImage');
+    const imageUrl = document.getElementById('editHeroBackgroundImageUrl');
+    const videoInput = document.getElementById('editHeroBackgroundVideo');
+    if (imageInput) imageInput.value = '';
+    if (imageUrl) imageUrl.value = '';
+    if (videoInput) videoInput.value = '';
+    
+    // Hide previews
+    const imagePreview = document.getElementById('editHeroBackgroundImagePreview');
+    const videoPreview = document.getElementById('editHeroBackgroundVideoPreview');
+    if (imagePreview) imagePreview.style.display = 'none';
+    if (videoPreview) videoPreview.style.display = 'none';
+    
+    if (window.toastManager) {
+        window.toastManager.info('Tło zostanie usunięte po zapisaniu wydarzenia');
+    }
+}
+
+// Make function globally available
+window.removeHeroBackground = removeHeroBackground;
 
 

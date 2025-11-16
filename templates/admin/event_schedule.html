@@ -170,6 +170,37 @@
                             </div>
                         </div>
                         
+                        <!-- Hero Background Fields -->
+                        <div class="mb-3" id="heroBackgroundImageContainer" style="display: none;">
+                            <label for="heroBackgroundImage" class="form-label">Obraz Tła</label>
+                            <div class="d-flex gap-2 mb-2">
+                                <input type="file" class="form-control" id="heroBackgroundImage" name="hero_background_image" accept="image/*">
+                                <button type="button" class="btn btn-sm admin-btn-outline" onclick="toggleHeroBackgroundImageSource('add')">
+                                    <i class="fas fa-link me-1"></i>Użyj URL / pliku
+                                </button>
+                            </div>
+                            <input type="url" class="form-control" id="heroBackgroundImageUrl" name="hero_background_image_url" placeholder="https://..." style="display: none;">
+                            <small class="form-text text-muted">Wgraj obraz lub wprowadź URL obrazu</small>
+                            <div id="heroBackgroundImagePreview" class="mt-2" style="display: none;">
+                                <img id="heroBackgroundImagePreviewImg" src="" alt="Podgląd" class="img-thumbnail" style="max-width: 200px; max-height: 150px;">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="heroBackgroundVideoContainer" style="display: none;">
+                            <label for="heroBackgroundVideo" class="form-label">Wideo Tła</label>
+                            <div class="d-flex gap-2 mb-2">
+                                <input type="file" class="form-control" id="heroBackgroundVideoFile" name="hero_background_video_file" accept="video/*">
+                                <button type="button" class="btn btn-sm admin-btn-outline" onclick="toggleHeroBackgroundVideoSource('add')">
+                                    <i class="fas fa-link me-1"></i>Użyj URL / pliku
+                                </button>
+                            </div>
+                            <input type="url" class="form-control" id="heroBackgroundVideo" name="hero_background_video" placeholder="https://youtube.com/... lub https://vimeo.com/... lub bezpośredni link do pliku .mp4" style="display: none;">
+                            <small class="form-text text-muted">Wgraj plik wideo lub wprowadź URL wideo (YouTube, Vimeo, lub bezpośredni link do pliku .mp4)</small>
+                            <div id="heroBackgroundVideoPreview" class="mt-2" style="display: none;">
+                                <video id="heroBackgroundVideoPreviewVideo" src="" controls class="img-thumbnail" style="max-width: 200px; max-height: 150px;"></video>
+                            </div>
+                        </div>
+                        
                                 <div class="mb-3">
                             <label for="eventDescription" class="form-label">Opis</label>
                             <textarea class="form-control" id="eventDescription" name="description" rows="4" data-quill></textarea>
@@ -281,6 +312,53 @@
                                 </select>
                             </div>
                         </div>
+                        
+                        <!-- Hero Background Fields for Edit -->
+                        <div class="mb-3" id="editHeroBackgroundImageContainer" style="display: none;">
+                            <label for="editHeroBackgroundImage" class="form-label">Obraz Tła</label>
+                            <div id="editHeroBackgroundCurrent" class="mb-2" style="display: none;">
+                                <small class="text-muted">Aktualne tło:</small>
+                                <div id="editHeroBackgroundCurrentContent"></div>
+                                <button type="button" class="btn btn-sm admin-btn-outline-danger mt-1" onclick="removeHeroBackground()">
+                                    <i class="fas fa-trash me-1"></i>Usuń tło
+                                </button>
+                            </div>
+                            <div class="d-flex gap-2 mb-2">
+                                <input type="file" class="form-control" id="editHeroBackgroundImage" name="hero_background_image" accept="image/*">
+                                <button type="button" class="btn btn-sm admin-btn-outline" onclick="toggleHeroBackgroundImageSource('edit')">
+                                    <i class="fas fa-link me-1"></i>Użyj URL / pliku
+                                </button>
+                            </div>
+                            <input type="url" class="form-control" id="editHeroBackgroundImageUrl" name="hero_background_image_url" placeholder="https://..." style="display: none;">
+                            <small class="form-text text-muted">Wgraj obraz lub wprowadź URL obrazu</small>
+                            <div id="editHeroBackgroundImagePreview" class="mt-2" style="display: none;">
+                                <img id="editHeroBackgroundImagePreviewImg" src="" alt="Podgląd" class="img-thumbnail" style="max-width: 200px; max-height: 150px;">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="editHeroBackgroundVideoContainer" style="display: none;">
+                            <label for="editHeroBackgroundVideo" class="form-label">Wideo Tła</label>
+                            <div id="editHeroBackgroundVideoCurrent" class="mb-2" style="display: none;">
+                                <small class="text-muted">Aktualne tło:</small>
+                                <div id="editHeroBackgroundVideoCurrentContent"></div>
+                                <button type="button" class="btn btn-sm admin-btn-outline-danger mt-1" onclick="removeHeroBackground()">
+                                    <i class="fas fa-trash me-1"></i>Usuń tło
+                                </button>
+                            </div>
+                            <div class="d-flex gap-2 mb-2">
+                                <input type="file" class="form-control" id="editHeroBackgroundVideoFile" name="hero_background_video_file" accept="video/*">
+                                <button type="button" class="btn btn-sm admin-btn-outline" onclick="toggleHeroBackgroundVideoSource('edit')">
+                                    <i class="fas fa-link me-1"></i>Użyj URL / pliku
+                                </button>
+                            </div>
+                            <input type="url" class="form-control" id="editHeroBackgroundVideo" name="hero_background_video" placeholder="https://youtube.com/... lub https://vimeo.com/... lub bezpośredni link do pliku .mp4" style="display: none;">
+                            <small class="form-text text-muted">Wgraj plik wideo lub wprowadź URL wideo (YouTube, Vimeo, lub bezpośredni link do pliku .mp4)</small>
+                            <div id="editHeroBackgroundVideoPreview" class="mt-2" style="display: none;">
+                                <video id="editHeroBackgroundVideoPreviewVideo" src="" controls class="img-thumbnail" style="max-width: 200px; max-height: 150px;"></video>
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" id="removeHeroBackgroundFlag" name="remove_hero_background" value="false">
                         
                                 <div class="mb-3">
                             <label for="editEventDescription" class="form-label">Opis</label>
