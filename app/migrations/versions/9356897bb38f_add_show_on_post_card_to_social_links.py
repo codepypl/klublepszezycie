@@ -170,70 +170,178 @@ def upgrade():
     # Drop crm_v2_campaigns after dropping dependent table crm_v2_records
     if 'crm_v2_campaigns' in existing_tables:
         op.drop_table('crm_v2_campaigns')
-    with op.batch_alter_table('crm_campaigns', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('created_by', sa.Integer(), nullable=True))
-        batch_op.drop_index(batch_op.f('ix_crm_campaigns_created_at'))
-        batch_op.drop_index(batch_op.f('ix_crm_campaigns_is_active'))
-        batch_op.drop_constraint(batch_op.f('crm_campaigns_created_by_id_fkey'), type_='foreignkey')
-        batch_op.create_foreign_key(None, 'users', ['created_by'], ['id'], ondelete='SET NULL')
-        batch_op.drop_column('created_by_id')
+    
+    # Check existing columns in crm_campaigns
+    if 'crm_campaigns' in existing_tables:
+        existing_columns = [col['name'] for col in inspector.get_columns('crm_campaigns')]
+        existing_indexes = [idx['name'] for idx in inspector.get_indexes('crm_campaigns')]
+        existing_fks = [fk['name'] for fk in inspector.get_foreign_keys('crm_campaigns')]
+        
+        with op.batch_alter_table('crm_campaigns', schema=None) as batch_op:
+            # Add created_by column only if it doesn't exist
+            if 'created_by' not in existing_columns:
+                batch_op.add_column(sa.Column('created_by', sa.Integer(), nullable=True))
+            
+            # Drop indexes only if they exist
+            if 'ix_crm_campaigns_created_at' in existing_indexes:
+                batch_op.drop_index(batch_op.f('ix_crm_campaigns_created_at'))
+            if 'ix_crm_campaigns_is_active' in existing_indexes:
+                batch_op.drop_index(batch_op.f('ix_crm_campaigns_is_active'))
+            
+            # Drop foreign key only if it exists
+            if 'crm_campaigns_created_by_id_fkey' in existing_fks:
+                batch_op.drop_constraint(batch_op.f('crm_campaigns_created_by_id_fkey'), type_='foreignkey')
+            
+            # Create foreign key only if created_by column exists and FK doesn't exist
+            # After adding column, check again if FK exists
+            if 'created_by' in existing_columns:
+                # Check if FK already exists
+                fk_exists = any(
+                    fk.get('constrained_columns') == ['created_by'] or 
+                    (isinstance(fk.get('constrained_columns'), list) and 'created_by' in fk.get('constrained_columns', []))
+                    for fk in inspector.get_foreign_keys('crm_campaigns')
+                )
+                if not fk_exists:
+                    batch_op.create_foreign_key(None, 'users', ['created_by'], ['id'], ondelete='SET NULL')
+            
+            # Drop created_by_id column only if it exists
+            if 'created_by_id' in existing_columns:
+                batch_op.drop_column('created_by_id')
+    
+    # Check existing columns in crm_contacts before modifying
+    if 'crm_contacts' in existing_tables:
+        crm_contacts_columns = [col['name'] for col in inspector.get_columns('crm_contacts')]
+        crm_contacts_indexes = [idx['name'] for idx in inspector.get_indexes('crm_contacts')]
+        crm_contacts_constraints = [con['name'] for con in inspector.get_unique_constraints('crm_contacts')]
+        crm_contacts_fks = [fk['name'] for fk in inspector.get_foreign_keys('crm_contacts')]
+        
+        with op.batch_alter_table('crm_contacts', schema=None) as batch_op:
+            # Add columns only if they don't exist
+            if 'phone' not in crm_contacts_columns:
+                batch_op.add_column(sa.Column('phone', sa.String(length=20), nullable=True))
+            if 'source_file' not in crm_contacts_columns:
+                batch_op.add_column(sa.Column('source_file', sa.String(length=200), nullable=True))
+            if 'import_file_id' not in crm_contacts_columns:
+                batch_op.add_column(sa.Column('import_file_id', sa.Integer(), nullable=True))
+            if 'tags' not in crm_contacts_columns:
+                batch_op.add_column(sa.Column('tags', sa.Text(), nullable=True))
+            if 'assigned_ankieter_id' not in crm_contacts_columns:
+                batch_op.add_column(sa.Column('assigned_ankieter_id', sa.Integer(), nullable=True))
+            if 'business_reason' not in crm_contacts_columns:
+                batch_op.add_column(sa.Column('business_reason', sa.String(length=50), nullable=True))
+        
+        # Refresh column list after adding new columns
+        crm_contacts_columns_updated = [col['name'] for col in inspector.get_columns('crm_contacts')]
+        
+        # Migrate data from phone_number to phone for existing records (only if phone_number exists)
+        if 'phone_number' in crm_contacts_columns_updated and 'phone' in crm_contacts_columns_updated:
+            op.execute("""
+                UPDATE crm_contacts 
+                SET phone = phone_number 
+                WHERE phone_number IS NOT NULL AND phone IS NULL
+            """)
+        
+        # Set default value for records that still have NULL phone
+        if 'phone' in crm_contacts_columns_updated:
+            op.execute("""
+                UPDATE crm_contacts 
+                SET phone = '' 
+                WHERE phone IS NULL
+            """)
+        
+        # Now make phone NOT NULL (only if column exists and is nullable)
+        with op.batch_alter_table('crm_contacts', schema=None) as batch_op:
+            if 'phone' in crm_contacts_columns_updated:
+                # Check current nullability
+                phone_col = next((col for col in inspector.get_columns('crm_contacts') if col['name'] == 'phone'), None)
+                if phone_col and phone_col.get('nullable', True):
+                    batch_op.alter_column('phone',
+                           existing_type=sa.VARCHAR(length=20),
+                           nullable=False)
+            
+            # Alter name column only if it exists
+            if 'name' in crm_contacts_columns_updated:
+                name_col = next((col for col in inspector.get_columns('crm_contacts') if col['name'] == 'name'), None)
+                if name_col and name_col.get('nullable', True):
+                    batch_op.alter_column('name',
+                           existing_type=sa.VARCHAR(length=200),
+                           nullable=False)
+            
+            # Alter campaign_id column only if it exists
+            if 'campaign_id' in crm_contacts_columns_updated:
+                batch_op.alter_column('campaign_id',
+                       existing_type=sa.INTEGER(),
+                       nullable=True)
+            
+            # Drop constraints and indexes only if they exist
+            if '_campaign_phone_uc' in crm_contacts_constraints:
+                batch_op.drop_constraint(batch_op.f('_campaign_phone_uc'), type_='unique')
+            
+            indexes_to_drop = [
+                'ix_crm_contacts_assigned_to_id',
+                'ix_crm_contacts_call_attempts',
+                'ix_crm_contacts_callback_datetime',
+                'ix_crm_contacts_campaign_id',
+                'ix_crm_contacts_created_at',
+                'ix_crm_contacts_is_active',
+                'ix_crm_contacts_is_blacklisted',
+                'ix_crm_contacts_last_call_date',
+                'ix_crm_contacts_next_call_scheduled_at'
+            ]
+            for idx_name in indexes_to_drop:
+                if idx_name in crm_contacts_indexes:
+                    batch_op.drop_index(batch_op.f(idx_name))
+            
+            # Drop foreign keys only if they exist
+            if 'crm_contacts_assigned_to_id_fkey' in crm_contacts_fks:
+                batch_op.drop_constraint(batch_op.f('crm_contacts_assigned_to_id_fkey'), type_='foreignkey')
+            if 'crm_contacts_campaign_id_fkey' in crm_contacts_fks:
+                batch_op.drop_constraint(batch_op.f('crm_contacts_campaign_id_fkey'), type_='foreignkey')
+            
+            # Create foreign keys only if columns exist and FKs don't exist
+            if 'import_file_id' in crm_contacts_columns_updated:
+                fk_exists = any(
+                    fk.get('constrained_columns') == ['import_file_id'] or 
+                    (isinstance(fk.get('constrained_columns'), list) and 'import_file_id' in fk.get('constrained_columns', []))
+                    for fk in inspector.get_foreign_keys('crm_contacts')
+                )
+                if not fk_exists and 'crm_import_files' in existing_tables:
+                    batch_op.create_foreign_key(None, 'crm_import_files', ['import_file_id'], ['id'], ondelete='SET NULL')
+            
+            if 'assigned_ankieter_id' in crm_contacts_columns_updated:
+                fk_exists = any(
+                    fk.get('constrained_columns') == ['assigned_ankieter_id'] or 
+                    (isinstance(fk.get('constrained_columns'), list) and 'assigned_ankieter_id' in fk.get('constrained_columns', []))
+                    for fk in inspector.get_foreign_keys('crm_contacts')
+                )
+                if not fk_exists:
+                    batch_op.create_foreign_key(None, 'users', ['assigned_ankieter_id'], ['id'], ondelete='SET NULL')
+            
+            if 'campaign_id' in crm_contacts_columns_updated:
+                fk_exists = any(
+                    fk.get('constrained_columns') == ['campaign_id'] or 
+                    (isinstance(fk.get('constrained_columns'), list) and 'campaign_id' in fk.get('constrained_columns', []))
+                    for fk in inspector.get_foreign_keys('crm_contacts')
+                )
+                if not fk_exists:
+                    batch_op.create_foreign_key(None, 'crm_campaigns', ['campaign_id'], ['id'], ondelete='SET NULL')
+            
+            # Drop columns only if they exist
+            if 'assigned_to_id' in crm_contacts_columns_updated:
+                batch_op.drop_column('assigned_to_id')
+            if 'callback_datetime' in crm_contacts_columns_updated:
+                batch_op.drop_column('callback_datetime')
+            if 'phone_number' in crm_contacts_columns_updated:
+                batch_op.drop_column('phone_number')
+            if 'next_call_scheduled_at' in crm_contacts_columns_updated:
+                batch_op.drop_column('next_call_scheduled_at')
 
-    with op.batch_alter_table('crm_contacts', schema=None) as batch_op:
-        # Add phone column as nullable first, then migrate data, then make it NOT NULL
-        batch_op.add_column(sa.Column('phone', sa.String(length=20), nullable=True))
-        batch_op.add_column(sa.Column('source_file', sa.String(length=200), nullable=True))
-        batch_op.add_column(sa.Column('import_file_id', sa.Integer(), nullable=True))
-        batch_op.add_column(sa.Column('tags', sa.Text(), nullable=True))
-        batch_op.add_column(sa.Column('assigned_ankieter_id', sa.Integer(), nullable=True))
-        batch_op.add_column(sa.Column('business_reason', sa.String(length=50), nullable=True))
-    
-    # Migrate data from phone_number to phone for existing records
-    op.execute("""
-        UPDATE crm_contacts 
-        SET phone = phone_number 
-        WHERE phone_number IS NOT NULL AND phone IS NULL
-    """)
-    
-    # Set default value for records that still have NULL phone
-    op.execute("""
-        UPDATE crm_contacts 
-        SET phone = '' 
-        WHERE phone IS NULL
-    """)
-    
-    # Now make phone NOT NULL
-    with op.batch_alter_table('crm_contacts', schema=None) as batch_op:
-        batch_op.alter_column('phone',
-               existing_type=sa.VARCHAR(length=20),
-               nullable=False)
-        batch_op.alter_column('name',
-               existing_type=sa.VARCHAR(length=200),
-               nullable=False)
-        batch_op.alter_column('campaign_id',
-               existing_type=sa.INTEGER(),
-               nullable=True)
-        batch_op.drop_constraint(batch_op.f('_campaign_phone_uc'), type_='unique')
-        batch_op.drop_index(batch_op.f('ix_crm_contacts_assigned_to_id'))
-        batch_op.drop_index(batch_op.f('ix_crm_contacts_call_attempts'))
-        batch_op.drop_index(batch_op.f('ix_crm_contacts_callback_datetime'))
-        batch_op.drop_index(batch_op.f('ix_crm_contacts_campaign_id'))
-        batch_op.drop_index(batch_op.f('ix_crm_contacts_created_at'))
-        batch_op.drop_index(batch_op.f('ix_crm_contacts_is_active'))
-        batch_op.drop_index(batch_op.f('ix_crm_contacts_is_blacklisted'))
-        batch_op.drop_index(batch_op.f('ix_crm_contacts_last_call_date'))
-        batch_op.drop_index(batch_op.f('ix_crm_contacts_next_call_scheduled_at'))
-        batch_op.drop_constraint(batch_op.f('crm_contacts_assigned_to_id_fkey'), type_='foreignkey')
-        batch_op.drop_constraint(batch_op.f('crm_contacts_campaign_id_fkey'), type_='foreignkey')
-        batch_op.create_foreign_key(None, 'crm_import_files', ['import_file_id'], ['id'], ondelete='SET NULL')
-        batch_op.create_foreign_key(None, 'users', ['assigned_ankieter_id'], ['id'], ondelete='SET NULL')
-        batch_op.create_foreign_key(None, 'crm_campaigns', ['campaign_id'], ['id'], ondelete='SET NULL')
-        batch_op.drop_column('assigned_to_id')
-        batch_op.drop_column('callback_datetime')
-        batch_op.drop_column('phone_number')
-        batch_op.drop_column('next_call_scheduled_at')
-
-    with op.batch_alter_table('social_links', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('show_on_post_card', sa.Boolean(), nullable=True))
+    # Add show_on_post_card column to social_links (this is the main purpose of this migration)
+    if 'social_links' in existing_tables:
+        social_links_columns = [col['name'] for col in inspector.get_columns('social_links')]
+        if 'show_on_post_card' not in social_links_columns:
+            with op.batch_alter_table('social_links', schema=None) as batch_op:
+                batch_op.add_column(sa.Column('show_on_post_card', sa.Boolean(), nullable=True))
 
     # ### end Alembic commands ###
 
