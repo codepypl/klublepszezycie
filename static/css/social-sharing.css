@@ -225,3 +225,209 @@
 .social-sharing-btn.error i::before {
     content: "\f00d" !important; /* FontAwesome times icon */
 }
+
+/* Floating Social Bar */
+.social-floating-bar {
+    position: fixed;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1000;
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 50px;
+    padding: 16px 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    animation: slideInLeft 0.5s ease-out;
+    visibility: visible;
+    opacity: 1;
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) translateX(-100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+    }
+}
+
+.social-floating-bar:hover {
+    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.2);
+}
+
+.social-floating-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 1.2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.social-floating-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.social-floating-btn:hover::before {
+    width: 100%;
+    height: 100%;
+}
+
+.social-floating-btn:hover {
+    transform: scale(1.15);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.social-floating-btn:active {
+    transform: scale(0.95);
+}
+
+.social-floating-btn i {
+    position: relative;
+    z-index: 1;
+}
+
+.social-floating-btn-copy {
+    background-color: #6c757d !important;
+}
+
+.social-floating-btn-copy:hover {
+    background-color: #5a6268 !important;
+}
+
+/* Platform-specific colors for floating bar */
+.social-floating-btn[data-platform="facebook"] {
+    background-color: #1877f2 !important;
+}
+
+.social-floating-btn[data-platform="facebook"]:hover {
+    background-color: #166fe5 !important;
+}
+
+.social-floating-btn[data-platform="twitter"] {
+    background-color: #1da1f2 !important;
+}
+
+.social-floating-btn[data-platform="twitter"]:hover {
+    background-color: #1a8cd8 !important;
+}
+
+.social-floating-btn[data-platform="linkedin"] {
+    background-color: #0077b5 !important;
+}
+
+.social-floating-btn[data-platform="linkedin"]:hover {
+    background-color: #006ba1 !important;
+}
+
+.social-floating-btn[data-platform="whatsapp"] {
+    background-color: #25d366 !important;
+}
+
+.social-floating-btn[data-platform="whatsapp"]:hover {
+    background-color: #22c55e !important;
+}
+
+.social-floating-btn[data-platform="telegram"] {
+    background-color: #0088cc !important;
+}
+
+.social-floating-btn[data-platform="telegram"]:hover {
+    background-color: #0077b3 !important;
+}
+
+.social-floating-btn[data-platform="email"] {
+    background-color: #6c757d !important;
+}
+
+.social-floating-btn[data-platform="email"]:hover {
+    background-color: #5a6268 !important;
+}
+
+.social-floating-btn[data-platform="instagram"] {
+    background-color: #E4405F !important;
+}
+
+.social-floating-btn[data-platform="instagram"]:hover {
+    background-color: #C13584 !important;
+}
+
+/* Responsive: Hide floating bar on mobile, show on tablet+ */
+@media (max-width: 991px) {
+    .social-floating-bar {
+        display: none !important;
+    }
+}
+
+/* Show floating bar on desktop */
+@media (min-width: 992px) {
+    #floatingSocialBar .social-floating-bar {
+        display: flex !important;
+    }
+    
+    #floatingSocialBar {
+        display: block !important;
+    }
+}
+
+/* Animation for share action */
+.social-floating-btn.sharing {
+    animation: sharePulse 0.6s ease-in-out;
+}
+
+/* Tooltip on hover */
+.social-floating-btn::after {
+    content: attr(title);
+    position: absolute;
+    left: 60px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 1001;
+}
+
+.social-floating-btn:hover::after {
+    opacity: 1;
+}
+
+/* Smooth scroll behavior */
+@media (prefers-reduced-motion: reduce) {
+    .social-floating-bar {
+        animation: none;
+    }
+    
+    .social-floating-btn {
+        transition: none;
+    }
+}

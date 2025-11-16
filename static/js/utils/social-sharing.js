@@ -24,18 +24,36 @@ class SocialSharing {
                 body: JSON.stringify({ post_id: postId })
             });
 
+            if (!response.ok) {
+                console.error('API response not OK:', response.status, response.statusText);
+                return false;
+            }
+
             const data = await response.json();
 
             if (data.success) {
                 this.sharingData = data.sharing_data;
                 this.sharingLinks = data.sharing_links;
+                console.log('✅ Social sharing initialized:', {
+                    platforms: Object.keys(this.sharingLinks),
+                    links: this.sharingLinks
+                });
+                
+                // Sprawdź czy Facebook i Twitter są w linkach
+                if (!this.sharingLinks.facebook) {
+                    console.warn('⚠️ Facebook nie jest w sharing links!');
+                }
+                if (!this.sharingLinks.twitter) {
+                    console.warn('⚠️ Twitter/X nie jest w sharing links!');
+                }
+                
                 return true;
             } else {
-                console.error('Error initializing social sharing:', data.error);
+                console.error('❌ Error initializing social sharing:', data.error);
                 return false;
             }
         } catch (error) {
-            console.error('Error initializing social sharing:', error);
+            console.error('❌ Error initializing social sharing:', error);
             return false;
         }
     }
@@ -60,6 +78,15 @@ class SocialSharing {
         }
 
         const link = this.sharingLinks[platform];
+        
+        // Special handling for Instagram (copy link instead of opening URL)
+        if (link.action === 'copy' || platform === 'instagram') {
+            const copied = await this.copyToClipboard();
+            if (copied && window.toastManager) {
+                window.toastManager.show('Link skopiowany! Wklej go w Instagramie.', 'success');
+            }
+            return copied;
+        }
         
         // Track the share if requested
         if (track && this.sharingData) {
@@ -273,6 +300,77 @@ class SocialSharing {
         buttonsHtml += '</div>';
         
         container.innerHTML = buttonsHtml;
+        return true;
+    }
+
+    /**
+     * Create floating social bar (vertical bar with icons)
+     * @param {string} containerId - Container element ID
+     * @param {Array} platforms - Platforms to show (optional, shows all if not specified)
+     */
+    createFloatingBar(containerId, platforms = null) {
+        if (!this.sharingLinks) {
+            console.error('❌ Sharing links not initialized');
+            return false;
+        }
+
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.error(`❌ Container with ID '${containerId}' not found`);
+            return false;
+        }
+
+        const platformsToShow = platforms || Object.keys(this.sharingLinks);
+        
+        console.log('🔍 Creating floating bar with platforms:', platformsToShow);
+        console.log('🔍 Available sharing links:', this.sharingLinks);
+        
+        let buttonsHtml = '<div class="social-floating-bar">';
+        
+        let buttonsCount = 0;
+        platformsToShow.forEach(platform => {
+            const link = this.sharingLinks[platform];
+            if (link && link.icon && link.color) {
+                // Fallback dla ikony X/Twitter - jeśli fa-x-twitter nie działa, użyj fa-twitter
+                let iconClass = link.icon;
+                if (platform === 'twitter' && iconClass === 'fab fa-x-twitter') {
+                    // Sprawdź czy ikona istnieje, jeśli nie - użyj fallback
+                    iconClass = 'fab fa-x-twitter'; // FontAwesome 6.5.1+ powinno mieć
+                }
+                
+                buttonsHtml += `
+                    <button 
+                        class="social-floating-btn" 
+                        style="background-color: ${link.color};"
+                        onclick="window.socialSharing.shareTo('${platform}')"
+                        title="Udostępnij na ${link.name}"
+                        data-platform="${platform}"
+                    >
+                        <i class="${iconClass}"></i>
+                    </button>
+                `;
+                buttonsCount++;
+                console.log(`✅ Added button for ${platform}:`, { icon: iconClass, color: link.color, name: link.name });
+            } else {
+                console.warn(`⚠️ Platform ${platform} missing icon or color:`, link);
+            }
+        });
+        
+        // Add copy link button
+        buttonsHtml += `
+            <button 
+                class="social-floating-btn social-floating-btn-copy" 
+                onclick="window.socialSharing.copyToClipboard()"
+                title="Kopiuj link"
+            >
+                <i class="fas fa-link"></i>
+            </button>
+        `;
+        
+        buttonsHtml += '</div>';
+        
+        container.innerHTML = buttonsHtml;
+        console.log(`✅ Floating bar created with ${buttonsCount} platform buttons`);
         return true;
     }
 }

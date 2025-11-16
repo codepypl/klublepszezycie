@@ -49,13 +49,13 @@ class SocialController:
             }
     
     @staticmethod
-    def create_social_link(platform, url, icon_class, is_active=True, order=0):
+    def create_social_link(platform, url, icon, target='_blank', is_active=True, show_on_post_card=False, order=0):
         """Create new social media link"""
         try:
-            if not all([platform, url, icon_class]):
+            if not all([platform, url]):
                 return {
                     'success': False,
-                    'error': 'Platforma, URL i klasa ikony są wymagane'
+                    'error': 'Platforma i URL są wymagane'
                 }
             
             # Validate URL format
@@ -84,8 +84,10 @@ class SocialController:
             link = SocialLink(
                 platform=platform,
                 url=url,
-                icon_class=icon_class,
+                icon=icon,
+                target=target if hasattr(SocialLink, 'target') else None,
                 is_active=is_active,
+                show_on_post_card=show_on_post_card,
                 order=order
             )
             
@@ -105,7 +107,7 @@ class SocialController:
             }
     
     @staticmethod
-    def update_social_link(link_id, platform, url, icon_class, is_active=True, order=0):
+    def update_social_link(link_id, platform, url, icon, target='_blank', is_active=True, show_on_post_card=False, order=0):
         """Update social media link"""
         try:
             link = SocialLink.query.get(link_id)
@@ -143,8 +145,11 @@ class SocialController:
             
             link.platform = platform
             link.url = url
-            link.icon_class = icon_class
+            link.icon = icon
+            if hasattr(link, 'target'):
+                link.target = target
             link.is_active = is_active
+            link.show_on_post_card = show_on_post_card
             link.order = order
             
             db.session.commit()

@@ -28,22 +28,26 @@ def create():
         
         platform = data.get('platform', '').strip()
         url = data.get('url', '').strip()
-        icon_class = data.get('icon_class', '').strip()
+        icon = data.get('icon', '').strip() or data.get('icon_class', '').strip()  # Support both icon and icon_class
+        target = data.get('target', '_blank')
         is_active = data.get('is_active', True)
+        show_on_post_card = data.get('show_on_post_card', False)
         order = data.get('order', 0)
         
-        result = SocialController.create_social_link(platform, url, icon_class, is_active, order)
+        result = SocialController.create_social_link(platform, url, icon, target, is_active, show_on_post_card, order)
         
         if result['success']:
             return jsonify({
                 'success': True,
                 'message': result['message'],
-                'link': {
+                'social_link': {
                     'id': result['link'].id,
                     'platform': result['link'].platform,
                     'url': result['link'].url,
-                    'icon_class': result['link'].icon_class,
+                    'icon': getattr(result['link'], 'icon', ''),
+                    'target': getattr(result['link'], 'target', '_blank'),
                     'is_active': result['link'].is_active,
+                    'show_on_post_card': getattr(result['link'], 'show_on_post_card', False),
                     'order': result['link'].order
                 }
             })
@@ -62,22 +66,26 @@ def edit(link_id):
         
         platform = data.get('platform', '').strip()
         url = data.get('url', '').strip()
-        icon_class = data.get('icon_class', '').strip()
+        icon = data.get('icon', '').strip() or data.get('icon_class', '').strip()  # Support both icon and icon_class
+        target = data.get('target', '_blank')
         is_active = data.get('is_active', True)
+        show_on_post_card = data.get('show_on_post_card', False)
         order = data.get('order', 0)
         
-        result = SocialController.update_social_link(link_id, platform, url, icon_class, is_active, order)
+        result = SocialController.update_social_link(link_id, platform, url, icon, target, is_active, show_on_post_card, order)
         
         if result['success']:
             return jsonify({
                 'success': True,
                 'message': result['message'],
-                'link': {
+                'social_link': {
                     'id': result['link'].id,
                     'platform': result['link'].platform,
                     'url': result['link'].url,
-                    'icon_class': result['link'].icon_class,
+                    'icon': getattr(result['link'], 'icon', ''),
+                    'target': getattr(result['link'], 'target', '_blank'),
                     'is_active': result['link'].is_active,
+                    'show_on_post_card': getattr(result['link'], 'show_on_post_card', False),
                     'order': result['link'].order
                 }
             })

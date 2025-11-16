@@ -102,8 +102,14 @@ class PublicController:
             # Testimonials
             testimonials = Testimonial.query.filter_by(is_active=True).order_by(Testimonial.order.asc()).all()
             
-            # Social links
+            # Social links (all active)
             social_links = SocialLink.query.filter_by(is_active=True).order_by(SocialLink.order.asc()).all()
+            
+            # Social links for post cards (active and show_on_post_card=True)
+            post_card_social_links = SocialLink.query.filter_by(
+                is_active=True, 
+                show_on_post_card=True
+            ).order_by(SocialLink.order.asc()).all()
             
             # Footer settings from database
             footer_settings = FooterSettings.query.first()
@@ -120,6 +126,7 @@ class PublicController:
                 'benefits_items': benefit_items,  # Changed from benefit_items to benefits_items
                 'testimonials': testimonials,
                 'active_social_links': social_links,
+                'post_card_social_links': post_card_social_links,
                 'footer_settings': footer_settings
             }
         except Exception as e:

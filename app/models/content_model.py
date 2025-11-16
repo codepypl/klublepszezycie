@@ -95,6 +95,7 @@ class SocialLink(db.Model):
     icon = db.Column(db.String(50))
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
+    show_on_post_card = db.Column(db.Boolean, default=False)  # Wyświetlaj na karcie artykułu
     created_at = db.Column(db.DateTime, default=get_local_datetime)
     
     def __repr__(self):

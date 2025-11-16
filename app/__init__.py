@@ -81,7 +81,7 @@ def create_app(config_name=None):
     
     # Rejestracja API blueprintów - uproszczona wersja
     try:
-        from app.api import benefits_api, faq_api, log_api, menu_api, sections_api, seo_api, social_api, stats_api, testimonials_api, user_groups_api, users_api
+        from app.api import benefits_api, faq_api, log_api, menu_api, sections_api, seo_api, social_api, stats_api, testimonials_api, user_groups_api, users_api, social_sharing_api
         from app.api.email import async_email_api, queue_api, monitoring_api, campaigns_api, templates_api
         from app.api.events import events_api
         
@@ -92,6 +92,7 @@ def create_app(config_name=None):
         app.register_blueprint(sections_api.sections_api_bp, url_prefix='/api')
         app.register_blueprint(seo_api.seo_api_bp, url_prefix='/api')
         app.register_blueprint(social_api.social_api_bp, url_prefix='/api')
+        app.register_blueprint(social_sharing_api.social_sharing_api_bp, url_prefix='/api')
         app.register_blueprint(stats_api.stats_api_bp, url_prefix='/api')
         app.register_blueprint(testimonials_api.testimonials_api_bp, url_prefix='/api')
         app.register_blueprint(user_groups_api.user_groups_bp, url_prefix='/api')
