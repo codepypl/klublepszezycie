@@ -26,9 +26,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const editTemplateId = urlParams.get('edit');
     if (editTemplateId) {
         // Automatically open edit modal for the specified template
-        setTimeout(() => {
-            editTemplate(parseInt(editTemplateId));
-        }, 500);
+        const numericTemplateId = parseInt(editTemplateId);
+        if (!isNaN(numericTemplateId) && numericTemplateId > 0) {
+            // Wait for templates to load and editTemplate to be available
+            const openEditModal = () => {
+                if (typeof editTemplate === 'function') {
+                    editTemplate(numericTemplateId);
+                    // Remove edit parameter from URL without reload
+                    const newUrl = window.location.pathname;
+                    window.history.replaceState({}, '', newUrl);
+                } else {
+                    // Retry after 500ms if not ready yet
+                    setTimeout(openEditModal, 500);
+                }
+            };
+            // Start checking after initial delay
+            setTimeout(openEditModal, 1000);
+        }
     }
     
     // Initialize CRUD Refresh Manager for email templates

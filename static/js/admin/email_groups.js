@@ -182,10 +182,11 @@ function displayGroups(groups) {
             <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">${group.name} ${group.is_default ? '<span class="admin-badge admin-badge-info ms-1">Systemowa</span>' : ''} ${group.group_type === 'event_based' ? '<span class="admin-badge admin-badge-warning ms-1">Wydarzenie</span>' : ''}</td>
             <td>
                 ${group.event_id ? 
-                    `<a href="/admin/events/${group.event_id}" 
+                    `<a href="/admin/events?edit=${group.event_id}" 
                        data-bs-toggle="tooltip" 
                        data-bs-placement="top" 
-                       title="${group.event_title || 'Wydarzenie'}">
+                       title="${group.event_title || 'Wydarzenie'} - Kliknij aby edytować"
+                       style="cursor: pointer;">
                         <span class="badge admin-badge admin-badge-info">${group.event_id}</span>
                      </a>` : 
                     `<span class="text-muted">${group.group_type}</span>`

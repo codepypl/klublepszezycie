@@ -272,7 +272,14 @@
                                     {% endfor %}
                                     {% if user_events %}
                                         {% for event_id in user_events %}
-                                            <span class="badge admin-badge admin-badge-info me-1">{{ event_id }}</span>
+                                            <a href="/admin/events?edit={{ event_id }}" 
+                                               class="badge admin-badge admin-badge-info me-1" 
+                                               data-bs-toggle="tooltip" 
+                                               data-bs-placement="top" 
+                                               title="Wydarzenie ID: {{ event_id }} - Kliknij aby edytować"
+                                               style="cursor: pointer;">
+                                                {{ event_id }}
+                                            </a>
                                         {% endfor %}
                                     {% else %}
                                         <span class="text-muted">-</span>

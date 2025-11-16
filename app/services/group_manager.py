@@ -233,12 +233,21 @@ class GroupManager:
                         is_orphaned = True
                         orphan_reason = f"event_id={group.event_id} nie istnieje"
                         print(f"  🚨 Grupa '{group.name}' (ID: {group.id}) - wydarzenie {group.event_id} nie istnieje")
+                    elif event.is_archived:
+                        is_orphaned = True
+                        orphan_reason = f"event_id={group.event_id} jest zarchiwizowane"
+                        print(f"  🚨 Grupa '{group.name}' (ID: {group.id}) - wydarzenie {group.event_id} jest zarchiwizowane")
                     elif not event.is_active:
                         is_orphaned = True
                         orphan_reason = f"event_id={group.event_id} jest nieaktywne"
                         print(f"  🚨 Grupa '{group.name}' (ID: {group.id}) - wydarzenie {group.event_id} jest nieaktywne")
                     else:
                         print(f"  ✅ Grupa '{group.name}' (ID: {group.id}) - wydarzenie {group.event_id} istnieje i jest aktywne")
+                elif not group.event_id:
+                    # Grupa event_based bez event_id - osierocona
+                    is_orphaned = True
+                    orphan_reason = "brak event_id w grupie event_based"
+                    print(f"  🚨 Grupa '{group.name}' (ID: {group.id}) - brak event_id w grupie event_based")
                 
                 # Sprawdź 2: Czy criteria zawiera event_id (jeśli nie ma event_id w kolumnie)
                 if not is_orphaned and group.criteria:
@@ -252,6 +261,10 @@ class GroupManager:
                                 is_orphaned = True
                                 orphan_reason = f"criteria.event_id={event_id} nie istnieje"
                                 print(f"  🚨 Grupa '{group.name}' (ID: {group.id}) - wydarzenie {event_id} z criteria nie istnieje")
+                            elif event.is_archived:
+                                is_orphaned = True
+                                orphan_reason = f"criteria.event_id={event_id} jest zarchiwizowane"
+                                print(f"  🚨 Grupa '{group.name}' (ID: {group.id}) - wydarzenie {event_id} z criteria jest zarchiwizowane")
                             elif not event.is_active:
                                 is_orphaned = True
                                 orphan_reason = f"criteria.event_id={event_id} jest nieaktywne"
@@ -341,34 +354,57 @@ class GroupManager:
     def delete_event_groups(self, event_id):
         """Usuwa grupy wydarzenia z systemu"""
         try:
-            # Find all groups related to this event
-            event_groups = UserGroup.query.filter_by(
-                group_type='event_based'
+            # Find all groups related to this event - check both event_id column and criteria
+            event_groups = UserGroup.query.filter(
+                UserGroup.group_type == 'event_based',
+                (
+                    (UserGroup.event_id == event_id) |
+                    (UserGroup.criteria.contains(f'"event_id": {event_id}')) |
+                    (UserGroup.criteria.contains(f'"event_id":{event_id}'))
+                )
             ).all()
             
             deleted_groups = []
+            total_members_removed = 0
             
             for group in event_groups:
-                try:
-                    # Check if this group is related to the event
-                    criteria = json.loads(group.criteria) if group.criteria else {}
-                    group_event_id = criteria.get('event_id')
+                # Double check - verify this group is actually for this event
+                is_for_event = False
+                
+                # Check event_id column
+                if group.event_id == event_id:
+                    is_for_event = True
+                
+                # Check criteria
+                if not is_for_event and group.criteria:
+                    try:
+                        criteria = json.loads(group.criteria) if group.criteria else {}
+                        group_event_id = criteria.get('event_id')
+                        if group_event_id == event_id:
+                            is_for_event = True
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+                
+                if is_for_event:
+                    # Count members before deletion
+                    members_count = UserGroupMember.query.filter_by(
+                        group_id=group.id,
+                        is_active=True
+                    ).count()
                     
-                    if group_event_id == event_id:
-                        # Delete the group
-                        db.session.delete(group)
-                        deleted_groups.append(group.name)
-                        print(f"🗑️ Usunięto grupę: {group.name}")
-                        
-                except (json.JSONDecodeError, TypeError):
-                    # If criteria is invalid, delete the group
+                    # Remove all members first
+                    if members_count > 0:
+                        UserGroupMember.query.filter_by(group_id=group.id).delete()
+                        total_members_removed += members_count
+                    
+                    # Delete the group
                     db.session.delete(group)
                     deleted_groups.append(group.name)
-                    print(f"🗑️ Usunięto grupę z nieprawidłowymi kryteriami: {group.name}")
+                    print(f"🗑️ Usunięto grupę: {group.name} (ID: {group.id}) z {members_count} członkami")
             
             if deleted_groups:
                 db.session.commit()
-                return True, f"Usunięto {len(deleted_groups)} grup"
+                return True, f"Usunięto {len(deleted_groups)} grup i {total_members_removed} członków"
             else:
                 return True, "Brak grup do usunięcia"
                 

@@ -363,6 +363,30 @@
                 });
                 console.log('CRUD Refresh Manager initialized for events');
             }
+            
+            // Check for edit parameter in URL and open modal
+            const urlParams = new URLSearchParams(window.location.search);
+            const editEventId = urlParams.get('edit');
+            if (editEventId) {
+                // Automatically open edit modal for the specified event
+                const numericEventId = parseInt(editEventId);
+                if (!isNaN(numericEventId) && numericEventId > 0) {
+                    // Wait for eventsManager to be ready and events to load
+                    const openEditModal = () => {
+                        if (window.eventsManager && window.editEvent) {
+                            window.editEvent(numericEventId);
+                            // Remove edit parameter from URL without reload
+                            const newUrl = window.location.pathname;
+                            window.history.replaceState({}, '', newUrl);
+                        } else {
+                            // Retry after 500ms if not ready yet
+                            setTimeout(openEditModal, 500);
+                        }
+                    };
+                    // Start checking after initial delay
+                    setTimeout(openEditModal, 1000);
+                }
+            }
         });
     </script>
 {% endblock %}

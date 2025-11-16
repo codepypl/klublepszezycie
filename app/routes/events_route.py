@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from app.blueprints.events_controller import EventsController
 
-events_bp = Blueprint('events', __name__)
+events_bp = Blueprint('events', __name__, url_prefix='/admin')
 
 @events_bp.route('/events')
 @login_required

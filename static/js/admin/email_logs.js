@@ -136,7 +136,7 @@ function displayLogs(logs) {
         let eventInfo = '-';
         if (log.event_id) {
             if (log.event_info) {
-                eventInfo = `<a href="/admin/events/${log.event_id}" class="text-decoration-none" title="${log.event_info.title}">
+                eventInfo = `<a href="/admin/events?edit=${log.event_id}" class="text-decoration-none" title="${log.event_info.title} - Kliknij aby edytować" style="cursor: pointer;">
                     <span class="badge admin-badge admin-badge-info">${log.event_id}</span>
                 </a>`;
             } else {
@@ -156,7 +156,7 @@ function displayLogs(logs) {
         let campaignInfo = '-';
         if (log.campaign_id) {
             const campaignName = log.campaign_name || 'Usunięta kampania';
-            campaignInfo = `<a href="/admin/email-campaigns/${log.campaign_id}" class="text-decoration-none" title="${campaignName}">
+            campaignInfo = `<a href="/admin/email-campaigns?edit=${log.campaign_id}" class="text-decoration-none" title="${campaignName} - Kliknij aby edytować" style="cursor: pointer;">
                 <span class="badge admin-badge admin-badge-warning">${log.campaign_id}</span>
             </a>`;
         }
@@ -227,8 +227,8 @@ function clearFilters() {
 
 // Open template modal
 function openTemplateModal(templateId) {
-    // Redirect to email templates page with modal
-    window.location.href = `/admin/email-templates?modal=${templateId}`;
+    // Redirect to email templates page with edit parameter
+    window.location.href = `/admin/email-templates?edit=${templateId}`;
 }
 
 // Refresh logs
@@ -262,7 +262,7 @@ function displayLogDetails(log) {
     // Event info
     let eventInfo = '-';
     if (log.event_info) {
-        eventInfo = `<a href="/admin/events/${log.event_info.id}" class="text-decoration-none">
+        eventInfo = `<a href="/admin/events?edit=${log.event_info.id}" class="text-decoration-none" title="Kliknij aby edytować" style="cursor: pointer;">
             <span class="badge admin-badge admin-badge-info">${log.event_info.id}</span>
             ${log.event_info.title}
         </a>`;
@@ -273,7 +273,7 @@ function displayLogDetails(log) {
     // Template info
     let templateInfo = '-';
     if (log.template_info) {
-        templateInfo = `<a href="/admin/email-templates/${log.template_info.id}" class="text-decoration-none">
+        templateInfo = `<a href="/admin/email-templates?edit=${log.template_info.id}" class="text-decoration-none" title="Kliknij aby edytować" style="cursor: pointer;">
             <span class="badge admin-badge admin-badge-primary">${log.template_info.id}</span>
             ${log.template_info.name}
         </a>`;
@@ -284,7 +284,7 @@ function displayLogDetails(log) {
     // Campaign info
     let campaignInfo = '-';
     if (log.campaign_info) {
-        campaignInfo = `<a href="/admin/email-campaigns/${log.campaign_info.id}" class="text-decoration-none">
+        campaignInfo = `<a href="/admin/email-campaigns?edit=${log.campaign_info.id}" class="text-decoration-none" title="Kliknij aby edytować" style="cursor: pointer;">
             <span class="badge admin-badge admin-badge-warning">${log.campaign_info.id}</span>
             ${log.campaign_info.name}
         </a>`;

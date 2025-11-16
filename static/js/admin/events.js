@@ -695,6 +695,9 @@ function editEvent(eventId) {
     }
 }
 
+// Make editEvent available globally
+window.editEvent = editEvent;
+
 // Filter functions
 function clearFilters() {
     document.getElementById('searchInput').value = '';
@@ -776,6 +779,8 @@ document.addEventListener('DOMContentLoaded', function() {
         publishedFilter.addEventListener('change', applyFilters);
     }
     
+    // Note: Edit parameter handling is now done in event_schedule.html template
+    // to ensure eventsManager is initialized before opening modal
 });
 
 

@@ -35,6 +35,36 @@ def get_events():
         if archived_count > 0:
             logger.info(f"✅ Auto-archived {archived_count} ended event(s)")
         
+        # Clean up groups for already archived events (safety check)
+        from app.services.group_manager import GroupManager
+        group_manager = GroupManager()
+        
+        # Find all archived events that still have groups
+        archived_events_with_groups = EventSchedule.query.filter(
+            EventSchedule.is_archived == True
+        ).all()
+        
+        for event in archived_events_with_groups:
+            # Check if event has groups
+            from app.models.user_groups_model import UserGroup
+            event_groups = UserGroup.query.filter_by(
+                event_id=event.id,
+                group_type='event_based'
+            ).all()
+            
+            if event_groups:
+                logger.info(f"🧹 Found {len(event_groups)} groups for archived event {event.id}, cleaning up...")
+                success, message = group_manager.delete_event_groups(event.id)
+                if success:
+                    logger.info(f"✅ {message}")
+                else:
+                    logger.warning(f"⚠️ {message}")
+        
+        # Clean up orphaned groups (groups with event_id=None or event_id pointing to non-existent/archived event)
+        success, message = group_manager.cleanup_orphaned_groups()
+        if success and "Usunięto" in message:
+            logger.info(f"🧹 {message}")
+        
         events = EventSchedule.query.order_by(EventSchedule.event_date.asc()).all()
         return jsonify({
             'success': True,
@@ -113,8 +143,39 @@ def get_event_schedule():
             logger.info(f"✅ Auto-archived {archived_count} ended event(s)")
             # Refresh query after archiving
             query = EventSchedule.query
+        
+        # Clean up groups for already archived events (safety check)
+        from app.services.group_manager import GroupManager
+        group_manager = GroupManager()
+        
+        # Find all archived events that still have groups
+        archived_events_with_groups = EventSchedule.query.filter(
+            EventSchedule.is_archived == True
+        ).all()
+        
+        for event in archived_events_with_groups:
+            # Check if event has groups
+            from app.models.user_groups_model import UserGroup
+            event_groups = UserGroup.query.filter_by(
+                event_id=event.id,
+                group_type='event_based'
+            ).all()
             
-            # Reapply filters after archiving
+            if event_groups:
+                logger.info(f"🧹 Found {len(event_groups)} groups for archived event {event.id}, cleaning up...")
+                success, message = group_manager.delete_event_groups(event.id)
+                if success:
+                    logger.info(f"✅ {message}")
+                else:
+                    logger.warning(f"⚠️ {message}")
+        
+        # Clean up orphaned groups (groups with event_id=None or event_id pointing to non-existent/archived event)
+        success, message = group_manager.cleanup_orphaned_groups()
+        if success and "Usunięto" in message:
+            logger.info(f"🧹 {message}")
+        
+        # Reapply filters after archiving (if query was refreshed)
+        if archived_count > 0:
             if show_archived_param is not None:
                 show_archived = show_archived_param.lower() == 'true'
                 if not show_archived:
@@ -369,6 +430,20 @@ def delete_event(event_id):
     """Delete event"""
     try:
         event = EventSchedule.query.get_or_404(event_id)
+        
+        # Clean up event groups before deleting event
+        from app.services.group_manager import GroupManager
+        group_manager = GroupManager()
+        
+        # Delete event groups and their members
+        success, message = group_manager.delete_event_groups(event_id)
+        if success:
+            logger.info(f"✅ {message}")
+        else:
+            logger.warning(f"⚠️ {message}")
+        
+        # Clean up orphaned groups (safety measure)
+        group_manager.cleanup_orphaned_groups()
         
         db.session.delete(event)
         db.session.commit()

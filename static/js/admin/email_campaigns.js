@@ -31,6 +31,30 @@ document.addEventListener('DOMContentLoaded', function() {
         window.tableResizer.init('#campaignsTable');
     }
     
+    // Check for edit parameter in URL and open modal
+    const urlParams = new URLSearchParams(window.location.search);
+    const editCampaignId = urlParams.get('edit');
+    if (editCampaignId) {
+        // Automatically open edit modal for the specified campaign
+        const numericCampaignId = parseInt(editCampaignId);
+        if (!isNaN(numericCampaignId) && numericCampaignId > 0) {
+            // Wait for campaigns to load and editCampaign to be available
+            const openEditModal = () => {
+                if (typeof editCampaign === 'function') {
+                    editCampaign(numericCampaignId);
+                    // Remove edit parameter from URL without reload
+                    const newUrl = window.location.pathname;
+                    window.history.replaceState({}, '', newUrl);
+                } else {
+                    // Retry after 500ms if not ready yet
+                    setTimeout(openEditModal, 500);
+                }
+            };
+            // Start checking after initial delay
+            setTimeout(openEditModal, 1000);
+        }
+    }
+    
     // Reset modal to default state when closed
     const bulkDeleteModal = document.getElementById('bulkDeleteModal');
     if (bulkDeleteModal) {
