@@ -61,6 +61,7 @@ class BenefitItem(db.Model):
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     icon = db.Column(db.String(100))
+    image = db.Column(db.String(200))  # Path to uploaded image
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=get_local_datetime)

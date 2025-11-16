@@ -655,33 +655,44 @@ def register_event(event_id):
         traceback.print_exc()
         return jsonify({'success': False, 'message': 'Wystąpił nieoczekiwany błąd. Spróbuj ponownie.'}), 500
 
-@public_bp.route('/uploads/<filename>')
-def uploaded_file(filename):
-    """Serve uploaded files"""
+@public_bp.route('/uploads/<path:filepath>')
+def uploaded_file(filepath):
+    """Serve uploaded files from uploads directory with subdirectories support"""
     import os
-    from flask import current_app
+    from flask import current_app, abort
     
     # Get the absolute path to the static directory
     static_dir = os.path.join(current_app.root_path, '..', 'static')
     
-    try:
-        # First try uploads directory
-        uploads_dir = os.path.join(static_dir, 'uploads')
-        return send_from_directory(uploads_dir, filename)
-    except FileNotFoundError:
+    # Build full path to the file
+    file_path = os.path.join(static_dir, 'uploads', filepath)
+    
+    # Security check: ensure the file is within uploads directory
+    uploads_dir = os.path.join(static_dir, 'uploads')
+    uploads_dir = os.path.abspath(uploads_dir)
+    file_path = os.path.abspath(file_path)
+    
+    if not file_path.startswith(uploads_dir):
+        abort(403)  # Forbidden - path traversal attempt
+    
+    # Check if file exists
+    if os.path.isfile(file_path):
+        directory = os.path.dirname(file_path)
+        filename = os.path.basename(file_path)
+        return send_from_directory(directory, filename)
+    else:
+        # File not found - try legacy locations
         try:
-            # Then try benefits directory with .jpg extension
+            # Try benefits directory in images (legacy)
+            filename = os.path.basename(filepath)
             benefits_dir = os.path.join(static_dir, 'images', 'benefits')
-            return send_from_directory(benefits_dir, filename + '.jpg')
-        except FileNotFoundError:
-            try:
-                # Try benefits directory without extension (in case filename already has .jpg)
-                benefits_dir = os.path.join(static_dir, 'images', 'benefits')
+            if os.path.isfile(os.path.join(benefits_dir, filename)):
                 return send_from_directory(benefits_dir, filename)
-            except FileNotFoundError:
-                # Return a default image if file not found
-                hero_dir = os.path.join(static_dir, 'images', 'hero')
-                return send_from_directory(hero_dir, 'hero-bg.jpg')
+        except:
+            pass
+        
+        # Return 404 if file not found
+        abort(404)
 
 # Legal documents routes
 @public_bp.route('/privacy-policy')

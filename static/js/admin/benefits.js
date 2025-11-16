@@ -44,11 +44,19 @@ class BenefitsManager {
                     // Show current image if exists
                     const currentImagePreview = document.getElementById('currentImagePreview');
                     const currentImage = document.getElementById('currentImage');
+                    const removeImageBtn = document.getElementById('removeImageBtn');
+                    const removeImageFlag = document.getElementById('removeImageFlag');
+                    
                     if (benefit.image) {
-                        currentImage.src = `/static/${benefit.image}`;
+                        // benefit.image already contains full path like /static/uploads/benefits/filename.jpg
+                        currentImage.src = benefit.image.startsWith('/') ? benefit.image : `/static/${benefit.image}`;
                         currentImagePreview.style.display = 'block';
+                        if (removeImageBtn) removeImageBtn.style.display = 'block';
+                        if (removeImageFlag) removeImageFlag.value = 'false';
                     } else {
                         currentImagePreview.style.display = 'none';
+                        if (removeImageBtn) removeImageBtn.style.display = 'none';
+                        if (removeImageFlag) removeImageFlag.value = 'false';
                     }
                     
                     const modal = new bootstrap.Modal(document.getElementById('editBenefitModal'));
@@ -171,20 +179,14 @@ if (cancelButton.parentNode) {
         e.preventDefault();
         
         const formData = new FormData(e.target);
-        const data = {
-            title: formData.get('title'),
-            description: formData.get('description'),
-            icon: formData.get('icon'),
-            order: parseInt(formData.get('order')) || 0,
-            is_active: formData.get('is_active') === 'on'
-        };
+        
+        // FormData automatically includes the file input if a file is selected
+        // No need to manually append it
         
         fetch('/api/benefits', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
+            body: formData,
+            credentials: 'include'
         })
         .then(response => response.json())
         .then(data => {
@@ -199,7 +201,7 @@ if (cancelButton.parentNode) {
                     console.warn('window.refreshAfterCRUD is not available');
                 }
             } else {
-                window.toastManager.error('Błąd podczas dodawania: ' + data.error);
+                window.toastManager.error('Błąd podczas dodawania: ' + (data.message || data.error));
             }
         })
         .catch(error => {
@@ -212,21 +214,21 @@ if (cancelButton.parentNode) {
         e.preventDefault();
         
         const formData = new FormData(e.target);
+        
+        // Check if remove image flag is set
+        const removeImageFlag = document.getElementById('removeImageFlag');
+        if (removeImageFlag && removeImageFlag.value === 'true') {
+            formData.append('remove_image', 'true');
+        }
         const benefitId = formData.get('editBenefitId');
-        const data = {
-            title: formData.get('title'),
-            description: formData.get('description'),
-            icon: formData.get('icon'),
-            order: parseInt(formData.get('order')) || 0,
-            is_active: formData.get('is_active') === 'on'
-        };
+        
+        // FormData automatically includes the file input if a file is selected
+        // No need to manually append it
         
         fetch(`/api/benefits/${benefitId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
+            body: formData,
+            credentials: 'include'
         })
         .then(response => response.json())
         .then(data => {
@@ -241,7 +243,7 @@ if (cancelButton.parentNode) {
                     console.warn('window.refreshAfterCRUD is not available');
                 }
             } else {
-                window.toastManager.error('Błąd podczas aktualizacji: ' + data.error);
+                window.toastManager.error('Błąd podczas aktualizacji: ' + (data.message || data.error));
             }
         })
         .catch(error => {

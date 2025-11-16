@@ -155,6 +155,80 @@ def create_featured_thumbnail(post_id, image_filename, upload_folder):
         logger.error(f"❌ Error in create_featured_thumbnail: {e}")
         return {'success': False, 'error': str(e)}
 
+def resize_benefit_image(image_path, max_width=800, max_height=600, quality=85):
+    """
+    Resize benefit image to optimal size while maintaining aspect ratio
+    Overwrites the original image with resized version
+    
+    Args:
+        image_path (str): Path to the original image
+        max_width (int): Maximum width in pixels
+        max_height (int): Maximum height in pixels
+        quality (int): JPEG quality (1-100)
+    
+    Returns:
+        tuple: (success: bool, new_path: str) - success status and new file path
+    """
+    try:
+        # Open the original image
+        with Image.open(image_path) as img:
+            # Get original dimensions
+            original_width, original_height = img.size
+            
+            # Calculate new dimensions maintaining aspect ratio
+            if original_width <= max_width and original_height <= max_height:
+                # Image is already smaller than max size, no need to resize
+                logger.info(f"✅ Image already optimal size: {original_width}x{original_height}")
+                return True, image_path
+            
+            # Calculate scaling factor
+            width_ratio = max_width / original_width
+            height_ratio = max_height / original_height
+            ratio = min(width_ratio, height_ratio)
+            
+            # Calculate new dimensions
+            new_width = int(original_width * ratio)
+            new_height = int(original_height * ratio)
+            
+            # Convert to RGB if necessary (for PNG with transparency)
+            if img.mode in ('RGBA', 'LA', 'P'):
+                # Create a white background
+                background = Image.new('RGB', (new_width, new_height), (255, 255, 255))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                # Resize image
+                img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                background.paste(img_resized, mask=img_resized.split()[-1] if img_resized.mode in ('RGBA', 'LA') else None)
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+                # Resize image
+                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            else:
+                # Resize image
+                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            # Change extension to .jpg for optimized JPEG
+            path_parts = os.path.splitext(image_path)
+            new_image_path = f"{path_parts[0]}.jpg"
+            
+            # Delete old file if extension changed
+            if new_image_path != image_path and os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                except Exception as e:
+                    logger.warning(f"⚠️ Could not delete old file: {e}")
+            
+            # Save resized image as JPEG
+            img.save(new_image_path, 'JPEG', quality=quality, optimize=True)
+            
+            logger.info(f"✅ Resized benefit image: {original_width}x{original_height} -> {new_width}x{new_height}")
+            return True, new_image_path
+            
+    except Exception as e:
+        logger.error(f"❌ Error resizing benefit image: {e}")
+        return False, image_path
+
 
 
 

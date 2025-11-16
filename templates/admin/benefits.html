@@ -64,7 +64,11 @@
                                 </td>
                                 <td>
                                     {% if benefit.image %}
-                                        <img src="{{ url_for('static', filename=benefit.image) }}" alt="{{ benefit.title }}" class="img-thumbnail" style="max-width: 50px; max-height: 50px;">
+                                        {% if benefit.image.startswith('/static/') %}
+                                            <img src="{{ benefit.image }}" alt="{{ benefit.title }}" class="img-thumbnail" style="max-width: 50px; max-height: 50px;">
+                                        {% else %}
+                                            <img src="{{ url_for('static', filename=benefit.image) }}" alt="{{ benefit.title }}" class="img-thumbnail" style="max-width: 50px; max-height: 50px;">
+                                        {% endif %}
                                     {% else %}
                                         <span class="text-muted">Brak obrazu</span>
                                     {% endif %}
@@ -188,11 +192,17 @@
                             <input type="file" class="form-control" id="editBenefitImage" name="image" accept="image/*">
                             <div class="form-text">Dozwolone formaty: PNG, JPG, JPEG, GIF, WEBP (max 100MB)</div>
                             <div id="currentImagePreview" class="mt-2" style="display: none;">
-                                <small class="text-muted">Aktualny obraz:</small>
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <small class="text-muted">Aktualny obraz:</small>
+                                    <button type="button" class="btn btn-sm btn-danger" id="removeImageBtn" onclick="removeBenefitImage()" title="Usuń obraz">
+                                        <i class="fas fa-trash"></i> Usuń obraz
+                                    </button>
+                                </div>
                                 <div class="mt-1">
                                     <img id="currentImage" src="" alt="Aktualny obraz" class="img-thumbnail" style="max-width: 100px; max-height: 100px;">
                                 </div>
                             </div>
+                            <input type="hidden" id="removeImageFlag" name="remove_image" value="false">
                         </div>
                         <div class="mb-3">
                             <label for="editBenefitOrder" class="form-label">Kolejność</label>
@@ -219,6 +229,33 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/admin/benefits.js') }}"></script>
+<script>
+function removeBenefitImage() {
+    const removeImageFlag = document.getElementById('removeImageFlag');
+    const currentImagePreview = document.getElementById('currentImagePreview');
+    const removeImageBtn = document.getElementById('removeImageBtn');
+    
+    if (removeImageFlag) {
+        removeImageFlag.value = 'true';
+    }
+    
+    if (currentImagePreview) {
+        currentImagePreview.style.display = 'none';
+    }
+    
+    if (removeImageBtn) {
+        removeImageBtn.style.display = 'none';
+    }
+    
+    // Clear file input
+    const fileInput = document.getElementById('editBenefitImage');
+    if (fileInput) {
+        fileInput.value = '';
+    }
+    
+    window.toastManager?.info('Obraz zostanie usunięty po zapisaniu zmian');
+}
+</script>
 <script>
 // Global variables for pagination
 let currentPage = 1;
