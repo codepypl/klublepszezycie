@@ -11,11 +11,32 @@
     <!-- Hero Background -->
     {% if next_event and next_event.hero_background %}
         {% if next_event.hero_background_type == 'video' %}
-            <video class="hero-bg-video" autoplay muted loop>
-                <source src="{{ next_event.hero_background }}" type="video/mp4">
-            </video>
+            {# 
+              Obsługa dwóch przypadków:
+              1) Wgrany plik .mp4 (ścieżka w /static/uploads/...)
+              2) Zewnętrzny URL (YouTube, Vimeo, inny odtwarzacz)
+            #}
+            {% set video_url = next_event.hero_background %}
+            
+            {% if video_url.startswith('http') and ('youtube.com' in video_url or 'youtu.be' in video_url or 'vimeo.com' in video_url) %}
+                {# Zewnętrzne video – osadzamy jako iframe #}
+                <div class="hero-bg-video-embed">
+                    <iframe 
+                        src="{{ video_url }}" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                        allowfullscreen
+                        loading="lazy">
+                    </iframe>
+                </div>
             {% else %}
-                <div class="hero-bg-image" style="background-image: url('{{ next_event.hero_background }}');"></div>
+                {# Zakładamy bezpośredni plik wideo (np. .mp4) #}
+                <video class="hero-bg-video" autoplay muted loop playsinline>
+                    <source src="{{ video_url }}" type="video/mp4">
+                </video>
+            {% endif %}
+        {% else %}
+            <div class="hero-bg-image" style="background-image: url('{{ next_event.hero_background }}');"></div>
             {% endif %}
     {% else %}
         <div class="hero-bg-image" style="background-image: url('{{ url_for('static', filename='images/hero/hero-bg.jpg') }}');"></div>

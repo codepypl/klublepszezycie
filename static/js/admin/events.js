@@ -496,26 +496,35 @@ class EventsManager {
         if (hasImageFile || hasVideoFile) {
             // Use FormData for file upload
             if (heroBackground) {
-                formData.append('hero_background', heroBackground);
+                // Ensure we override any existing hero_background value
+                formData.set('hero_background', heroBackground);
             }
-            formData.append('hero_background_type', heroBackgroundType);
+            formData.set('hero_background_type', heroBackgroundType);
             
-            // Add other fields to FormData
-            formData.append('title', formData.get('title'));
-            formData.append('event_type', formData.get('event_type'));
-            formData.append('event_date', this.combineDateTime(formData.get('event_date'), formData.get('event_time')));
-            const endDate = this.combineDateTime(formData.get('end_date'), formData.get('end_time'));
-            if (endDate) formData.append('end_date', endDate);
+            // Normalize and override date/time fields so backend gets full datetime
+            const combinedEventDate = this.combineDateTime(formData.get('event_date'), formData.get('event_time'));
+            if (combinedEventDate) {
+                formData.set('event_date', combinedEventDate);
+            }
+            const combinedEndDate = this.combineDateTime(formData.get('end_date'), formData.get('end_time'));
+            if (combinedEndDate) {
+                formData.set('end_date', combinedEndDate);
+            } else {
+                // Ensure we don't accidentally send an empty string
+                formData.delete('end_date');
+            }
+            
+            // Normalize simple fields
             const location = formData.get('location');
-            if (location) formData.append('location', location);
+            if (location) formData.set('location', location);
             const meetingLink = formData.get('meeting_link');
-            if (meetingLink) formData.append('meeting_link', meetingLink);
+            if (meetingLink) formData.set('meeting_link', meetingLink);
             const maxParticipants = formData.get('max_participants');
-            if (maxParticipants) formData.append('max_participants', maxParticipants);
+            if (maxParticipants) formData.set('max_participants', maxParticipants);
             const description = formData.get('description');
-            if (description) formData.append('description', description);
-            formData.append('is_active', formData.get('is_active') === 'on' ? 'true' : 'false');
-            formData.append('is_published', formData.get('is_published') === 'on' ? 'true' : 'false');
+            if (description) formData.set('description', description);
+            formData.set('is_active', formData.get('is_active') === 'on' ? 'true' : 'false');
+            formData.set('is_published', formData.get('is_published') === 'on' ? 'true' : 'false');
             
             fetch('/api/event-schedule', {
                 method: 'POST',
@@ -648,11 +657,25 @@ class EventsManager {
         if (hasImageFile || hasVideoFile) {
             // Use FormData for file upload
             if (heroBackground) {
-                formData.append('hero_background', heroBackground);
+                // Ensure we override any existing hero_background value
+                formData.set('hero_background', heroBackground);
             }
-            formData.append('hero_background_type', heroBackgroundType);
+            formData.set('hero_background_type', heroBackgroundType);
             if (removeHeroBackground) {
-                formData.append('remove_hero_background', 'true');
+                formData.set('remove_hero_background', 'true');
+            }
+
+            // Normalize and override date/time fields so backend gets full datetime
+            const combinedEventDate = this.combineDateTime(formData.get('event_date'), formData.get('event_time'));
+            if (combinedEventDate) {
+                formData.set('event_date', combinedEventDate);
+            }
+            const combinedEndDate = this.combineDateTime(formData.get('end_date'), formData.get('end_time'));
+            if (combinedEndDate) {
+                formData.set('end_date', combinedEndDate);
+            } else {
+                // Ensure we don't accidentally send an empty string
+                formData.delete('end_date');
             }
             
             const eventId = formData.get('id');
