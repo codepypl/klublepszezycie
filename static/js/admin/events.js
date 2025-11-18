@@ -232,7 +232,7 @@ class EventsManager {
         // Set today's date as default
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('eventDate').value = today;
-        document.getElementById('eventTime').value = '18:00';
+        document.getElementById('eventTime').value = '20:00';
         
         // Set default hero background type
         document.getElementById('heroBackgroundType').value = 'image';
@@ -343,7 +343,13 @@ class EventsManager {
             if (!isNaN(eventDate.getTime())) {
                 document.getElementById('editEventDate').value = eventDate.toISOString().split('T')[0];
                 document.getElementById('editEventTime').value = eventDate.toTimeString().slice(0, 5);
+            } else {
+                // Default to 20:00 if date is invalid
+                document.getElementById('editEventTime').value = '20:00';
             }
+        } else {
+            // Default to 20:00 if no event_date
+            document.getElementById('editEventTime').value = '20:00';
         }
         
         if (event.end_date) {
