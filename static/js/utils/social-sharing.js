@@ -10,18 +10,29 @@ class SocialSharing {
     }
 
     /**
-     * Initialize social sharing for a blog post
-     * @param {number} postId - Blog post ID
+     * Initialize social sharing for a blog post or event
+     * @param {number} postId - Blog post ID (optional)
+     * @param {number} eventId - Event ID (optional)
      */
-    async init(postId) {
+    async init(postId = null, eventId = null) {
         try {
+            const body = {};
+            if (postId) {
+                body.post_id = postId;
+            } else if (eventId) {
+                body.event_id = eventId;
+            } else {
+                console.error('Either postId or eventId must be provided');
+                return false;
+            }
+            
             const response = await fetch('/api/social-sharing/generate-links', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 credentials: 'include',
-                body: JSON.stringify({ post_id: postId })
+                body: JSON.stringify(body)
             });
 
             if (!response.ok) {
@@ -59,11 +70,12 @@ class SocialSharing {
     }
 
     /**
-     * Generate sharing links for a specific post
-     * @param {number} postId - Blog post ID
+     * Generate sharing links for a specific post or event
+     * @param {number} postId - Blog post ID (optional)
+     * @param {number} eventId - Event ID (optional)
      */
-    async generateLinks(postId) {
-        return await this.init(postId);
+    async generateLinks(postId = null, eventId = null) {
+        return await this.init(postId, eventId);
     }
 
     /**
@@ -91,16 +103,24 @@ class SocialSharing {
         // Track the share if requested
         if (track && this.sharingData) {
             try {
+                const trackData = {
+                    platform: platform
+                };
+                
+                // Add post_id or event_id depending on what's available
+                if (this.sharingData.post_id) {
+                    trackData.post_id = this.sharingData.post_id;
+                } else if (this.sharingData.event_id) {
+                    trackData.event_id = this.sharingData.event_id;
+                }
+                
                 await fetch('/api/social-sharing/track-share', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     credentials: 'include',
-                    body: JSON.stringify({
-                        post_id: this.sharingData.post_id,
-                        platform: platform
-                    })
+                    body: JSON.stringify(trackData)
                 });
             } catch (error) {
                 console.error('Error tracking share:', error);

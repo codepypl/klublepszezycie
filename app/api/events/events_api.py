@@ -27,6 +27,16 @@ def _parse_datetime_safe(datetime_str):
     return datetime_str
 
 
+def _parse_int_safe(value, default=None):
+    """Safely parse integer, handling empty strings and None"""
+    if value is None or value == '':
+        return default
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+
+
 def _parse_bool(value, default=None):
     """
     Safely parse boolean-like values coming from JSON or HTML forms.
@@ -362,7 +372,7 @@ def create_event():
             location=data.get('location', ''),
             meeting_link=data.get('meeting_link', ''),
             event_url=data.get('event_url', ''),  # Zachowujemy dla kompatybilności
-            max_participants=data.get('max_participants', 0),
+            max_participants=_parse_int_safe(data.get('max_participants'), None),
             hero_background=hero_background,
             hero_background_type=hero_background_type,
             is_active=_parse_bool(data.get('is_active', True), True),

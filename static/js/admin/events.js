@@ -93,16 +93,29 @@ class EventsManager {
         const imageContainer = document.getElementById(`${prefix}HeroBackgroundImageContainer`);
         const videoContainer = document.getElementById(`${prefix}HeroBackgroundVideoContainer`);
         
-        if (!typeSelect) return;
+        if (!typeSelect) {
+            console.warn(`HeroBackgroundType select not found for formType: ${formType}`);
+            return;
+        }
         
-        const selectedType = typeSelect.value;
+        const selectedType = typeSelect.value || 'image';
         
         if (selectedType === 'image') {
-            if (imageContainer) imageContainer.style.display = 'block';
-            if (videoContainer) videoContainer.style.display = 'none';
+            if (imageContainer) {
+                imageContainer.style.display = 'block';
+                console.log('Showing image container');
+            }
+            if (videoContainer) {
+                videoContainer.style.display = 'none';
+            }
         } else if (selectedType === 'video') {
-            if (imageContainer) imageContainer.style.display = 'none';
-            if (videoContainer) videoContainer.style.display = 'block';
+            if (imageContainer) {
+                imageContainer.style.display = 'none';
+            }
+            if (videoContainer) {
+                videoContainer.style.display = 'block';
+                console.log('Showing video container');
+            }
         } else {
             if (imageContainer) imageContainer.style.display = 'none';
             if (videoContainer) videoContainer.style.display = 'none';
@@ -226,20 +239,67 @@ class EventsManager {
             window.quillInstances['eventDescription'].root.innerHTML = '';
         }
         
-        // Reset hero background fields
+        // Reset hero background fields (but keep containers visible for now)
         this.resetHeroBackgroundFields('add');
         
         // Set today's date as default
         const today = new Date().toISOString().split('T')[0];
-        document.getElementById('eventDate').value = today;
-        document.getElementById('eventTime').value = '20:00';
+        const eventDateInput = document.getElementById('eventDate');
+        const eventTimeInput = document.getElementById('eventTime');
+        if (eventDateInput) eventDateInput.value = today;
+        if (eventTimeInput) eventTimeInput.value = '20:00';
         
-        // Set default hero background type
-        document.getElementById('heroBackgroundType').value = 'image';
-        this.toggleHeroBackgroundFields('add');
+        // Set default hero background type BEFORE showing modal
+        const heroBackgroundTypeSelect = document.getElementById('heroBackgroundType');
+        if (heroBackgroundTypeSelect) {
+            heroBackgroundTypeSelect.value = 'image';
+        }
         
         const modal = new bootstrap.Modal(document.getElementById('addEventModal'));
+        
+        // Show hero background fields after modal is fully shown
+        const addEventModalEl = document.getElementById('addEventModal');
+        const showHeroBackgroundFields = () => {
+            // Ensure hero background fields are visible
+            const typeSelect = document.getElementById('heroBackgroundType');
+            const imageContainer = document.getElementById('heroBackgroundImageContainer');
+            const videoContainer = document.getElementById('heroBackgroundVideoContainer');
+            
+            if (typeSelect && !typeSelect.value) {
+                typeSelect.value = 'image';
+            }
+            
+            const selectedType = typeSelect ? typeSelect.value : 'image';
+            
+            // Directly set visibility to ensure it works
+            if (selectedType === 'image' && imageContainer) {
+                imageContainer.style.display = 'block';
+                if (videoContainer) videoContainer.style.display = 'none';
+            } else if (selectedType === 'video' && videoContainer) {
+                videoContainer.style.display = 'block';
+                if (imageContainer) imageContainer.style.display = 'none';
+            }
+            
+            // Also call toggle to ensure consistency
+            this.toggleHeroBackgroundFields('add');
+        };
+        
+        const handleModalShown = () => {
+            showHeroBackgroundFields();
+            addEventModalEl.removeEventListener('shown.bs.modal', handleModalShown);
+        };
+        addEventModalEl.addEventListener('shown.bs.modal', handleModalShown);
+        
         modal.show();
+        
+        // Fallback: also try to show fields after modal is shown (multiple attempts)
+        setTimeout(() => {
+            showHeroBackgroundFields();
+        }, 150);
+        
+        setTimeout(() => {
+            showHeroBackgroundFields();
+        }, 300);
     }
     
     resetHeroBackgroundFields(formType) {
@@ -249,18 +309,28 @@ class EventsManager {
         const imageInput = document.getElementById(`${prefix}HeroBackgroundImage`);
         const imageUrl = document.getElementById(`${prefix}HeroBackgroundImageUrl`);
         const imagePreview = document.getElementById(`${prefix}HeroBackgroundImagePreview`);
-        if (imageInput) imageInput.value = '';
+        if (imageInput) {
+            imageInput.value = '';
+            imageInput.style.display = 'block';
+        }
         if (imageUrl) {
             imageUrl.value = '';
             imageUrl.style.display = 'none';
         }
-        if (imageInput) imageInput.style.display = 'block';
         if (imagePreview) imagePreview.style.display = 'none';
         
         // Reset video fields
+        const videoFileInput = document.getElementById(`${prefix}HeroBackgroundVideoFile`);
         const videoInput = document.getElementById(`${prefix}HeroBackgroundVideo`);
         const videoPreview = document.getElementById(`${prefix}HeroBackgroundVideoPreview`);
-        if (videoInput) videoInput.value = '';
+        if (videoFileInput) {
+            videoFileInput.value = '';
+            videoFileInput.style.display = 'block';
+        }
+        if (videoInput) {
+            videoInput.value = '';
+            videoInput.style.display = 'none';
+        }
         if (videoPreview) videoPreview.style.display = 'none';
     }
 
@@ -526,7 +596,17 @@ class EventsManager {
             const meetingLink = formData.get('meeting_link');
             if (meetingLink) formData.set('meeting_link', meetingLink);
             const maxParticipants = formData.get('max_participants');
-            if (maxParticipants) formData.set('max_participants', maxParticipants);
+            // Handle empty string - remove the field so backend can set to None
+            if (maxParticipants && maxParticipants.trim() !== '') {
+                const parsed = parseInt(maxParticipants);
+                if (!isNaN(parsed) && parsed > 0) {
+                    formData.set('max_participants', parsed);
+                } else {
+                    formData.delete('max_participants'); // Let backend handle as None
+                }
+            } else {
+                formData.delete('max_participants'); // Remove empty string
+            }
             const description = formData.get('description');
             if (description) formData.set('description', description);
             formData.set('is_active', formData.get('is_active') === 'on' ? 'true' : 'false');
