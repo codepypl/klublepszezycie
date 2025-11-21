@@ -231,50 +231,6 @@
         </li>
         {% endif %}
         
-        <!-- Grupa: CRM - Tylko dla administratorów -->
-        {% if current_user.is_admin_role() %}
-        <li class="nav-item">
-            <a href="#crmSubmenu" data-bs-toggle="collapse" class="nav-link" aria-expanded="{% if request.endpoint in ['crm.contacts', 'crm.export', 'admin.crm_campaigns', 'admin.crm_blacklist', 'admin.crm_settings'] %}true{% else %}false{% endif %}">
-                <i class="fas fa-chart-line me-2"></i>
-                <span class="nav-link-text">CRM</span>
-                <i class="fas fa-chevron-down ms-auto"></i>
-            </a>
-            <div class="collapse{% if request.endpoint in ['crm.contacts', 'crm.export', 'admin.crm_campaigns', 'admin.crm_blacklist', 'admin.crm_settings'] %} show{% endif %}" id="crmSubmenu">
-                <ul class="nav flex-column ms-3">
-                    <li class="nav-item">
-                        <a href="{{ url_for('crm.contacts') }}" class="nav-link {% if request.endpoint == 'crm.contacts' %}active{% endif %}">
-                            <i class="fas fa-address-book"></i>
-                            <span class="nav-link-text">Rekordy</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ url_for('admin.crm_campaigns') }}" class="nav-link {% if request.endpoint == 'admin.crm_campaigns' %}active{% endif %}">
-                            <i class="fas fa-bullhorn"></i>
-                            <span class="nav-link-text">Kampanie</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ url_for('admin.crm_blacklist') }}" class="nav-link {% if request.endpoint == 'admin.crm_blacklist' %}active{% endif %}">
-                            <i class="fas fa-ban"></i>
-                            <span class="nav-link-text">Czarna lista</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ url_for('crm.export') }}" class="nav-link {% if request.endpoint == 'crm.export' %}active{% endif %}">
-                            <i class="fas fa-download"></i>
-                            <span class="nav-link-text">Eksport Danych</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ url_for('admin.crm_settings') }}" class="nav-link {% if request.endpoint == 'admin.crm_settings' %}active{% endif %}">
-                            <i class="fas fa-cog"></i>
-                            <span class="nav-link-text">Ustawienia</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </li>
-        {% endif %}
 
 
 

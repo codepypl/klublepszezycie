@@ -1,20 +1,13 @@
 """
-Ankieter Routes - Routes for ankieter CRM functionality
+Ankieter Routes - Routes for ankieter functionality
+Note: CRM functionality has been removed
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
-from functools import wraps
-from app.models import User, db
-from app.blueprints.crm_controller import ankieter_required
+from app.utils.auth_utils import ankieter_required
 
 # Create Ankieter routes blueprint
 ankieter_bp = Blueprint('ankieter', __name__)
-
-# Import CRM controller functions
-from app.blueprints.crm_controller import (
-    dashboard as crm_dashboard_func,
-    work as crm_work_func
-)
 
 # Ankieter Dashboard
 @ankieter_bp.route('/')
@@ -22,10 +15,8 @@ from app.blueprints.crm_controller import (
 @ankieter_required
 def dashboard():
     """Ankieter Dashboard"""
-    return crm_dashboard_func()
-
-# Calls and contacts are only for administrators
-# Ankieter doesn't need these routes
+    flash('Moduł ankietera jest obecnie niedostępny. Funkcjonalność CRM została usunięta.', 'info')
+    return redirect(url_for('public.index'))
 
 # Work page
 @ankieter_bp.route('/work')
@@ -33,4 +24,5 @@ def dashboard():
 @ankieter_required
 def work():
     """Work page for ankieter"""
-    return crm_work_func()
+    flash('Moduł ankietera jest obecnie niedostępny. Funkcjonalność CRM została usunięta.', 'info')
+    return redirect(url_for('public.index'))

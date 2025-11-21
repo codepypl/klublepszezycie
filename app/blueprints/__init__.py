@@ -1,7 +1,3 @@
-# Blueprints module - only ankieter_bp remains here
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'crm', 'admin'))
-from .crm_controller import ankieter_bp
-
-__all__ = ['ankieter_bp']
+# Blueprints module
+# CRM controller removed - CRM module not used
+__all__ = []

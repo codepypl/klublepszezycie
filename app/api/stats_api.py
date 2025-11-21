@@ -48,14 +48,7 @@ def get_dashboard_stats():
                 'categories': Stats.get_total_blog_categories(),
                 'comments': Stats.get_total_blog_comments()
             },
-            'crm': {
-                'contacts': Stats.get_total_contacts(),
-                'calls': Stats.get_total_calls(),
-                'imports': Stats.get_total_imports(),
-                'blacklist': Stats.get_total_blacklist(),
-                'daily_calls': Stats.get_daily_calls(),
-                'daily_leads': Stats.get_daily_leads()
-            },
+            # CRM stats removed - CRM module not used
             'email': {
                 'total': Stats.get_total_emails(),
                 'pending': Stats.get_pending_emails(),
@@ -101,28 +94,7 @@ def get_user_stats():
         logging.error(f"Error getting user stats: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@stats_api_bp.route('/stats/crm', methods=['GET'])
-@login_required
-@admin_required_api
-def get_crm_stats():
-    """Get CRM statistics"""
-    try:
-        stats = {
-            'contacts': Stats.get_total_contacts(),
-            'calls': Stats.get_total_calls(),
-            'imports': Stats.get_total_imports(),
-            'blacklist': Stats.get_total_blacklist(),
-            'daily_calls': Stats.get_daily_calls(),
-            'daily_leads': Stats.get_daily_leads()
-        }
-        
-        return jsonify({
-            'success': True,
-            'stats': stats
-        })
-    except Exception as e:
-        logging.error(f"Error getting CRM stats: {str(e)}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+# CRM stats endpoint removed - CRM module not used
 
 @stats_api_bp.route('/stats/email', methods=['GET'])
 @login_required

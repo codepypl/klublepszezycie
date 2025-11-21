@@ -59,7 +59,7 @@ def create_app(config_name=None):
     
     # Rejestracja blueprintów z routes
     from app.routes import (
-        admin_route, ankieter_routes, auth_route, blog_route, crm_routes, events_route,
+        admin_route, ankieter_routes, auth_route, blog_route, events_route,
         footer_route, log_route, public_route, seo_route, social_route,
         user_groups_route, users_route, unsubscribe_routes
     )
@@ -69,7 +69,6 @@ def create_app(config_name=None):
     app.register_blueprint(admin_route.admin_bp)
     app.register_blueprint(ankieter_routes.ankieter_bp)
     app.register_blueprint(blog_route.blog_bp)
-    app.register_blueprint(crm_routes.crm_bp)
     app.register_blueprint(events_route.events_bp)
     app.register_blueprint(footer_route.footer_bp)
     app.register_blueprint(log_route.log_route)

@@ -118,9 +118,94 @@ class GroupManager:
         except Exception as e:
             return False, f"Błąd dodawania do grupy członków klubu: {str(e)}"
     
-    def add_user_to_club_members(self, user_id):
-        """Dodaje użytkownika do grupy członków klubu"""
+    def get_or_create_new_members_group(self):
+        """Pobiera lub tworzy grupę new_members"""
         try:
+            group = UserGroup.query.filter_by(
+                name="Nowi członkowie",
+                group_type='new_members'
+            ).first()
+            
+            if not group:
+                group = UserGroup(
+                    name="Nowi członkowie",
+                    description="Grupa nowych członków klubu (pierwsze 7 dni)",
+                    group_type='new_members'
+                )
+                db.session.add(group)
+                db.session.commit()
+            
+            return group
+        except Exception as e:
+            return None
+    
+    def add_user_to_new_members(self, user_id):
+        """Dodaje użytkownika do grupy nowych członków"""
+        try:
+            # Pobierz lub utwórz grupę new_members
+            group = self.get_or_create_new_members_group()
+            if not group:
+                return False, "Błąd tworzenia grupy new_members"
+            
+            # Pobierz użytkownika
+            user = User.query.get(user_id)
+            if not user:
+                return False, "Użytkownik nie został znaleziony"
+            
+            # Sprawdź czy już jest w grupie
+            existing_member = UserGroupMember.query.filter_by(
+                group_id=group.id,
+                user_id=user_id
+            ).first()
+            
+            if existing_member:
+                return True, "Użytkownik już jest w grupie new_members"
+            
+            # Dodaj do grupy
+            member = UserGroupMember(
+                group_id=group.id,
+                user_id=user_id,
+                email=user.email,
+                name=user.first_name,
+                member_type='user',
+                is_active=True
+            )
+            
+            db.session.add(member)
+            
+            # Aktualizuj liczbę członków
+            group.member_count = UserGroupMember.query.filter_by(group_id=group.id, is_active=True).count()
+            
+            db.session.commit()
+            
+            return True, "Użytkownik dodany do grupy nowych członków"
+            
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Błąd dodawania do grupy nowych członków: {str(e)}"
+    
+    def add_user_to_club_members(self, user_id):
+        """Dodaje użytkownika do grupy członków klubu (lub new_members jeśli jest nowy)"""
+        try:
+            from datetime import timedelta
+            
+            # Pobierz użytkownika
+            user = User.query.get(user_id)
+            if not user:
+                return False, "Użytkownik nie został znaleziony"
+            
+            # Sprawdź czy użytkownik jest nowy (utworzony w ciągu ostatnich 7 dni)
+            if user.created_at:
+                days_since_creation = (get_local_now() - user.created_at).days
+                is_new_member = days_since_creation < 7
+            else:
+                is_new_member = False
+            
+            # Jeśli użytkownik jest nowy, dodaj do new_members zamiast club_members
+            if is_new_member:
+                return self.add_user_to_new_members(user_id)
+            
+            # W przeciwnym razie dodaj do club_members
             # Znajdź grupę członków klubu (ID 19)
             group = UserGroup.query.get(19)
             
@@ -139,11 +224,6 @@ class GroupManager:
                 )
                 db.session.add(group)
                 db.session.commit()
-            
-            # Pobierz użytkownika
-            user = User.query.get(user_id)
-            if not user:
-                return False, "Użytkownik nie został znaleziony"
             
             # Sprawdź czy już jest w grupie
             existing_member = UserGroupMember.query.filter_by(
@@ -174,6 +254,7 @@ class GroupManager:
             return True, "Użytkownik dodany do grupy członków"
             
         except Exception as e:
+            db.session.rollback()
             return False, f"Błąd dodawania do grupy członków: {str(e)}"
     
     def create_manual_group(self, name, description, user_ids):
@@ -1034,4 +1115,111 @@ class GroupManager:
             db.session.rollback()
             logger.error(f"❌ Błąd usuwania duplikatów grup: {str(e)}")
             return False, f"Błąd: {str(e)}"
+    
+    def migrate_new_members_to_club_members(self):
+        """Przenosi użytkowników z grupy new_members do club_members po 7 dniach od utworzenia konta"""
+        try:
+            import logging
+            logger = logging.getLogger(__name__)
+            from datetime import timedelta
+            
+            # Pobierz grupę new_members
+            new_members_group = UserGroup.query.filter_by(group_type='new_members').first()
+            if not new_members_group:
+                logger.info("ℹ️ Grupa new_members nie istnieje - brak użytkowników do przeniesienia")
+                return True, "Brak grupy new_members"
+            
+            # Pobierz grupę club_members
+            club_members_group = UserGroup.query.filter_by(group_type='club_members').first()
+            if not club_members_group:
+                # Utwórz grupę club_members jeśli nie istnieje
+                club_members_group = UserGroup(
+                    name="Członkowie klubu",
+                    description="Grupa członków klubu Lepsze Życie",
+                    group_type='club_members'
+                )
+                db.session.add(club_members_group)
+                db.session.commit()
+            
+            # Pobierz wszystkich aktywnych członków grupy new_members
+            new_members = UserGroupMember.query.filter_by(
+                group_id=new_members_group.id,
+                is_active=True
+            ).all()
+            
+            if not new_members:
+                logger.info("ℹ️ Brak użytkowników w grupie new_members do przeniesienia")
+                return True, "Brak użytkowników do przeniesienia"
+            
+            migrated_count = 0
+            now = get_local_now()
+            
+            for member in new_members:
+                if not member.user_id:
+                    continue
+                
+                user = User.query.get(member.user_id)
+                if not user:
+                    # Użytkownik nie istnieje - usuń z grupy
+                    member.is_active = False
+                    continue
+                
+                # Sprawdź czy użytkownik jest nadal członkiem klubu
+                if not user.club_member:
+                    # Użytkownik nie jest już członkiem klubu - usuń z grupy
+                    member.is_active = False
+                    continue
+                
+                # Sprawdź czy minęło 7 dni od utworzenia konta
+                if user.created_at:
+                    days_since_creation = (now - user.created_at).days
+                    if days_since_creation >= 7:
+                        # Sprawdź czy użytkownik nie jest już w grupie club_members
+                        existing_in_club = UserGroupMember.query.filter_by(
+                            group_id=club_members_group.id,
+                            user_id=user.id,
+                            is_active=True
+                        ).first()
+                        
+                        if not existing_in_club:
+                            # Dodaj do grupy club_members
+                            club_member = UserGroupMember(
+                                group_id=club_members_group.id,
+                                user_id=user.id,
+                                email=user.email,
+                                name=user.first_name,
+                                member_type='user',
+                                is_active=True
+                            )
+                            db.session.add(club_member)
+                            logger.info(f"✅ Przeniesiono użytkownika {user.email} z new_members do club_members")
+                        
+                        # Usuń z grupy new_members
+                        member.is_active = False
+                        migrated_count += 1
+            
+            # Aktualizuj liczbę członków w obu grupach
+            new_members_group.member_count = UserGroupMember.query.filter_by(
+                group_id=new_members_group.id,
+                is_active=True
+            ).count()
+            
+            club_members_group.member_count = UserGroupMember.query.filter_by(
+                group_id=club_members_group.id,
+                is_active=True
+            ).count()
+            
+            db.session.commit()
+            
+            logger.info(f"✅ Przeniesiono {migrated_count} użytkowników z new_members do club_members")
+            return True, f"Przeniesiono {migrated_count} użytkowników"
+            
+        except Exception as e:
+            db.session.rollback()
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"❌ Błąd przenoszenia użytkowników: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return False, f"Błąd przenoszenia użytkowników: {str(e)}"
 

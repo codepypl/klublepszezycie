@@ -156,7 +156,7 @@ function displayGroups(groups) {
         const row = document.createElement('tr');
         
         // Ukryj checkbox i przyciski dla domyślnych grup i grup wydarzeń
-        const isSystemGroup = group.is_default || group.group_type === 'event_based';
+        const isSystemGroup = group.is_default || group.group_type === 'event_based' || group.group_type === 'new_members' || group.group_type === 'club_members';
         const checkboxHtml = isSystemGroup ? 
             '<input type="checkbox" name="itemIds" value="' + group.id + '" disabled title="Nie można usuwać grup systemowych">' :
             '<input type="checkbox" name="itemIds" value="' + group.id + '">';
@@ -179,7 +179,7 @@ function displayGroups(groups) {
         row.innerHTML = `
             <td>${checkboxHtml}</td>
             <td><span class="badge admin-badge admin-badge-primary">${group.id}</span></td>
-            <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">${group.name} ${group.is_default ? '<span class="admin-badge admin-badge-info ms-1">Systemowa</span>' : ''} ${group.group_type === 'event_based' ? '<span class="admin-badge admin-badge-warning ms-1">Wydarzenie</span>' : ''}</td>
+            <td style="word-wrap: break-word; word-break: break-word; max-width: 200px;">${group.name} ${group.is_default ? '<span class="admin-badge admin-badge-info ms-1">Systemowa</span>' : ''} ${group.group_type === 'event_based' ? '<span class="admin-badge admin-badge-warning ms-1">Wydarzenie</span>' : ''} ${group.group_type === 'new_members' ? '<span class="admin-badge admin-badge-success ms-1">Nowi członkowie</span>' : ''} ${group.group_type === 'club_members' ? '<span class="admin-badge admin-badge-primary ms-1">Członkowie klubu</span>' : ''}</td>
             <td>
                 ${group.event_id ? 
                     `<a href="/admin/events?edit=${group.event_id}" 

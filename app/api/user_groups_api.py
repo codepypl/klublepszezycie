@@ -25,7 +25,7 @@ def get_user_groups():
         )
         
         # Lista domyślnych grup (nie można ich usuwać)
-        default_groups = ['club_members']
+        default_groups = ['club_members', 'new_members']
         
         group_list = []
         for group in pagination.items:
@@ -228,7 +228,7 @@ def delete_user_group(group_id):
             return jsonify({'success': False, 'error': 'Grupa nie istnieje'}), 404
         
         # Check if group is default (cannot be deleted)
-        default_groups = ['club_members']
+        default_groups = ['club_members', 'new_members']
         if group.group_type in default_groups:
             return jsonify({'success': False, 'error': 'Nie można usunąć grupy domyślnej'}), 400
         
@@ -373,5 +373,25 @@ def cleanup_duplicate_event_groups():
             'message': message
         })
     except Exception as e:
+        import logging
         logging.error(f"Error cleaning up duplicate event groups: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@user_groups_bp.route('/user-groups/migrate-new-members', methods=['POST'])
+@login_required
+def migrate_new_members():
+    """Przenosi użytkowników z new_members do club_members po 7 dniach"""
+    try:
+        from app.services.group_manager import GroupManager
+        group_manager = GroupManager()
+        
+        success, message = group_manager.migrate_new_members_to_club_members()
+        
+        return jsonify({
+            'success': success,
+            'message': message
+        })
+    except Exception as e:
+        import logging
+        logging.error(f"Error migrating new members: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500

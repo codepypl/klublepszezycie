@@ -10,7 +10,6 @@ from .social_route import social_bp
 from .events_route import events_bp
 from .users_route import users_bp
 from .footer_route import footer_bp
-from .crm_routes import crm_bp
 from .ankieter_routes import ankieter_bp
 
 __all__ = [
@@ -23,6 +22,5 @@ __all__ = [
     'events_bp',
     'users_bp',
     'footer_bp',
-    'crm_bp',
     'ankieter_bp'
 ]

@@ -16,6 +16,9 @@
 # Sprawdzanie statystyk co 5 minut (opcjonalne)
 */5 * * * * cd /Volumes/Dane/Projekty/devs/klublepszezycie && /Volumes/Dane/Projekty/devs/klublepszezycie/.venv/bin/python app/services/process_email_queue.py --stats >> logs/email_cron.log 2>&1
 
+# Migracja nowych członków z new_members do club_members po 7 dniach (co godzinę)
+0 * * * * cd /Volumes/Dane/Projekty/devs/klublepszezycie && /Volumes/Dane/Projekty/devs/klublepszezycie/.venv/bin/python app/services/user_service.py --migrate-new-members >> logs/user_service.log 2>&1
+
 # UWAGI:
 # 1. Zastąp ścieżki na swoje rzeczywiste ścieżki
 # 2. Upewnij się, że katalog logs/ istnieje
