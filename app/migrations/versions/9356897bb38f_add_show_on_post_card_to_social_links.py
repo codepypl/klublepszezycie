@@ -1,7 +1,7 @@
 """add_show_on_post_card_to_social_links
 
 Revision ID: 9356897bb38f
-Revises: 759870f0f173
+Revises: c1d2e3f4g5h6
 Create Date: 2025-11-16 03:28:56.301071
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '9356897bb38f'
-down_revision = '759870f0f173'
+down_revision = 'c1d2e3f4g5h6'
 branch_labels = None
 depends_on = None
 

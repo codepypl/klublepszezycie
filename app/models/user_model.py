@@ -18,6 +18,7 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True, index=True)  # Whether the account is active
     account_type = db.Column(db.String(30), default='user', index=True)  # admin, user, ankieter, event_registration
     is_temporary_password = db.Column(db.Boolean, default=True)  # Whether user needs to change password
+    admin_theme = db.Column(db.String(20), default='light')  # light, dark, midnight - theme preference for admin panel
     created_at = db.Column(db.DateTime, default=lambda: __import__('app.utils.timezone_utils', fromlist=['get_local_now']).get_local_now())
     last_login = db.Column(db.DateTime)
     

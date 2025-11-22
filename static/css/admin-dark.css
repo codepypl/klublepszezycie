@@ -1,0 +1,537 @@
+/* Dark Mode Variables */
+:root {
+    --admin-bg-primary: #000000;
+    --admin-bg-secondary: #1a1a1a;
+    --admin-bg-card: #1a1a1a;
+    --admin-text-primary: #f1f5f9;
+    --admin-text-secondary: #cbd5e1;
+    --admin-border-color: #333333;
+    --admin-hover-bg: #2a2a2a;
+}
+
+/* ============================================
+   DARK MODE STYLES
+   ============================================ */
+.admin-body,
+body {
+    background-color: var(--admin-bg-primary);
+    color: var(--admin-text-primary);
+}
+.admin-content {
+    background-color: var(--admin-bg-primary);
+}
+.admin-header {
+    background: var(--admin-bg-card);
+    border-bottom-color: var(--admin-border-color);
+    color: var(--admin-text-primary);
+}
+.admin-header h1 {
+    color: var(--admin-text-primary);
+}
+.admin-header .text-muted {
+    color: var(--admin-text-secondary) !important;
+}
+.admin-card {
+    background: var(--admin-bg-card);
+    border-color: var(--admin-border-color);
+}
+.admin-card-header {
+    background: var(--admin-bg-secondary);
+    border-bottom-color: var(--admin-border-color);
+}
+.admin-card-header h5 {
+    color: var(--admin-text-primary);
+}
+.admin-card-body {
+    background: var(--admin-bg-card);
+    color: var(--admin-text-primary);
+}
+.admin-stats-card {
+    background: var(--admin-bg-card);
+    border-color: var(--admin-border-color);
+}
+.admin-stats-card i,
+.admin-stats-card .fa,
+.admin-stats-card-icon i,
+.admin-stats-card-icon .fa {
+    color: #ffffff !important;
+}
+.admin-stats-card h3 {
+    color: #ffffff !important;
+}
+.admin-stats-card p {
+    color: var(--admin-text-secondary);
+}
+.admin-table thead th {
+    background: var(--admin-bg-secondary);
+    border-bottom-color: var(--admin-border-color);
+    color: var(--admin-text-primary);
+}
+.admin-table tbody td {
+    border-bottom-color: var(--admin-border-color);
+    color: var(--admin-text-primary);
+    background: var(--admin-bg-card);
+}
+.admin-table tbody td a {
+    color: #ffffff !important;
+}
+.admin-table tbody td a:hover {
+    color: var(--admin-primary) !important;
+}
+.admin-table tbody tr:hover {
+    background: var(--admin-hover-bg);
+}
+/* Badge in tables - dark mode */
+.admin-table .admin-badge,
+.admin-table .badge {
+    color: #ffffff !important;
+}
+.form-control,
+.form-select {
+    background: var(--admin-bg-secondary);
+    border-color: var(--admin-border-color);
+    color: var(--admin-text-primary);
+}
+.form-control:focus,
+.form-select:focus {
+    background: var(--admin-bg-secondary);
+    border-color: var(--admin-primary);
+    color: var(--admin-text-primary);
+}
+.form-label {
+    color: var(--admin-text-primary);
+}
+/* Placeholders - dark mode */
+.form-control::placeholder {
+    color: var(--admin-text-secondary) !important;
+    opacity: 0.7;
+}
+.form-control::-webkit-input-placeholder {
+    color: var(--admin-text-secondary) !important;
+    opacity: 0.7;
+}
+.form-control::-moz-placeholder {
+    color: var(--admin-text-secondary) !important;
+    opacity: 0.7;
+}
+.form-control:-ms-input-placeholder {
+    color: var(--admin-text-secondary) !important;
+    opacity: 0.7;
+}
+.form-check-label {
+    color: var(--admin-text-primary);
+}
+.admin-btn-outline {
+    border-color: var(--admin-white);
+    color: var(--admin-white);
+    background: transparent;
+}
+.admin-btn-outline:hover {
+    background: var(--admin-white);
+    color: var(--admin-bg-primary);
+    border-color: var(--admin-white);
+}
+.btn-outline-primary {
+    border-color: var(--admin-primary);
+    color: var(--admin-primary);
+}
+.btn-outline-primary:hover {
+    background: var(--admin-primary);
+    color: var(--admin-white);
+}
+.btn-outline-danger {
+    border-color: var(--admin-white);
+    color: var(--admin-white);
+    background: transparent;
+}
+.btn-outline-danger:hover {
+    background: var(--admin-white);
+    color: var(--admin-danger);
+    border-color: var(--admin-white);
+}
+/* Small danger buttons in lists - dark mode */
+.admin-btn-danger.btn-sm,
+.btn-sm.admin-btn-danger {
+    border: 2px solid var(--admin-white) !important;
+    background: transparent !important;
+    color: var(--admin-white) !important;
+}
+.admin-btn-danger.btn-sm:hover,
+.btn-sm.admin-btn-danger:hover {
+    background: var(--admin-white) !important;
+    color: var(--admin-danger) !important;
+    border-color: var(--admin-white) !important;
+}
+/* Icons in danger buttons - dark mode */
+.admin-btn-danger.btn-sm .fa-trash,
+.admin-btn-danger.btn-sm i,
+.btn-outline-danger .fa-trash,
+.btn-outline-danger i {
+    color: var(--admin-white) !important;
+}
+.admin-btn-danger.btn-sm:hover .fa-trash,
+.admin-btn-danger.btn-sm:hover i,
+.btn-outline-danger:hover .fa-trash,
+.btn-outline-danger:hover i {
+    color: var(--admin-danger) !important;
+}
+.list-group-item {
+    background: var(--admin-bg-card);
+    border-color: var(--admin-border-color);
+    color: var(--admin-text-primary);
+}
+.list-group-item:hover {
+    background: var(--admin-hover-bg);
+}
+/* All modals - dark mode */
+.modal-content,
+.admin-modal .modal-content {
+    background: var(--admin-bg-card);
+    color: var(--admin-text-primary);
+    border-color: var(--admin-border-color);
+}
+.modal-header,
+.admin-modal .modal-header {
+    background: var(--admin-bg-card);
+    border-bottom-color: var(--admin-border-color);
+    color: var(--admin-text-primary);
+}
+.modal-title,
+.admin-modal .modal-title {
+    color: var(--admin-text-primary);
+}
+.modal-body,
+.admin-modal .modal-body {
+    background: var(--admin-bg-card);
+    color: var(--admin-text-primary);
+}
+.modal-footer,
+.admin-modal .modal-footer {
+    background: var(--admin-bg-card);
+    border-top-color: var(--admin-border-color);
+}
+.modal .btn-close,
+.admin-modal .btn-close {
+    filter: invert(1);
+}
+/* Form controls in modals - dark mode */
+.modal .form-control,
+.modal .form-select,
+.admin-modal .form-control,
+.admin-modal .form-select {
+    background: var(--admin-bg-secondary);
+    border-color: var(--admin-border-color);
+    color: var(--admin-text-primary);
+}
+.modal .form-control:focus,
+.modal .form-select:focus,
+.admin-modal .form-control:focus,
+.admin-modal .form-select:focus {
+    background: var(--admin-bg-secondary);
+    border-color: var(--admin-primary);
+    color: var(--admin-text-primary);
+    box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.25);
+}
+.modal .form-label,
+.admin-modal .form-label {
+    color: var(--admin-text-primary);
+}
+.modal .form-control::placeholder,
+.admin-modal .form-control::placeholder {
+    color: var(--admin-text-secondary) !important;
+    opacity: 0.7;
+}
+.modal .text-muted,
+.admin-modal .text-muted {
+    color: var(--admin-text-secondary) !important;
+}
+/* Small text in modals - dark mode */
+.modal small,
+.admin-modal small {
+    color: var(--admin-text-secondary) !important;
+}
+/* Headings in modals - dark mode */
+.modal h6,
+.modal h5,
+.modal h4,
+.admin-modal h6,
+.admin-modal h5,
+.admin-modal h4 {
+    color: var(--admin-text-primary) !important;
+}
+/* Buttons in modals - dark mode */
+.modal .btn-primary,
+.modal .admin-btn,
+.admin-modal .btn-primary,
+.admin-modal .admin-btn {
+    background: var(--admin-primary);
+    color: var(--admin-white);
+    border-color: var(--admin-primary);
+}
+.modal .btn-primary:hover,
+.modal .admin-btn:hover,
+.admin-modal .btn-primary:hover,
+.admin-modal .admin-btn:hover {
+    background: #1e3a8a;
+    color: var(--admin-white);
+    border-color: #1e3a8a;
+}
+.modal .btn-secondary,
+.admin-modal .btn-secondary {
+    background: transparent;
+    color: var(--admin-white);
+    border: 2px solid var(--admin-white);
+}
+.modal .btn-secondary:hover,
+.admin-modal .btn-secondary:hover {
+    background: var(--admin-white);
+    color: var(--admin-bg-primary);
+    border-color: var(--admin-white);
+}
+.modal .btn-danger,
+.modal .admin-btn-danger,
+.admin-modal .btn-danger,
+.admin-modal .admin-btn-danger {
+    background: var(--admin-danger);
+    color: var(--admin-white);
+    border-color: var(--admin-danger);
+}
+.modal .btn-danger:hover,
+.modal .admin-btn-danger:hover,
+.admin-modal .btn-danger:hover,
+.admin-modal .admin-btn-danger:hover {
+    background: #b91c1c;
+    color: var(--admin-white);
+    border-color: #b91c1c;
+}
+/* Edit icons in lists - dark mode */
+.admin-btn-outline .fa-edit,
+.admin-btn-outline .fa-trash,
+.admin-btn-outline i {
+    color: var(--admin-white) !important;
+}
+.admin-btn-outline:hover .fa-edit,
+.admin-btn-outline:hover .fa-trash,
+.admin-btn-outline:hover i {
+    color: var(--admin-bg-primary) !important;
+}
+.text-muted {
+    color: var(--admin-text-secondary) !important;
+}
+.alert {
+    background: var(--admin-bg-secondary);
+    border-color: var(--admin-border-color);
+}
+.alert-info {
+    background: rgba(8, 145, 178, 0.2);
+    color: var(--admin-info);
+    border-color: var(--admin-info);
+}
+.alert-success {
+    background: rgba(5, 150, 105, 0.2);
+    color: var(--admin-success);
+    border-color: var(--admin-success);
+}
+.alert-danger {
+    background: rgba(220, 38, 38, 0.2);
+    color: var(--admin-danger);
+    border-color: var(--admin-danger);
+}
+.alert-warning {
+    background: rgba(217, 119, 6, 0.2);
+    color: var(--admin-warning);
+    border-color: var(--admin-warning);
+}
+.admin-file-upload {
+    background: var(--admin-bg-secondary);
+    border-color: var(--admin-border-color);
+}
+.admin-file-upload:hover {
+    background: var(--admin-hover-bg);
+    border-color: var(--admin-primary);
+}
+.admin-file-preview {
+    border-color: var(--admin-border-color);
+}
+.admin-progress {
+    background: var(--admin-bg-secondary);
+}
+.ql-toolbar {
+    background: var(--admin-bg-secondary) !important;
+    border-color: var(--admin-border-color) !important;
+}
+.ql-toolbar .ql-stroke {
+    stroke: var(--admin-text-primary) !important;
+}
+.ql-toolbar .ql-fill {
+    fill: var(--admin-text-primary) !important;
+}
+.ql-toolbar .ql-picker-label {
+    color: var(--admin-text-primary) !important;
+}
+.ql-toolbar .ql-picker-options {
+    background: var(--admin-bg-card) !important;
+    border-color: var(--admin-border-color) !important;
+    color: var(--admin-text-primary) !important;
+}
+.ql-toolbar button:hover,
+.ql-toolbar button.ql-active {
+    background: var(--admin-hover-bg) !important;
+}
+.ql-container {
+    background: var(--admin-bg-card) !important;
+    border-color: var(--admin-border-color) !important;
+    color: var(--admin-text-primary) !important;
+}
+.ql-editor {
+    background: var(--admin-bg-card) !important;
+    border-color: var(--admin-border-color) !important;
+    color: var(--admin-text-primary) !important;
+}
+.ql-editor.ql-blank::before {
+    color: var(--admin-text-secondary) !important;
+}
+.page-link {
+    background: var(--admin-bg-card) !important;
+    border-color: var(--admin-border-color) !important;
+    color: var(--admin-text-primary) !important;
+}
+.page-link:hover {
+    background: var(--admin-hover-bg) !important;
+    border-color: var(--admin-primary) !important;
+    color: var(--admin-primary) !important;
+}
+.page-item.active .page-link {
+    background: var(--admin-primary) !important;
+    border-color: var(--admin-primary) !important;
+    color: var(--admin-white) !important;
+}
+.page-item.disabled .page-link {
+    background: var(--admin-bg-secondary) !important;
+    border-color: var(--admin-border-color) !important;
+    color: var(--admin-text-secondary) !important;
+}
+.pagination {
+    background: var(--admin-bg-card) !important;
+}
+.pagination-container {
+    border-top-color: var(--admin-border-color);
+}
+.lightbox-content {
+    background: var(--admin-bg-card);
+    color: var(--admin-text-primary);
+}
+.lightbox-title {
+    color: var(--admin-text-primary);
+}
+.lightbox-message {
+    color: var(--admin-text-secondary);
+}
+.lightbox-progress {
+    background-color: var(--admin-bg-secondary);
+}
+.image-item {
+    background: var(--admin-bg-card);
+    border-color: var(--admin-border-color);
+}
+.image-title {
+    color: var(--admin-text-primary);
+}
+.image-caption {
+    color: var(--admin-text-secondary);
+}
+.image-order,
+.image-drag-handle {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--admin-text-primary);
+}
+.drop-zone {
+    background-color: var(--admin-bg-secondary);
+    border-color: var(--admin-border-color);
+}
+.drop-zone:hover {
+    border-color: var(--admin-primary);
+    background-color: var(--admin-hover-bg);
+}
+.drop-zone.dragover {
+    border-color: var(--admin-primary);
+    background-color: rgba(30, 58, 138, 0.1);
+}
+.admin-list-group {
+    border-color: var(--admin-border-color);
+}
+.admin-list-group-item {
+    background: var(--admin-bg-card);
+    border-bottom-color: var(--admin-border-color);
+    color: var(--admin-text-primary);
+}
+.admin-list-group-item:hover {
+    background: var(--admin-hover-bg);
+}
+.admin-list-group-item.active {
+    background: var(--admin-primary);
+    color: var(--admin-white);
+}
+a {
+    color: var(--admin-primary);
+}
+a:hover {
+    color: var(--admin-primary);
+}
+.admin-hr,
+hr {
+    background: var(--admin-border-color);
+    border-color: var(--admin-border-color);
+}
+.admin-divider {
+    background: linear-gradient(90deg, transparent, var(--admin-border-color), transparent);
+}
+.admin-separator {
+    background: var(--admin-border-color);
+}
+.table-responsive::-webkit-scrollbar-track {
+    background: var(--admin-bg-secondary);
+}
+.table-responsive::-webkit-scrollbar-thumb {
+    background: var(--admin-border-color);
+}
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: var(--admin-text-secondary);
+}
+#availableVariables {
+    background: linear-gradient(135deg, var(--admin-bg-secondary) 0%, var(--admin-bg-card) 100%);
+    border-color: var(--admin-border-color);
+}
+#availableVariables code {
+    background: var(--admin-bg-card);
+    border-color: var(--admin-border-color);
+    color: var(--admin-text-primary);
+}
+#availableVariables code:hover {
+    background: var(--admin-primary);
+    color: var(--admin-white);
+}
+.pillar-card,
+.floating-card-card {
+    background: var(--admin-bg-card);
+    border-color: var(--admin-border-color);
+}
+.pillar-card .card-header,
+.floating-card-card .card-header {
+    background: linear-gradient(135deg, var(--admin-bg-secondary) 0%, var(--admin-bg-card) 100%);
+    border-bottom-color: var(--admin-border-color);
+}
+.pillar-card .card-header h6,
+.floating-card-card .card-header h6 {
+    color: var(--admin-primary);
+}
+
+/* Sidebar styles for dark mode */
+.admin-sidebar {
+    background: #2d2d2d !important;
+}
+
+.admin-sidebar-header {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}

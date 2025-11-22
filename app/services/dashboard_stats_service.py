@@ -8,8 +8,6 @@ from sqlalchemy import func
 
 from app.models import db, User
 from app.models.stats_model import Stats
-# CRM models removed - CRM module not used
-# from app.services.twilio_service import TwilioVoIPService
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +16,6 @@ class DashboardStatsService:
     """Serwis obliczania statystyk dla dashboardu ankietera"""
     
     def __init__(self):
-        # Twilio service removed - CRM module not used
         pass
     
     def get_stats_for_ankieter(self, ankieter_id: int, target_date: Optional[date] = None) -> Dict[str, Any]:
@@ -38,15 +35,11 @@ class DashboardStatsService:
             
             logger.info(f"📊 Obliczam statystyki dla ankietera {ankieter_id}, data: {target_date}")
             
-            # 1. Pobierz statystyki z Twilio API (połączenia)
-            twilio_stats = self._get_twilio_stats(ankieter_id, target_date)
-            
-            # 2. Pobierz statystyki z bazy danych
+            # Pobierz statystyki z bazy danych
             db_stats = self._get_database_stats(ankieter_id, target_date)
             
-            # 3. Merge i zwróć
+            # Merge i zwróć
             stats = {
-                **twilio_stats,
                 **db_stats,
                 'timestamp': datetime.now().isoformat(),
                 'date': target_date.isoformat()
@@ -59,17 +52,9 @@ class DashboardStatsService:
             logger.error(f"❌ Błąd obliczania statystyk: {e}")
             return self._get_empty_stats()
     
-    def _get_twilio_stats(self, ankieter_id: int, target_date: date) -> Dict[str, int]:
-        """
-        Pobiera statystyki połączeń z Twilio API
-        Note: CRM module removed - returns empty stats
-        """
-        return self._get_empty_twilio_stats()
-    
     def _get_database_stats(self, ankieter_id: int, target_date: date) -> Dict[str, int]:
         """
         Oblicza statystyki z bazy danych
-        Note: CRM module removed - returns empty stats
         """
         return {
             'leads_today': 0,
@@ -78,18 +63,9 @@ class DashboardStatsService:
             'active_campaigns': 0
         }
     
-    def update_stats_after_call(self, call_id: int) -> bool:
-        """
-        Aktualizuje statystyki w tabeli Stats po zakończeniu połączenia
-        Note: CRM module removed - function disabled
-        """
-        logger.warning("⚠️  update_stats_after_call called but CRM module is removed")
-        return False
-    
     def _get_empty_stats(self) -> Dict[str, int]:
         """Zwraca puste statystyki (gdy błąd)"""
         return {
-            **self._get_empty_twilio_stats(),
             'leads_today': 0,
             'total_contacts': 0,
             'total_rescheduled': 0,
@@ -158,17 +134,4 @@ class DashboardStatsService:
         except Exception as e:
             logger.error(f"❌ Błąd obliczania czasu pracy: {e}")
             return {'total_logged_time': 0, 'total_work_time': 0, 'total_break_time': 0}
-    
-    def _get_empty_twilio_stats(self) -> Dict[str, int]:
-        """Zwraca puste statystyki Twilio"""
-        return {
-            'calls_total_today': 0,
-            'calls_connected_today': 0,
-            'calls_missed_today': 0,
-            'total_call_time_today': 0,
-            'average_call_time_today': 0,
-            'total_work_time_today': 0,
-            'total_logged_time_today': 0,
-            'total_break_time_today': 0
-        }
 

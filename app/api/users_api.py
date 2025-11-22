@@ -726,6 +726,7 @@ def api_profile():
                     'club_member': user.club_member,
                     'is_active': user.is_active,
                     'role': user.account_type,  # Legacy compatibility
+                    'admin_theme': user.admin_theme if hasattr(user, 'admin_theme') else 'light',
                     'created_at': user.created_at.isoformat() if user.created_at else None,
                     'last_login': user.last_login.isoformat() if user.last_login else None
                 }
@@ -755,6 +756,12 @@ def api_profile():
                     from app.services.group_manager import GroupManager
                     group_manager = GroupManager()
                     group_manager.sync_club_members_group()
+            if 'admin_theme' in data:
+                theme = data['admin_theme']
+                if theme in ['light', 'dark', 'midnight']:
+                    user.admin_theme = theme
+                else:
+                    return jsonify({'success': False, 'message': 'Nieprawidłowy temat'}), 400
             
             # Validate email if provided
             if 'email' in data and user.email:
@@ -789,6 +796,7 @@ def api_profile():
                     'club_member': user.club_member,
                     'is_active': user.is_active,
                     'role': user.account_type,  # Legacy compatibility
+                    'admin_theme': user.admin_theme if hasattr(user, 'admin_theme') else 'light',
                     'created_at': user.created_at.isoformat() if user.created_at else None,
                     'last_login': user.last_login.isoformat() if user.last_login else None
                 }
@@ -797,6 +805,44 @@ def api_profile():
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error in profile API: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@users_api_bp.route('/users/admin-theme', methods=['GET', 'PUT'])
+@login_required
+def api_admin_theme():
+    """Admin theme preference API - get and update current user's admin theme"""
+    try:
+        user = current_user
+        
+        if request.method == 'GET':
+            # Get theme from user model, default to 'light' if not set
+            theme = getattr(user, 'admin_theme', None) or 'light'
+            return jsonify({
+                'success': True,
+                'theme': theme
+            })
+        
+        elif request.method == 'PUT':
+            data = request.get_json()
+            if not data or 'theme' not in data:
+                return jsonify({'success': False, 'message': 'Brak danych lub brak pola theme'}), 400
+            
+            theme = data['theme']
+            if theme not in ['light', 'dark', 'midnight']:
+                return jsonify({'success': False, 'message': 'Nieprawidłowy temat. Dozwolone: light, dark, midnight'}), 400
+            
+            user.admin_theme = theme
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Temat zapisany pomyślnie',
+                'theme': theme
+            })
+    
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error in admin theme API: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @users_api_bp.route('/users/profile/<int:user_id>', methods=['GET'])

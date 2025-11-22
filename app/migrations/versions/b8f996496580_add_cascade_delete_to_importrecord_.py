@@ -1,7 +1,7 @@
 """Add CASCADE delete to ImportRecord contact_id foreign key
 
 Revision ID: b8f996496580
-Revises: 900014a849d6
+Revises: dd80820288f3
 Create Date: 2025-10-08 04:02:13.092470
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'b8f996496580'
-down_revision = '900014a849d6'
+down_revision = 'dd80820288f3'
 branch_labels = None
 depends_on = None
 

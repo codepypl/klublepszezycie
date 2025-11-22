@@ -17,8 +17,16 @@ depends_on = None
 
 
 def upgrade():
-    # Add business_reason column to crm_contacts
-    op.add_column('crm_contacts', sa.Column('business_reason', sa.String(length=50), nullable=True))
+    # Add business_reason column to crm_contacts (only if it doesn't exist)
+    from sqlalchemy import inspect
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    existing_tables = inspector.get_table_names()
+    
+    if 'crm_contacts' in existing_tables:
+        existing_columns = [col['name'] for col in inspector.get_columns('crm_contacts')]
+        if 'business_reason' not in existing_columns:
+            op.add_column('crm_contacts', sa.Column('business_reason', sa.String(length=50), nullable=True))
 
 
 def downgrade():

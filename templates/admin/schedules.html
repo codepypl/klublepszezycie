@@ -3,7 +3,8 @@
 {% block title %}Harmonogramy{% endblock %}
 
 {% block extra_css %}
-    <link href="{{ url_for('static', filename='css/admin.css') }}?v={{ range(1, 1000) | random }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin-base.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin-light.css') }}" rel="stylesheet">
     <style>
         .bulk-actions {
             background-color: #f8f9fa;

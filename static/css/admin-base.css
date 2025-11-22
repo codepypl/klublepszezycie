@@ -13,6 +13,7 @@
     --admin-border: #e2e8f0;
 }
 
+
 /* Body and Layout */
 .admin-body {
     background-color: var(--admin-light);
@@ -1929,3 +1930,4 @@ hr {
 .drop-zone.has-file .drop-zone-content {
     display: none;
 }
+

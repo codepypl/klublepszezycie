@@ -130,20 +130,38 @@ class EventsManager {
         const prefix = formType === 'add' ? '' : 'edit';
         const fileInput = document.getElementById(`${prefix}HeroBackgroundImage`);
         const urlInput = document.getElementById(`${prefix}HeroBackgroundImageUrl`);
+        
+        // Find button by looking for the one with onclick that matches
+        const buttons = document.querySelectorAll(`button[onclick*="toggleHeroBackgroundImageSource('${formType}')"]`);
+        const toggleButton = buttons.length > 0 ? buttons[0] : null;
 
         if (!fileInput || !urlInput) return;
 
-        const usingFile = fileInput.style.display !== 'none';
+        // Check if file input container is visible
+        const fileInputContainer = fileInput.closest('.d-flex');
+        const usingFile = fileInputContainer && 
+                         (fileInputContainer.style.display === '' || 
+                          fileInputContainer.style.display === 'flex' ||
+                          window.getComputedStyle(fileInputContainer).display !== 'none');
 
         if (usingFile) {
-            // Switch to URL mode
-            fileInput.style.display = 'none';
+            // Switch to URL mode - hide file input container, show URL input
+            if (fileInputContainer) {
+                fileInputContainer.style.display = 'none';
+            }
             urlInput.style.display = 'block';
-            // Do NOT clear existing values automatically
+            if (toggleButton) {
+                toggleButton.innerHTML = '<i class="fas fa-upload me-1"></i>Wgraj plik';
+            }
         } else {
-            // Switch back to file mode
-            fileInput.style.display = 'block';
+            // Switch back to file mode - show file input container, hide URL input
+            if (fileInputContainer) {
+                fileInputContainer.style.display = 'flex';
+            }
             urlInput.style.display = 'none';
+            if (toggleButton) {
+                toggleButton.innerHTML = '<i class="fas fa-link me-1"></i>Użyj URL';
+            }
         }
     }
 
@@ -155,19 +173,37 @@ class EventsManager {
         const prefix = formType === 'add' ? '' : 'edit';
         const fileInput = document.getElementById(`${prefix}HeroBackgroundVideoFile`);
         const urlInput = document.getElementById(`${prefix}HeroBackgroundVideo`);
+        
+        // Find button by looking for the one with onclick that matches
+        const buttons = document.querySelectorAll(`button[onclick*="toggleHeroBackgroundVideoSource('${formType}')"]`);
+        const toggleButton = buttons.length > 0 ? buttons[0] : null;
 
         if (!fileInput || !urlInput) return;
 
-        const usingFile = fileInput.style.display !== 'none';
+        // Check if file input container is visible
+        const fileInputContainer = fileInput.closest('.d-flex');
+        const usingFile = fileInputContainer && fileInputContainer.style.display !== 'none' && 
+                         (fileInput.style.display === '' || fileInput.style.display === 'block' || 
+                          window.getComputedStyle(fileInput).display !== 'none');
 
         if (usingFile) {
-            // Switch to URL mode
-            fileInput.style.display = 'none';
+            // Switch to URL mode - hide file input container, show URL input
+            if (fileInputContainer) {
+                fileInputContainer.style.display = 'none';
+            }
             urlInput.style.display = 'block';
+            if (toggleButton) {
+                toggleButton.innerHTML = '<i class="fas fa-upload me-1"></i>Wgraj plik';
+            }
         } else {
-            // Switch back to file mode
-            fileInput.style.display = 'block';
+            // Switch back to file mode - show file input container, hide URL input
+            if (fileInputContainer) {
+                fileInputContainer.style.display = 'flex';
+            }
             urlInput.style.display = 'none';
+            if (toggleButton) {
+                toggleButton.innerHTML = '<i class="fas fa-link me-1"></i>Użyj URL';
+            }
         }
     }
     
