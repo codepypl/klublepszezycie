@@ -131,21 +131,27 @@ def upgrade():
     # Sprawdź czy indeks już istnieje, jeśli nie - dodaj
     connection = op.get_bind()
     inspector = sa.inspect(connection)
+    existing_tables = inspector.get_table_names()
     
     # EmailQueue.campaign_id
-    existing_indexes = [idx['name'] for idx in inspector.get_indexes('email_queue')]
-    if 'ix_email_queue_campaign_id' not in existing_indexes:
-        op.create_index('ix_email_queue_campaign_id', 'email_queue', ['campaign_id'])
+    if 'email_queue' in existing_tables:
+        existing_indexes = [idx['name'] for idx in inspector.get_indexes('email_queue')]
+        if 'ix_email_queue_campaign_id' not in existing_indexes:
+            op.create_index('ix_email_queue_campaign_id', 'email_queue', ['campaign_id'])
     
     # EmailLog.campaign_id
-    existing_indexes = [idx['name'] for idx in inspector.get_indexes('email_logs')]
-    if 'ix_email_logs_campaign_id' not in existing_indexes:
-        op.create_index('ix_email_logs_campaign_id', 'email_logs', ['campaign_id'])
+    if 'email_logs' in existing_tables:
+        existing_indexes = [idx['name'] for idx in inspector.get_indexes('email_logs')]
+        if 'ix_email_logs_campaign_id' not in existing_indexes:
+            op.create_index('ix_email_logs_campaign_id', 'email_logs', ['campaign_id'])
     
-    # Call.campaign_id
-    existing_indexes = [idx['name'] for idx in inspector.get_indexes('crm_calls')]
-    if 'ix_crm_calls_campaign_id' not in existing_indexes:
-        op.create_index('ix_crm_calls_campaign_id', 'crm_calls', ['campaign_id'])
+    # Call.campaign_id (tylko jeśli tabela istnieje - CRM może być usunięty)
+    if 'crm_calls' in existing_tables:
+        existing_indexes = [idx['name'] for idx in inspector.get_indexes('crm_calls')]
+        if 'ix_crm_calls_campaign_id' not in existing_indexes:
+            op.create_index('ix_crm_calls_campaign_id', 'crm_calls', ['campaign_id'])
+    else:
+        print("⚠️ Tabela crm_calls nie istnieje - pomijam dodawanie indeksu")
     
     print("✅ Migracja zakończona pomyślnie!")
 
