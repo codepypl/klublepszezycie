@@ -26,21 +26,38 @@ def upgrade():
         batch_op.drop_constraint(batch_op.f('blog_posts_author_id_fkey'), type_='foreignkey')
         batch_op.create_foreign_key(None, 'users', ['author_id'], ['id'], ondelete='SET NULL')
 
-    with op.batch_alter_table('crm_blacklist', schema=None) as batch_op:
-        batch_op.drop_constraint(batch_op.f('crm_blacklist_blacklisted_by_fkey'), type_='foreignkey')
-        batch_op.create_foreign_key(None, 'users', ['blacklisted_by'], ['id'], ondelete='CASCADE')
+    # Check if CRM tables exist before modifying (they may have been removed)
+    from sqlalchemy import inspect
+    inspector = inspect(op.get_bind())
+    existing_tables = inspector.get_table_names()
+    
+    if 'crm_blacklist' in existing_tables:
+        existing_fks = [fk['name'] for fk in inspector.get_foreign_keys('crm_blacklist')]
+        if 'crm_blacklist_blacklisted_by_fkey' in existing_fks:
+            with op.batch_alter_table('crm_blacklist', schema=None) as batch_op:
+                batch_op.drop_constraint(batch_op.f('crm_blacklist_blacklisted_by_fkey'), type_='foreignkey')
+                batch_op.create_foreign_key(None, 'users', ['blacklisted_by'], ['id'], ondelete='CASCADE')
 
-    with op.batch_alter_table('crm_calls', schema=None) as batch_op:
-        batch_op.drop_constraint(batch_op.f('crm_calls_ankieter_id_fkey'), type_='foreignkey')
-        batch_op.create_foreign_key(None, 'users', ['ankieter_id'], ['id'], ondelete='CASCADE')
+    if 'crm_calls' in existing_tables:
+        existing_fks = [fk['name'] for fk in inspector.get_foreign_keys('crm_calls')]
+        if 'crm_calls_ankieter_id_fkey' in existing_fks:
+            with op.batch_alter_table('crm_calls', schema=None) as batch_op:
+                batch_op.drop_constraint(batch_op.f('crm_calls_ankieter_id_fkey'), type_='foreignkey')
+                batch_op.create_foreign_key(None, 'users', ['ankieter_id'], ['id'], ondelete='CASCADE')
 
-    with op.batch_alter_table('crm_contacts', schema=None) as batch_op:
-        batch_op.drop_constraint(batch_op.f('crm_contacts_assigned_ankieter_id_fkey'), type_='foreignkey')
-        batch_op.create_foreign_key(None, 'users', ['assigned_ankieter_id'], ['id'], ondelete='SET NULL')
+    if 'crm_contacts' in existing_tables:
+        existing_fks = [fk['name'] for fk in inspector.get_foreign_keys('crm_contacts')]
+        if 'crm_contacts_assigned_ankieter_id_fkey' in existing_fks:
+            with op.batch_alter_table('crm_contacts', schema=None) as batch_op:
+                batch_op.drop_constraint(batch_op.f('crm_contacts_assigned_ankieter_id_fkey'), type_='foreignkey')
+                batch_op.create_foreign_key(None, 'users', ['assigned_ankieter_id'], ['id'], ondelete='SET NULL')
 
-    with op.batch_alter_table('crm_import_files', schema=None) as batch_op:
-        batch_op.drop_constraint(batch_op.f('crm_import_files_imported_by_fkey'), type_='foreignkey')
-        batch_op.create_foreign_key(None, 'users', ['imported_by'], ['id'], ondelete='CASCADE')
+    if 'crm_import_files' in existing_tables:
+        existing_fks = [fk['name'] for fk in inspector.get_foreign_keys('crm_import_files')]
+        if 'crm_import_files_imported_by_fkey' in existing_fks:
+            with op.batch_alter_table('crm_import_files', schema=None) as batch_op:
+                batch_op.drop_constraint(batch_op.f('crm_import_files_imported_by_fkey'), type_='foreignkey')
+                batch_op.create_foreign_key(None, 'users', ['imported_by'], ['id'], ondelete='CASCADE')
 
     with op.batch_alter_table('password_reset_tokens', schema=None) as batch_op:
         batch_op.drop_constraint(batch_op.f('password_reset_tokens_user_id_fkey'), type_='foreignkey')
@@ -79,21 +96,30 @@ def downgrade():
         batch_op.drop_constraint(None, type_='foreignkey')
         batch_op.create_foreign_key(batch_op.f('password_reset_tokens_user_id_fkey'), 'users', ['user_id'], ['id'])
 
-    with op.batch_alter_table('crm_import_files', schema=None) as batch_op:
-        batch_op.drop_constraint(None, type_='foreignkey')
-        batch_op.create_foreign_key(batch_op.f('crm_import_files_imported_by_fkey'), 'users', ['imported_by'], ['id'])
+    # Check if CRM tables exist before modifying (they may have been removed)
+    from sqlalchemy import inspect
+    inspector = inspect(op.get_bind())
+    existing_tables = inspector.get_table_names()
+    
+    if 'crm_import_files' in existing_tables:
+        with op.batch_alter_table('crm_import_files', schema=None) as batch_op:
+            batch_op.drop_constraint(None, type_='foreignkey')
+            batch_op.create_foreign_key(batch_op.f('crm_import_files_imported_by_fkey'), 'users', ['imported_by'], ['id'])
 
-    with op.batch_alter_table('crm_contacts', schema=None) as batch_op:
-        batch_op.drop_constraint(None, type_='foreignkey')
-        batch_op.create_foreign_key(batch_op.f('crm_contacts_assigned_ankieter_id_fkey'), 'users', ['assigned_ankieter_id'], ['id'])
+    if 'crm_contacts' in existing_tables:
+        with op.batch_alter_table('crm_contacts', schema=None) as batch_op:
+            batch_op.drop_constraint(None, type_='foreignkey')
+            batch_op.create_foreign_key(batch_op.f('crm_contacts_assigned_ankieter_id_fkey'), 'users', ['assigned_ankieter_id'], ['id'])
 
-    with op.batch_alter_table('crm_calls', schema=None) as batch_op:
-        batch_op.drop_constraint(None, type_='foreignkey')
-        batch_op.create_foreign_key(batch_op.f('crm_calls_ankieter_id_fkey'), 'users', ['ankieter_id'], ['id'])
+    if 'crm_calls' in existing_tables:
+        with op.batch_alter_table('crm_calls', schema=None) as batch_op:
+            batch_op.drop_constraint(None, type_='foreignkey')
+            batch_op.create_foreign_key(batch_op.f('crm_calls_ankieter_id_fkey'), 'users', ['ankieter_id'], ['id'])
 
-    with op.batch_alter_table('crm_blacklist', schema=None) as batch_op:
-        batch_op.drop_constraint(None, type_='foreignkey')
-        batch_op.create_foreign_key(batch_op.f('crm_blacklist_blacklisted_by_fkey'), 'users', ['blacklisted_by'], ['id'])
+    if 'crm_blacklist' in existing_tables:
+        with op.batch_alter_table('crm_blacklist', schema=None) as batch_op:
+            batch_op.drop_constraint(None, type_='foreignkey')
+            batch_op.create_foreign_key(batch_op.f('crm_blacklist_blacklisted_by_fkey'), 'users', ['blacklisted_by'], ['id'])
 
     with op.batch_alter_table('blog_posts', schema=None) as batch_op:
         batch_op.drop_constraint(None, type_='foreignkey')
