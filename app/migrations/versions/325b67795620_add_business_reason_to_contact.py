@@ -30,5 +30,13 @@ def upgrade():
 
 
 def downgrade():
-    # Remove business_reason column
-    op.drop_column('crm_contacts', 'business_reason')
+    # Remove business_reason column (only if table exists)
+    from sqlalchemy import inspect
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    existing_tables = inspector.get_table_names()
+    
+    if 'crm_contacts' in existing_tables:
+        existing_columns = [col['name'] for col in inspector.get_columns('crm_contacts')]
+        if 'business_reason' in existing_columns:
+            op.drop_column('crm_contacts', 'business_reason')
