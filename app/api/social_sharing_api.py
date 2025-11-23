@@ -197,25 +197,58 @@ def _build_event_url(event: EventSchedule) -> str:
 def _build_event_sharing_links(event: EventSchedule, event_url: str):
     """
     Buduje słownik linków do udostępniania wydarzenia na poszczególnych platformach.
+    Zawiera: nazwa wydarzenia, data, godzina rozpoczęcia, opis, link.
     """
     title = event.title or ""
-    description = (event.description or "").strip()[:150] if event.description else ""
     
-    # Jeśli brak opisu, użyj standardowego tekstu
-    if not description:
-        event_date_str = ""
-        if event.event_date:
-            event_date_str = event.event_date.strftime('%d.%m.%Y o %H:%M')
-        description = f"Wydarzenie: {title}"
-        if event_date_str:
-            description += f" - {event_date_str}"
-        if event.location:
-            description += f" | {event.location}"
+    # Formatuj datę i godzinę
+    event_date_str = ""
+    event_time_str = ""
+    if event.event_date:
+        event_date_str = event.event_date.strftime('%d.%m.%Y')
+        event_time_str = event.event_date.strftime('%H:%M')
+    
+    # Pobierz opis wydarzenia
+    description = (event.description or "").strip() if event.description else ""
+    
+    # Zbuduj pełny tekst share z wszystkimi informacjami
+    share_text_parts = [title]
+    
+    if event_date_str:
+        share_text_parts.append(f"Data: {event_date_str}")
+    if event_time_str:
+        share_text_parts.append(f"Godzina: {event_time_str}")
+    if description:
+        # Ograniczamy opis do 200 znaków, aby nie przekroczyć limitów platform
+        description_short = description[:200] + "..." if len(description) > 200 else description
+        share_text_parts.append(f"Opis: {description_short}")
+    
+    share_text_parts.append(f"Link: {event_url}")
+    
+    # Pełny tekst do share
+    full_share_text = "\n".join(share_text_parts)
+    
+    # Krótszy tekst dla platform z limitami (np. Twitter)
+    short_share_text = f"{title}"
+    if event_date_str:
+        short_share_text += f" - {event_date_str}"
+    if event_time_str:
+        short_share_text += f" o {event_time_str}"
+    short_share_text += f" {event_url}"
+    
+    # Dla LinkedIn i Email używamy pełniejszego opisu
+    linkedin_summary = f"{title}"
+    if event_date_str:
+        linkedin_summary += f"\nData: {event_date_str}"
+    if event_time_str:
+        linkedin_summary += f"\nGodzina: {event_time_str}"
+    if description:
+        linkedin_summary += f"\n\n{description[:300]}"  # LinkedIn ma limit ~300 znaków w summary
     
     platforms = {}
     import urllib.parse
 
-    # Facebook
+    # Facebook - używa pełnego tekstu w URL
     share_url = "https://www.facebook.com/sharer/sharer.php?u=" + urllib.parse.quote(event_url)
     platforms["facebook"] = {
         "name": "Facebook",
@@ -224,8 +257,8 @@ def _build_event_sharing_links(event: EventSchedule, event_url: str):
         "color": "#1877f2",
     }
 
-    # X / Twitter
-    text = f"{title}"
+    # X / Twitter - używa krótszego tekstu (limit 280 znaków)
+    text = short_share_text
     share_url = (
         "https://twitter.com/intent/tweet?text="
         + urllib.parse.quote(text)
@@ -239,7 +272,7 @@ def _build_event_sharing_links(event: EventSchedule, event_url: str):
         "color": "#1da1f2",
     }
 
-    # LinkedIn
+    # LinkedIn - używa pełniejszego opisu
     share_url = (
         "https://www.linkedin.com/shareArticle?mini=true"
         + "&url="
@@ -247,7 +280,7 @@ def _build_event_sharing_links(event: EventSchedule, event_url: str):
         + "&title="
         + urllib.parse.quote(title)
         + "&summary="
-        + urllib.parse.quote(description)
+        + urllib.parse.quote(linkedin_summary)
     )
     platforms["linkedin"] = {
         "name": "LinkedIn",
@@ -256,9 +289,8 @@ def _build_event_sharing_links(event: EventSchedule, event_url: str):
         "color": "#0077b5",
     }
 
-    # WhatsApp
-    text = f"{title} - {event_url}"
-    share_url = "https://api.whatsapp.com/send?text=" + urllib.parse.quote(text)
+    # WhatsApp - używa pełnego tekstu
+    share_url = "https://api.whatsapp.com/send?text=" + urllib.parse.quote(full_share_text)
     platforms["whatsapp"] = {
         "name": "WhatsApp",
         "url": share_url,
@@ -266,9 +298,8 @@ def _build_event_sharing_links(event: EventSchedule, event_url: str):
         "color": "#25d366",
     }
 
-    # Telegram
-    text = f"{title} - {event_url}"
-    telegram_url = "https://t.me/share/url?url=" + urllib.parse.quote(event_url) + "&text=" + urllib.parse.quote(text)
+    # Telegram - używa pełnego tekstu
+    telegram_url = "https://t.me/share/url?url=" + urllib.parse.quote(event_url) + "&text=" + urllib.parse.quote(full_share_text)
     platforms["telegram"] = {
         "name": "Telegram",
         "url": telegram_url,
@@ -276,7 +307,7 @@ def _build_event_sharing_links(event: EventSchedule, event_url: str):
         "color": "#0088cc",
     }
 
-    # Instagram (copy link)
+    # Instagram (copy link) - kopiuje pełny tekst
     platforms["instagram"] = {
         "name": "Instagram",
         "url": "#",
@@ -285,9 +316,9 @@ def _build_event_sharing_links(event: EventSchedule, event_url: str):
         "action": "copy"
     }
 
-    # E-mail
+    # E-mail - używa pełnego tekstu w body
     email_subject = urllib.parse.quote(title or "Polecam wydarzenie")
-    email_body = urllib.parse.quote(f"{title}\n\n{description}\n\n{event_url}")
+    email_body = urllib.parse.quote(full_share_text)
     mailto = f"mailto:?subject={email_subject}&body={email_body}"
     platforms["email"] = {
         "name": "Email",
@@ -401,9 +432,19 @@ def generate_links():
                     400,
                 )
 
+            # Formatuj datę i godzinę dla sharing_data
+            event_date_str = ""
+            event_time_str = ""
+            if event.event_date:
+                event_date_str = event.event_date.strftime('%d.%m.%Y')
+                event_time_str = event.event_date.strftime('%H:%M')
+            
             sharing_data = {
                 "event_id": event.id,
                 "event_title": event.title,
+                "event_date": event_date_str,
+                "event_time": event_time_str,
+                "event_description": (event.description or "").strip() if event.description else "",
                 "event_url": event_url,
             }
 

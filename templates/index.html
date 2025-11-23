@@ -153,11 +153,6 @@
                             {% if next_event.location %}
                                 <p><i class="fas fa-map-marker-alt me-2"></i>{{ next_event.location }}</p>
                             {% endif %}
-                            {% if next_event.meeting_link and event_status != 'current' %}
-                                <a href="{{ next_event.meeting_link }}" target="_blank" class="btn btn-warning btn-lg mb-3">
-                                    <i class="fas fa-video me-2"></i>Dołącz do spotkania
-                                </a>
-                            {% endif %}
                             
                             <!-- Social Sharing Section for Event -->
                             <div class="event-social-sharing mt-4">

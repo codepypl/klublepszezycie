@@ -152,7 +152,7 @@ class SocialSharing {
     }
 
     /**
-     * Copy post URL to clipboard
+     * Copy post URL or event full text to clipboard
      */
     async copyToClipboard() {
         if (!this.sharingData) {
@@ -160,8 +160,33 @@ class SocialSharing {
             return false;
         }
 
+        // Dla wydarzeń kopiujemy pełny tekst z informacjami, dla postów tylko URL
+        let textToCopy = this.sharingData.post_url || this.sharingData.event_url;
+        
+        // Jeśli to wydarzenie, zbuduj pełny tekst z informacjami
+        if (this.sharingData.event_id && this.sharingData.event_title) {
+            const parts = [this.sharingData.event_title];
+            
+            // Użyj danych z sharingData jeśli są dostępne
+            if (this.sharingData.event_date) {
+                let dateTimeStr = `Data: ${this.sharingData.event_date}`;
+                if (this.sharingData.event_time) {
+                    dateTimeStr += ` o ${this.sharingData.event_time}`;
+                }
+                parts.push(dateTimeStr);
+            }
+            
+            if (this.sharingData.event_description && this.sharingData.event_description.trim()) {
+                const shortDesc = this.sharingData.event_description.trim().substring(0, 200);
+                parts.push(`Opis: ${shortDesc}${this.sharingData.event_description.length > 200 ? '...' : ''}`);
+            }
+            
+            parts.push(`Link: ${textToCopy}`);
+            textToCopy = parts.join('\n');
+        }
+
         try {
-            await navigator.clipboard.writeText(this.sharingData.post_url);
+            await navigator.clipboard.writeText(textToCopy);
             
             // Show success message
             if (window.toastManager) {
@@ -175,7 +200,7 @@ class SocialSharing {
             // Fallback for older browsers
             try {
                 const textArea = document.createElement('textarea');
-                textArea.value = this.sharingData.post_url;
+                textArea.value = textToCopy;
                 document.body.appendChild(textArea);
                 textArea.select();
                 document.execCommand('copy');
