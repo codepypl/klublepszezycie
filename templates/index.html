@@ -714,7 +714,7 @@
 <script src="{{ url_for('static', filename='js/utils/social-sharing.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    {% if next_event %}
+    {% if next_event and next_event.id %}
     // Initialize social sharing for event
     const eventId = {{ next_event.id }};
     
@@ -732,6 +732,71 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     {% endif %}
+    
+    // Sprawdź czy URL zawiera parametr register i automatycznie otwórz modal rejestracji
+    const urlParams = new URLSearchParams(window.location.search);
+    const registerEventId = urlParams.get('register');
+    
+    if (registerEventId) {
+        // Znajdź przycisk rejestracji dla tego wydarzenia
+        const registerButton = document.querySelector(`button[data-event-id="${registerEventId}"]`);
+        
+        if (registerButton) {
+            // Otwórz modal rejestracji
+            const modal = new bootstrap.Modal(document.getElementById('eventRegistrationModal'));
+            modal.show();
+            
+            // Ustaw dane wydarzenia w modalu
+            const eventTitle = registerButton.getAttribute('data-event-title') || 'Wydarzenie';
+            const modalEventId = document.getElementById('modalEventId');
+            const modalEventTitle = document.getElementById('modalEventTitle');
+            
+            if (modalEventId) {
+                modalEventId.value = registerEventId;
+            }
+            if (modalEventTitle) {
+                modalEventTitle.textContent = eventTitle;
+            }
+            
+            // Pobierz pełne dane wydarzenia z API
+            fetch(`/api/event-schedule/${registerEventId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success && data.event) {
+                        // Uzupełnij modal danymi wydarzenia
+                        const modalEventStartDate = document.getElementById('modalEventStartDate');
+                        const modalEventLocation = document.getElementById('modalEventLocation');
+                        
+                        if (modalEventStartDate && data.event.event_date) {
+                            const eventDate = new Date(data.event.event_date);
+                            modalEventStartDate.textContent = eventDate.toLocaleString('pl-PL', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                        }
+                        
+                        if (modalEventLocation && data.event.location) {
+                            modalEventLocation.textContent = data.event.location;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching event details:', error);
+                });
+            
+            // Usuń parametr z URL bez przeładowania strony
+            const newUrl = window.location.pathname + (window.location.search.replace(/[?&]register=\d+/, '').replace(/^\?/, '?') || '');
+            window.history.replaceState({}, '', newUrl);
+        }
+    }
 });
 </script>
 {% endblock %}

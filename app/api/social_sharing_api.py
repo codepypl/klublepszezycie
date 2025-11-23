@@ -166,27 +166,16 @@ def _build_sharing_links(post: BlogPost, post_url: str):
 
 def _build_event_url(event: EventSchedule) -> str:
     """
-    Zwraca absolutny URL wydarzenia.
+    Zwraca absolutny URL do strony głównej z parametrem otwierającym modal rejestracji.
     """
     try:
-        # Używamy get_event_url() z modelu, ale potrzebujemy pełny URL
-        event_path = event.get_event_url()
-        
-        # Jeśli to już pełny URL (http/https), zwróć go
-        if event_path.startswith('http://') or event_path.startswith('https://'):
-            return event_path
-        
-        # W przeciwnym razie zbuduj pełny URL do strony głównej z parametrem wydarzenia
+        # Zbuduj pełny URL do strony głównej z parametrem register, który otworzy modal rejestracji
         base = request.url_root.rstrip("/") if request else current_app.config.get(
             "SITE_URL", ""
         ).rstrip("/")
         
-        # Jeśli meeting_link istnieje, użyj go, w przeciwnym razie link do strony głównej z wydarzeniem
-        if event.meeting_link and (event.meeting_link.startswith('http://') or event.meeting_link.startswith('https://')):
-            return event.meeting_link
-        
-        # Fallback: link do strony głównej (wydarzenie jest wyświetlane na stronie głównej)
-        return f"{base}/?event={event.id}"
+        # Link do strony głównej z parametrem register, który automatycznie otworzy modal rejestracji
+        return f"{base}/?register={event.id}"
     except Exception:
         base = request.url_root.rstrip("/") if request else current_app.config.get(
             "SITE_URL", ""
