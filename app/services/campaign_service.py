@@ -245,8 +245,13 @@ class CampaignService:
             logger.error(f"❌ Error activating campaign: {str(e)}")
             return False, f'Błąd aktywacji kampanii: {str(e)}'
     
-    def send_campaign(self, campaign_id: int) -> Tuple[bool, str]:
-        """Wysyła kampanię emailową"""
+    def send_campaign(self, campaign_id: int, user_id: int = None) -> Tuple[bool, str]:
+        """Wysyła kampanię emailową
+        
+        Args:
+            campaign_id: ID kampanii
+            user_id: ID użytkownika, który wysyła kampanię (opcjonalne)
+        """
         try:
             campaign = EmailCampaign.query.get(campaign_id)
             if not campaign:
@@ -269,13 +274,13 @@ class CampaignService:
             
             if campaign.send_type == 'immediate':
                 # Wyślij natychmiast - dodaj emaile do kolejki
-                success, message = self._add_campaign_emails_to_queue(campaign)
+                success, message = self._add_campaign_emails_to_queue(campaign, user_id=user_id)
                 if not success:
                     return False, message
                 message = f"Kampania dodana do kolejki wysyłki"
             elif campaign.send_type == 'scheduled' and campaign.scheduled_at:
                 # Zaplanuj wysłanie - dodaj emaile z scheduled_at
-                success, message = self._add_campaign_emails_to_queue(campaign, scheduled_at=campaign.scheduled_at)
+                success, message = self._add_campaign_emails_to_queue(campaign, scheduled_at=campaign.scheduled_at, user_id=user_id)
                 if not success:
                     return False, message
                 message = f"Kampania zaplanowana na {campaign.scheduled_at}"
@@ -287,7 +292,7 @@ class CampaignService:
             campaign.updated_at = get_local_now()
             db.session.commit()
             
-            logger.info(f"✅ Campaign {campaign_id} scheduled for sending")
+            logger.info(f"✅ Campaign {campaign_id} scheduled for sending by user {user_id}")
             return True, message
             
         except Exception as e:
@@ -407,13 +412,14 @@ class CampaignService:
             logger.error(f"❌ Error adding campaign to queue: {str(e)}")
             return False, f"Błąd dodawania kampanii do kolejki: {str(e)}"
     
-    def _add_campaign_emails_to_queue(self, campaign, scheduled_at=None):
+    def _add_campaign_emails_to_queue(self, campaign, scheduled_at=None, user_id=None):
         """
         Dodaje emaile kampanii do kolejki EmailQueue
         
         Args:
             campaign: EmailCampaign object
             scheduled_at: datetime - kiedy wysłać (None = natychmiast)
+            user_id: ID użytkownika, który wysyła kampanię (opcjonalne)
             
         Returns:
             Tuple[bool, str]: (sukces, komunikat)
@@ -484,7 +490,8 @@ class CampaignService:
                         template_id=template.id,
                         template_name=template.name,
                         campaign_id=campaign.id,
-                        context=json.dumps(context)
+                        context=json.dumps(context),
+                        sent_by_user_id=user_id  # ID użytkownika, który wysłał kampanię
                     )
                     
                     db.session.add(email_queue)

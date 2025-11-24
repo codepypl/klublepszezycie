@@ -108,7 +108,7 @@ function displayLogs(logs) {
     tbody.innerHTML = '';
     
     if (logs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Brak logów</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">Brak logów</td></tr>';
         return;
     }
     
@@ -161,6 +161,14 @@ function displayLogs(logs) {
             </a>`;
         }
         
+        // User info (who sent the campaign)
+        let sentByUserInfo = '-';
+        if (log.sent_by_user) {
+            sentByUserInfo = `<span class="badge admin-badge admin-badge-info" title="${log.sent_by_user.email}">
+                ${log.sent_by_user.name || log.sent_by_user.email}
+            </span>`;
+        }
+        
         row.innerHTML = `
             <td><span class="badge admin-badge admin-badge-primary">${log.id}</span></td>
             <td>${log.email}</td>
@@ -170,6 +178,7 @@ function displayLogs(logs) {
             <td title="${log.error_message || ''}">${errorMessage}</td>
             <td>${templateInfo}</td>
             <td>${campaignInfo}</td>
+            <td>${sentByUserInfo}</td>
             <td>
                 <div class="btn-group" role="group">
                     <button class="btn btn-sm admin-btn-outline" onclick="viewLogDetails(${log.id})" title="Zobacz szczegóły">

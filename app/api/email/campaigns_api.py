@@ -325,6 +325,25 @@ def activate_campaign(campaign_id):
         logger.error(f"❌ Błąd aktywacji kampanii: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@email_campaigns_bp.route('/email/campaigns/<int:campaign_id>/send', methods=['POST'])
+@login_required
+def send_campaign(campaign_id):
+    """Wysyła kampanię emailową"""
+    try:
+        from flask_login import current_user
+        
+        # Przekaż ID użytkownika do serwisu
+        success, message = campaign_service.send_campaign(campaign_id, user_id=current_user.id)
+        
+        return jsonify({
+            'success': success,
+            'message': message
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Błąd wysyłania kampanii: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @email_campaigns_bp.route('/email/campaigns/<int:campaign_id>/update-stats', methods=['POST'])
 @login_required
 def update_campaign_stats(campaign_id):

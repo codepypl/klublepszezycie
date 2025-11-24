@@ -92,6 +92,7 @@ class EmailQueue(db.Model):
     # Duplicate prevention fields
     content_hash = db.Column(db.String(64), nullable=False, index=True)  # Hash of email content for duplicate detection
     duplicate_check_key = db.Column(db.String(255), nullable=True, index=True)  # Custom key for duplicate checking
+    sent_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # ID użytkownika, który wysłał kampanię
     
     # Indexes for duplicate detection
     __table_args__ = (
@@ -262,11 +263,13 @@ class EmailLog(db.Model):
     campaign_id = db.Column(db.Integer, db.ForeignKey('email_campaigns.id'), nullable=True)
     event_id = db.Column(db.Integer, db.ForeignKey('event_schedule.id', ondelete='CASCADE'), nullable=True)
     recipient_data = db.Column(db.Text)  # JSON string of recipient information
+    sent_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # ID użytkownika, który wysłał kampanię
     
     # Relationships
     template = db.relationship('EmailTemplate', backref='email_logs')
     campaign = db.relationship('EmailCampaign', backref='email_logs')
     event = db.relationship('EventSchedule', backref='email_logs')
+    sent_by_user = db.relationship('User', foreign_keys=[sent_by_user_id], backref='sent_email_logs')
     
     def __repr__(self):
         return f'<EmailLog {self.email} - {self.status}>'

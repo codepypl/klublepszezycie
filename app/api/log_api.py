@@ -99,6 +99,18 @@ def get_logs():
                         'event_date': event.event_date.isoformat() if event.event_date else None
                     }
             
+            # Pobierz informacje o użytkowniku, który wysłał kampanię
+            sent_by_user_info = None
+            if log.sent_by_user_id:
+                from app.models import User
+                sent_by_user = User.query.get(log.sent_by_user_id)
+                if sent_by_user:
+                    sent_by_user_info = {
+                        'id': sent_by_user.id,
+                        'name': f"{sent_by_user.first_name} {sent_by_user.last_name}".strip() or sent_by_user.email,
+                        'email': sent_by_user.email
+                    }
+            
             logs.append({
                 'id': log.id,
                 'email': log.email,
@@ -112,7 +124,9 @@ def get_logs():
                 'campaign_name': log.campaign.name if log.campaign else f'Usunięta kampania (ID: {log.campaign_id})' if log.campaign_id else None,
                 'event_id': log.event_id,
                 'event_info': event_info,
-                'recipient_data': log.recipient_data
+                'recipient_data': log.recipient_data,
+                'sent_by_user_id': log.sent_by_user_id,
+                'sent_by_user': sent_by_user_info
             })
         
         return jsonify({
@@ -173,6 +187,18 @@ def get_log_details(log_id):
                     'status': campaign.status
                 }
         
+        # Pobierz informacje o użytkowniku, który wysłał kampanię
+        sent_by_user_info = None
+        if log.sent_by_user_id:
+            from app.models import User
+            sent_by_user = User.query.get(log.sent_by_user_id)
+            if sent_by_user:
+                sent_by_user_info = {
+                    'id': sent_by_user.id,
+                    'name': f"{sent_by_user.first_name} {sent_by_user.last_name}".strip() or sent_by_user.email,
+                    'email': sent_by_user.email
+                }
+        
         return jsonify({
             'success': True,
             'log': {
@@ -183,6 +209,8 @@ def get_log_details(log_id):
                 'sent_at': log.sent_at.isoformat() if log.sent_at else None,
                 'error_message': log.error_message,
                 'recipient_data': log.recipient_data,
+                'sent_by_user_id': log.sent_by_user_id,
+                'sent_by_user': sent_by_user_info,
                 'event_info': event_info,
                 'template_info': template_info,
                 'campaign_info': campaign_info

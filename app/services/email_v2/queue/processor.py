@@ -446,7 +446,8 @@ class EmailQueueProcessor:
                         template_id=email.template_id,
                         event_id=email.event_id,
                         campaign_id=email.campaign_id,  # DODANO: campaign_id
-                        message_id=message  # Message ID z Mailgun
+                        message_id=message,  # Message ID z Mailgun
+                        sent_by_user_id=email.sent_by_user_id  # ID użytkownika, który wysłał kampanię
                     )
                     db.session.add(email_log)
                     
@@ -476,7 +477,8 @@ class EmailQueueProcessor:
                         status='sent',
                         template_id=email.template_id,
                         event_id=email.event_id,
-                        campaign_id=email.campaign_id  # DODANO: campaign_id
+                        campaign_id=email.campaign_id,  # DODANO: campaign_id
+                        sent_by_user_id=email.sent_by_user_id  # ID użytkownika, który wysłał kampanię
                     )
                     db.session.add(email_log)
                     
