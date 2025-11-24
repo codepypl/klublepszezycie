@@ -282,12 +282,23 @@ function displayLogDetails(log) {
     // Template info
     let templateInfo = '-';
     if (log.template_info) {
-        templateInfo = `<a href="/admin/email-templates?edit=${log.template_info.id}" class="text-decoration-none" title="Kliknij aby edytować" style="cursor: pointer;">
-            <span class="badge admin-badge admin-badge-primary">${log.template_info.id}</span>
-            ${log.template_info.name}
-        </a>`;
+        if (log.template_info.deleted) {
+            // Szablon został usunięty, ale pokaż ID
+            templateInfo = `<span class="badge admin-badge admin-badge-secondary" title="Szablon został usunięty">
+                ${log.template_info.id}
+            </span>`;
+        } else {
+            // Szablon istnieje, pokaż link
+            templateInfo = `<a href="/admin/email-templates?edit=${log.template_info.id}" class="text-decoration-none" title="Kliknij aby edytować" style="cursor: pointer;">
+                <span class="badge admin-badge admin-badge-primary">${log.template_info.id}</span>
+                ${log.template_info.name}
+            </a>`;
+        }
     } else if (log.template_id) {
-        templateInfo = `<span class="badge admin-badge admin-badge-secondary">${log.template_id}</span>`;
+        // Template info nie jest dostępne, ale mamy template_id
+        templateInfo = `<span class="badge admin-badge admin-badge-secondary" title="Szablon został usunięty">
+            ${log.template_id}
+        </span>`;
     }
     
     // Campaign info
@@ -319,6 +330,7 @@ function displayLogDetails(log) {
                     <tr><td><strong>Wydarzenie:</strong></td><td>${eventInfo}</td></tr>
                     <tr><td><strong>ID Wydarzenia:</strong></td><td>${log.event_id || '-'}</td></tr>
                     <tr><td><strong>Szablon:</strong></td><td>${templateInfo}</td></tr>
+                    <tr><td><strong>ID Szablonu:</strong></td><td>${log.template_id ? `<span class="badge admin-badge admin-badge-primary">${log.template_id}</span>` : '-'}</td></tr>
                     <tr><td><strong>Kampania:</strong></td><td>${campaignInfo}</td></tr>
                     <tr><td><strong>Błąd:</strong></td><td>${log.error_message || '-'}</td></tr>
                 </table>

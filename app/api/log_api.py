@@ -176,6 +176,15 @@ def get_log_details(log_id):
                     'subject': template.subject,
                     'template_type': template.template_type
                 }
+            else:
+                # Szablon został usunięty, ale zachowaj ID
+                template_info = {
+                    'id': log.template_id,
+                    'name': f'Usunięty szablon (ID: {log.template_id})',
+                    'subject': None,
+                    'template_type': None,
+                    'deleted': True
+                }
         
         campaign_info = None
         if log.campaign_id:
@@ -212,6 +221,7 @@ def get_log_details(log_id):
                 'sent_by_user_id': log.sent_by_user_id,
                 'sent_by_user': sent_by_user_info,
                 'event_info': event_info,
+                'template_id': log.template_id,  # Zawsze zwracaj template_id
                 'template_info': template_info,
                 'campaign_info': campaign_info
             }
