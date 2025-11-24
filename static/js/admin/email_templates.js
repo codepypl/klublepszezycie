@@ -859,15 +859,27 @@ function saveTemplate() {
     // Get HTML content from Quill if available
     let htmlContent = getQuillContent('template_html_content');
     
+    // Get template name - if field is disabled, get value directly from element
+    const templateNameField = document.getElementById('template_name');
+    const templateName = templateNameField.disabled 
+        ? templateNameField.value 
+        : formData.get('template_name');
+    
+    // Get is_default checkbox - if disabled, get value directly from element
+    const isDefaultCheckbox = document.getElementById('template_is_default');
+    const isDefault = isDefaultCheckbox.disabled
+        ? isDefaultCheckbox.checked
+        : formData.get('template_is_default') === 'on';
+    
     const data = {
-        name: formData.get('template_name'),
+        name: templateName,
         subject: formData.get('template_subject'),
         template_type: formData.get('template_type'),
         html_content: htmlContent,
         text_content: formData.get('template_text_content'),
         variables: formData.get('template_variables'),
         is_active: formData.get('template_is_active') === 'on',
-        is_default: formData.get('template_is_default') === 'on'
+        is_default: isDefault
     };
     
     const templateId = document.getElementById('template_id').value;
