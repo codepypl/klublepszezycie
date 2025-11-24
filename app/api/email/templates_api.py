@@ -238,12 +238,9 @@ def reset_templates():
     try:
         manager = TemplateManager()
         
-        # Najpierw synchronizuj domyślne szablony (z wymuszeniem przeładowania z fixtures)
-        success, message = manager.sync_templates_from_defaults(force_reload_fixtures=True)
-        if not success:
-            return jsonify({'success': False, 'error': message}), 500
-        
-        # Następnie resetuj szablony z domyślnych
+        # Resetuj szablony z domyślnych (funkcja sama ładuje fixtures)
+        # NIE wywołujemy sync_templates_from_defaults() przed resetem,
+        # bo to tworzy szablony, które potem powinny być usunięte
         success, message = manager.reset_templates_to_defaults()
         if not success:
             return jsonify({'success': False, 'error': message}), 500

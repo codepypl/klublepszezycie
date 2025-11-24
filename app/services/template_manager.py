@@ -205,12 +205,18 @@ Usuń konto: {{delete_account_url}}''',
             EmailCampaign.query.filter(EmailCampaign.template_id.isnot(None)).update({'template_id': None})
             db.session.commit()
             
-            # Usuń wszystkie istniejące szablony
-            EmailTemplate.query.delete()
+            # Usuń wszystkie istniejące szablony - użyj delete() z synchronize_session=False dla pewności
+            deleted_count = db.session.query(EmailTemplate).delete(synchronize_session=False)
             db.session.commit()
+            logging.info(f"Usunięto {deleted_count} istniejących szablonów")
             
             # Dodaj domyślne szablony z bazy (teraz zaktualizowane z fixtures)
+            # get_default_templates() automatycznie załaduje szablony z fixtures jeśli nie ma domyślnych
             default_templates = self.get_default_templates()
+            
+            if not default_templates:
+                logging.warning("Brak domyślnych szablonów po resetowaniu")
+                return False, "Brak domyślnych szablonów do załadowania"
             
             for default_template in default_templates:
                 new_template = EmailTemplate(
@@ -227,6 +233,7 @@ Usuń konto: {{delete_account_url}}''',
                 db.session.add(new_template)
             
             db.session.commit()
+            logging.info(f"Utworzono {len(default_templates)} nowych domyślnych szablonów")
             return True, f"Zresetowano do {len(default_templates)} domyślnych szablonów"
             
         except Exception as e:
