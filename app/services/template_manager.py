@@ -190,12 +190,6 @@ Usuń konto: {{delete_account_url}}''',
     def reset_templates_to_defaults(self):
         """Resetuje wszystkie szablony do domyślnych z bazy danych"""
         try:
-            # Najpierw załaduj ponownie fixtures (zaktualizuj DefaultEmailTemplate)
-            from app.services.fixture_loader import load_email_templates_fixtures
-            success, message = load_email_templates_fixtures(force_update=True)
-            if not success:
-                logging.warning(f"Nie udało się załadować fixtures: {message}")
-            
             # Usuń referencje w tabelach, które używają template_id
             from app.models import EmailLog, EmailQueue, EmailCampaign
             
@@ -208,33 +202,31 @@ Usuń konto: {{delete_account_url}}''',
             # Usuń wszystkie istniejące szablony - użyj delete() z synchronize_session=False dla pewności
             deleted_count = db.session.query(EmailTemplate).delete(synchronize_session=False)
             db.session.commit()
+            # Odśwież sesję, aby upewnić się, że cache SQLAlchemy jest czysty
+            db.session.expire_all()
             logging.info(f"Usunięto {deleted_count} istniejących szablonów")
             
-            # Dodaj domyślne szablony z bazy (teraz zaktualizowane z fixtures)
-            # get_default_templates() automatycznie załaduje szablony z fixtures jeśli nie ma domyślnych
-            default_templates = self.get_default_templates()
+            # Sprawdź czy wszystkie szablony zostały usunięte
+            remaining = EmailTemplate.query.count()
+            if remaining > 0:
+                logging.warning(f"Ostrzeżenie: {remaining} szablonów nadal istnieje po usunięciu")
+                # Wymuś usunięcie pozostałych szablonów
+                EmailTemplate.query.delete()
+                db.session.commit()
+                db.session.expire_all()
             
-            if not default_templates:
-                logging.warning("Brak domyślnych szablonów po resetowaniu")
-                return False, "Brak domyślnych szablonów do załadowania"
+            # Teraz załaduj fixtures - to utworzy nowe szablony domyślne
+            from app.services.fixture_loader import load_email_templates_fixtures
+            success, message = load_email_templates_fixtures(force_update=False)
+            if not success:
+                logging.error(f"Nie udało się załadować fixtures: {message}")
+                return False, f"Nie udało się załadować fixtures: {message}"
             
-            for default_template in default_templates:
-                new_template = EmailTemplate(
-                    name=default_template.name,
-                    template_type=default_template.template_type,
-                    subject=default_template.subject,
-                    html_content=default_template.html_content,
-                    text_content=default_template.text_content,
-                    variables=default_template.variables,
-                    description=default_template.description,
-                    is_default=True,
-                    is_active=True
-                )
-                db.session.add(new_template)
+            # Sprawdź ile szablonów zostało utworzonych
+            created_templates = EmailTemplate.query.filter_by(is_default=True, is_active=True).all()
+            logging.info(f"Utworzono {len(created_templates)} nowych domyślnych szablonów z fixtures")
             
-            db.session.commit()
-            logging.info(f"Utworzono {len(default_templates)} nowych domyślnych szablonów")
-            return True, f"Zresetowano do {len(default_templates)} domyślnych szablonów"
+            return True, f"Zresetowano do {len(created_templates)} domyślnych szablonów"
             
         except Exception as e:
             db.session.rollback()

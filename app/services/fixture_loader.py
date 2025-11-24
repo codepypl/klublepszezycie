@@ -70,7 +70,8 @@ class FixtureLoader:
                 return False
             
             # Sprawdź czy szablon już istnieje w EmailTemplate
-            existing = EmailTemplate.query.filter_by(name=name).first()
+            # Użyj synchronize_session=False, aby upewnić się, że sprawdzamy aktualny stan bazy
+            existing = db.session.query(EmailTemplate).filter_by(name=name).first()
             if existing and not force_update:
                 logging.info(f"Szablon {name} już istnieje, pomijam")
                 return False
