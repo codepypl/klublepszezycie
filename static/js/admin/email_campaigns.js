@@ -748,10 +748,18 @@ function handleTemplateChange() {
                 Object.keys(variables).forEach(variable => {
                     const div = document.createElement('div');
                     div.className = 'mb-2';
+                    
+                    // Use textarea for message_content, input for other variables
+                    const isTextarea = variable === 'message_content' || variable.toLowerCase().includes('message') || variable.toLowerCase().includes('content');
+                    const inputField = isTextarea
+                        ? `<textarea class="form-control" id="var_${variable}" name="var_${variable}" 
+                               rows="5" placeholder="Wpisz treść dla ${variable}" oninput="debounceUpdatePreview()"></textarea>`
+                        : `<input type="text" class="form-control" id="var_${variable}" name="var_${variable}" 
+                               placeholder="Wpisz treść dla ${variable}" oninput="debounceUpdatePreview()">`;
+                    
                     div.innerHTML = `
                         <label for="var_${variable}" class="form-label">${variable}</label>
-                        <input type="text" class="form-control" id="var_${variable}" name="var_${variable}" 
-                               placeholder="Wpisz treść dla ${variable}" oninput="debounceUpdatePreview()">
+                        ${inputField}
                         <div class="form-text">${variables[variable]}</div>
                     `;
                     variablesContainer.appendChild(div);
