@@ -149,6 +149,29 @@ def api_user(user_id):
         user = User.query.get_or_404(user_id)
         
         if request.method == 'GET':
+            # Sprawdź aktualne członkostwo w grupie "Członkowie klubu" i zsynchronizuj pole club_member
+            from app.models import UserGroup, UserGroupMember
+            club_group = UserGroup.query.filter_by(group_type='club_members').first()
+            is_in_club_group = False
+            if club_group:
+                member = UserGroupMember.query.filter_by(
+                    user_id=user.id,
+                    group_id=club_group.id,
+                    is_active=True
+                ).first()
+                is_in_club_group = member is not None
+            
+            # Jeśli użytkownik jest w grupie, ale club_member jest False, zsynchronizuj
+            if is_in_club_group and not user.club_member:
+                user.club_member = True
+                db.session.commit()
+                print(f"✅ Zsynchronizowano pole club_member dla użytkownika {user.email} (jest w grupie członków klubu)")
+            # Jeśli użytkownik nie jest w grupie, ale club_member jest True, zsynchronizuj
+            elif not is_in_club_group and user.club_member:
+                user.club_member = False
+                db.session.commit()
+                print(f"✅ Zsynchronizowano pole club_member dla użytkownika {user.email} (nie jest w grupie członków klubu)")
+            
             return jsonify({
                 'success': True,
                 'user': {
@@ -157,6 +180,8 @@ def api_user(user_id):
                     'email': user.email,
                     'phone': user.phone,
                     'is_active': user.is_active,
+                    'club_member': user.club_member,
+                    'account_type': user.account_type,
                     'created_at': user.created_at.isoformat() if user.created_at else None,
                     'last_login': user.last_login.isoformat() if user.last_login else None
                 }

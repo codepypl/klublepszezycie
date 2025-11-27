@@ -14,6 +14,7 @@ from .user_model import User, PasswordResetToken
 from .content_model import MenuItem, Section, BenefitItem, Testimonial, SocialLink, FAQ
 from .events_model import EventSchedule
 from .event_registration_model import EventRegistration
+from .event_link_click_model import EventLinkClick
 from .email_model import EmailTemplate, EmailCampaign, EmailQueue, EmailLog, EmailReminder
 from .user_groups_model import UserGroup, UserGroupMember
 from .blog_model import BlogCategory, BlogTag, BlogPost, BlogComment, BlogPostImage
@@ -40,6 +41,7 @@ __all__ = [
     'FAQ',
     'EventSchedule',
     'EventRegistration',
+    'EventLinkClick',
     'EmailTemplate',
     'UserGroup',
     'UserGroupMember',

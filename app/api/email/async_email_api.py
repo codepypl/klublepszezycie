@@ -282,11 +282,24 @@ def schedule_event_reminder():
                     continue
                 
                 # Przygotuj kontekst
+                # Generuj link śledzący dla tego użytkownika i wydarzenia
+                try:
+                    from app.utils.event_link_tracker import event_link_tracker
+                    tracking_url = event_link_tracker.get_tracking_url(
+                        user_id=participant.id,
+                        event_id=event.id,
+                        original_url=event.get_event_url()
+                    )
+                    event_url = tracking_url if tracking_url else event.get_event_url()
+                except Exception as e:
+                    logger.warning(f"⚠️ Błąd generowania linku śledzącego: {e}, używam domyślnego URL")
+                    event_url = event.get_event_url()
+                
                 context = {
                     'user_name': participant.first_name or participant.email,
                     'event_title': event.title,
                     'event_date': event.start_time.strftime('%Y-%m-%d %H:%M'),
-                    'event_url': event.get_event_url(),
+                    'event_url': event_url,
                     'reminder_time': reminder_time
                 }
                 

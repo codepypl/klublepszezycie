@@ -736,6 +736,127 @@ def terms():
 # NOTE: Unsubscribe and delete-account routes moved to unsubscribe_routes.py
 # These endpoints are now handled by the new UnsubscribeManager system
 
+@public_bp.route('/event-track/<token>')
+def track_event_link_click(token):
+    """
+    Endpoint do śledzenia kliknięć w linki wydarzeń wysyłane mailem
+    Weryfikuje token, zapisuje kliknięcie, aktualizuje UserHistory i przekierowuje do wydarzenia
+    """
+    try:
+        import base64
+        from app.utils.event_link_tracker import event_link_tracker
+        from app.models import EventLinkClick, UserHistory, EmailLog
+        
+        # Weryfikuj token
+        is_valid, token_data = event_link_tracker.verify_tracking_token(token)
+        
+        if not is_valid or not token_data:
+            # Jeśli token nieprawidłowy, przekieruj do strony głównej
+            flash('Link wygasł lub jest nieprawidłowy', 'error')
+            return redirect(url_for('public.index'))
+        
+        user = token_data['user']
+        event = token_data['event']
+        user_id = token_data['user_id']
+        event_id = token_data['event_id']
+        
+        # Pobierz informacje o żądaniu
+        ip_address = request.remote_addr if request else None
+        user_agent = request.headers.get('User-Agent') if request else None
+        
+        # Sprawdź czy użytkownik już kliknął w ten link (po tokenie)
+        existing_click = EventLinkClick.query.filter_by(click_token=token_data['token']).first()
+        
+        if existing_click:
+            # Token już użyty - po prostu przekieruj (nie zapisuj ponownie)
+            print(f"ℹ️ Token już użyty przez użytkownika {user.email} dla wydarzenia {event.title}")
+        else:
+            # Znajdź email_log_id jeśli istnieje (opcjonalnie)
+            email_log_id = None
+            try:
+                # Spróbuj znaleźć ostatni email log dla tego użytkownika i wydarzenia
+                email_log = EmailLog.query.filter_by(
+                    email=user.email,
+                    event_id=event_id
+                ).order_by(EmailLog.sent_at.desc()).first()
+                if email_log:
+                    email_log_id = email_log.id
+            except:
+                pass
+            
+            # Zapisz kliknięcie
+            click, message = EventLinkClick.record_click(
+                user_id=user_id,
+                event_id=event_id,
+                click_token=token_data['token'],
+                email_log_id=email_log_id,
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
+            
+            if click:
+                # Aktualizuj UserHistory - oznacz jako uczestniczący
+                try:
+                    # Sprawdź czy istnieje wpis w UserHistory
+                    history = UserHistory.query.filter_by(
+                        user_id=user_id,
+                        event_id=event_id
+                    ).first()
+                    
+                    from app.utils.timezone_utils import get_local_now
+                    if history:
+                        # Aktualizuj istniejący wpis
+                        UserHistory.update_registration_status(
+                            user_id=user_id,
+                            event_id=event_id,
+                            status='participated',
+                            notes=f'Uczestnictwo potwierdzone przez kliknięcie w link z maila ({get_local_now().strftime("%Y-%m-%d %H:%M")})'
+                        )
+                    else:
+                        # Utwórz nowy wpis
+                        UserHistory.log_event_participation(
+                            user_id=user_id,
+                            event_id=event_id,
+                            was_club_member=user.club_member or False,
+                            notes=f'Uczestnictwo potwierdzone przez kliknięcie w link z maila ({get_local_now().strftime("%Y-%m-%d %H:%M")})'
+                        )
+                    
+                    # Oznacz kliknięcie jako zarejestrowane
+                    click.participation_recorded = True
+                    
+                    print(f"✅ Zarejestrowano uczestnictwo użytkownika {user.email} w wydarzeniu {event.title}")
+                except Exception as e:
+                    print(f"⚠️ Błąd aktualizacji UserHistory: {e}")
+                    import traceback
+                    traceback.print_exc()
+                
+                db.session.commit()
+        
+        # Pobierz URL przekierowania
+        redirect_url = request.args.get('redirect')
+        if redirect_url:
+            try:
+                # Decode base64 redirect URL
+                redirect_url = base64.urlsafe_b64decode(redirect_url.encode('utf-8')).decode('utf-8')
+            except:
+                # Jeśli nie udało się zdekodować, użyj domyślnego URL wydarzenia
+                redirect_url = event.get_event_url()
+        else:
+            # Jeśli nie podano redirect, użyj domyślnego URL wydarzenia
+            redirect_url = event.get_event_url()
+        
+        # Przekieruj do wydarzenia
+        return redirect(redirect_url)
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Event link tracking error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        # W przypadku błędu, przekieruj do strony głównej
+        flash('Wystąpił błąd podczas przetwarzania linku', 'error')
+        return redirect(url_for('public.index'))
+
 def register_for_event(user, event_id):
     """Register existing user for a specific event"""
     try:

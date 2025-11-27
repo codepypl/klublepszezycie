@@ -403,13 +403,26 @@ class EmailScheduler:
                             continue
                         
                         # Przygotuj kontekst
+                        # Generuj link śledzący dla tego użytkownika i wydarzenia
+                        try:
+                            from app.utils.event_link_tracker import event_link_tracker
+                            tracking_url = event_link_tracker.get_tracking_url(
+                                user_id=participant.id,
+                                event_id=event_id,
+                                original_url=event.get_event_url()
+                            )
+                            event_url = tracking_url if tracking_url else event.get_event_url()
+                        except Exception as e:
+                            self.logger.warning(f"⚠️ Błąd generowania linku śledzącego: {e}, używam domyślnego URL")
+                            event_url = event.get_event_url()
+                        
                         context = {
                             'user_name': participant.first_name or 'Użytkowniku',
                             'event_title': event.title,
                             'event_date': event.event_date.strftime('%d.%m.%Y'),
                             'event_time': event.event_date.strftime('%H:%M'),
                             'event_location': event.location or 'Online',
-                            'event_url': event.get_event_url(),
+                            'event_url': event_url,
                             'event_datetime': event.event_date.strftime('%d.%m.%Y %H:%M'),
                             'event_description': event.description or ''
                         }
